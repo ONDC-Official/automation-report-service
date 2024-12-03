@@ -1,0 +1,234 @@
+[2024-12-03 17:00:15] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:12:57] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:12:57] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:12:58] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Failed to fetch payload: Error: getaddrinfo ENOTFOUND api.example.com
+[2024-12-03 17:12:58] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:12:58] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:19:20] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:19:27] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:19:27] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:19:27] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Failed to fetch payload: Error: getaddrinfo ENOTFOUND api.example.com
+[2024-12-03 17:19:27] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:19:27] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:23:29] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:23:48] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:23:48] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:23:48] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Failed to fetch payload: Error: getaddrinfo ENOTFOUND api.example.com
+[2024-12-03 17:23:48] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:23:48] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:25:38] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:27:08] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:27:17] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:27:17] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:27:17] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Failed to fetch payload: AxiosError: Request failed with status code 500
+[2024-12-03 17:27:17] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:27:17] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:30:38] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:30:46] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:30:46] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:30:46] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:30:46] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:30:46] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:30:46] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:30:46] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:33:44] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:33:50] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:33:50] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:33:51] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Failed to fetch payload: AxiosError: Request failed with status code 500
+[2024-12-03 17:33:51] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:33:51] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:34:47] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:34:50] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:34:50] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:51] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:51] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:51] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:34:51] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:34:51] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:34:53] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:34:53] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:53] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:53] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:53] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:34:53] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:34:53] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:34:54] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:34:54] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:54] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:54] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:34:55] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:34:55] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:34:55] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:35:44] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:35:48] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:35:48] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:35:48] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:35:48] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:35:48] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:35:48] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:35:48] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:45:20] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:45:24] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:45:24] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:45:25] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:45:25] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:45:25] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:45:25] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:45:25] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:45:28] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:45:28] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:45:28] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:45:28] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:45:28] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:45:28] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:45:28] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:47:23] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:47:28] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:47:28] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:47:28] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:47:28] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:47:29] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:47:29] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:47:29] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:47:56] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:48:04] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:48:04] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:48:04] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:48:04] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:48:05] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:48:05] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:48:05] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:57:04] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:57:11] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:57:11] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:57:11] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:57:11] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:57:12] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:57:12] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:57:12] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 17:57:38] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 17:57:41] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 17:57:41] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:57:41] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:57:41] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 17:57:42] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 17:57:42] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 17:57:42] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 21:49:32] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:51:43] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:51:46] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:52:28] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:52:36] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:52:57] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 21:52:57] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:52:58] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:52:58] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:52:58] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 21:52:58] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 21:52:58] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 21:53:28] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:53:55] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:53:58] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:54:14] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:54:18] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:54:32] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:54:35] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:54:44] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:54:57] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:55:02] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:55:11] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:55:14] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:55:19] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:55:30] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 21:55:30] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:55:30] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:55:30] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:55:30] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 21:55:30] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 21:55:30] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 21:55:53] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:55:56] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 21:55:56] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:55:57] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:55:57] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:55:57] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 21:55:57] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 21:55:57] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 21:56:22] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:56:26] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 21:56:26] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:56:27] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:56:27] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 21:56:27] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 500
+[2024-12-03 21:56:27] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 21:56:27] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 21:56:49] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 21:57:50] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:02:17] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:02:22] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"RIDER_CANCEL"}
+[2024-12-03 22:02:22] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:02:22] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:02:22] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:02:23] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 22:02:23] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:02:23] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 22:06:09] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"STATION_CODE"}
+[2024-12-03 22:06:09] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:06:09] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:06:09] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:06:09] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 22:06:09] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:06:09] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 22:10:25] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:23:22] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:23:39] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"STATION_CODE"}
+[2024-12-03 22:23:39] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:23:40] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:23:40] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:23:40] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed: AxiosError: Request failed with status code 400
+[2024-12-03 22:23:40] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:23:40] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 22:37:47] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:37:49] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:37:51] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:38:57] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:39:27] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"STATION_CODE"}
+[2024-12-03 22:39:27] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:39:27] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:39:27] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:39:27] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed with status 400: [object Object]
+[2024-12-03 22:39:27] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:39:27] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 22:40:52] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:41:01] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"STATION_CODE"}
+[2024-12-03 22:41:01] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:41:01] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:41:01] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:41:01] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed with status 400: {"success":false,"response":{"message":"Logs were not verified successfully","report":{"search":{"id_err":"transaction_id and message id can't be same"},"on_search":{"on_search":"Json cannot be empty"},"select":{"select":"Json cannot be empty"},"on_select":{"on_select":"Json cannot be empty"},"init":{"init":"Json cannot be empty"},"on_init":{"on_init":"Json cannot be empty"},"confirm":{"confirm":"Json cannot be empty"},"on_confirm":{"on_confirm":"Json cannot be empty"}},"domain":"ONDC:TRV11","reportTimestamp":"2024-12-03T17:11:01.352Z"},"signature":"C0XH9njpUufrPJQphzvH+Cf3m+N6Kac7y+qZpKtfLh9GraEVaTI1nKM/RLjIRc8Gw9UsYQpbvYq/RQg7b199AQ==","signTimestamp":"2024-12-03T17:11:01.352Z"}
+[2024-12-03 22:41:01] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:41:01] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 22:45:21] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:45:25] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"STATION_CODE"}
+[2024-12-03 22:45:25] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:45:26] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:45:26] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:45:26] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed with status 400: {"success":false,"response":{"message":"Logs were not verified successfully","report":{"search":{"id_err":"transaction_id and message id can't be same"},"on_search":{"on_search":"Json cannot be empty"},"select":{"select":"Json cannot be empty"},"on_select":{"on_select":"Json cannot be empty"},"init":{"init":"Json cannot be empty"},"on_init":{"on_init":"Json cannot be empty"},"confirm":{"confirm":"Json cannot be empty"},"on_confirm":{"on_confirm":"Json cannot be empty"}},"domain":"ONDC:TRV11","reportTimestamp":"2024-12-03T17:15:26.523Z"},"signature":"TOc84t8Cw80k7HUptzjkGb6fJqYHP8KWvbWCH7TvvCOTibYsk1kFjhM3ioZ3Rn20kwes8dTNi/po5BvWaRtHCA==","signTimestamp":"2024-12-03T17:15:26.523Z"}
+[2024-12-03 22:45:26] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:45:26] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 22:46:24] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:46:34] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:46:38] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"STATION_CODE"}
+[2024-12-03 22:46:38] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:46:39] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:46:39] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:46:39] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed with status 400: [object Object]
+[2024-12-03 22:46:39] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:46:39] [32minfo[39m: HTML report sent successfully as the response.
+[2024-12-03 22:46:57] [32minfo[39m: Reporting service is running on http://localhost:3000
+[2024-12-03 22:47:07] [32minfo[39m: Received request for transaction flow mappings: {"6743e9e2-4fb5-487c-92b7-13ba8018f176":"STATION_CODE"}
+[2024-12-03 22:47:07] [32minfo[39m: Processing Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:47:07] [32minfo[39m: Payload fetched successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:47:07] [32minfo[39m: Payload parsed successfully for Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176
+[2024-12-03 22:47:07] [31merror[39m: Failed to process Transaction ID: 6743e9e2-4fb5-487c-92b7-13ba8018f176. Error: Validation failed with status 400: {"success":false,"response":{"message":"Logs were not verified successfully","report":{"search":{"id_err":"transaction_id and message id can't be same"},"on_search":{"on_search":"Json cannot be empty"},"select":{"select":"Json cannot be empty"},"on_select":{"on_select":"Json cannot be empty"},"init":{"init":"Json cannot be empty"},"on_init":{"on_init":"Json cannot be empty"},"confirm":{"confirm":"Json cannot be empty"},"on_confirm":{"on_confirm":"Json cannot be empty"}},"domain":"ONDC:TRV11","reportTimestamp":"2024-12-03T17:17:07.812Z"},"signature":"qMyavl5EvS5lLIU8HNZabJpddwkwyb5cMbCjLZ+t390TfR7CXk1R5g3ivi2Q5WRdZmuE8+gxU38WdxfRUWiLCQ==","signTimestamp":"2024-12-03T17:17:07.812Z"}
+[2024-12-03 22:47:07] [32minfo[39m: HTML report generated successfully for all transaction IDs.
+[2024-12-03 22:47:07] [32minfo[39m: HTML report sent successfully as the response.
