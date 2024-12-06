@@ -1,5 +1,6 @@
 
 import { ValidationResult } from "../types/validationResult";
+import {ApiResponse} from '../types/utilityResponse'
 import { ParsedPayload } from '../types/parsedPayload'
 
 import axios, { AxiosError } from 'axios';
@@ -14,15 +15,13 @@ export async function validateLogs(
   } catch (error) {
     // Check if the error is an AxiosError
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      const errorDetails = axiosError.response?.data 
-        ? JSON.stringify(axiosError.response.data) 
-        : 'No response data';
+      const axiosError = error as AxiosError<ApiResponse>;
+      const errorDetails = axiosError.response?.data?.response?.report || { message: 'No response data' };
       const statusCode = axiosError.response?.status || 'Unknown status code';
-
+  
 
       // Log additional details or rethrow with specific information
-      throw new Error(`Validation failed with status ${statusCode}: ${errorDetails}`);
+      throw new Error(`Validation failed with status ${statusCode}: ${JSON.stringify(errorDetails)}`);
     }
 
     // For non-Axios errors, rethrow with the original stack trace

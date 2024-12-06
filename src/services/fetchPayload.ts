@@ -1,15 +1,21 @@
 import axios from "axios";
 import { Payload } from "../types/payload"; // Adjust the path as necessary
 
-export async function fetchPayload(transactionId: string, storageUrl: string): Promise<Payload[]> {
-  try {
-    // Construct the URL with the query parameter
-    const url = `${storageUrl}?transactionId=${encodeURIComponent(transactionId)}`;
- 
-    // Make the GET request
-    const response = await axios.get<Payload[]>(url);
+export async function fetchPayload(
+  transactionId: string,
+  storageUrl: string,
+  timeout = 5000 // Default timeout of 5 seconds
+): Promise<Payload[]> {
+  try {    
+    const response = await axios.get<Payload[]>(`${storageUrl}`, {
+      params: { transactionId }, 
+      timeout, // Set the timeout for the request
+    });
     return response.data;
-  } catch (error) {
-    throw new Error(`Failed to fetch payload: ${error}`);
+  } catch (error:any) {
+    if (axios.isAxiosError(error) && error.code === "ECONNABORTED") {
+      throw new Error(`Request timed out after ${timeout} ms for Transaction ID: ${transactionId}`);
+    }
+    throw new Error(`Failed to fetch payload: ${error.message}`);
   }
 }

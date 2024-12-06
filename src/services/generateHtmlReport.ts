@@ -1,31 +1,42 @@
-/**
- * Generates an HTML report for multiple transaction validation results
- * @param results Array of ValidationResult objects
- * @returns A string representing the HTML report
- */
-
 import { ValidationResult } from "../types/validationResult";
 
-export function generateHtmlReport(results: ValidationResult[]): string {
-  const reportRows = results
+/**
+ * Generates an HTML report grouped by flow.
+ * @param results An object where keys are flow names and values are arrays of ValidationResult
+ * @returns A string representing the HTML report
+ */
+export function generateHtmlReportByFlow(
+  results: { [flow: string]: ValidationResult[] }
+): string {
+  // Generate rows grouped by flow
+  const reportRows = Object.entries(results)
     .map(
-      ({ transactionId, status, test_case, details }) => `
-      <td style="color: ${
-        status === "success" ? "green" : "red"
-      };">${status.toUpperCase()}</td>
-      <tr>
-        <td>${transactionId}</td>
-        <td>${test_case || "N/A"}</td>
-        <td>${details ? JSON.stringify(details) : "-"}</td>
-      </tr>
-    `
+      ([flow, validations]) => `
+        <tr>
+          <td colspan="3"><strong>${flow}</strong></td>
+        </tr>
+        ${validations
+          .map(
+            ({ transactionId, status, details }) => `
+          <tr>
+            <td>${transactionId}</td>
+            <td style="color: ${
+              status === "success" ? "green" : "red"
+            };">${status.toUpperCase()}</td>
+            <td>${details ? JSON.stringify(details) : "-"}</td>
+          </tr>
+        `
+          )
+          .join("")}
+      `
     )
     .join("");
 
+  // Generate the complete HTML structure
   return `
     <html>
       <head>
-        <title>Transaction Report</title>
+        <title>Flow-Based Transaction Report</title>
         <style>
           table {
             width: 100%;
@@ -42,13 +53,12 @@ export function generateHtmlReport(results: ValidationResult[]): string {
         </style>
       </head>
       <body>
-        <h1>Transaction Report</h1>
+        <h1>Flow-Based Transaction Report</h1>
         <table>
           <thead>
             <tr>
-              <th>Transaction ID</th>
+              <th>Flow name</th>
               <th>Status</th>
-              <th>Test Case</th>
               <th>Details</th>
             </tr>
           </thead>
