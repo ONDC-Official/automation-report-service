@@ -1,31 +1,57 @@
+import { ApiResponse } from "../types/utilityResponse";
+import axios, { AxiosError } from "axios";
+import { ParsedPayload } from "../types/parsedPayload";
+import { Result } from "../types/result";
+require("dotenv").config();
 
-import { ValidationResult } from "../types/validationResult";
-import { ParsedPayload } from '../types/parsedPayload'
 
-import axios, { AxiosError } from 'axios';
+export async function validateFlows(
+  parsedFlows: { [flowId: string]: ParsedPayload }
+): Promise<{ flowId: string; results: Result }[]> {
+  try {
+    return await Promise.all(
+      Object.entries(parsedFlows).map(async ([flowId, parsedPayload]) => {
+        const results = await validateLogs(flowId, parsedPayload);
+        return { flowId, results };
+      })
+    );
+  } catch (error) {
+    console.error("Error occurred while validating flows:", error);
+    throw error;
+  }
+}
 
 export async function validateLogs(
-  parsedPayload: ParsedPayload,
-  validationUrl: string
-): Promise<ValidationResult> {
+  flowId: string,
+  parsedPayload: ParsedPayload
+): Promise<Result> {
+  const validationUrl = process.env.VALIDATION_URL || "https://log-validation.ondc.org/api/validate/trv";
+
   try {
-    const response = await axios.post<ValidationResult>(validationUrl, parsedPayload);
-    return response.data;
+    const response = await axios.post<ApiResponse>(validationUrl, parsedPayload);
+
+    // Wrap the successful response in a `ValidationResult`
+    return { success: true, response: response.data };
   } catch (error) {
-    // Check if the error is an AxiosError
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      const errorDetails = axiosError.response?.data 
-        ? JSON.stringify(axiosError.response.data) 
-        : 'No response data';
-      const statusCode = axiosError.response?.status || 'Unknown status code';
+      const axiosError = error as AxiosError<ApiResponse>;
 
+      // Capture and return error details
+      const statusCode = axiosError.response?.status || "Unknown status code";
+      const errorDetails = axiosError.response?.data || { message: "No response data" };
 
-      // Log additional details or rethrow with specific information
-      throw new Error(`Validation failed with status ${statusCode}: ${errorDetails}`);
+      return {
+        success: false,
+        error: `Validation failed with status ${statusCode}`,
+        details: errorDetails,
+      };
     }
 
-    // For non-Axios errors, rethrow with the original stack trace
-    throw new Error(`Unexpected error during validation: ${(error as Error).message}`);
+    // Handle unexpected errors
+    return {
+      success: false,
+      error: "Unexpected error during validation",
+      details: (error as Error).message,
+    };
   }
 }
