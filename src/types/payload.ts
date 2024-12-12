@@ -2,6 +2,7 @@ export interface Payload {
     id: number;
     messageId: string;
     transactionId: string;
+    flowId: string;
     action: string; // e.g., "SEARCH"
     bppId: string | null; // Can be null
     bapId: string;
