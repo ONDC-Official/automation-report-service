@@ -28,24 +28,10 @@ function parsePayloads(flowId: string, payloads: Payload[]): ParsedPayload {
     domain: "ONDC:TRV11",
     version: "2.0.1",
     flow: flowId,
-    payload: {
-      // Initialize payload with all actions except search and on_search
-      select: {},
-      on_select: {},
-      init: {},
-      on_init: {},
-      confirm: {},
-      on_confirm: {},
-      status: {},
-      on_status: {},
-      soft_cancel: {},
-      soft_on_cancel: {},
-      cancel: {},
-      on_cancel: {},
-    },
+    payload: {},
   };
 
-  // Group payloads by their `action`
+  // Group payloads by action
   const groupedPayloads: { [key: string]: Payload[] } = payloads.reduce((groups, payload) => {
     const action = payload.action?.toLowerCase();
     if (!action) {
@@ -59,53 +45,75 @@ function parsePayloads(flowId: string, payloads: Payload[]): ParsedPayload {
     return groups;
   }, {} as { [key: string]: Payload[] });
 
-  // Collect all payloads in an array and sort by timestamp
-  const allPayloads: Payload[] = [];
-  for (const payloadGroup of Object.values(groupedPayloads)) {
-    allPayloads.push(...payloadGroup);
-  }
-
-  // Sort all payloads based on timestamps
+  // Sort payloads by createdAt timestamp
+  const allPayloads: Payload[] = Object.values(groupedPayloads).flat();
   allPayloads.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  // Separate non-empty payloads and empty payloads
-  const nonEmptyPayloads: Payload[] = [];
-  const emptyPayloads: Payload[] = [];
+  // Counters for numbered actions (search, on_search, cancel, on_cancel)
+  const actionCounters: { [key: string]: number } = {
+    search: 0,
+    on_search: 0,
+    cancel: 0,
+    on_cancel: 0,
+  };
 
-  allPayloads.forEach((payload, index) => {
-    if (Object.keys(payload.jsonObject).length > 0) {
-      nonEmptyPayloads.push(payload);
-    } else {
-      emptyPayloads.push(payload);
-    }
-  });
+  // Flags for first `cancel` and `on_cancel`
+  let firstCancelMapped = false;
+  let firstOnCancelMapped = false;
 
-  // Populate parsedPayload with non-empty payloads first
-  nonEmptyPayloads.forEach((payload, index) => {
+  // Process payloads
+  allPayloads.forEach((payload) => {
     const action = payload.action?.toLowerCase();
     if (!action) {
       console.warn(`Missing action in payload for flow ID ${flowId}`, payload);
       return;
     }
 
+    // Handling `search` and `on_search` actions with numbering
     if (action === "search" || action === "on_search") {
-      const key = `${action}_${index + 1}`; // Create numbered keys starting from 1
-      parsedPayload.payload[key] = payload.jsonObject;
-    } else {
-      // If the action has been added before, append an index to make it unique
-      const key = index === 0 ? action : `${action}_${index}`;
-      parsedPayload.payload[key] = payload.jsonObject;
+      actionCounters[action]++;
+      const key = `${action}_${actionCounters[action]}`;
+      parsedPayload.payload[key] = payload.jsonRequest;
+    }
+    // Handling `select`, `on_select`, `init`, `on_init`, `confirm`, `on_confirm`, etc.
+    else if (action === "select" || action === "on_select" || action === "init" || action === "on_init" || action === "confirm" || action === "on_confirm" || action === "status" || action === "on_status") {
+      parsedPayload.payload[action] = payload.jsonRequest;
+    }
+    // Handling `cancel` actions
+    else if (action === "cancel") {
+      if (!firstCancelMapped) {
+        parsedPayload.payload.soft_cancel = payload.jsonRequest;
+        firstCancelMapped = true;
+      } else {
+        actionCounters.cancel++;
+        const key = `cancel_${actionCounters.cancel}`;
+        parsedPayload.payload[key] = payload.jsonRequest;
+      }
+    }
+    // Handling `on_cancel` actions
+    else if (action === "on_cancel") {
+      if (!firstOnCancelMapped) {
+        parsedPayload.payload.soft_on_cancel = payload.jsonRequest;
+        firstOnCancelMapped = true;
+      } else {
+        actionCounters.on_cancel++;
+        const key = `on_cancel_${actionCounters.on_cancel}`;
+        parsedPayload.payload[key] = payload.jsonRequest;
+      }
     }
   });
 
-  // Add empty payloads at the end
-  emptyPayloads.forEach((payload) => {
-    const action = payload.action?.toLowerCase();
-    if (!action) {
-      console.warn(`Missing action in payload for flow ID ${flowId}`, payload);
-      return;
+   // Ensure all keys are added (even if empty)
+   const actionKeys = [
+     "select", "on_select", "init", "on_init", 
+    "confirm", "on_confirm", "status", "on_status", 
+    "soft_cancel", "soft_on_cancel", "cancel", "on_cancel"
+  ];
+
+  actionKeys.forEach((key) => {
+    if (!(key in parsedPayload.payload)) {
+      parsedPayload.payload[key] = {};
     }
-    parsedPayload.payload[action] = payload.jsonObject;
   });
 
   return parsedPayload;
