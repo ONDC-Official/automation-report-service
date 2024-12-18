@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Validation Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #0056a6;
+      margin-bottom: 20px;
+    }
+    .flow-card {
+      background: #fff;
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .flow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .flow-id {
+      font-size: 18px;
+      font-weight: bold;
+      color: #0056a6;
+    }
+    .validity {
+      font-size: 14px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      color: #fff;
+    }
+    .validity.valid {
+      background-color: #28a745;
+    }
+    .validity.invalid {
+      background-color: #dc3545;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    .result-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .result-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .result-item.passed {
+      background-color: #e7f9ed;
+      border: 1px solid #28a745;
+      color: #155724;
+    }
+    .result-item.failed {
+      background-color: #fce8e6;
+      border: 1px solid #dc3545;
+      color: #721c24;
+    }
+    .icon {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    .icon.pass {
+      color: #28a745;
+    }
+    .icon.fail {
+      color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flow Validation Report</h1>
+  
+      <div class="flow-card">
+        <div class="flow-header">
+          <div class="flow-id">Flow ID: flow_id</div>
+          <div class="validity valid">
+            Valid
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Flow sequence errors</div>
+          <p>No errors found.</p>
+        </div>
+        <div class="section">
+          <div class="section-title">Validations</div>
+          <ul class="result-list">
+                  
+                          <li class="result-item passed">
+                            <span class="icon pass">✔</span>search_1: Should have valid context with transactionId and timestamp
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>search_1: Should have valid message with intent
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>on_search_1: testFunction is not a function
+                          </li>
+                          <li class="result-item passed">
+                            <span class="icon pass">✔</span>search_2: Should have valid context with transactionId and timestamp
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>search_2: Should have valid message with intent
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>on_search_2: testFunction is not a function
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>select_1: Action not found
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>on_select_1: Action not found
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>init_1: Action not found
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>on_init_1: Action not found
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>confirm_1: Action not found
+                          </li>
+                          <li class="result-item failed">
+                            <span class="icon fail">✘</span>on_confirm_1: Action not found
+                          </li>
+                </ul>
+        </div>
+      </div>
+    
+</body>
+</html>
+  

@@ -1,0 +1,26 @@
+export const flowConfig: { [key: string]: string[] } = {
+    default: [
+      "search",
+      "on_search",
+      "search",
+      "on_search",
+      "select",
+      "on_select",
+      "init",
+      "on_init",
+      "confirm",
+      "on_confirm",
+    ],
+    STATION_CODE: [
+        "search",
+        "on_search",
+        "search",
+        "on_search",
+        "select",
+        "on_select",
+        "init",
+        "on_init",
+        "confirm",
+        "on_confirm",
+    ],
+  };

@@ -1,0 +1,144 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Flow Validation Report</title>
+      
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f8ff; /* Light blue */
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff; /* White */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+      }
+      h1, h2 {
+        color: #1e90ff; /* Dodger blue */
+      }
+      .flow {
+        margin-bottom: 30px;
+      }
+      .flow-header {
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #e6f7ff; /* Light blue background */
+        border: 1px solid #b3d8ff; /* Blue border */
+        border-radius: 5px;
+      }
+      .valid-flow {
+        font-weight: bold;
+        color: red;
+      }
+      .errors, .messages {
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+      }
+      .errors {
+        background-color: #ffe6e6; /* Light red */
+        border: 1px solid #ff9999; /* Red border */
+      }
+      .messages {
+        background-color: #e6ffe6; /* Light green */
+        border: 1px solid #b3ffb3; /* Green border */
+      }
+      .message-item {
+        margin-bottom: 5px;
+      }
+      .message-key {
+        font-weight: bold;
+        color: #1e90ff;
+      }
+      .error-item {
+        color: red;
+        margin-bottom: 5px;
+      }
+    </style>
+  
+    </head>
+    <body>
+      <div class="container">
+        <h1>Flow Validation Report</h1>
+  
+      <div class="flow">
+        <div class="flow-header">
+          <h2>Flow ID: flow_id</h2>
+          <p>Validation Status: <span class="valid-flow">Valid</span></p>
+        </div>
+        <div class="errors">
+          <h3>Errors:</h3>
+          <p>No errors found.</p>
+        </div>
+<div class="messages">
+  <h3>Messages:</h3>
+  
+          <div class="message-item">
+            <span class="message-key">search_1:</span>
+            <pre>{
+  "tmpstmpErr": "wrong timestamp"
+}</pre>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">on_search_1:</span>
+            <span>No issues.</span>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">search_2:</span>
+            <pre>{
+  "tmpstmpErr": "wrong timestamp"
+}</pre>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">on_search_2:</span>
+            <span>No issues.</span>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">select_1:</span>
+            <span>action not found</span>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">on_select_1:</span>
+            <span>action not found</span>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">init_1:</span>
+            <span>action not found</span>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">on_init_1:</span>
+            <span>error</span>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">confirm_1:</span>
+            <span>action not found</span>
+          </div>
+        
+          <div class="message-item">
+            <span class="message-key">on_confirm_1:</span>
+            <span>action not found</span>
+          </div>
+        
+</div>
+      </div>
+    
+      </div>
+    </body>
+    </html>
+  

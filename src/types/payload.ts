@@ -12,3 +12,7 @@ export interface Payload {
     createdAt: string; // ISO 8601 formatted timestamp
     updatedAt: string; // ISO 8601 formatted timestamp
   }
+
+  export interface JsonRequest{
+
+  }

@@ -4,10 +4,9 @@ import { ParsedPayload } from "../types/parsedPayload";
 import { Result } from "../types/result";
 require("dotenv").config();
 
-
-export async function validateFlows(
-  parsedFlows: { [flowId: string]: ParsedPayload }
-): Promise<{ flowId: string; results: Result }[]> {
+export async function validateFlows(parsedFlows: {
+  [flowId: string]: ParsedPayload;
+}): Promise<{ flowId: string; results: Result }[]> {
   try {
     return await Promise.all(
       Object.entries(parsedFlows).map(async ([flowId, parsedPayload]) => {
@@ -25,10 +24,15 @@ export async function validateLogs(
   flowId: string,
   parsedPayload: ParsedPayload
 ): Promise<Result> {
-  const validationUrl = process.env.VALIDATION_URL || "https://log-validation.ondc.org/api/validate/trv";
+  const validationUrl =
+    process.env.VALIDATION_URL ||
+    "https://log-validation.ondc.org/api/validate/trv";
 
   try {
-    const response = await axios.post<ApiResponse>(validationUrl, parsedPayload);
+    const response = await axios.post<ApiResponse>(
+      validationUrl,
+      parsedPayload
+    );
 
     // Wrap the successful response in a `ValidationResult`
     return { success: true, response: response.data };
@@ -38,7 +42,9 @@ export async function validateLogs(
 
       // Capture and return error details
       const statusCode = axiosError.response?.status || "Unknown status code";
-      const errorDetails = axiosError.response?.data || { message: "No response data" };
+      const errorDetails = axiosError.response?.data || {
+        message: "No response data",
+      };
 
       return {
         success: false,
