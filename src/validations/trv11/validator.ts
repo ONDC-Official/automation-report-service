@@ -1,13 +1,14 @@
 import { ValidationAction } from "../../types/actions";
+import { TestResult } from "../../types/payload";
 
 export const validate = async (
   element: any,
   action: ValidationAction
-): Promise<{ passed: string[]; failed: string[] }> => {
+): Promise<TestResult> => {
   const version = element?.jsonRequest?.context?.version; // Get version from the payload
 
   // Initialize test results structure
-  let testResults: { passed: string[]; failed: string[] } = { passed: [], failed: [] };
+  let testResults: TestResult = { response: {}, passed: [], failed: [] };
 
   try {
     // Dynamically import the test files based on version
@@ -15,13 +16,22 @@ export const validate = async (
     const { checkOnSearch } = await import(`./${version}/onSearch.test`);
 
     // Function to run tests programmatically
-    const runTest = async (testFunction: Function, element: any, testResults: { passed: string[]; failed: string[] }) => {
+    const runTest = async (
+      testFunction: Function,
+      element: any,
+      testResults: TestResult
+    ) => {
       try {
         const testResult = testFunction(element); // Execute the test function
         // Store results for the passed tests
         testResults.passed.push(...testResult.passed);
         // Store results for the failed tests
         testResults.failed.push(...testResult.failed);
+
+        // Store ack if available in the test result
+        if (testResult.response) {
+          testResults.response = testResult.response;
+        }
       } catch (err: any) {
         // If there's an error in the test execution, store the error in failed
         testResults.failed.push(`${err.message}`);
@@ -41,15 +51,18 @@ export const validate = async (
       // Add more cases for other actions as needed
 
       default:
-        return { passed: [], failed: ["Action not found"] };
+        return { response: {}, passed: [], failed: ["No test functions found"] };
     }
 
     // Return the results after running all tests
-    console.log(JSON.stringify(testResults));
+    // console.log(JSON.stringify(testResults));
     return testResults;
-
   } catch (error) {
     console.log(`Error occurred:`, error);
-    return { passed: [], failed: ["Error during test execution"] };
+    return {
+      response: {},
+      passed: [],
+      failed: [`Error during ${action }tests execution`],
+    };
   }
 };

@@ -1,14 +1,10 @@
-import { Payload } from "../types/payload";
+import { FlowValidationResult, Payload } from "../types/payload";
 import { flowConfig } from "../config/flowConfig";
 import { checkMessage } from "./checkMessage";
 import { actions } from "../utils/constants";
 import { ValidationAction } from "../types/actions";
 
-export interface FlowValidationResult {
-  valid_flow: boolean;
-  errors: string[];
-  messages: Record<string, string>; 
-}
+
 
 // Type guard to narrow the action to a valid ValidationAction
 function isValidAction(action: string): action is ValidationAction {

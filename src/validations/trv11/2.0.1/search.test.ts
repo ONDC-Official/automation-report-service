@@ -1,14 +1,16 @@
 import { expect } from 'chai';
 import { logger } from "../../../utils/logger";
-import { Payload } from "../../../types/payload";
+import { Payload, TestResult } from "../../../types/payload";
 
 export function checkSearch(payload: Payload) {
   logger.info("Inside search validations");
 
   const jsonRequest = payload?.jsonRequest as any;
+  const jsonResponse = payload?.jsonResponse as any;
 
   // Store results
-  const testResults: { passed: string[]; failed: string[] } = {
+  const testResults: TestResult = {
+    response:{},
     passed: [],
     failed: []
   };
@@ -55,6 +57,8 @@ export function checkSearch(payload: Payload) {
 //       error: error.message
 //     });
 //   }
+if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+
 
   // Return the result object containing passed and failed tests
   return testResults;
