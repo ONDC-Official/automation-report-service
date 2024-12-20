@@ -13,7 +13,14 @@ export const validate = async (
   try {
     // Dynamically import the test files based on version
     const { checkSearch } = await import(`./${version}/search.test`);
-    const { checkOnSearch } = await import(`./${version}/onSearch.test`);
+    const { checkOnSearch } = await import(`./${version}/OnSearch.test`);
+    const { checkSelect } = await import(`./${version}/select.test`);
+    const { checkOnSelect } = await import(`./${version}/OnSelect.test`);
+    const { checkInit } = await import(`./${version}/init.test`);
+    const { checkOnInit } = await import(`./${version}/OnInit.test`);
+    const { checkConfirm } = await import(`./${version}/confirm.test`);
+    const { checkOnConfirm } = await import(`./${version}/OnConfirm.test`);
+    const { checkOnStatus } = await import(`./${version}/OnStatus.test`);
 
     // Function to run tests programmatically
     const runTest = async (
@@ -48,10 +55,39 @@ export const validate = async (
         await runTest(checkOnSearch, element, testResults);
         break;
 
+      case "select":
+        await runTest(checkSelect, element, testResults);
+        break;
+
+      case "on_select":
+        await runTest(checkOnSelect, element, testResults);
+        break;
+      case "init":
+        await runTest(checkInit, element, testResults);
+        break;
+
+      case "on_init":
+        await runTest(checkOnInit, element, testResults);
+        break;
+      case "confirm":
+        await runTest(checkConfirm, element, testResults);
+        break;
+
+      case "on_confirm":
+        await runTest(checkOnConfirm, element, testResults);
+        break;
+      case "on_status":
+        await runTest(checkOnStatus, element, testResults);
+        break;
+
       // Add more cases for other actions as needed
 
       default:
-        return { response: {}, passed: [], failed: ["No test functions found"] };
+        return {
+          response: {},
+          passed: [],
+          failed: ["No test functions found"],
+        };
     }
 
     // Return the results after running all tests
@@ -62,7 +98,7 @@ export const validate = async (
     return {
       response: {},
       passed: [],
-      failed: [`Error during ${action }tests execution`],
+      failed: [`Error during ${action} tests execution`],
     };
   }
 };

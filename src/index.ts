@@ -1,17 +1,25 @@
-import express, { Request, Response } from 'express';
-import reportRouter from './routes/reportRoute';
+import express, { Request, Response } from "express";
+import reportRouter from "./routes/reportRoute";
+import { RedisService } from "ondc-automation-cache-lib";
+import { logger } from "./utils/logger";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+try {
+  RedisService.useDb(2);
+} catch (err) {
+  logger.error(err);
+}
+
 app.use(express.json());
-app.use('/generate-report', reportRouter);
+app.use("/generate-report", reportRouter);
 
 app.use((err: any, req: Request, res: Response, next: any) => {
-  console.error(err.stack);
-  res.status(500).send('Something went wrong!');
+  logger.error(err.stack);
+  res.status(500).send("Something went wrong!");
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  logger.info(`Server is running on http://localhost:${PORT}`);
 });

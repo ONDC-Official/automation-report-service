@@ -3,8 +3,8 @@ import { logger } from "../../../utils/logger";
 import { Payload, TestResult } from "../../../types/payload";
 import { RedisService } from "ondc-automation-cache-lib";
 
-export function checkOnSearch(payload: Payload) {
-  logger.info("Inside on_search validations");
+export function checkSelect(payload: Payload) {
+  logger.info("Inside select validations");
 
   const jsonRequest = payload?.jsonRequest as any;
   const jsonResponse = payload?.jsonResponse as any;
