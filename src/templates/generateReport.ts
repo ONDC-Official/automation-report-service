@@ -141,7 +141,7 @@ export function generateCustomHTMLReport(
           }
         </style>
       </head>
-      <body>
+   <body>
         <h1>Flow Validation Report</h1>
         ${Object.entries(data)
           .map(([flowId, { valid_flow, errors, messages }]) => {
@@ -149,16 +149,19 @@ export function generateCustomHTMLReport(
               Object.entries(messages).reduce((acc, [api, result]) => {
                 try {
                   const parsedResult = JSON.parse(result);
+                  
                   acc[api] = {
-                    ackStatus: parsedResult.response?.ack?.status || null,
-                    errorCode: parsedResult.response?.error?.code,
-                    errorMessage: parsedResult.response?.error?.message,
+                    ackStatus: parsedResult.response?.message?.ack?.status || "invalid response",
+                    errorCode: parsedResult.response?.error?.code || "No code available",
+                    errorMessage: parsedResult.response?.error?.message || "No message available",
                     passed: parsedResult.passed || [],
                     failed: parsedResult.failed || [],
                   };
                 } catch {
                   acc[api] = {
                     ackStatus: null,
+                    errorCode: "Parsing error",
+                    errorMessage: "Could not parse response",
                     passed: [],
                     failed: [],
                   };

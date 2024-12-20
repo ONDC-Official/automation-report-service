@@ -11,6 +11,7 @@ export interface Payload {
   httpStatus: number;
   createdAt: string; // ISO 8601 formatted timestamp
   updatedAt: string; // ISO 8601 formatted timestamp
+  sessionDetails: Record<string, any>;
 }
 
 export interface JsonRequest {
