@@ -18,13 +18,14 @@ export async function generateReportController(req: Request, res: Response) {
     const payloads = await fetchPayloads(sessionId);
     //Group payloads from flows
     const flows = groupAndSortPayloadsByFlowId(payloads);
+    console.log(flows);
+    
 
     if (process.env.UTILITY === "true") {
       const htmlReport = await utilityReport(flows);
       res.status(200).send(htmlReport);
       return;
     }
-
     const result = await validationModule(flows);
 
     const htmlReport = generateCustomHTMLReport(result);

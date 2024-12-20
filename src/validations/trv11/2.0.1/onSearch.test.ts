@@ -1,14 +1,15 @@
 import { expect } from "chai";
 import { logger } from "../../../utils/logger";
 import { Payload, TestResult } from "../../../types/payload";
-import { RedisService } from "ondc-automation-cache-lib";
+// import { RedisService } from "ondc-automation-cache-lib";
 
 export function checkOnSearch(payload: Payload) {
   logger.info("Inside on_search validations");
-
+  const TTL_EXPIRY = 3600;
   const jsonRequest = payload?.jsonRequest as any;
   const jsonResponse = payload?.jsonResponse as any;
 
+ 
   // Store results
   const testResults: TestResult = {
     response: {},
@@ -17,9 +18,11 @@ export function checkOnSearch(payload: Payload) {
   };
   const { context } = jsonRequest;
   const { message } = jsonRequest;
-  // BDD-style validation: context validation
+  const bppUri = context.bap_uri
+
+//   RedisService.setKey(`${bppUri}:onsearchCount`, "1", TTL_EXPIRY);
   try {
-    // Test: Should have valid context with transactionId and timestamp
+    // on_search1: Fulfillments.type should be ROUTE.
 
     expect(context).to.have.property("transaction_id").that.is.a("string").and
       .is.not.empty;

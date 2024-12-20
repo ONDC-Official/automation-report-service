@@ -26,16 +26,18 @@ export async function validationModule(groupedPayloads: {
 
     // Step 1: Validate Sequence
     for (let i = 0; i < requiredSequence.length; i++) {
+        
       const expectedAction = requiredSequence[i];
       const actualAction = payloads[i]?.action;
 
-      if (actualAction.toLowerCase() !== expectedAction) {
+      if (actualAction?.toLowerCase() !== expectedAction) {
         validSequence = false;
         errors.push(
-          `Error: Expected '${expectedAction}' at position ${i}, but found '${
+          `Error: Expected '${expectedAction}' after '${payloads[i-1].action.toLowerCase()}', but found '${
             actualAction || "undefined"
           }'.`
         );
+        break;
       }
     }
 

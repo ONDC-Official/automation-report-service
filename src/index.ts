@@ -1,16 +1,16 @@
 import express, { Request, Response } from "express";
 import reportRouter from "./routes/reportRoute";
-import { RedisService } from "ondc-automation-cache-lib";
+// import { RedisService } from "ondc-automation-cache-lib";
 import { logger } from "./utils/logger";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-try {
-  RedisService.useDb(2);
-} catch (err) {
-  logger.error(err);
-}
+// try {
+//   RedisService.useDb(2);
+// } catch (err) {
+//   logger.error(err);
+// }
 
 app.use(express.json());
 app.use("/generate-report", reportRouter);
