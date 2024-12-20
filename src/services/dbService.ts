@@ -1,5 +1,6 @@
 import { Payload } from "../types/payload";
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
 export async function fetchPayloads(sessionID: string): Promise<Payload[]> {
   const storageUrl = process.env.STORAGE_URL;

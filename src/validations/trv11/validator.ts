@@ -1,5 +1,6 @@
 import { ValidationAction } from "../../types/actions";
 import { TestResult } from "../../types/payload";
+import { logger } from "../../utils/logger";
 import { checkJsonResponse } from "./responseSchemaValidator";
 
 export const validate = async (
@@ -93,10 +94,11 @@ export const validate = async (
 
     return testResults;
   } catch (error: any) {
+    logger.error(error.message)
     return {
       response: {},
       passed: [],
-      failed: [`Error during ${action} test execution: ${error.message}`],
+      failed: [`Error during ${action} test execution`],
     };
   }
 };
