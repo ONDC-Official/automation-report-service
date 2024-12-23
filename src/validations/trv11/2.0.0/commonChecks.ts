@@ -12,12 +12,12 @@ export async function checkCommon(payload: Payload): Promise<TestResult> {
   const { jsonRequest } = payload;
   const { message } = jsonRequest;
 
-  const providers = message.order.providers;
-  const quote = message.order.quote;
+  const provider = message?.order?.provider;
+  const quote = message?.order?.quote;
 
   // 1. Process fulfillments only once
-  for (const provider of providers) {
-    const fulfillments = provider.fulfillments;
+
+    const fulfillments = provider?.fulfillments;
 
     // Validate unique IDs in fulfillments
     try {
@@ -62,7 +62,7 @@ export async function checkCommon(payload: Payload): Promise<TestResult> {
     } catch (error: any) {
       testResults.failed.push(`GPS and parent_item_id check: ${error.message}`);
     }
-  }
+  
 
   // 2. Valid titles for quote.breakup
   try {

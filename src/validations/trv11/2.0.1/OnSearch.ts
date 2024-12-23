@@ -4,7 +4,7 @@ import { logger } from "../../../utils/logger";
 
 export async function checkOnSearch(payload: Payload): Promise<TestResult> {
 
-  const action = payload?.jsonRequest?.context?.action;
+  const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
   
   const testResults: TestResult = {
@@ -32,7 +32,7 @@ export async function checkOnSearch(payload: Payload): Promise<TestResult> {
       testResults.failed.push(`Fulfillments.type is ROUTE: ${error.message}`);
     }
   }
-
+  testResults.passed.push(`Validated ${action}`);
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
   return testResults;
 }

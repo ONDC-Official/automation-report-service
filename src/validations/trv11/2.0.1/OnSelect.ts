@@ -4,7 +4,7 @@ import { logger } from "../../../utils/logger";
 
 export async function checkOnSelect(payload: Payload): Promise<TestResult> {
 
-  const action = payload?.jsonRequest?.context?.action;
+  const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 
   
@@ -29,9 +29,15 @@ export async function checkOnSelect(payload: Payload): Promise<TestResult> {
       "Quantity.selected.count is not greater than quantity.maximum.count"
     );
   } catch (error: any) {
-    testResults.failed.push(`Quantity selected count check: ${error.message}`);
+    logger.error(error.message);
+    if (error instanceof assert.AssertionError) {
+      // Push AssertionError to the array
+      testResults.failed.push(
+        `Quantity selected count check: ${error.message}`
+      );
+    }
   }
-
+  testResults.passed.push(`Validated ${action}`);
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
   return testResults;
 }

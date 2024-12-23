@@ -35,7 +35,7 @@ export async function generateReportController(req: Request, res: Response) {
 
     // Generate a custom HTML report based on the validation result
     const htmlReport = generateCustomHTMLReport(result);
-    
+
     // Send the generated HTML report as the response
     res.status(200).send(htmlReport);
   } catch (error) {

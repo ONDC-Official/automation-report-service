@@ -3,8 +3,8 @@ import { Payload, TestResult } from "../../../types/payload";
 import assert from "assert";
 
 export async function checkSearch(payload: Payload) {
-  
-  const action = payload?.jsonRequest?.context?.action;
+
+  const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 
   const jsonRequest = payload?.jsonRequest as any;
@@ -17,7 +17,7 @@ export async function checkSearch(payload: Payload) {
     failed: [],
   };
 
-  testResults.passed.push("Validated search");
+  testResults.passed.push(`Validated ${action}`);
 
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 

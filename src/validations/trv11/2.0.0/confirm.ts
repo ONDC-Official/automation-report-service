@@ -5,7 +5,7 @@ import { logger } from "../../../utils/logger";
 
 export async function checkConfirm(payload: Payload): Promise<TestResult> {
 
-  const action = payload?.jsonRequest?.context?.action;
+  const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
   
   const testResults: TestResult = {
@@ -32,6 +32,7 @@ export async function checkConfirm(payload: Payload): Promise<TestResult> {
   } catch (error: any) {
     testResults.failed.push(`Authorization.valid_to timestamp check: ${error.message}`);
   }
+  testResults.passed.push(`Validated ${action}`);
   // Apply common checks for all versions
   const commonResults = await checkCommon(payload);
   testResults.passed.push(...commonResults.passed);
