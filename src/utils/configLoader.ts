@@ -1,6 +1,7 @@
 import * as yaml from "js-yaml";
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "./logger";
 
 let cachedConfig: any = null;
 
@@ -11,7 +12,7 @@ export const loadConfig = () => {
       const configPath = path.join(__dirname, "../config/validationConfig.yaml");
       const fileContent = fs.readFileSync(configPath, "utf8");
       cachedConfig = yaml.load(fileContent);
-      console.log("Configuration loaded successfully.");
+      logger.info("Validation configuration loaded successfully.");
     } catch (error) {
       console.error("Error loading configuration:", error);
       throw error;
