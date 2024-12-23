@@ -1,12 +1,13 @@
+version: "3.8"
+
 services:
-  report-service:
+  app:
     build:
       context: .
+      dockerfile: Dockerfile
+    container_name: automation-report-service
+    ports:
+      - "3033:3000"
     env_file:
       - .env
-    volumes:
-      - .:/app
     restart: always
-    ports:
-      - "3033:7000"
-
