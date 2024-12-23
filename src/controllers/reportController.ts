@@ -19,6 +19,7 @@ export async function generateReportController(req: Request, res: Response) {
 
     // Fetch payloads from the database based on the sessionId
     const payloads = await fetchPayloads(sessionId);
+
     
     // Group and sort the fetched payloads by Flow ID
     const flows = groupAndSortPayloadsByFlowId(payloads);
@@ -31,7 +32,7 @@ export async function generateReportController(req: Request, res: Response) {
     }
 
     // If the 'UTILITY' environment variable is not "true", proceed with the validation module
-    const result = await validationModule(flows);  // Perform validation on the grouped payloads
+    const result = await validationModule(flows, sessionId);  // Perform validation on the grouped payloads
 
     // Generate a custom HTML report based on the validation result
     const htmlReport = generateCustomHTMLReport(result);

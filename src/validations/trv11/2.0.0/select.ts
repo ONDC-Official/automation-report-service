@@ -1,8 +1,9 @@
 import assert from "assert";
-import { Payload, TestResult } from "../../../types/payload";
+import { Payload, TestResult, WrappedPayload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 
-export async function checkSelect(payload: Payload): Promise<TestResult> {
+export async function checkSelect(element: WrappedPayload): Promise<TestResult> {
+  const payload = element?.payload;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 

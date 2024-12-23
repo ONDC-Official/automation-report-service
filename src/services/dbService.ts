@@ -1,8 +1,8 @@
-import { Payload } from "../types/payload";  // Import Payload type for type-checking the fetched data
+import { Payload, WrappedPayload } from "../types/payload";  // Import Payload type for type-checking the fetched data
 
 
 // Fetches payloads from a storage URL based on a provided session ID
-export async function fetchPayloads(sessionID: string): Promise<Payload[]> {
+export async function fetchPayloads(sessionID: string): Promise<WrappedPayload[]> {
   const storageUrl = process.env.STORAGE_URL;  // Get the storage URL from environment variables
   const dbUrl = `${storageUrl}/${sessionID}`;  // Construct the URL for the session-specific payloads
   

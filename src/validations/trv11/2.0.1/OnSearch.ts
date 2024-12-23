@@ -1,9 +1,10 @@
 import assert from "assert";
-import { Payload, TestResult } from "../../../types/payload";
+import { Payload, TestResult, WrappedPayload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
+import { RedisService } from "ondc-automation-cache-lib";
 
-export async function checkOnSearch(payload: Payload): Promise<TestResult> {
-
+export async function checkOnSearch(element: WrappedPayload): Promise<TestResult> {
+  const payload = element?.payload;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
   
@@ -15,6 +16,9 @@ export async function checkOnSearch(payload: Payload): Promise<TestResult> {
 
   const { jsonRequest, jsonResponse } = payload;
   const { message } = jsonRequest;
+  const uri= jsonRequest?.context?.bap_uri
+  
+// console.log( await RedisService.getKey(`${uri}:search`));
 
   const providers = message.catalog.providers;
 

@@ -1,21 +1,22 @@
 import { ValidationAction } from "../../types/actions";  // Importing ValidationAction type for valid actions
-import { TestResult, Payload } from "../../types/payload";  // Importing types for test results and payload
+import { TestResult, Payload, WrappedPayload } from "../../types/payload";  // Importing types for test results and payload
 import { logger } from "../../utils/logger";  // Importing logger utility to log errors
 import { checkJsonResponse } from "./responseSchemaValidator";  // Importing function to validate JSON response schema
 
 // Main validation function that processes the given payload based on the action
 export const validate = async (
-  element: Payload,  // The payload object that contains the data to be validated
-  action: ValidationAction  // The action type that specifies which validation test to run
+  element: WrappedPayload,  // The payload object that contains the data to be validated
+  action: ValidationAction , // The action type that specifies which validation test to run
+  sessionID: string
 ): Promise<TestResult> => {
   // Extracting version from the JSON request context
-  const version = element?.jsonRequest?.context?.version;
+  const version = element?.payload?.jsonRequest?.context?.version;
 
   // Initializing an object to store test results (passed, failed, and response data)
   let testResults: TestResult = { response: {}, passed: [], failed: [] };
 
   try {
-    const { jsonResponse } = element;
+    const { jsonResponse } = element?.payload;
 
     // If a JSON response is available, validate its schema
     if (jsonResponse) {
@@ -37,12 +38,12 @@ export const validate = async (
       // Helper function to run a specific test and handle its result
       const runTest = async (
         testFunction: Function,  // The specific test function to be executed
-        element: Payload,  // The payload to be passed to the test function
+        element: WrappedPayload,  // The payload to be passed to the test function
         testResults: TestResult  // The test results object to be updated
       ) => {
         try {
           // Execute the test function and wait for the result
-          const testResult = await testFunction(element);
+          const testResult = await testFunction(element, sessionID);
           
           // Add passed and failed results to the test results
           testResults.passed.push(...testResult.passed);
