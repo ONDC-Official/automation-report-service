@@ -1,9 +1,9 @@
-import { Payload } from "../types/payload";
+import { WrappedPayload } from "../types/payload";
 
 // Function to group payloads by flowId and sort within each group by createdAt
-export function groupAndSortPayloadsByFlowId(payloads: Payload[]): Record<string, Payload[]> {
-  return payloads.reduce((grouped, payload) => {
-    const { flowId } = payload;
+export function groupAndSortPayloadsByFlowId(payloads: WrappedPayload[]): Record<string, WrappedPayload[]> {
+  return payloads.reduce((grouped, element) => {
+    const { flowId } = element.payload;
 
     // Initialize the group if not already present
     if (!grouped[flowId]) {
@@ -11,12 +11,13 @@ export function groupAndSortPayloadsByFlowId(payloads: Payload[]): Record<string
     }
 
     // Push payload to the respective flowId group
-    grouped[flowId].push(payload);
+    grouped[flowId].push(element);
 
     // Sort the group by createdAt timestamp
-    grouped[flowId].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    grouped[flowId].sort(
+      (a, b) => new Date(a.payload.createdAt).getTime() - new Date(b.payload.createdAt).getTime()
+    );
 
     return grouped;
-  }, {} as Record<string, Payload[]>);
+  }, {} as Record<string, WrappedPayload[]>);
 }
-

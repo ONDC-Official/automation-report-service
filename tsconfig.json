@@ -5,10 +5,11 @@
       "module": "CommonJS",
       "outDir": "./dist",
       "strict": true,
+      "types": ["jest"],
       "esModuleInterop": true,
       "resolveJsonModule": true,
       "skipLibCheck": true
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "src/**/*.yaml", "src/config/validationConfig.yaml"],
     "exclude": ["node_modules", "dist"]
   }
