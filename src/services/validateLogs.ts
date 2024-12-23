@@ -2,7 +2,8 @@ import { ApiResponse } from "../types/utilityResponse";
 import axios, { AxiosError } from "axios";
 import { ParsedPayload } from "../types/parsedPayload";
 import { Result } from "../types/result";
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
 export async function validateFlows(parsedFlows: {
   [flowId: string]: ParsedPayload;

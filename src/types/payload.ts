@@ -14,6 +14,13 @@ export interface Payload {
   sessionDetails: Record<string, any>;
 }
 
+// Interface for the outer wrapper in the new format
+export interface WrappedPayload {
+  npType: string; // e.g., "BPP"
+  domain: string; // e.g., "ONDC:TRV11"
+  payload: Payload; // The actual payload object
+}
+
 export interface JsonRequest {
   context: Record<string, any>;
   messgae: Record<string, any>;

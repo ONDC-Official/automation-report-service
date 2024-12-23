@@ -1,16 +1,18 @@
 import express, { Request, Response } from "express";
 import reportRouter from "./routes/reportRoute";
-// import { RedisService } from "ondc-automation-cache-lib";
+import { RedisService } from "ondc-automation-cache-lib";
 import { logger } from "./utils/logger";
+
+import dotenv from "dotenv"; // Import dotenv to load environment variables
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// try {
-//   RedisService.useDb(2);
-// } catch (err) {
-//   logger.error(err);
-// }
+dotenv.config(); // Load environment variables from the .env file
+try {
+  RedisService.useDb(2);
+} catch (err) {
+  logger.error(err);
+}
 
 app.use(express.json());
 app.use("/generate-report", reportRouter);
