@@ -3,6 +3,7 @@ name: ONDC Automation Reporting Service Deployment
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   ssh-ec2:
