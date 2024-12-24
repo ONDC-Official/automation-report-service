@@ -247,8 +247,5 @@ export function generateCustomHTMLReport(
       </html>
     `;
 
-  console.log(
-    "HTML report generated successfully: flow_validation_report.html"
-  );
   return htmlContent;
 }

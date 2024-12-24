@@ -1,35 +1,40 @@
 import { logger } from "../../../utils/logger";
 import {
   JsonRequest,
-  Payload,
   TestResult,
   WrappedPayload,
 } from "../../../types/payload";
 import assert from "assert";
-import { RedisService } from "ondc-automation-cache-lib";
+import { saveData, fetchData, addTransactionId } from "../../../utils/redisUtils";
 
-export async function checkSearch(element: WrappedPayload) {
+export async function checkSearch(element: WrappedPayload, sessionID: string) {
   const payload = element?.payload;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 
-
-  const jsonRequest = payload?.jsonRequest as any;
+  const jsonRequest = payload?.jsonRequest as JsonRequest;
   const jsonResponse = payload?.jsonResponse as any;
-  const uri = jsonRequest?.context?.bap_uri;
+
+  const transactionId = jsonRequest.context.transaction_id;
+  const messageId = jsonRequest.context.message_id;
+
+  await addTransactionId(sessionID,transactionId);
+
+  await saveData(
+    sessionID,
+    transactionId,
+    "searchIntent",
+    jsonRequest?.messgae?.intent
+  );
+
   // Store results
   const testResults: TestResult = {
     response: {},
     passed: [],
     failed: [],
   };
-  RedisService.setKey(
-    `${uri}:search`,
-    JSON.stringify(payload.jsonRequest),
-    3600
-  );
+
   testResults.passed.push(`Validated ${action}`);
- 
 
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 

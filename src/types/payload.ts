@@ -22,11 +22,39 @@ export interface WrappedPayload {
 }
 
 export interface JsonRequest {
-  context: Record<string, any>;
+  context: Context
   messgae: Record<string, any>;
   error: Record<string, any>;
 }
 
+// contextTypes.ts
+
+export interface Country {
+  code: string;
+}
+
+export interface City {
+  code: string;
+}
+
+export interface Location {
+  country: Country;
+  city: City;
+}
+
+export interface Context {
+  location: Location;
+  domain: string;
+  action: string;
+  version: string;
+  bpp_id: string;
+  bap_uri: string;
+  bap_id: string;
+  transaction_id: string;
+  message_id: string;
+  timestamp: string;
+  ttl: string;
+}
 export interface TestResult {
   response: object;
   passed: string[];
