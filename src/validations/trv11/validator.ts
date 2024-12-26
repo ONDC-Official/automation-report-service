@@ -7,7 +7,8 @@ import { checkJsonResponse } from "./responseSchemaValidator";  // Importing fun
 export const validate = async (
   element: WrappedPayload,  // The payload object that contains the data to be validated
   action: ValidationAction , // The action type that specifies which validation test to run
-  sessionID: string
+  sessionID: string,
+  flowId:string
 ): Promise<TestResult> => {
   // Extracting version from the JSON request context
   const version = element?.payload?.jsonRequest?.context?.version;
@@ -42,8 +43,9 @@ export const validate = async (
         testResults: TestResult  // The test results object to be updated
       ) => {
         try {
+          
           // Execute the test function and wait for the result
-          const testResult = await testFunction(element, sessionID);
+          const testResult = await testFunction(element, sessionID,flowId);
           
           // Add passed and failed results to the test results
           testResults.passed.push(...testResult.passed);

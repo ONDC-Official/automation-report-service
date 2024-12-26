@@ -14,20 +14,17 @@ export async function checkOnCancel(element: WrappedPayload): Promise<TestResult
     failed: [],
   };
 
-  const { jsonRequest } = payload;
+  const { jsonRequest ,jsonResponse} = payload;
+  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
   const { cancellation_reason_id } = jsonRequest;
 
-  // Test: If technical cancellation is being made then cancellation_reason_id should be "0"
-  try {
-    assert.strictEqual(cancellation_reason_id, "0", "If technical cancellation, cancellation_reason_id should be '0'");
-    testResults.passed.push("Cancellation reason id is correct");
-  } catch (error: any) {
-    testResults.failed.push(`Cancellation reason id check: ${error.message}`);
-  }
-  testResults.passed.push(`Validated ${action}`);
+
  // Apply common checks for all versions
  const commonResults = await checkCommon(payload);
  testResults.passed.push(...commonResults.passed);
  testResults.failed.push(...commonResults.failed);
+
+ if (testResults.passed.length < 1)
+  testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

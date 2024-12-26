@@ -1,8 +1,13 @@
 import assert from "assert";
-import { Payload, TestResult, WrappedPayload } from "../../../types/payload";
+import { TestResult, WrappedPayload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
+import { fetchData } from "../../../utils/redisUtils";
 
-export async function checkSelect(element: WrappedPayload): Promise<TestResult> {
+export async function checkSelect(
+  element: WrappedPayload,
+  sessionID: string,
+  flowId: string
+): Promise<TestResult> {
   const payload = element?.payload;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
@@ -14,29 +19,47 @@ export async function checkSelect(element: WrappedPayload): Promise<TestResult> 
   };
 
   const { jsonRequest, jsonResponse } = payload;
-  const { items } = jsonRequest;
-  testResults.passed.push(`Validated ${action}`);
-  try {
-    // Quantity.selected.count can't be greater than quantity.maximum.count
-    items.forEach((item: any) => {
-      assert.ok(
-        item.quantity.selected.count <= item.quantity.maximum.count,
-        "Quantity.selected.count can't be greater than quantity.maximum.count"
+  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+  const { message } = jsonRequest;
+  console.log(JSON.stringify(message));
+
+  const transactionId = jsonRequest.context?.transaction_id;
+  logger.info("Validating items in select");
+  const items = message?.order?.items;
+  const onSearchItems = await fetchData(
+    sessionID,
+    transactionId,
+    "onSearchItemArr"
+  );
+
+  if (onSearchItems) {
+    // Validate each item's `quantity.selected.count` against the catalog's `quantity.maximum.count`
+
+    for (const item of items) {
+      const catalogItem = onSearchItems.value.find(
+        (catItem: any) => catItem?.id === item?.id
       );
-    });
-    testResults.passed.push(
-      "Quantity.selected.count is not greater than quantity.maximum.count"
-    );
-  } catch (error: any) {
-    logger.error(error.message);
-    if (error instanceof assert.AssertionError) {
-      // Push AssertionError to the array
-      testResults.failed.push(
-        `Quantity selected count check: ${error.message}`
-      );
+
+      if (!catalogItem) {
+        console.error(`Catalog item with ID ${item.id} not found.`);
+        continue;
+      }
+
+      try {
+        // Assert that selected count is less than or equal to maximum count
+        assert.ok(
+          item.quantity.selected.count <= catalogItem.quantity.maximum.count,
+          `Item ${item?.id}: Selected count (${item.quantity.selected.count}) exceeds the maximum count (${catalogItem.quantity.maximum.count}) in the catalog.`
+        );
+        testResults.passed.push(`Valid item quantity for item id: ${item?.id}`);
+      } catch (error: any) {
+        logger.error(error.message);
+        testResults.failed.push(`${error.message}`);
+      }
     }
   }
 
-  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+  if (testResults.passed.length < 1)
+    testResults.passed.push(`Validated ${action}`);
   return testResults;
 }
