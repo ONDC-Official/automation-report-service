@@ -11,10 +11,11 @@ export const saveData = async (
   try {
     // Create a unique key in the format sessionId:transactionId:key
     const redisKey = `${sessionId}:${transactionId}:${key}`;
-
+ 
     // Serialize the JSON object to a string
     const serializedValue = JSON.stringify(value);
-
+    
+   
     // Save the serialized value with optional TTL
     await RedisService.setKey(redisKey, serializedValue, 3600);
   } catch (error) {
@@ -30,7 +31,7 @@ export const fetchData = async (
 ): Promise<Record<string, any> | null> => {
   try {
     const redisKey = `${sessionId}:${transactionId}:${key}`;
-
+    
     // Fetch the serialized value
     const serializedValue = await RedisService.getKey(redisKey);
 
@@ -38,7 +39,6 @@ export const fetchData = async (
       logger.error(`No data found for key: ${redisKey}`);
       return null;
     }
-
     // Deserialize the JSON object
     const value = JSON.parse(serializedValue);
 
@@ -49,74 +49,84 @@ export const fetchData = async (
   }
 };
 
-// Map to store session and transaction IDs with timestamps
-const sessionTransactionMap = new Map<string, { transactionId: string, timestamp: number }[]>();
+
+const sessionTransactionMap = new Map<
+  string,
+  Map<string, { transactionId: string }[]>
+>();
 
 /**
- * Add a transaction ID to a session's set with timestamp.
+ * Add a transaction ID to a session's flow.
  * @param {string} sessionId - The session ID.
+ * @param {string} flowId - The flow ID.
  * @param {string} transactionId - The transaction ID to add.
  */
 export const addTransactionId = async (
   sessionId: string,
+  flowId: string,
   transactionId: string
 ) => {
-  const timestamp = Date.now(); // Get the current timestamp
-
-  // Check if the sessionId exists in the map
+  // Check if the sessionId exists; initialize with a new Map containing the flowId if it doesn't
   if (!sessionTransactionMap.has(sessionId)) {
-    sessionTransactionMap.set(sessionId, []);
+    const flowMap = new Map<string, { transactionId: string }[]>();
+    flowMap.set(flowId, []); // Initialize the flowId with an empty array
+    sessionTransactionMap.set(sessionId, flowMap);
   }
 
-  // Add the transaction ID along with the timestamp to the session's list
-  sessionTransactionMap.get(sessionId)?.push({ transactionId, timestamp });
+  // Get the flow map for the session
+  const flowMap = sessionTransactionMap.get(sessionId);
 
-  // Save this data to Redis, only saving the array of transactions
+  // Ensure the flow exists in the session
+  if (!flowMap?.has(flowId)) {
+    flowMap?.set(flowId, []);
+  }
+
+  // Add the transaction ID to the flow's array
+  flowMap?.get(flowId)?.push({ transactionId });
+
+  // Convert the nested structure to an object for storage in Redis
+  const sessionData = Object.fromEntries(
+    Array.from(flowMap?.entries() || []).map(([key, value]) => [key, value])
+  );
+
+
   await RedisService.setKey(
     `${sessionId}:transactionMap`,
-    JSON.stringify(sessionTransactionMap.get(sessionId))
+    JSON.stringify(sessionData)
   );
 };
 
 /**
- * Get all sorted transaction IDs for a session based on timestamp.
+ * Get all transaction IDs for a specific session and flow.
  * @param {string} sessionId - The session ID.
- * @returns {string[]} - Array of sorted transaction IDs for the session.
+ * @param {string} flowId - The flow ID.
+ * @returns {Promise<string[]>} - Array of transaction IDs for the session and flow.
  */
 export const getTransactionIds = async (
-  sessionId: string
-): Promise<string[]> => {
-  const sessionTransactionData = await RedisService.getKey(
-    `${sessionId}:transactionMap`
-  );
-
-  if (!sessionTransactionData) {
-    logger.error(`No transaction IDs found for session "${sessionId}".`);
-    return [];
-  }
-
-  // Parse the data and ensure it's an array of objects with `transactionId` and `timestamp`
-  const transactions = JSON.parse(sessionTransactionData);
-
-  // Check if the data is in the expected array format
-  if (!Array.isArray(transactions)) {
-    logger.error(`Invalid data format for session "${sessionId}".`);
-    return [];
-  }
-
-  // Sort the transactions by timestamp
-  const sortedTransactions = transactions.sort(
-    (a: { timestamp: number }, b: { timestamp: number }) => a.timestamp - b.timestamp
-  );
-
-  // Save the sorted data to Redis
-  await RedisService.setKey(
-    `${sessionId}:sortedTransactions`,
-    JSON.stringify(sortedTransactions)
-  );
-
-  // Return the sorted transaction IDs
-  return sortedTransactions.map(
-    (transaction: { transactionId: string }) => transaction.transactionId
-  );
-};
+    sessionId: string,
+    flowId: string
+  ): Promise<string[]> => {
+    // Retrieve session data from Redis
+    const sessionTransactionData = await RedisService.getKey(
+      `${sessionId}:transactionMap`
+    );
+  
+    if (!sessionTransactionData) {
+      logger.error(`No transaction data found for session "${sessionId}".`);
+      return [];
+    }
+  
+    // Parse the data as a nested object structure
+    const sessionData: Record<string, { transactionId: string }[]> = JSON.parse(sessionTransactionData);
+  
+    // Check if the flowId exists in the session data
+    const transactions = sessionData[flowId];
+  
+    if (!transactions) {
+      logger.error(`No transactions found for flow "${flowId}" in session "${sessionId}".`);
+      return [];
+    }
+  
+    // Extract only the transactionId values and return them
+    return transactions.map((transaction) => transaction.transactionId);
+  };

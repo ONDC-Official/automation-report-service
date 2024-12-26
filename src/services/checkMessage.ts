@@ -6,7 +6,8 @@ const dynamicValidator = (
   modulePathWithFunc: string,  // The full path to the module and function (e.g., 'module#function')
   element: any,  // The payload or element to be validated
   action: string , // The action to be validated (e.g., 'search', 'init')
-  sessionID: string
+  sessionID: string,
+  flowId:string
 ) => {
   // Splitting the modulePathWithFunc string into module path and function name
   const [modulePath, functionName] = modulePathWithFunc.split("#");
@@ -20,7 +21,7 @@ const dynamicValidator = (
 
     // If the function exists and is valid, invoke it with the element and action
     if (typeof validatorFunc === "function") {
-      return validatorFunc(element, action, sessionID);
+      return validatorFunc(element, action, sessionID,flowId);
     } else {
       // Throw an error if the function is not found within the module
       throw new Error(
@@ -39,7 +40,8 @@ export const checkMessage = async (
   domain: string,  // The domain (e.g., 'search', 'select') to determine the appropriate validation module
   element: WrappedPayload,  // The payload or element to be validated
   action: string , // The specific action to be validated (e.g., 'init', 'confirm')
-  sessionId: string
+  sessionId: string,
+  flowId:string
 ): Promise<object> => {
   // Load the configuration object using the config loader function (cached configuration)
   const config = loadConfig();
@@ -59,5 +61,5 @@ export const checkMessage = async (
   const modulePathWithFunc = domainConfig[version] || domainConfig["default"];
 
   // Call the dynamicValidator to load and execute the validation function for the given domain, element, and action
-  return dynamicValidator(modulePathWithFunc, element, action, sessionId);
+  return dynamicValidator(modulePathWithFunc, element, action, sessionId, flowId);
 };

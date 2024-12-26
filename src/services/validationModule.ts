@@ -78,7 +78,7 @@ export async function validationModule(groupedPayloads: {
 
         try {
           // Validate the message based on the domain, payload, and action
-          const result = await checkMessage(domain, element, action, sessionID);
+          const result = await checkMessage(domain, element, action, sessionID, flowId);
 
           // Store the result in the messages object, using action and counter as keys
           messages[`${action}_${actionCounters[action]}`] =

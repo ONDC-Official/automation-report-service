@@ -11,7 +11,7 @@ export const flowConfig: { [key: string]: string[] } = {
       "confirm",
       "on_confirm",
     ],
-    STATION_CODE: [
+    STATION_CODE_FLOW: [
         "search",
         "on_search",
         "search",
@@ -22,5 +22,21 @@ export const flowConfig: { [key: string]: string[] } = {
         "on_init",
         "confirm",
         "on_confirm",
+        "status",
+        "on_status"
     ],
+    CANCEL_FLOW: [
+      "search",
+      "on_search",
+      "search",
+      "on_search",
+      "select",
+      "on_select",
+      "init",
+      "on_init",
+      "confirm",
+      "on_confirm",
+      "cancel",
+      "on_cancel"
+  ],
   };

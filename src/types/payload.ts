@@ -23,7 +23,7 @@ export interface WrappedPayload {
 
 export interface JsonRequest {
   context: Context
-  messgae: Record<string, any>;
+  message: Record<string, any>;
   error: Record<string, any>;
 }
 

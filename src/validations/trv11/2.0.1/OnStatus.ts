@@ -15,6 +15,7 @@ export async function checkOnStatus(element: WrappedPayload): Promise<TestResult
   };
 
   const { jsonRequest, jsonResponse } = payload;
+  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
   const { fulfillments, context, authorization } = jsonRequest;
 
   // Test: Fulfillments array length should be proportional to selected count where each fulfillment obj will refer to an individual TICKET
@@ -32,14 +33,15 @@ export async function checkOnStatus(element: WrappedPayload): Promise<TestResult
   } catch (error: any) {
     testResults.failed.push(`Authorization.valid_to timestamp check: ${error.message}`);
   }
-  testResults.passed.push(`Validated ${action}`);
 
     // Apply common checks for all versions
     const commonResults = await checkCommon(payload);
     testResults.passed.push(...commonResults.passed);
     testResults.failed.push(...commonResults.failed);
 
-    if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+
+    if (testResults.passed.length < 1)
+      testResults.passed.push(`Validated ${action}`);
 
   return testResults;
 }
