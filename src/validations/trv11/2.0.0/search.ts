@@ -8,6 +8,7 @@ import assert from "assert";
 import {
   saveData,
   fetchData,
+  updateApiMap,
   addTransactionId,
   getTransactionIds,
 } from "../../../utils/redisUtils";
@@ -16,7 +17,7 @@ export async function checkSearch(
   element: WrappedPayload,
   sessionID: string,
   flowId: string
-) {
+): Promise<TestResult> {
   const payload = element?.payload;
 
   const action = payload?.action?.toLowerCase();
@@ -34,15 +35,20 @@ export async function checkSearch(
   if (jsonResponse?.response) testResults.response = jsonResponse.response;
 
   const transactionId = jsonRequest.context.transaction_id;
-
+  try {
+    await updateApiMap(sessionID, transactionId, action);
+  } catch (error: any) {
+    logger.error(`${error.message}`);
+  }
   await addTransactionId(sessionID, flowId, transactionId);
-
   const transactionMap = await getTransactionIds(sessionID, flowId);
 
+  //checks for search_2
   if (transactionMap.length > 1 && transactionId === transactionMap[1]) {
-    logger.info(`Validating stops for transactionId: ${transactionId}`);
+    logger.info(
+      `Validating stops for transactionId: ${transactionId} for search_2`
+    );
     const fulfillment = jsonRequest?.message?.intent?.fulfillment;
-    console.log(fulfillment);
 
     try {
       // Fetch fulfillment map
@@ -51,7 +57,6 @@ export async function checkSearch(
         transactionMap[0],
         `stopCodesSet`
       );
-      console.log(stopCodesSet);
 
       if (!stopCodesSet) {
         logger.error("Fulfillment map is empty or not found.");

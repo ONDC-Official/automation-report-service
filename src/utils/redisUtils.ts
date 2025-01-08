@@ -2,6 +2,14 @@ import { RedisService } from "ondc-automation-cache-lib";
 import { logger } from "./logger";
 
 // Function to save data under sessionId and transactionId
+
+/**
+ * Saves key value pairs under sessionId and transactionId.
+ * @param {string} sessionId - The session ID.
+ * @param {string} transactionId - The transaction ID.
+ * @param {string} key - The key to add.
+ * @param {string} value - The value to add.
+ */
 export const saveData = async (
   sessionId: string,
   transactionId: string,
@@ -11,11 +19,10 @@ export const saveData = async (
   try {
     // Create a unique key in the format sessionId:transactionId:key
     const redisKey = `${sessionId}:${transactionId}:${key}`;
- 
+
     // Serialize the JSON object to a string
     const serializedValue = JSON.stringify(value);
-    
-   
+
     // Save the serialized value with optional TTL
     await RedisService.setKey(redisKey, serializedValue, 3600);
   } catch (error) {
@@ -31,7 +38,7 @@ export const fetchData = async (
 ): Promise<Record<string, any> | null> => {
   try {
     const redisKey = `${sessionId}:${transactionId}:${key}`;
-    
+
     // Fetch the serialized value
     const serializedValue = await RedisService.getKey(redisKey);
 
@@ -48,7 +55,6 @@ export const fetchData = async (
     return null;
   }
 };
-
 
 const sessionTransactionMap = new Map<
   string,
@@ -89,7 +95,6 @@ export const addTransactionId = async (
     Array.from(flowMap?.entries() || []).map(([key, value]) => [key, value])
   );
 
-
   await RedisService.setKey(
     `${sessionId}:transactionMap`,
     JSON.stringify(sessionData)
@@ -103,30 +108,59 @@ export const addTransactionId = async (
  * @returns {Promise<string[]>} - Array of transaction IDs for the session and flow.
  */
 export const getTransactionIds = async (
-    sessionId: string,
-    flowId: string
-  ): Promise<string[]> => {
-    // Retrieve session data from Redis
-    const sessionTransactionData = await RedisService.getKey(
-      `${sessionId}:transactionMap`
+  sessionId: string,
+  flowId: string
+): Promise<string[]> => {
+  // Retrieve session data from Redis
+  const sessionTransactionData = await RedisService.getKey(
+    `${sessionId}:transactionMap`
+  );
+
+  if (!sessionTransactionData) {
+    logger.error(`No transaction data found for session "${sessionId}".`);
+    return [];
+  }
+
+  // Parse the data as a nested object structure
+  const sessionData: Record<string, { transactionId: string }[]> = JSON.parse(
+    sessionTransactionData
+  );
+
+  // Check if the flowId exists in the session data
+  const transactions = sessionData[flowId];
+
+  if (!transactions) {
+    logger.error(
+      `No transactions found for flow "${flowId}" in session "${sessionId}".`
     );
-  
-    if (!sessionTransactionData) {
-      logger.error(`No transaction data found for session "${sessionId}".`);
-      return [];
+    return [];
+  }
+
+  // Extract only the transactionId values and return them
+  return transactions.map((transaction) => transaction.transactionId);
+};
+
+export async function updateApiMap(
+  sessionID: string,
+  transactionId: string,
+  action: string
+) {
+  // Fetch the current apiMap
+  try {
+    let apiMap = await fetchData(sessionID, transactionId, "apiMap");
+
+    // Extract the `value` field
+    apiMap = apiMap?.value;
+    // If apiMap exists, push the new action
+    if (apiMap && apiMap.length > 0) {
+      apiMap.push(action);
+    } else {
+      // If apiMap does not exist, initialize it with the new action
+      apiMap = [action];
     }
-  
-    // Parse the data as a nested object structure
-    const sessionData: Record<string, { transactionId: string }[]> = JSON.parse(sessionTransactionData);
-  
-    // Check if the flowId exists in the session data
-    const transactions = sessionData[flowId];
-  
-    if (!transactions) {
-      logger.error(`No transactions found for flow "${flowId}" in session "${sessionId}".`);
-      return [];
-    }
-  
-    // Extract only the transactionId values and return them
-    return transactions.map((transaction) => transaction.transactionId);
-  };
+    // Save the updated apiMap
+    await saveData(sessionID, transactionId, "apiMap", { value: apiMap });
+  } catch (error: any) {
+    logger.error(`${error.message}`);
+  }
+}

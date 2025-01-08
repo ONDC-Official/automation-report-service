@@ -8,7 +8,9 @@
       "types": ["jest"],
       "esModuleInterop": true,
       "resolveJsonModule": true,
-      "skipLibCheck": true
+      "skipLibCheck": true,
+      "allowSyntheticDefaultImports": true
+  
     },
     "include": ["src/**/*", "src/**/*.yaml", "src/config/validationConfig.yaml"],
     "exclude": ["node_modules", "dist"]

@@ -1,6 +1,10 @@
 import { TestResult, WrappedPayload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
-import { getTransactionIds, saveData } from "../../../utils/redisUtils";
+import {
+  getTransactionIds,
+  saveData,
+  updateApiMap,
+} from "../../../utils/redisUtils";
 import assert from "assert";
 
 export async function checkOnSearch(
@@ -28,7 +32,8 @@ export async function checkOnSearch(
 
   const { message } = jsonRequest;
   const transactionId = jsonRequest.context?.transaction_id;
-
+  await updateApiMap(sessionID, transactionId, action);
+ 
   const transactionMap = await getTransactionIds(sessionID, flowId);
 
   const providers = message.catalog?.providers || [];
@@ -39,7 +44,7 @@ export async function checkOnSearch(
     const fulfillments = provider.fulfillments || [];
     const items = provider.items || [];
 
-    // Check for on_search_1
+    // Checks for on_search_1
     if (transactionId === transactionMap[0]) {
       logger.info("Validating fulfillments for on_search_1");
 
@@ -75,10 +80,45 @@ export async function checkOnSearch(
         logger.error(`Error during on_search_1 validation: ${error.message}`);
         testResults.failed.push(`${error.message}`);
       }
+
+      logger.info("Iterating and saving items for on_search_1");
+      try {
+        await saveData(sessionID, transactionId, "onSearchItemArr", {
+          value: items,
+        });
+      } catch (error) {
+        logger.error(error);
+      }
+
+      logger.info("Checking minimum and maximum item quantity in items");
+      try {
+        assert.ok(
+          items.every(
+            (item: any) =>
+              item?.quantity?.minimum?.count < item?.quantity?.maximum?.count,
+            "Quantity.minimum.count can't be greater than quantity.maximum.count at items"
+          )
+        );
+        testResults.passed.push(
+          "Valid items/quantity maximum and minimum count"
+        );
+      } catch (error: any) {
+        logger.error(`Error during on_search_2 validation: ${error.message}`);
+        testResults.failed.push(`${error.message}`);
+      }
     }
 
-    // Check for on_search_2
+    // Checks for on_search_2
     if (transactionMap.length > 1 && transactionId === transactionMap[1]) {
+      logger.info("Iterating and saving items for on_search_2");
+      try {
+        await saveData(sessionID, transactionId, "onSearchItemArr", {
+          value: items,
+        });
+      } catch (error) {
+        logger.error(error);
+      }
+
       logger.info("Validating fulfillments for on_search_2");
 
       try {
@@ -91,26 +131,6 @@ export async function checkOnSearch(
         logger.error(`Error during on_search_2 validation: ${error.message}`);
         testResults.failed.push(`${error.message}`);
       }
-    }
-
-    logger.info("Validating items for on_search_2");
-    try {
-      await saveData(sessionID, transactionId, "onSearchItemArr", {value:items});
-    } catch (error) {
-      logger.error(error)
-    }
-    try {
-      assert.ok(
-        items.every(
-          (item: any) =>
-            item?.quantity?.minimum?.count < item?.quantity?.maximum?.count,
-          "Quantity.minimum.count can't be greater than quantity.maximum.count at items."
-        )
-      );
-      testResults.passed.push("Valid items/quantity maximum and minimum count");
-    } catch (error: any) {
-      logger.error(`Error during on_search_2 validation: ${error.message}`);
-      testResults.failed.push(`${error.message}`);
     }
   }
 
