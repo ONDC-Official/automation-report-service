@@ -1,7 +1,7 @@
 import assert from "assert";
 import { TestResult, WrappedPayload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
-import { fetchData } from "../../../utils/redisUtils";
+import { fetchData, updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkSelect(
   element: WrappedPayload,
@@ -21,9 +21,9 @@ export async function checkSelect(
   const { jsonRequest, jsonResponse } = payload;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
   const { message } = jsonRequest;
-  console.log(JSON.stringify(message));
 
   const transactionId = jsonRequest.context?.transaction_id;
+  await updateApiMap(sessionID, transactionId, action);
   logger.info("Validating items in select");
   const items = message?.order?.items;
   const onSearchItems = await fetchData(

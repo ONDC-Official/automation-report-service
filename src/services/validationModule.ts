@@ -1,12 +1,9 @@
-import {
-  FlowValidationResult,
-  Payload,
-  WrappedPayload,
-} from "../types/payload"; // Importing types for flow validation results and payload structure
+import { FlowValidationResult, WrappedPayload } from "../types/payload"; // Importing types for flow validation results and payload structure
 import { flowConfig } from "../config/flowConfig"; // Import flow configuration for the sequence of expected actions
 import { checkMessage } from "./checkMessage"; // Import the checkMessage function for validating the actions
 import { actions } from "../utils/constants"; // Import available actions for validation
 import { ValidationAction } from "../types/actions"; // Import the type for valid validation actions
+import { logger } from "../utils/logger";
 
 // Type guard to ensure the action is a valid ValidationAction from the predefined actions list
 function isValidAction(action: string): action is ValidationAction {
@@ -14,20 +11,25 @@ function isValidAction(action: string): action is ValidationAction {
 }
 
 // Validation Module for processing grouped payloads and validating their sequence and actions
-export async function validationModule(groupedPayloads: {
-  [flowId: string]: WrappedPayload[]; // Grouping payloads by flowId
-}, sessionID:string): Promise<{ [flowId: string]: FlowValidationResult }> {
+export async function validationModule(
+  groupedPayloads: {
+    [flowId: string]: WrappedPayload[]; // Grouping payloads by flowId
+  },
+  sessionID: string
+): Promise<{ [flowId: string]: FlowValidationResult }> {
   // Return type that contains validation results per flowId
   const requiredSequence = flowConfig["default"]; // Retrieve the required sequence of actions from config
   const finalReport: { [flowId: string]: FlowValidationResult } = {}; // Initialize an object to store the final validation report
 
   // Iterate through each flowId in the grouped payloads
   for (const flowId in groupedPayloads) {
+    const testedFlows = [];
+    testedFlows.push(flowId);
     const payloads = groupedPayloads[flowId]; // Get the payloads for the current flowId
     const errors: string[] = []; // Initialize an array to store errors for the flow
     const messages: any = {}; // Initialize an object to store validation messages for each action
     let validSequence = true; // Flag to track whether the sequence of actions is valid
-
+    logger.info(`Validating ${flowId}......`);
     // Step 1: Validate Action Sequence for each flow
     for (let i = 0; i < requiredSequence.length; i++) {
       let expectedAction = requiredSequence[i]; // Get the expected action from the sequence
@@ -63,6 +65,7 @@ export async function validationModule(groupedPayloads: {
       update: 1,
       on_update: 1,
       on_status: 1,
+      status:1
     };
 
     // Step 2: Process Each Payload Using checkMessage
@@ -78,7 +81,13 @@ export async function validationModule(groupedPayloads: {
 
         try {
           // Validate the message based on the domain, payload, and action
-          const result = await checkMessage(domain, element, action, sessionID, flowId);
+          const result = await checkMessage(
+            domain,
+            element,
+            action,
+            sessionID,
+            flowId
+          );
 
           // Store the result in the messages object, using action and counter as keys
           messages[`${action}_${actionCounters[action]}`] =

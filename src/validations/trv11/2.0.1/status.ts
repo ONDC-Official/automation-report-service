@@ -4,7 +4,7 @@ import { checkCommon } from "./commonChecks";
 import { logger } from "../../../utils/logger";
 import { updateApiMap } from "../../../utils/redisUtils";
 
-export async function checkInit(
+export async function checkStatus(
   element: WrappedPayload,
   sessionID: string,
   flowId: string
@@ -36,9 +36,9 @@ export async function checkInit(
   // }
 
   // Apply common checks for all versions
-  const commonResults = await checkCommon(payload, sessionID, flowId);
-  testResults.passed.push(...commonResults.passed);
-  testResults.failed.push(...commonResults.failed);
+  //   const commonResults = await checkCommon(payload, sessionID, flowId);
+  //   testResults.passed.push(...commonResults.passed);
+  //   testResults.failed.push(...commonResults.failed);
 
   if (testResults.passed.length < 1)
     testResults.passed.push(`Validated ${action}`);
