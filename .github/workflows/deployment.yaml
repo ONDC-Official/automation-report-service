@@ -42,6 +42,20 @@ jobs:
           fi
           EOF
 
+          
+      - name: Install Loki Plugin on Remote Host
+        run: |
+          ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
+          # Check if Loki plugin is installed
+          if ! docker plugin ls | grep -q loki; then
+            echo "Loki plugin not found. Installing..."
+            sudo docker plugin install grafana/loki-docker-driver:3.3.2-arm64 --alias loki --grant-all-permissions
+          else
+            echo "Loki plugin is already installed."
+          fi
+          EOF
+
+          
       - name: Write secrets to .env on EC2
         run: |
           echo "Writing secrets to .env file"
