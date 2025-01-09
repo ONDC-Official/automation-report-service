@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: automation-report-service
     ports:
-      - "3033:3000"
+      - "3036:3000"
     env_file:
       - .env
     restart: always

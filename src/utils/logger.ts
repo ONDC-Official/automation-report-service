@@ -1,6 +1,6 @@
 import { createLogger, format, transports } from "winston";
 const { combine, timestamp, printf, colorize } = format;
-import LokiTransport from "winston-loki";
+
 
 // Custom log format
 const customFormat = printf(({ level, message, timestamp }) => {
