@@ -76,7 +76,7 @@ jobs:
           echo ".env and docker-compose.yml files found."
           EOF
 
-      - name: Automation Mock Server Deployment
+      - name: Automation Reporting Service Deployment
         run: |
           echo "Deploying with Docker Compose"
           ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
