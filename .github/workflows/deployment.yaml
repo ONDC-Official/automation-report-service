@@ -41,7 +41,7 @@ jobs:
             echo "Docker Compose is already installed."
           fi
           EOF
-
+          
       - name: Write secrets to .env on EC2
         run: |
           echo "Writing secrets to .env file"
