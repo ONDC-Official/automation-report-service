@@ -22,7 +22,7 @@ export async function checkOnStatus(
 
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
-  
+
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
   const { context, message } = jsonRequest;
   const contextTimestamp = context?.timestamp;
@@ -102,6 +102,21 @@ export async function checkOnStatus(
     // Log and record the failure reason
     testResults.failed.push(error.message);
   }
+
+  if (flowId === "DELAYED_CANCELlATION_FLOW") {
+    try {
+      assert.ok(
+        message?.order?.status === "COMPLETED",
+        `Order status should be 'COMPLETED'`
+      );
+      testResults.passed.push(
+        `Order status is valid, current status : ${message?.order?.status}`
+      );
+    } catch (error: any) {
+      testResults.failed.push(`${error?.message}`);
+    }
+  }
+
   if (testResults.passed.length < 1)
     testResults.passed.push(`Validated ${action}`);
 

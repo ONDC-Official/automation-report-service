@@ -40,14 +40,30 @@ export async function checkOnCancel(
         testResults.failed.push(`${error?.message}`);
       }
     } else if (apiMap[apiMap.length - 1] === "confirm_cancel") {
-      try {
-        assert.ok(
-          orderStatus === "CANCELLED",
-          `Order status should be 'CANCELLED'`
-        );
-        testResults.passed.push(`Order status is valid : ${orderStatus}`);
-      } catch (error: any) {
-        testResults.failed.push(`${error?.message}`);
+      if (flowId === "USER_CANCEL_FLOW" || flowId === "TECHNICAL_CANCEL_FLOW") {
+        try {
+          assert.ok(
+            orderStatus === "CANCELLED",
+            `Order status should be valid, current status:  ${orderStatus}`
+          );
+          testResults.passed.push(`Order status is valid : ${orderStatus}`);
+        } catch (error: any) {
+          testResults.failed.push(`${error?.message}`);
+        }
+      }
+      if (
+        flowId === "DELAYED_CANCEL_REJECTED_FLOW" ||
+        flowId === "DELAYED_CANCEL_ACCEPTED_FLOW"
+      ) {
+        try {
+          assert.ok(
+            orderStatus === "CANCELLATION_INITIATED",
+            `Order status should be valid, current status:  ${orderStatus}`
+          );
+          testResults.passed.push(`Order status is valid : ${orderStatus}`);
+        } catch (error: any) {
+          testResults.failed.push(`${error?.message}`);
+        }
       }
     }
   }

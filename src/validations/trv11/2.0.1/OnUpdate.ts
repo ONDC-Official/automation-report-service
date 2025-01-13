@@ -24,7 +24,21 @@ export async function checkOnUpdate(
 
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
-  const { fulfillments, message } = jsonRequest;
+  const { message } = jsonRequest;
+
+  if (flowId === "DELAYED_CANCELlATION_FLOW") {
+    try {
+      assert.ok(
+        message?.order?.status === "CANCELLED",
+        `Order status should be 'CANCELLED'`
+      );
+      testResults.passed.push(
+        `Order status is valid, current status : ${message?.order?.status}`
+      );
+    } catch (error: any) {
+      testResults.failed.push(`${error?.message}`);
+    }
+  }
 
   // Apply common checks for all versions
   const commonResults = await checkCommon(payload, sessionID, flowId);

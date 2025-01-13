@@ -33,20 +33,17 @@ export async function checkOnSearch(
   const { message } = jsonRequest;
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
- 
-  const transactionMap = await getTransactionIds(sessionID, flowId);
 
   const providers = message.catalog?.providers || [];
-  const fulfillmentMap = new Map();
 
   // Iterate over providers
   for (const provider of providers) {
     const fulfillments = provider.fulfillments || [];
-    const items = provider.items || [];
+    const items = provider.items;
 
     // Checks for on_search_1
-    if (transactionId === transactionMap[0]) {
-      logger.info("Validating fulfillments for on_search_1");
+    if (!items) {
+      logger.info("Validating fulfillments for on_search");
 
       try {
         assert.ok(
@@ -56,38 +53,34 @@ export async function checkOnSearch(
           "Fulfillments.type should be ROUTE"
         );
         testResults.passed.push("Fulfillments.type is ROUTE");
-
-        // Populate fulfillment map
-        for (const fulfillment of fulfillments) {
-          if (fulfillment.stops) {
-            const stopCodesSet = new Set(
-              fulfillment.stops.map(
-                (stop: any) => stop.location?.descriptor?.code
-              )
-            );
-            // Convert the Set back to an array to store the unique codes
-            const uniqueStopCodes = Array.from(stopCodesSet);
-
-            await saveData(
-              sessionID,
-              transactionId,
-              `stopCodesSet`,
-              uniqueStopCodes
-            );
-          }
-        }
       } catch (error: any) {
         logger.error(`Error during on_search_1 validation: ${error.message}`);
         testResults.failed.push(`${error.message}`);
       }
+    }
 
-      logger.info("Iterating and saving items for on_search_1");
+    // Checks for on_search_2
+    if (items) {
+      logger.info("Iterating and saving items for on_search");
       try {
         await saveData(sessionID, transactionId, "onSearchItemArr", {
           value: items,
         });
       } catch (error) {
         logger.error(error);
+      }
+
+      logger.info("Validating fulfillments for on_search");
+
+      try {
+        assert.ok(
+          fulfillments.every((fulfillment: any) => fulfillment.type === "TRIP"),
+          "Fulfillments.type should be TRIP"
+        );
+        testResults.passed.push("Fulfillments.type is TRIP");
+      } catch (error: any) {
+        logger.error(`Error during on_search_2 validation: ${error.message}`);
+        testResults.failed.push(`${error.message}`);
       }
 
       logger.info("Checking minimum and maximum item quantity in items");
@@ -103,32 +96,7 @@ export async function checkOnSearch(
           "Valid items/quantity maximum and minimum count"
         );
       } catch (error: any) {
-        logger.error(`Error during on_search_2 validation: ${error.message}`);
-        testResults.failed.push(`${error.message}`);
-      }
-    }
-
-    // Checks for on_search_2
-    if (transactionMap.length > 1 && transactionId === transactionMap[1]) {
-      logger.info("Iterating and saving items for on_search_2");
-      try {
-        await saveData(sessionID, transactionId, "onSearchItemArr", {
-          value: items,
-        });
-      } catch (error) {
-        logger.error(error);
-      }
-
-      logger.info("Validating fulfillments for on_search_2");
-
-      try {
-        assert.ok(
-          fulfillments.every((fulfillment: any) => fulfillment.type === "TRIP"),
-          "Fulfillments.type should be TRIP"
-        );
-        testResults.passed.push("Fulfillments.type is TRIP");
-      } catch (error: any) {
-        logger.error(`Error during on_search_2 validation: ${error.message}`);
+        logger.error(`Error during on_search validation: ${error.message}`);
         testResults.failed.push(`${error.message}`);
       }
     }
