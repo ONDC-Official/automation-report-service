@@ -42,14 +42,13 @@ export async function checkSearch(
   }
   await addTransactionId(sessionID, flowId, transactionId);
   const transactionMap = await getTransactionIds(sessionID, flowId);
-
+  const fulfillment = jsonRequest?.message?.intent?.fulfillment;
   //checks for search_2
-  if (transactionMap.length > 1 && transactionId === transactionMap[1]) {
+  if (fulfillment?.stops) {
     logger.info(
-      `Validating stops for transactionId: ${transactionId} for search_2`
+      `Validating stops for transactionId: ${transactionId} for search`
     );
-    const fulfillment = jsonRequest?.message?.intent?.fulfillment;
-
+    
     try {
       // Fetch fulfillment map
       const stopCodesSet = await fetchData(
@@ -91,7 +90,7 @@ export async function checkSearch(
         testResults.passed.push(`START AND END are valid stops`);
       }
     } catch (error: any) {
-      logger.error(`Error during search_2 validation: ${error.message}`);
+      logger.error(`Error during search validation: ${error.message}`);
     }
   }
 
