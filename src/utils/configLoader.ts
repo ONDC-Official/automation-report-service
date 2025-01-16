@@ -3,20 +3,24 @@ import * as fs from "fs";
 import * as path from "path";
 import { logger } from "./logger";
 
-let cachedConfig: any = null;
+// Load ReportingConfig.yaml
+export const loadConfig = (domain: string, version: string) => {
+  try {
+    const configPath = path.join(__dirname, "../config/ReportingConfig.yaml");
+    const file = fs.readFileSync(configPath, "utf8");
+    const yamlFile: any = yaml.load(file);
 
-// Load and cache the YAML config file
-export const loadConfig = () => {
-  if (!cachedConfig) {
-    try {
-      const configPath = path.join(__dirname, "../config/validationConfig.yaml");
-      const fileContent = fs.readFileSync(configPath, "utf8");
-      cachedConfig = yaml.load(fileContent);
-      logger.info("Validation configuration loaded successfully.");
-    } catch (error) {
-      console.error("Error loading configuration:", error);
-      throw error;
+    const domainConfig = yamlFile?.domains?.[domain]?.versions?.[version];
+    if (!domainConfig) {
+      logger.error(
+        `Configuration for domain '${domain}' and version '${version}' not found.`
+      );
+      return;
     }
+
+    return domainConfig;
+  } catch (error) {
+    logger.error("Error loading flowConfig.yaml:", error);
+    return null;
   }
-  return cachedConfig;
 };

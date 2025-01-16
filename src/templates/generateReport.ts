@@ -1,10 +1,8 @@
 import { writeFileSync } from "fs";
-import { FlowValidationResult, ParsedMessage } from "../types/payload";
+import { FlowValidationResult, ParsedMessage, Report } from "../types/payload";
 
 // Generate the HTML report
-export function generateCustomHTMLReport(
-  data: Record<string, FlowValidationResult>
-) {
+export function generateCustomHTMLReport(data: Report) {
   const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">
@@ -42,9 +40,16 @@ export function generateCustomHTMLReport(
             margin-bottom: 10px;
           }
           .flow-id {
+             max-width: 100%; 
+  width: 100%; 
             font-size: 18px;
             font-weight: bold;
             color: #0056a6;
+             margin-bottom: 8px;
+              overflow: hidden;
+  white-space: normal;
+   display: block;
+    
           }
           .validity {
             font-size: 14px;
@@ -106,6 +111,8 @@ export function generateCustomHTMLReport(
             display: inline-block;
           }
           .result-list {
+            max-width: 100%;
+            width: 100%;
             list-style: none;
             padding: 0;
             margin: 0;
@@ -118,6 +125,12 @@ export function generateCustomHTMLReport(
             border-radius: 6px;
             font-size: 14px;
             border: 1px solid #ddd;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            overflow: hidden;
+            max-width: 100%;
           }
           .result-item.passed {
             background-color: #e7f9ed;
@@ -143,17 +156,37 @@ export function generateCustomHTMLReport(
       </head>
    <body>
         <h1>Flow Validation Report</h1>
-        ${Object.entries(data)
+                <div class="flow-card">
+          <div class="section">
+            <div class="flow-id">Report</div>
+            ${
+              Object.entries(data?.finalReport).length
+                ? `<ul class="result-list">${Object.entries(data?.finalReport)
+                    .map(
+                      ([key, value]) =>
+                        `<li class="result-item failed"><span class="icon fail">✘</span>${value}</li>`
+                    )
+                    .join("")}</ul>`
+                : "<p>All flows have been tested</p>"
+            }
+          </div>
+        </div>
+        ${Object.entries(data?.flowErrors)
           .map(([flowId, { valid_flow, errors, messages }]) => {
             const parsedMessages: Record<string, ParsedMessage> =
               Object.entries(messages).reduce((acc, [api, result]) => {
                 try {
                   const parsedResult = JSON.parse(result);
-                  
+
                   acc[api] = {
-                    ackStatus: parsedResult.response?.message?.ack?.status || "invalid response",
-                    errorCode: parsedResult.response?.error?.code || "No code available",
-                    errorMessage: parsedResult.response?.error?.message || "No message available",
+                    ackStatus:
+                      parsedResult.response?.message?.ack?.status ||
+                      "invalid response",
+                    errorCode:
+                      parsedResult.response?.error?.code || "No code available",
+                    errorMessage:
+                      parsedResult.response?.error?.message ||
+                      "No message available",
                     passed: parsedResult.passed || [],
                     failed: parsedResult.failed || [],
                   };
@@ -191,7 +224,7 @@ export function generateCustomHTMLReport(
                   }
                 </div>
                 <div class="section">
-                  <div class="section-title">Validations</div>
+                  <div class="section-title">Validation Errors</div>
                   ${Object.entries(parsedMessages)
                     .map(
                       ([

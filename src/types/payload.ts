@@ -22,7 +22,7 @@ export interface WrappedPayload {
 }
 
 export interface JsonRequest {
-  context: Context
+  context: Context;
   message: Record<string, any>;
   error: Record<string, any>;
 }
@@ -61,6 +61,10 @@ export interface TestResult {
   failed: string[];
 }
 
+export interface Report {
+  finalReport: Record<string,string>;
+  flowErrors: Record<string, FlowValidationResult>;
+}
 export interface FlowValidationResult {
   valid_flow: boolean;
   errors: string[];

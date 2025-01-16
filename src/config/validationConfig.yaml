@@ -1,4 +1,0 @@
-validationModules:
-  ONDC:TRV11:
-    "2.0.1": "../validations/trv11/validator#validate"
-    default: "../validations/trv11/validator#validate"
