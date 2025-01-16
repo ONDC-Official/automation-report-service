@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
-import { fetchPayloads } from "../services/dbService"; // Importing the service to fetch payloads from the database
+import { fetchPayloads, fetchSessionDetails } from "../services/dbService"; // Importing the service to fetch payloads from the database
 import { utilityReport } from "../services/utilityService"; // Importing the service for generating utility report
 import { groupAndSortPayloadsByFlowId } from "../utils/groupUtils"; // Importing a utility to group and sort payloads based on Flow ID
 import { validationModule } from "../services/validationModule"; // Importing the validation module to perform validation on the data
 import { generateCustomHTMLReport } from "../templates/generateReport"; // Importing a function to generate an HTML report
 import { logger } from "../utils/logger"; // Assuming you have a logger utility for logging info and errors
+import { RedisService } from "ondc-automation-cache-lib";
 
 // The main controller function that generates a report
 export async function generateReportController(req: Request, res: Response) {
@@ -21,12 +22,14 @@ export async function generateReportController(req: Request, res: Response) {
       res.status(400).send("Missing sessionId parameter");
       return;
     }
+    //Save session details in Reporting Cache
+    const sessionDetails = await fetchSessionDetails(sessionId);    
+    await RedisService.setKey(`sessionDetails:${sessionId}`, JSON.stringify(sessionDetails));
 
     // Fetch payloads from the database based on the sessionId
     logger.info("Fetching payloads from the database...");
     const payloads = await fetchPayloads(sessionId);
     logger.info(`Fetched ${payloads.length} payloads from the database`);
- 
 
     // Group and sort the fetched payloads by Flow ID
     logger.info("Grouping and sorting payloads by Flow ID...");
