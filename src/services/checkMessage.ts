@@ -47,7 +47,6 @@ export const checkMessage = async (
 ): Promise<object> => {
   // Get the module path and function name based on the version, or fall back to the default configuration
   const modulePathWithFunc = domainConfig?.validationModules;
-  console.log(modulePathWithFunc);
 
   // Call the dynamicValidator to load and execute the validation function for the given domain, element, and action
   return dynamicValidator(
