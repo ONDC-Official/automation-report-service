@@ -34,7 +34,7 @@ export async function checkOnSearch(
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
 
-  const providers = message.catalog?.providers || [];
+  const providers = message?.catalog?.providers || [];
 
   // Iterate over providers
   for (const provider of providers) {
@@ -85,13 +85,15 @@ export async function checkOnSearch(
 
       logger.info("Checking minimum and maximum item quantity in items");
       try {
+       
         assert.ok(
           items.every(
             (item: any) =>
-              item?.quantity?.minimum?.count < item?.quantity?.maximum?.count,
-            "Quantity.minimum.count can't be greater than quantity.maximum.count at items"
-          )
+              item?.quantity?.minimum?.count < item?.quantity?.maximum?.count
+          ),
+          "Quantity.minimum.count can't be greater than quantity.maximum.count at items"
         );
+        
         testResults.passed.push(
           "Valid items/quantity maximum and minimum count"
         );
