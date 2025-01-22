@@ -6,6 +6,7 @@ export interface Payload {
   action: string; // e.g., "SEARCH"
   bppId: string | null; // Can be null
   bapId: string;
+  payloadId: string;
   jsonRequest: Record<string, any>;
   jsonResponse: Record<string, any>;
   httpStatus: number;
