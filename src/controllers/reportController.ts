@@ -6,12 +6,14 @@ import { validationModule } from "../services/validationModule"; // Importing th
 import { generateCustomHTMLReport } from "../templates/generateReport"; // Importing a function to generate an HTML report
 import { logger } from "../utils/logger"; // Assuming you have a logger utility for logging info and errors
 import { RedisService } from "ondc-automation-cache-lib";
+import { filterPayloads } from "../utils/filterPayloads";
 
 // The main controller function that generates a report
 export async function generateReportController(req: Request, res: Response) {
   try {
     // Retrieve sessionId from query parameters
     const sessionId = req.query.sessionId as string;
+    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
 
     // Log the received sessionId
     logger.info(`Received sessionId: ${sessionId}`);
@@ -23,13 +25,26 @@ export async function generateReportController(req: Request, res: Response) {
       return;
     }
     //Save session details in Reporting Cache
-    const sessionDetails = await fetchSessionDetails(sessionId);    
-    await RedisService.setKey(`sessionDetails:${sessionId}`, JSON.stringify(sessionDetails));
+    const sessionDetails = await fetchSessionDetails(sessionId);
+    await RedisService.setKey(
+      `sessionDetails:${sessionId}`,
+      JSON.stringify(sessionDetails)
+    );
 
     // Fetch payloads from the database based on the sessionId
     logger.info("Fetching payloads from the database...");
     const payloads = await fetchPayloads(sessionId);
     logger.info(`Fetched ${payloads.length} payloads from the database`);
+
+    //Filter the fetched payloads based on the payload ids provided by UI backend
+    logger.info(
+      "Filtering payloads based on payload ids provided by UI backend cache..."
+    );
+    const filteredPayloads = await filterPayloads(
+      payloads,
+      flowIdToPayloadIdsMap
+    );
+    logger.info(`Filtered ${filteredPayloads.length} payloads for analysis`);
 
     // Group and sort the fetched payloads by Flow ID
     logger.info("Grouping and sorting payloads by Flow ID...");
