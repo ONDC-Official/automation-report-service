@@ -48,7 +48,7 @@ export async function generateReportController(req: Request, res: Response) {
 
     // Group and sort the fetched payloads by Flow ID
     logger.info("Grouping and sorting payloads by Flow ID...");
-    const flows = groupAndSortPayloadsByFlowId(payloads);
+    const flows = groupAndSortPayloadsByFlowId(filteredPayloads);
     logger.info(`Grouped and sorted ${Object.keys(flows).length} flows`);
 
     // If the environment variable 'UTILITY' is set to "true", generate a utility report
