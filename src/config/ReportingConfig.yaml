@@ -33,7 +33,7 @@ domains:
             - cancel
             - on_cancel
 
-          TECHINCAL_CANCELLATION_FLOW:
+          TECHNICAL_CANCELLATION_FLOW:
             - search
             - on_search
             - select
@@ -107,7 +107,7 @@ domains:
             - cancel
             - on_cancel
 
-          TECHINCAL_CANCELLATION_FLOW:
+          TECHNICAL_CANCELLATION_FLOW:
             - search
             - on_search
             - select
