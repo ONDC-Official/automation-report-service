@@ -36,9 +36,9 @@ export async function checkOnSelect(
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const count = item?.quantity?.selected?.count;
-      const expectedLength = count + 1;
+      const expectedLength = count ;
 
-      // Assertion: Check if fulfillment_ids.length matches count + 1
+      // Assertion: Check if fulfillment_ids.length matches count 
       assert.ok(
         item?.fulfillment_ids?.length === expectedLength,
         `In /items, expected fulfillment_ids.length to be ${expectedLength}, but got ${item.fulfillment_ids.length}`
