@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: automation-report-service
+    container_name: automation-report-service-staging
     ports:
       - "${PORT:-3036}:${PORT:-3000}"
     env_file:
