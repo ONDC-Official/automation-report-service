@@ -2,7 +2,7 @@ name: ONDC Automation Reporting Service Deployment
 
 on:
   push:
-    branches: ["staging"]
+    branches: ["release-staging"]
   workflow_dispatch:
 
 jobs:
@@ -28,8 +28,8 @@ jobs:
           REPO_DIR=~/ONDC-automation-framework-staging/automation-report-service
           echo "Removing existing repository directory if exists"
           rm -rf \$REPO_DIR
-          echo "Cloning repository from staging branch"
-          git clone --single-branch --branch staging https://github.com/ONDC-Official/automation-report-service.git \$REPO_DIR
+          echo "Cloning repository from release-staging branch"
+          git clone --single-branch --branch release-staging https://github.com/ONDC-Official/automation-report-service.git \$REPO_DIR
           EOF
 
       - name: Install Docker Compose (if not installed)
