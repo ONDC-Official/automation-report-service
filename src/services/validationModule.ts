@@ -71,29 +71,34 @@ export async function validationModule(
   // Iterate through each flowId in the grouped payloads
   for (const flowId in groupedPayloads) {
     const requiredSequence = domainConfig?.flows?.[flowId]; // Retrieve the required sequence of actions from config
+
     const payloads = groupedPayloads[flowId]; // Get the payloads for the current flowId
     const errors: string[] = []; // Initialize an array to store errors for the flow
     const messages: any = {}; // Initialize an object to store validation messages for each action
     let validSequence = true; // Flag to track whether the sequence of actions is valid
     logger.info(`Validating ${flowId}......`);
     // Step 1: Validate Action Sequence for each flow
-    for (let i = 0; i < requiredSequence.length; i++) {
-      let expectedAction = requiredSequence[i]; // Get the expected action from the sequence
-      const actualAction = payloads[i]?.payload?.action; // Get the actual action from the current payload
+    try {
+      for (let i = 0; i < requiredSequence.length; i++) {
+        let expectedAction = requiredSequence[i]; // Get the expected action from the sequence
+        const actualAction = payloads[i]?.payload?.action; // Get the actual action from the current payload
 
-      // If the actual action does not match the expected action, mark the sequence as invalid
-      if (actualAction?.toLowerCase() !== expectedAction) {
-        if (expectedAction === "select") expectedAction = `select or init`;
-        validSequence = false;
-        errors.push(
-          `Error: Expected '${expectedAction}' after '${payloads[
-            i - 1
-          ].payload?.action.toLowerCase()}', but found '${
-            actualAction?.toLowerCase() || "undefined"
-          }'.`
-        );
-        break; // Exit the loop since the sequence is broken
+        // If the actual action does not match the expected action, mark the sequence as invalid
+        if (actualAction?.toLowerCase() !== expectedAction) {
+          if (expectedAction === "select") expectedAction = `select or init`;
+          validSequence = false;
+          errors.push(
+            `Error: Expected '${expectedAction}' after '${payloads[
+              i - 1
+            ].payload?.action.toLowerCase()}', but found '${
+              actualAction?.toLowerCase() || "undefined"
+            }'.`
+          );
+          break; // Exit the loop since the sequence is broken
+        }
       }
+    } catch (error) {
+      logger.error(error);
     }
 
     // Define counters for each action to keep track of the number of occurrences in the sequence
