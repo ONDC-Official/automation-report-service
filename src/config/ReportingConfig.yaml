@@ -24,6 +24,8 @@ domains:
           USER_CANCEL_FLOW:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -36,6 +38,8 @@ domains:
             - on_cancel
 
           TECHNICAL_CANCELLATION_FLOW:
+            - search
+            - on_search
             - search
             - on_search
             - select
@@ -52,6 +56,8 @@ domains:
           DELAYED_CANCELLATION_FLOW_REJECTED:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -63,6 +69,8 @@ domains:
             - on_status
 
           DELAYED_CANCELLATION_FLOW_ACCEPTED:
+            - search
+            - on_search
             - search
             - on_search
             - select
@@ -100,6 +108,8 @@ domains:
           USER_CANCEL_FLOW:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -112,6 +122,8 @@ domains:
             - on_cancel
 
           TECHNICAL_CANCELLATION_FLOW:
+            - search
+            - on_search
             - search
             - on_search
             - select
@@ -128,6 +140,8 @@ domains:
           DELAYED_CANCELLATION_FLOW_REJECTED:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -139,6 +153,8 @@ domains:
             - on_status
 
           DELAYED_CANCELLATION_FLOW_ACCEPTED:
+            - search
+            - on_search
             - search
             - on_search
             - select

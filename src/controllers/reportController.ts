@@ -39,9 +39,9 @@ export async function generateReportController(req: Request, res: Response) {
     logger.info(`Fetched payloads from the database`);
 
     //Filter the fetched payloads based on the payload ids provided by UI backend
-    logger.info(
-      "Filtering payloads based on payload ids provided by UI backend cache..."
-    );
+    // logger.info(
+    //   "Filtering payloads based on payload ids provided by UI backend cache..."
+    // );
     // const filteredPayloads = await filterPayloads(
     //   payloads,
     //   flowIdToPayloadIdsMap
