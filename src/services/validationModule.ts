@@ -1,4 +1,9 @@
-import { FlowValidationResult, WrappedPayload, Report } from "../types/payload"; // Importing types for flow validation results and payload structure
+import {
+  FlowValidationResult,
+  WrappedPayload,
+  Report,
+  Payload,
+} from "../types/payload"; // Importing types for flow validation results and payload structure
 import { loadConfig } from "../utils/configLoader"; // Import flow configuration for the sequence of expected actions
 import { checkMessage } from "./checkMessage"; // Import the checkMessage function for validating the actions
 import { actions } from "../utils/constants"; // Import available actions for validation
@@ -14,7 +19,7 @@ function isValidAction(action: string): action is ValidationAction {
 // Validation Module for processing grouped payloads and validating their sequence and actions
 export async function validationModule(
   groupedPayloads: {
-    [flowId: string]: WrappedPayload[]; // Grouping payloads by flowId
+    [flowId: string]: Payload[]; // Grouping payloads by flowId
   },
   sessionID: string
 ): Promise<Report> {
@@ -78,10 +83,12 @@ export async function validationModule(
     let validSequence = true; // Flag to track whether the sequence of actions is valid
     logger.info(`Validating ${flowId}......`);
     // Step 1: Validate Action Sequence for each flow
+
     try {
       for (let i = 0; i < requiredSequence.length; i++) {
         let expectedAction = requiredSequence[i]; // Get the expected action from the sequence
-        const actualAction = payloads[i]?.payload?.action; // Get the actual action from the current payload
+
+        const actualAction = payloads[i]?.action; // Get the actual action from the current payload
 
         // If the actual action does not match the expected action, mark the sequence as invalid
         if (actualAction?.toLowerCase() !== expectedAction) {
@@ -90,7 +97,7 @@ export async function validationModule(
           errors.push(
             `Error: Expected '${expectedAction}' after '${payloads[
               i - 1
-            ].payload?.action.toLowerCase()}', but found '${
+            ]?.action.toLowerCase()}', but found '${
               actualAction?.toLowerCase() || "undefined"
             }'.`
           );
@@ -124,11 +131,11 @@ export async function validationModule(
       const element = payloads[i]; // Get the current payload from the sequence
 
       // Convert the action to lowercase and check if it's valid
-      const action = element?.payload.action.toLowerCase();
+      const action = element?.action.toLowerCase();
 
       // Ensure the action is valid before proceeding with validation
       if (isValidAction(action)) {
-        const domain = element?.payload?.jsonRequest?.context?.domain; // Extract domain from the payload for validation
+        const domain = element?.jsonRequest?.context?.domain; // Extract domain from the payload for validation
 
         try {
           // Validate the message based on the domain, payload, and action

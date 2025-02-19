@@ -1,15 +1,15 @@
 import assert from "assert";
-import { TestResult, WrappedPayload } from "../../../types/payload";
+import { TestResult, Payload } from "../../../types/payload";
 import { checkCommon } from "./commonChecks";
 import { logger } from "../../../utils/logger";
 import { updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkOnUpdate(
-  element: WrappedPayload,
+  element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  const payload = element?.payload;
+  const payload = element;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 

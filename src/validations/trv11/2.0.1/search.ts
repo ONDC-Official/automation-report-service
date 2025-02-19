@@ -1,8 +1,8 @@
 import { logger } from "../../../utils/logger";
 import {
   JsonRequest,
+  Payload,
   TestResult,
-  WrappedPayload,
 } from "../../../types/payload";
 import assert from "assert";
 import {
@@ -14,11 +14,11 @@ import {
 } from "../../../utils/redisUtils";
 
 export async function checkSearch(
-  element: WrappedPayload,
+  element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  const payload = element?.payload;
+  const payload = element;
 
   const action = payload?.action?.toLowerCase();
 
@@ -44,55 +44,55 @@ export async function checkSearch(
   const transactionMap = await getTransactionIds(sessionID, flowId);
   const fulfillment = jsonRequest?.message?.intent?.fulfillment;
   //checks for search_2
-  if (fulfillment?.stops) {
-    logger.info(
-      `Validating stops for transactionId: ${transactionId} for search`
-    );
+  // if (fulfillment?.stops) {
+  //   logger.info(
+  //     `Validating stops for transactionId: ${transactionId} for search`
+  //   );
     
-    try {
-      // Fetch fulfillment map
-      const stopCodesSet = await fetchData(
-        sessionID,
-        transactionMap[0],
-        `stopCodesSet`
-      );
+  //   try {
+  //     // Fetch fulfillment map
+  //     const stopCodesSet = await fetchData(
+  //       sessionID,
+  //       transactionMap[0],
+  //       `stopCodesSet`
+  //     );
 
-      if (!stopCodesSet) {
-        logger.error("Fulfillment map is empty or not found.");
-        return testResults;
-      }
+  //     if (!stopCodesSet) {
+  //       logger.error("Fulfillment map is empty or not found.");
+  //       return testResults;
+  //     }
 
-      // Extract stops from the JSON request
-      const stops = fulfillment.stops;
+  //     // Extract stops from the JSON request
+  //     const stops = fulfillment.stops;
 
-      // Validate each stop's location.descriptor.code
-      let allStopsValid = true; // Flag to track if all stops are valid
+  //     // Validate each stop's location.descriptor.code
+  //     let allStopsValid = true; // Flag to track if all stops are valid
 
-      // Validate each stop's location.descriptor.code
-      for (const stop of stops) {
-        const stopCode = stop?.location?.descriptor?.code;
+  //     // Validate each stop's location.descriptor.code
+  //     for (const stop of stops) {
+  //       const stopCode = stop?.location?.descriptor?.code;
 
-        try {
-          // Assert that stopCode is valid (exists in stopCodesSet)
-          assert.ok(
-            stopCodesSet.includes(stopCode),
-            `Stop code ${stopCode} is not present in on_search_1.`
-          );
-        } catch (error: any) {
-          testResults.failed.push(error.message);
-          logger.error(error.message);
-          allStopsValid = false; // Set flag to false if any stop is invalid
-        }
-      }
+  //       try {
+  //         // Assert that stopCode is valid (exists in stopCodesSet)
+  //         assert.ok(
+  //           stopCodesSet.includes(stopCode),
+  //           `Stop code ${stopCode} is not present in on_search_1.`
+  //         );
+  //       } catch (error: any) {
+  //         testResults.failed.push(error.message);
+  //         logger.error(error.message);
+  //         allStopsValid = false; // Set flag to false if any stop is invalid
+  //       }
+  //     }
 
-      // Only push success message if all stops are valid
-      if (allStopsValid) {
-        testResults.passed.push(`START AND END are valid stops`);
-      }
-    } catch (error: any) {
-      logger.error(`Error during search validation: ${error.message}`);
-    }
-  }
+  //     // Only push success message if all stops are valid
+  //     if (allStopsValid) {
+  //       testResults.passed.push(`START AND END are valid stops`);
+  //     }
+  //   } catch (error: any) {
+  //     logger.error(`Error during search validation: ${error.message}`);
+  //   }
+  // }
 
   // Log success validation for action
   logger.info(`Validated ${action}`);

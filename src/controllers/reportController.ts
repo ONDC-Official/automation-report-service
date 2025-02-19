@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { fetchPayloads, fetchSessionDetails } from "../services/dbService"; // Importing the service to fetch payloads from the database
 import { utilityReport } from "../services/utilityService"; // Importing the service for generating utility report
-import { groupAndSortPayloadsByFlowId } from "../utils/groupUtils"; // Importing a utility to group and sort payloads based on Flow ID
+import { sortPayloadsByCreatedAt } from "../utils/groupUtils"; // Importing a utility to group and sort payloads based on Flow ID
 import { validationModule } from "../services/validationModule"; // Importing the validation module to perform validation on the data
 import { generateCustomHTMLReport } from "../templates/generateReport"; // Importing a function to generate an HTML report
 import { logger } from "../utils/logger"; // Assuming you have a logger utility for logging info and errors
@@ -16,8 +16,7 @@ export async function generateReportController(req: Request, res: Response) {
     const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
 
     console.log("req body : ", flowIdToPayloadIdsMap);
-    
-   
+
     // Log the received sessionId
     logger.info(`Received sessionId: ${sessionId}`);
 
@@ -36,23 +35,23 @@ export async function generateReportController(req: Request, res: Response) {
 
     // Fetch payloads from the database based on the sessionId
     logger.info("Fetching payloads from the database...");
-    const payloads = await fetchPayloads(sessionId);
-    logger.info(`Fetched ${payloads.length} payloads from the database`);
+    const payloads = await fetchPayloads(flowIdToPayloadIdsMap);
+    logger.info(`Fetched payloads from the database`);
 
     //Filter the fetched payloads based on the payload ids provided by UI backend
     logger.info(
       "Filtering payloads based on payload ids provided by UI backend cache..."
     );
-    const filteredPayloads = await filterPayloads(
-      payloads,
-      flowIdToPayloadIdsMap
-    );
-    logger.info(`Filtered ${filteredPayloads.length} payloads for analysis`);
+    // const filteredPayloads = await filterPayloads(
+    //   payloads,
+    //   flowIdToPayloadIdsMap
+    // );
+    // logger.info(`Filtered ${filteredPayloads.length} payloads for analysis`);
 
     // Group and sort the fetched payloads by Flow ID
-    logger.info("Grouping and sorting payloads by Flow ID...");
-    const flows = groupAndSortPayloadsByFlowId(filteredPayloads);
-    logger.info(`Grouped and sorted ${Object.keys(flows).length} flows`);
+    logger.info("sorting payloads by Flow ID...");
+    const flows = sortPayloadsByCreatedAt(payloads);
+    logger.info(`sorted ${Object.keys(flows).length} flows`);
 
     // If the environment variable 'UTILITY' is set to "true", generate a utility report
     if (process.env.UTILITY === "true") {
@@ -78,6 +77,7 @@ export async function generateReportController(req: Request, res: Response) {
   } catch (error) {
     // Log any error that occurs during report generation
     logger.error("Error generating report:", error);
+    console.trace(error);
 
     // Send a 500 response if an error occurs
     res.status(500).send("Failed to generate report");

@@ -16368,3 +16368,899 @@ Require stack:
 [2025-02-17 15:01:12] [32minfo[39m: Server is running on http://localhost:3000
 [2025-02-17 15:01:35] [32minfo[39m: Server is running on http://localhost:3000
 [2025-02-17 15:01:38] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-18 14:10:22] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-18 14:11:32] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-18 14:11:33] [32minfo[39m: Fetching payloads from the database...
+[2025-02-18 14:11:33] [32minfo[39m: Fetched 1 payloads from the database
+[2025-02-18 14:11:33] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-18 14:11:33] [32minfo[39m: Starting payload filtering...
+[2025-02-18 14:11:33] [32minfo[39m: Filtering complete.
+[2025-02-18 14:11:33] [32minfo[39m: Filtered 1 payloads for analysis
+[2025-02-18 14:11:33] [32minfo[39m: Grouping and sorting payloads by Flow ID...
+[2025-02-18 14:11:33] [32minfo[39m: Grouped and sorted 1 flows
+[2025-02-18 14:11:33] [32minfo[39m: Running validation module...
+[2025-02-18 14:11:33] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-18 14:11:33] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-18 14:11:34] [32minfo[39m: Inside search validations
+[2025-02-18 14:11:34] [32minfo[39m: Validated search
+[2025-02-18 14:11:34] [32minfo[39m: Validation module completed.
+[2025-02-18 14:11:34] [32minfo[39m: Generating custom HTML report...
+[2025-02-18 14:11:34] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 11:32:12] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:45:09] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:45:11] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:46:10] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:46:25] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:54:48] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:54:55] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:54:59] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 12:55:25] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 12:55:25] [31merror[39m: Error generating report: Failed to parse URL from dev-automation.ondc.org/automation-db/api/sessions/lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:00:03] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:00:16] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:00:31] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:00:31] [31merror[39m: Error generating report: Failed to parse URL from dev-automation.ondc.org/automation-db/api/sessions/lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:00:56] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:01:00] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:01:00] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:01:00] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:01:00] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:01:00] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:01:00] [31merror[39m: Error generating report: Cannot convert undefined or null to object
+[2025-02-19 13:01:10] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:01:37] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:01:37] [31merror[39m: Error generating report: Failed to parse URL from dev-automation.ondc.org/automation-db/api/sessions/lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:02:01] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:02:02] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:02:04] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:02:09] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:02:12] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:02:30] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:02:34] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:02:36] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:02:36] [31merror[39m: Error generating report: Failed to parse URL from dev-automation.ondc.org/automation-db/api/sessions/lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:03:50] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:04:01] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:04:01] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:04:01] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:04:01] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:04:01] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:04:01] [31merror[39m: Error generating report: Cannot convert undefined or null to object
+[2025-02-19 13:06:41] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:06:44] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:06:44] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:06:45] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:06:45] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:06:45] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:06:45] [31merror[39m: Error generating report: grouped[key].sort is not a function
+[2025-02-19 13:07:57] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:08:00] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:08:00] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:08:01] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:08:01] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:08:01] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:08:01] [32minfo[39m: sorted 2 flows
+[2025-02-19 13:08:01] [32minfo[39m: Running validation module...
+[2025-02-19 13:08:01] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 13:08:01] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 13:08:01] [31merror[39m: Cannot read properties of undefined (reading 'payload')
+[2025-02-19 13:08:01] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 13:08:01] [31merror[39m: Cannot read properties of undefined (reading 'payload')
+[2025-02-19 13:08:01] [32minfo[39m: Validation module completed.
+[2025-02-19 13:08:01] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 13:08:01] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 13:08:15] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:12:53] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:13:29] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:14:38] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:14:41] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:14:43] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:15:09] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:15:12] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:16:28] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:16:46] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:16:48] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:17:02] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:17:22] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:17:35] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:17:39] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:18:00] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:18:03] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:18:06] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:18:06] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:18:06] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:18:06] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:18:06] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:18:06] [32minfo[39m: sorted 2 flows
+[2025-02-19 13:18:06] [32minfo[39m: Running validation module...
+[2025-02-19 13:18:06] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 13:18:06] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 13:18:06] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 13:18:06] [32minfo[39m: Validation module completed.
+[2025-02-19 13:18:06] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 13:18:06] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 13:19:00] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:19:02] [32minfo[39m: Received sessionId: lnlad7_idk3O8GJtfC6p66TrkTZQReAU
+[2025-02-19 13:19:03] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:19:03] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:19:03] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:19:03] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:19:03] [32minfo[39m: sorted 2 flows
+[2025-02-19 13:19:03] [32minfo[39m: Running validation module...
+[2025-02-19 13:19:03] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 13:19:03] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 13:19:03] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 13:19:03] [32minfo[39m: Validation module completed.
+[2025-02-19 13:19:03] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 13:19:03] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 13:19:47] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:19:48] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:22:49] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 13:22:49] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:22:49] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:22:49] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:22:49] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:22:49] [32minfo[39m: sorted 1 flows
+[2025-02-19 13:22:49] [32minfo[39m: Running validation module...
+[2025-02-19 13:22:49] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 13:22:49] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 13:22:49] [32minfo[39m: Validation module completed.
+[2025-02-19 13:22:49] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 13:22:49] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 13:32:31] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:32:44] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:32:47] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 13:32:47] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:32:48] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:32:48] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:32:48] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:32:48] [32minfo[39m: sorted 1 flows
+[2025-02-19 13:32:48] [32minfo[39m: Running validation module...
+[2025-02-19 13:32:48] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 13:32:48] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 13:32:48] [32minfo[39m: Validation module completed.
+[2025-02-19 13:32:48] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 13:32:48] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 13:34:09] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:36:39] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:36:40] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:36:44] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:36:46] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:36:52] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 13:36:52] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 13:36:52] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 13:36:52] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 13:36:52] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 13:36:52] [32minfo[39m: sorted 1 flows
+[2025-02-19 13:36:52] [32minfo[39m: Running validation module...
+[2025-02-19 13:36:52] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 13:36:52] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 13:36:53] [32minfo[39m: Inside search validations
+[2025-02-19 13:36:53] [32minfo[39m: Validated search
+[2025-02-19 13:36:53] [32minfo[39m: Inside on_search validations
+[2025-02-19 13:36:53] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 13:36:53] [32minfo[39m: Validation module completed.
+[2025-02-19 13:36:53] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 13:36:53] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 13:38:10] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 13:59:57] [31merror[39m: SyntaxError: Expected ',' or ']' after array element in JSON at position 120 (line 4 column 43)
+    at JSON.parse (<anonymous>)
+    at parse (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/body-parser/lib/types/json.js:92:19)
+    at /Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/body-parser/lib/read.js:128:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/raw-body/index.js:238:16)
+    at done (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:507:28)
+    at IncomingMessage.emit (node:domain:489:12)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+[2025-02-19 14:00:05] [31merror[39m: SyntaxError: Expected ',' or ']' after array element in JSON at position 120 (line 4 column 43)
+    at JSON.parse (<anonymous>)
+    at parse (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/body-parser/lib/types/json.js:92:19)
+    at /Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/body-parser/lib/read.js:128:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/raw-body/index.js:238:16)
+    at done (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/Users/abhinavgoel/Documents/ONDC/automation-report-service/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:507:28)
+    at IncomingMessage.emit (node:domain:489:12)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+[2025-02-19 14:00:17] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 14:00:17] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 14:00:18] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 14:00:18] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 14:00:18] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 14:00:18] [32minfo[39m: sorted 2 flows
+[2025-02-19 14:00:18] [32minfo[39m: Running validation module...
+[2025-02-19 14:00:18] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 14:00:18] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 14:00:18] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:00:18] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:00:18] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 14:00:18] [32minfo[39m: Inside search validations
+[2025-02-19 14:00:19] [32minfo[39m: Validated search
+[2025-02-19 14:00:19] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:00:19] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:00:19] [32minfo[39m: Inside search validations
+[2025-02-19 14:00:19] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 14:00:19] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 14:00:19] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 14:00:19] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:00:19] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 14:00:19] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:00:19] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 14:00:19] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 14:00:19] [32minfo[39m: Inside select validations
+[2025-02-19 14:00:19] [32minfo[39m: Validating items in select
+[2025-02-19 14:00:19] [32minfo[39m: Inside on_select validations
+[2025-02-19 14:00:19] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 14:00:19] [32minfo[39m: Inside init validations
+[2025-02-19 14:00:19] [32minfo[39m: Inside on_init validations
+[2025-02-19 14:00:19] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 14:00:19] [32minfo[39m: Inside confirm validations
+[2025-02-19 14:00:19] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 14:00:19] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 14:00:19] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 14:00:19] [32minfo[39m: Inside on_status validations
+[2025-02-19 14:00:19] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 14:00:19] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 14:00:19] [32minfo[39m: Validation module completed.
+[2025-02-19 14:00:19] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 14:00:19] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 14:04:14] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 14:04:24] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 14:04:25] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 14:04:25] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 14:04:25] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 14:04:25] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 14:04:25] [32minfo[39m: sorted 2 flows
+[2025-02-19 14:04:25] [32minfo[39m: Running validation module...
+[2025-02-19 14:04:25] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 14:04:25] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 14:04:26] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:04:26] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:04:26] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 14:04:26] [32minfo[39m: Inside search validations
+[2025-02-19 14:04:26] [32minfo[39m: Validated search
+[2025-02-19 14:04:26] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:04:26] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:04:26] [32minfo[39m: Inside search validations
+[2025-02-19 14:04:26] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 14:04:26] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 14:04:26] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 14:04:26] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:04:26] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 14:04:26] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:04:26] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 14:04:26] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 14:04:26] [32minfo[39m: Inside select validations
+[2025-02-19 14:04:27] [32minfo[39m: Validating items in select
+[2025-02-19 14:04:27] [32minfo[39m: Inside on_select validations
+[2025-02-19 14:04:27] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 14:04:27] [32minfo[39m: Inside init validations
+[2025-02-19 14:04:27] [32minfo[39m: Inside on_init validations
+[2025-02-19 14:04:27] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 14:04:27] [32minfo[39m: Inside confirm validations
+[2025-02-19 14:04:27] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 14:04:27] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 14:04:27] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 14:04:27] [32minfo[39m: Inside on_status validations
+[2025-02-19 14:04:27] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 14:04:27] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 14:04:27] [32minfo[39m: Validation module completed.
+[2025-02-19 14:04:27] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 14:04:27] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 14:05:04] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 14:05:06] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 14:05:06] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 14:05:06] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 14:05:06] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 14:05:06] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 14:05:06] [32minfo[39m: sorted 2 flows
+[2025-02-19 14:05:06] [32minfo[39m: Running validation module...
+[2025-02-19 14:05:06] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 14:05:06] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 14:05:07] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:05:07] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:05:07] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 14:05:07] [32minfo[39m: Inside search validations
+[2025-02-19 14:05:07] [32minfo[39m: Validated search
+[2025-02-19 14:05:07] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:05:07] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:05:07] [32minfo[39m: Inside search validations
+[2025-02-19 14:05:08] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 14:05:08] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 14:05:08] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 14:05:08] [32minfo[39m: Inside on_search validations
+[2025-02-19 14:05:08] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 14:05:08] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 14:05:08] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 14:05:08] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 14:05:08] [32minfo[39m: Inside select validations
+[2025-02-19 14:05:08] [32minfo[39m: Validating items in select
+[2025-02-19 14:05:08] [32minfo[39m: Inside on_select validations
+[2025-02-19 14:05:08] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 14:05:08] [32minfo[39m: Inside init validations
+[2025-02-19 14:05:08] [32minfo[39m: Inside on_init validations
+[2025-02-19 14:05:08] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 14:05:08] [32minfo[39m: Inside confirm validations
+[2025-02-19 14:05:08] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 14:05:08] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 14:05:08] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 14:05:08] [32minfo[39m: Inside on_status validations
+[2025-02-19 14:05:08] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 14:05:08] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 14:05:08] [32minfo[39m: Validation module completed.
+[2025-02-19 14:05:08] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 14:05:08] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 15:48:42] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:48:45] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:48:48] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:48:57] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:49:01] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 15:49:01] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 15:49:01] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 15:49:01] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 15:49:01] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 15:49:01] [32minfo[39m: sorted 2 flows
+[2025-02-19 15:49:01] [32minfo[39m: Running validation module...
+[2025-02-19 15:49:01] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 15:49:01] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 15:49:02] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:49:02] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:5ab5d3d3-fda0-4edd-8515-a7b24e41ee81:apiMap
+[2025-02-19 15:49:02] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:49:02] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 15:49:02] [32minfo[39m: Inside search validations
+[2025-02-19 15:49:02] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:apiMap
+[2025-02-19 15:49:02] [32minfo[39m: Validated search
+[2025-02-19 15:49:02] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:49:02] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:49:02] [32minfo[39m: Inside search validations
+[2025-02-19 15:49:03] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 15:49:03] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 15:49:03] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 15:49:03] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:49:03] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 15:49:03] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:49:03] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 15:49:03] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 15:49:03] [32minfo[39m: Inside select validations
+[2025-02-19 15:49:03] [32minfo[39m: Validating items in select
+[2025-02-19 15:49:03] [32minfo[39m: Inside on_select validations
+[2025-02-19 15:49:03] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 15:49:03] [32minfo[39m: Inside init validations
+[2025-02-19 15:49:03] [32minfo[39m: Inside on_init validations
+[2025-02-19 15:49:03] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 15:49:03] [32minfo[39m: Inside confirm validations
+[2025-02-19 15:49:03] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 15:49:03] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 15:49:03] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 15:49:03] [32minfo[39m: Inside on_status validations
+[2025-02-19 15:49:03] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 15:49:03] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 15:49:03] [32minfo[39m: Validation module completed.
+[2025-02-19 15:49:03] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 15:49:03] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 15:50:43] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:51:03] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 15:51:03] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 15:51:04] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 15:51:04] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 15:51:04] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 15:51:04] [32minfo[39m: sorted 2 flows
+[2025-02-19 15:51:04] [32minfo[39m: Running validation module...
+[2025-02-19 15:51:04] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 15:51:04] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 15:51:05] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:51:05] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:51:05] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 15:51:05] [32minfo[39m: Inside search validations
+[2025-02-19 15:51:05] [32minfo[39m: Validated search
+[2025-02-19 15:51:05] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:51:05] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:51:05] [32minfo[39m: Inside search validations
+[2025-02-19 15:51:05] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 15:51:05] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 15:51:05] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 15:51:05] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:51:05] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 15:51:05] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:51:05] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 15:51:05] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 15:51:05] [32minfo[39m: Inside select validations
+[2025-02-19 15:51:05] [32minfo[39m: Validating items in select
+[2025-02-19 15:51:05] [32minfo[39m: Inside on_select validations
+[2025-02-19 15:51:05] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 15:51:05] [32minfo[39m: Inside init validations
+[2025-02-19 15:51:05] [32minfo[39m: Inside on_init validations
+[2025-02-19 15:51:05] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 15:51:05] [32minfo[39m: Inside confirm validations
+[2025-02-19 15:51:05] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 15:51:05] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 15:51:05] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 15:51:05] [32minfo[39m: Inside on_status validations
+[2025-02-19 15:51:06] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 15:51:06] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 15:51:06] [32minfo[39m: Validation module completed.
+[2025-02-19 15:51:06] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 15:51:06] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 15:51:34] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:51:36] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:51:39] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:51:44] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 15:51:44] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 15:51:44] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 15:51:44] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 15:51:44] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 15:51:44] [32minfo[39m: sorted 2 flows
+[2025-02-19 15:51:44] [32minfo[39m: Running validation module...
+[2025-02-19 15:51:44] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 15:51:44] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 15:51:45] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:51:45] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:51:45] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 15:51:45] [32minfo[39m: Inside search validations
+[2025-02-19 15:51:45] [32minfo[39m: Validated search
+[2025-02-19 15:51:45] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:51:45] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:51:45] [32minfo[39m: Inside search validations
+[2025-02-19 15:51:46] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 15:51:46] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 15:51:46] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 15:51:46] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:51:46] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 15:51:46] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:51:46] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 15:51:46] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 15:51:46] [32minfo[39m: Inside select validations
+[2025-02-19 15:51:46] [32minfo[39m: Validating items in select
+[2025-02-19 15:51:46] [32minfo[39m: Inside on_select validations
+[2025-02-19 15:51:46] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 15:51:46] [32minfo[39m: Inside init validations
+[2025-02-19 15:51:46] [32minfo[39m: Inside on_init validations
+[2025-02-19 15:51:46] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 15:51:46] [32minfo[39m: Inside confirm validations
+[2025-02-19 15:51:46] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 15:51:46] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 15:51:46] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 15:51:46] [32minfo[39m: Inside on_status validations
+[2025-02-19 15:51:46] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 15:51:46] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 15:51:46] [32minfo[39m: Validation module completed.
+[2025-02-19 15:51:46] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 15:51:46] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 15:54:51] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:54:52] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 15:54:53] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 15:54:53] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 15:54:53] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 15:54:53] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 15:54:53] [32minfo[39m: sorted 2 flows
+[2025-02-19 15:54:53] [32minfo[39m: Running validation module...
+[2025-02-19 15:54:53] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 15:54:53] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 15:54:54] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:54:54] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:54:54] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 15:54:54] [32minfo[39m: Inside search validations
+[2025-02-19 15:54:54] [32minfo[39m: Validated search
+[2025-02-19 15:54:54] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:54:54] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:54:54] [32minfo[39m: Inside search validations
+[2025-02-19 15:54:54] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 15:54:54] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 15:54:54] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 15:54:54] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:54:54] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 15:54:54] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:54:54] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 15:54:54] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 15:54:54] [32minfo[39m: Inside select validations
+[2025-02-19 15:54:54] [32minfo[39m: Validating items in select
+[2025-02-19 15:54:54] [32minfo[39m: Inside on_select validations
+[2025-02-19 15:54:55] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 15:54:55] [32minfo[39m: Inside init validations
+[2025-02-19 15:54:55] [32minfo[39m: Inside on_init validations
+[2025-02-19 15:54:55] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 15:54:55] [32minfo[39m: Inside confirm validations
+[2025-02-19 15:54:55] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 15:54:55] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 15:54:55] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 15:54:55] [32minfo[39m: Inside on_status validations
+[2025-02-19 15:54:55] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 15:54:55] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 15:54:55] [32minfo[39m: Validation module completed.
+[2025-02-19 15:54:55] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 15:54:55] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 15:56:03] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:56:04] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 15:56:04] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 15:56:05] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 15:56:05] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 15:56:05] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 15:56:05] [32minfo[39m: sorted 2 flows
+[2025-02-19 15:56:05] [32minfo[39m: Running validation module...
+[2025-02-19 15:56:05] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 15:56:05] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 15:56:05] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:56:05] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:56:05] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 15:56:05] [32minfo[39m: Inside search validations
+[2025-02-19 15:56:06] [32minfo[39m: Validated search
+[2025-02-19 15:56:06] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:56:06] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:56:06] [32minfo[39m: Inside search validations
+[2025-02-19 15:56:06] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 15:56:06] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 15:56:06] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 15:56:06] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:56:06] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 15:56:06] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:56:06] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 15:56:06] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 15:56:06] [32minfo[39m: Inside select validations
+[2025-02-19 15:56:06] [32minfo[39m: Validating items in select
+[2025-02-19 15:56:06] [32minfo[39m: Inside on_select validations
+[2025-02-19 15:56:06] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 15:56:06] [32minfo[39m: Inside init validations
+[2025-02-19 15:56:06] [32minfo[39m: Inside on_init validations
+[2025-02-19 15:56:06] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 15:56:06] [32minfo[39m: Inside confirm validations
+[2025-02-19 15:56:06] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 15:56:06] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 15:56:06] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 15:56:06] [32minfo[39m: Inside on_status validations
+[2025-02-19 15:56:06] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 15:56:06] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 15:56:06] [32minfo[39m: Validation module completed.
+[2025-02-19 15:56:06] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 15:56:06] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 15:57:51] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:57:55] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:57:58] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:58:00] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:58:03] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 15:59:20] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 15:59:20] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 15:59:21] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 15:59:21] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 15:59:21] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 15:59:21] [32minfo[39m: sorted 2 flows
+[2025-02-19 15:59:21] [32minfo[39m: Running validation module...
+[2025-02-19 15:59:21] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 15:59:21] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 15:59:21] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:59:21] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:59:21] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 15:59:21] [32minfo[39m: Inside search validations
+[2025-02-19 15:59:22] [32minfo[39m: Validated search
+[2025-02-19 15:59:22] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:59:22] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:59:22] [32minfo[39m: Inside search validations
+[2025-02-19 15:59:22] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 15:59:22] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 15:59:22] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 15:59:22] [32minfo[39m: Inside on_search validations
+[2025-02-19 15:59:22] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 15:59:22] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 15:59:22] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 15:59:22] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 15:59:22] [32minfo[39m: Inside select validations
+[2025-02-19 15:59:22] [32minfo[39m: Validating items in select
+[2025-02-19 15:59:22] [32minfo[39m: Inside on_select validations
+[2025-02-19 15:59:22] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 15:59:22] [32minfo[39m: Inside init validations
+[2025-02-19 15:59:22] [32minfo[39m: Inside on_init validations
+[2025-02-19 15:59:22] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 15:59:22] [32minfo[39m: Inside confirm validations
+[2025-02-19 15:59:23] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 15:59:23] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 15:59:23] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 15:59:23] [32minfo[39m: Inside on_status validations
+[2025-02-19 15:59:23] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 15:59:23] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 15:59:23] [32minfo[39m: Validation module completed.
+[2025-02-19 15:59:23] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 15:59:23] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:09:23] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:09:25] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:09:29] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:09:31] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:09:34] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:09:38] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 16:09:39] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 16:09:39] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 16:09:39] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 16:09:39] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 16:09:39] [32minfo[39m: sorted 2 flows
+[2025-02-19 16:09:39] [32minfo[39m: Running validation module...
+[2025-02-19 16:09:39] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 16:09:39] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 16:09:40] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:09:40] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:09:40] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 16:09:40] [32minfo[39m: Inside search validations
+[2025-02-19 16:09:40] [32minfo[39m: Validated search
+[2025-02-19 16:09:40] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:09:40] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:09:40] [32minfo[39m: Inside search validations
+[2025-02-19 16:09:40] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 16:09:40] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 16:09:40] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 16:09:40] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:09:40] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 16:09:40] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:09:40] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 16:09:40] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 16:09:40] [32minfo[39m: Inside select validations
+[2025-02-19 16:09:40] [32minfo[39m: Validating items in select
+[2025-02-19 16:09:40] [32minfo[39m: Inside on_select validations
+[2025-02-19 16:09:41] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 16:09:41] [32minfo[39m: Inside init validations
+[2025-02-19 16:09:41] [32minfo[39m: Inside on_init validations
+[2025-02-19 16:09:41] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 16:09:41] [32minfo[39m: Inside confirm validations
+[2025-02-19 16:09:41] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 16:09:41] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 16:09:41] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 16:09:41] [32minfo[39m: Inside on_status validations
+[2025-02-19 16:09:41] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 16:09:41] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 16:09:41] [32minfo[39m: Validation module completed.
+[2025-02-19 16:09:41] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 16:09:41] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:10:35] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:10:38] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:10:40] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:11:13] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:11:23] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:11:30] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:11:36] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:11:41] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:11:42] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:11:55] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:03] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:05] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:07] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:16] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:21] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:22] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:24] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:27] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:31] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:49] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:12:58] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:13:01] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:14:00] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:14:03] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:14:39] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:14:42] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 16:14:42] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 16:14:43] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 16:14:43] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 16:14:43] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 16:14:43] [32minfo[39m: sorted 2 flows
+[2025-02-19 16:14:43] [32minfo[39m: Running validation module...
+[2025-02-19 16:14:43] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 16:14:43] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 16:14:43] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:14:43] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:14:43] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 16:14:44] [32minfo[39m: Inside search validations
+[2025-02-19 16:14:44] [32minfo[39m: Validated search
+[2025-02-19 16:14:44] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:14:44] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:14:44] [32minfo[39m: Inside search validations
+[2025-02-19 16:14:44] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 16:14:44] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 16:14:44] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 16:14:44] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:14:44] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 16:14:44] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:14:44] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 16:14:44] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 16:14:44] [32minfo[39m: Inside select validations
+[2025-02-19 16:14:44] [32minfo[39m: Validating items in select
+[2025-02-19 16:14:44] [32minfo[39m: Inside on_select validations
+[2025-02-19 16:14:44] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 16:14:44] [32minfo[39m: Inside init validations
+[2025-02-19 16:14:44] [32minfo[39m: Inside on_init validations
+[2025-02-19 16:14:45] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 16:14:45] [32minfo[39m: Inside confirm validations
+[2025-02-19 16:14:45] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 16:14:45] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 16:14:45] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 16:14:45] [32minfo[39m: Inside on_status validations
+[2025-02-19 16:14:45] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 16:14:45] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 16:14:45] [32minfo[39m: Validation module completed.
+[2025-02-19 16:14:45] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 16:14:45] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:27:07] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:10] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:14] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:20] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:21] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:26] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:28] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:31] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:38] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:41] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:27:44] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 16:27:44] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 16:27:44] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 16:27:44] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 16:27:44] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 16:27:44] [32minfo[39m: sorted 2 flows
+[2025-02-19 16:27:44] [32minfo[39m: Running validation module...
+[2025-02-19 16:27:45] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 16:27:45] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 16:27:45] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:27:45] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:27:45] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 16:27:45] [32minfo[39m: Inside search validations
+[2025-02-19 16:27:45] [32minfo[39m: Validated search
+[2025-02-19 16:27:45] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:27:46] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:27:46] [32minfo[39m: Inside search validations
+[2025-02-19 16:27:46] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 16:27:46] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 16:27:46] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 16:27:46] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:27:46] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 16:27:46] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:27:46] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 16:27:46] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 16:27:46] [32minfo[39m: Inside select validations
+[2025-02-19 16:27:46] [32minfo[39m: Validating items in select
+[2025-02-19 16:27:46] [32minfo[39m: Inside on_select validations
+[2025-02-19 16:27:46] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 16:27:46] [32minfo[39m: Inside init validations
+[2025-02-19 16:27:46] [32minfo[39m: Inside on_init validations
+[2025-02-19 16:27:46] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 16:27:46] [32minfo[39m: Inside confirm validations
+[2025-02-19 16:27:46] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 16:27:46] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 16:27:46] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 16:27:46] [32minfo[39m: Inside on_status validations
+[2025-02-19 16:27:46] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 16:27:46] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 16:27:46] [32minfo[39m: Validation module completed.
+[2025-02-19 16:27:46] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 16:27:46] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:33:01] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:33:02] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:33:04] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:33:10] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:33:11] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 16:33:12] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 16:33:12] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 16:33:12] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 16:33:12] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 16:33:12] [32minfo[39m: sorted 2 flows
+[2025-02-19 16:33:12] [32minfo[39m: Running validation module...
+[2025-02-19 16:33:12] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 16:33:12] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 16:33:13] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:33:13] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:33:13] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 16:33:13] [32minfo[39m: Inside search validations
+[2025-02-19 16:33:13] [32minfo[39m: Validated search
+[2025-02-19 16:33:13] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:33:13] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:33:13] [32minfo[39m: Inside search validations
+[2025-02-19 16:33:13] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 16:33:13] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 16:33:13] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 16:33:13] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:33:13] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 16:33:13] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:33:13] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 16:33:13] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 16:33:13] [32minfo[39m: Inside select validations
+[2025-02-19 16:33:14] [32minfo[39m: Validating items in select
+[2025-02-19 16:33:14] [32minfo[39m: Inside on_select validations
+[2025-02-19 16:33:14] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 16:33:14] [32minfo[39m: Inside init validations
+[2025-02-19 16:33:14] [32minfo[39m: Inside on_init validations
+[2025-02-19 16:33:14] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 16:33:14] [32minfo[39m: Inside confirm validations
+[2025-02-19 16:33:14] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 16:33:14] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 16:33:14] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 16:33:14] [32minfo[39m: Inside on_status validations
+[2025-02-19 16:33:14] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 16:33:14] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 16:33:14] [32minfo[39m: Validation module completed.
+[2025-02-19 16:33:14] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 16:33:14] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:34:03] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:34:15] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:34:22] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:34:25] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:34:30] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 16:34:31] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 16:34:31] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 16:34:31] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 16:34:31] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 16:34:31] [32minfo[39m: sorted 2 flows
+[2025-02-19 16:34:31] [32minfo[39m: Running validation module...
+[2025-02-19 16:34:31] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 16:34:31] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 16:34:32] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:34:32] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:34:32] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 16:34:32] [32minfo[39m: Inside search validations
+[2025-02-19 16:34:32] [32minfo[39m: Validated search
+[2025-02-19 16:34:32] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:34:32] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:34:32] [32minfo[39m: Inside search validations
+[2025-02-19 16:34:32] [32minfo[39m: Validating stops for transactionId: fd0de9be-e841-4fc3-8dcd-86a2b3d9332d for search
+[2025-02-19 16:34:32] [31merror[39m: No data found for key: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H:fd0de9be-e841-4fc3-8dcd-86a2b3d9332d:stopCodesSet
+[2025-02-19 16:34:32] [31merror[39m: Fulfillment map is empty or not found.
+[2025-02-19 16:34:32] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:34:32] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 16:34:32] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:34:33] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 16:34:33] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 16:34:33] [32minfo[39m: Inside select validations
+[2025-02-19 16:34:33] [32minfo[39m: Validating items in select
+[2025-02-19 16:34:33] [32minfo[39m: Inside on_select validations
+[2025-02-19 16:34:33] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 16:34:33] [32minfo[39m: Inside init validations
+[2025-02-19 16:34:33] [32minfo[39m: Inside on_init validations
+[2025-02-19 16:34:33] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 16:34:33] [32minfo[39m: Inside confirm validations
+[2025-02-19 16:34:33] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 16:34:33] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 16:34:33] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 16:34:33] [32minfo[39m: Inside on_status validations
+[2025-02-19 16:34:33] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 16:34:33] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 16:34:33] [32minfo[39m: Validation module completed.
+[2025-02-19 16:34:33] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 16:34:33] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:39:07] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:39:17] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:40:07] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:40:14] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:40:14] [32minfo[39m: Received sessionId: j29TBYKG4V3OMErG43cGfFiQbD5cIb6H
+[2025-02-19 16:40:15] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 16:40:15] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 16:40:15] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 16:40:15] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 16:40:15] [32minfo[39m: sorted 2 flows
+[2025-02-19 16:40:15] [32minfo[39m: Running validation module...
+[2025-02-19 16:40:15] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 16:40:15] [32minfo[39m: Validating STATION_CODE_FLOW_CATALOG......
+[2025-02-19 16:40:16] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:40:16] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:40:16] [32minfo[39m: Validating STATION_CODE_FLOW_ORDER......
+[2025-02-19 16:40:16] [32minfo[39m: Inside search validations
+[2025-02-19 16:40:16] [32minfo[39m: Validated search
+[2025-02-19 16:40:16] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:40:16] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:40:16] [32minfo[39m: Inside search validations
+[2025-02-19 16:40:16] [32minfo[39m: Validated search
+[2025-02-19 16:40:16] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:40:16] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 16:40:16] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:40:16] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 16:40:16] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 16:40:16] [32minfo[39m: Inside select validations
+[2025-02-19 16:40:16] [32minfo[39m: Validating items in select
+[2025-02-19 16:40:16] [32minfo[39m: Inside on_select validations
+[2025-02-19 16:40:16] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 16:40:16] [32minfo[39m: Inside init validations
+[2025-02-19 16:40:16] [32minfo[39m: Inside on_init validations
+[2025-02-19 16:40:17] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 16:40:17] [32minfo[39m: Inside confirm validations
+[2025-02-19 16:40:17] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 16:40:17] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 16:40:17] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 16:40:17] [32minfo[39m: Inside on_status validations
+[2025-02-19 16:40:17] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 16:40:17] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 16:40:17] [32minfo[39m: Validation module completed.
+[2025-02-19 16:40:17] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 16:40:17] [32minfo[39m: Custom HTML report generated and sent.

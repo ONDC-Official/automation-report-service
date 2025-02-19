@@ -16,5 +16,4 @@ export async function utilityReport(flows: any) {
   const htmlReport = generateReportHTML(validatedFlows);
 
   return htmlReport;
-  return htmlReport;
 }
