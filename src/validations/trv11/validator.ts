@@ -5,20 +5,20 @@ import { checkJsonResponse } from "./responseSchemaValidator"; // Importing func
 import { saveData } from "../../utils/redisUtils";
 // Main validation function that processes the given payload based on the action
 export const validate = async (
-  element: WrappedPayload, // The payload object that contains the data to be validated
+  element: Payload, // The payload object that contains the data to be validated
   action: ValidationAction, // The action type that specifies which validation test to run
   sessionID: string,
   flowId: string
 ): Promise<TestResult> => {
   // Extracting version from the JSON request context
-  const version = element?.payload?.jsonRequest?.context?.version;
+  const version = element?.jsonRequest?.context?.version;
 
 
   // Initializing an object to store test results (passed, failed, and response data)
   let testResults: TestResult = { response: {}, passed: [], failed: [] };
 
   try {
-    const { jsonResponse } = element?.payload;
+    const { jsonResponse } = element;
 
     // If a JSON response is available, validate its schema
     if (jsonResponse) {
@@ -44,7 +44,7 @@ export const validate = async (
       // Helper function to run a specific test and handle its result
       const runTest = async (
         testFunction: Function, // The specific test function to be executed
-        element: WrappedPayload, // The payload to be passed to the test function
+        element: Payload, // The payload to be passed to the test function
         testResults: TestResult // The test results object to be updated
       ) => {
         try {
