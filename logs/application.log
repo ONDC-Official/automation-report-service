@@ -17264,3 +17264,121 @@ Require stack:
 [2025-02-19 16:40:17] [32minfo[39m: Validation module completed.
 [2025-02-19 16:40:17] [32minfo[39m: Generating custom HTML report...
 [2025-02-19 16:40:17] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:57:37] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 16:57:38] [32minfo[39m: Received sessionId: Js0tXpoiI1flKx8TD3-myUeY1L6vRYD2
+[2025-02-19 16:57:39] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 16:57:39] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 16:57:39] [32minfo[39m: Filtering payloads based on payload ids provided by UI backend cache...
+[2025-02-19 16:57:39] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 16:57:39] [32minfo[39m: sorted 1 flows
+[2025-02-19 16:57:39] [32minfo[39m: Running validation module...
+[2025-02-19 16:57:39] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 16:57:39] [32minfo[39m: Validating TECHNICAL_CANCELLATION_FLOW......
+[2025-02-19 16:57:40] [32minfo[39m: Inside search validations
+[2025-02-19 16:57:40] [31merror[39m: No data found for key: Js0tXpoiI1flKx8TD3-myUeY1L6vRYD2:1606a3f9-6098-4436-9c53-a75abcc3f010:apiMap
+[2025-02-19 16:57:40] [32minfo[39m: Validated search
+[2025-02-19 16:57:40] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:57:40] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:57:40] [32minfo[39m: Inside search validations
+[2025-02-19 16:57:40] [32minfo[39m: Validated search
+[2025-02-19 16:57:40] [32minfo[39m: Inside on_search validations
+[2025-02-19 16:57:40] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 16:57:40] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 16:57:40] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 16:57:40] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 16:57:40] [32minfo[39m: Inside select validations
+[2025-02-19 16:57:40] [32minfo[39m: Validating items in select
+[2025-02-19 16:57:40] [32minfo[39m: Inside on_select validations
+[2025-02-19 16:57:40] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 16:57:40] [32minfo[39m: Inside init validations
+[2025-02-19 16:57:40] [32minfo[39m: Inside on_init validations
+[2025-02-19 16:57:40] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 16:57:40] [32minfo[39m: Inside confirm validations
+[2025-02-19 16:57:41] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 16:57:41] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 16:57:41] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 16:57:41] [32minfo[39m: Inside on_status validations
+[2025-02-19 16:57:41] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 16:57:41] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 16:57:41] [32minfo[39m: Inside cancel validations
+[2025-02-19 16:57:41] [32minfo[39m: Inside on_cancel validations
+[2025-02-19 16:57:41] [32minfo[39m: Validation module completed.
+[2025-02-19 16:57:41] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 16:57:41] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 16:58:51] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 17:07:30] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 17:09:56] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 17:10:05] [32minfo[39m: Received sessionId: Js0tXpoiI1flKx8TD3-myUeY1L6vRYD2
+[2025-02-19 17:10:05] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 17:10:05] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 17:10:05] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 17:10:05] [32minfo[39m: sorted 1 flows
+[2025-02-19 17:10:05] [32minfo[39m: Running validation module...
+[2025-02-19 17:10:05] [31merror[39m: Error loading flowConfig.yaml: can not read a block mapping entry; a multiline key may not be an implicit key (170:23)
+
+ 167 |             - on_cancel
+ 168 |             - on_update
+ 169 | =
+ 170 |         optional_flows:
+-----------------------------^
+ 171 |           - DELAYED_CANCELLATION_FLOW_REJECTED
+ 172 |         validationModules: "../validations/trv11/vali ...
+[2025-02-19 17:10:05] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 17:10:05] [31merror[39m: Cannot convert undefined or null to object
+[2025-02-19 17:10:05] [32minfo[39m: Validating TECHNICAL_CANCELLATION_FLOW......
+[2025-02-19 17:10:05] [31merror[39m: Cannot read properties of undefined (reading 'length')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action search at index 0: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action on_search at index 1: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action search at index 2: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action on_search at index 3: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action select at index 4: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action on_select at index 5: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action init at index 6: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action on_init at index 7: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action confirm at index 8: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action on_confirm at index 9: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action on_status at index 11: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action cancel at index 12: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [31merror[39m: Error occurred for action on_cancel at index 13: Cannot read properties of undefined (reading 'split')
+[2025-02-19 17:10:05] [32minfo[39m: Validation module completed.
+[2025-02-19 17:10:05] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 17:10:05] [32minfo[39m: Custom HTML report generated and sent.
+[2025-02-19 17:11:29] [32minfo[39m: Server is running on http://localhost:3000
+[2025-02-19 17:11:31] [32minfo[39m: Received sessionId: Js0tXpoiI1flKx8TD3-myUeY1L6vRYD2
+[2025-02-19 17:11:31] [32minfo[39m: Fetching payloads from the database...
+[2025-02-19 17:11:31] [32minfo[39m: Fetched payloads from the database
+[2025-02-19 17:11:32] [32minfo[39m: sorting payloads by Flow ID...
+[2025-02-19 17:11:32] [32minfo[39m: sorted 1 flows
+[2025-02-19 17:11:32] [32minfo[39m: Running validation module...
+[2025-02-19 17:11:32] [32minfo[39m: Checking if all the required flows are tested
+[2025-02-19 17:11:32] [32minfo[39m: Validating TECHNICAL_CANCELLATION_FLOW......
+[2025-02-19 17:11:32] [32minfo[39m: Inside search validations
+[2025-02-19 17:11:32] [32minfo[39m: Validated search
+[2025-02-19 17:11:32] [32minfo[39m: Inside on_search validations
+[2025-02-19 17:11:33] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 17:11:33] [32minfo[39m: Inside search validations
+[2025-02-19 17:11:33] [32minfo[39m: Validated search
+[2025-02-19 17:11:33] [32minfo[39m: Inside on_search validations
+[2025-02-19 17:11:33] [32minfo[39m: Iterating and saving items for on_search
+[2025-02-19 17:11:33] [32minfo[39m: Validating fulfillments for on_search
+[2025-02-19 17:11:33] [31merror[39m: Error during on_search_2 validation: Fulfillments.type should be TRIP
+[2025-02-19 17:11:33] [32minfo[39m: Checking minimum and maximum item quantity in items
+[2025-02-19 17:11:33] [32minfo[39m: Inside select validations
+[2025-02-19 17:11:33] [32minfo[39m: Validating items in select
+[2025-02-19 17:11:33] [32minfo[39m: Inside on_select validations
+[2025-02-19 17:11:33] [32minfo[39m: Checking number of fulfillments in on_select
+[2025-02-19 17:11:33] [32minfo[39m: Inside init validations
+[2025-02-19 17:11:33] [32minfo[39m: Inside on_init validations
+[2025-02-19 17:11:33] [32minfo[39m: Checking number of fulfillments in on_init
+[2025-02-19 17:11:33] [32minfo[39m: Inside confirm validations
+[2025-02-19 17:11:33] [32minfo[39m: Inside on_confirm validations
+[2025-02-19 17:11:33] [32minfo[39m: Checking number of fulfillments in on_confirm
+[2025-02-19 17:11:33] [32minfo[39m: Checking authorization object in on_confirm
+[2025-02-19 17:11:33] [32minfo[39m: Inside on_status validations
+[2025-02-19 17:11:33] [32minfo[39m: Checking number of fulfillments in on_status
+[2025-02-19 17:11:33] [32minfo[39m: Checking authorization object in on_status
+[2025-02-19 17:11:33] [32minfo[39m: Inside cancel validations
+[2025-02-19 17:11:33] [32minfo[39m: Inside on_cancel validations
+[2025-02-19 17:11:33] [32minfo[39m: Validation module completed.
+[2025-02-19 17:11:33] [32minfo[39m: Generating custom HTML report...
+[2025-02-19 17:11:33] [32minfo[39m: Custom HTML report generated and sent.
