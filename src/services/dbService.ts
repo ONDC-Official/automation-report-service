@@ -30,7 +30,7 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
   }
 }
 
-export async function fetchSessionDetails(sessionID: string): Promise<WrappedPayload[]> {
+export async function fetchSessionDetails(sessionID: string): Promise<any> {
   try {
     const storageUrl = `${process.env.STORAGE_URL}/api/sessions/${sessionID}`;
     const response = await axios.get<WrappedPayload[]>(storageUrl);

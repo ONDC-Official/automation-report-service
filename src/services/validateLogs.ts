@@ -3,6 +3,8 @@ import axios, { AxiosError } from "axios";
 import { ParsedPayload } from "../types/parsedPayload";
 import { Result } from "../types/result";
 import dotenv from "dotenv";
+import { VALIDATION_URL } from "../utils/constants";
+import { logger } from "../utils/logger";
 dotenv.config();
 
 export async function validateFlows(parsedFlows: {
@@ -25,10 +27,12 @@ export async function validateLogs(
   flowId: string,
   parsedPayload: ParsedPayload
 ): Promise<Result> {
-  const validationUrl =
-    process.env.VALIDATION_URL ||
-    "https://log-validation.ondc.org/api/validate/trv";
 
+  const validationUrl =
+   VALIDATION_URL[parsedPayload?.domain] ||
+    "https://log-validation.ondc.org/api/validate";
+
+  logger.info(`Utility URL : ${validationUrl}`);
   try {
     const response = await axios.post<ApiResponse>(
       validationUrl,

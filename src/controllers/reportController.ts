@@ -7,6 +7,7 @@ import { generateCustomHTMLReport } from "../templates/generateReport"; // Impor
 import { logger } from "../utils/logger"; // Assuming you have a logger utility for logging info and errors
 import { RedisService } from "ondc-automation-cache-lib";
 import { filterPayloads } from "../utils/filterPayloads";
+import { ENABLED_DOMAINS } from "../utils/constants";
 
 // The main controller function that generates a report
 export async function generateReportController(req: Request, res: Response) {
@@ -28,6 +29,7 @@ export async function generateReportController(req: Request, res: Response) {
     }
     //Save session details in Reporting Cache
     const sessionDetails = await fetchSessionDetails(sessionId);
+
     await RedisService.setKey(
       `sessionDetails:${sessionId}`,
       JSON.stringify(sessionDetails)
@@ -54,9 +56,9 @@ export async function generateReportController(req: Request, res: Response) {
     logger.info(`sorted ${Object.keys(flows).length} flows`);
 
     // If the environment variable 'UTILITY' is set to "true", generate a utility report
-    if (process.env.UTILITY === "true") {
+    if (!ENABLED_DOMAINS.includes(sessionDetails?.domain)) {
       logger.info("Generating utility report...");
-      const htmlReport = await utilityReport(flows); // Generate the utility HTML report
+      const htmlReport = await utilityReport(flows, sessionId); // Generate the utility HTML report
       res.status(200).send(htmlReport); // Send the generated report as the response
       logger.info("Utility report generated and sent.");
       return;
