@@ -65,8 +65,9 @@ export async function validationModule(
           }
         }
       }
-
-      Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
+      if (MandatoryFlows.length > 0) {
+        Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
+      }
     }
 
     checkFlowExistence(testedFlows);

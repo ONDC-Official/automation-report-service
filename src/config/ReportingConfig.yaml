@@ -137,19 +137,6 @@ domains:
             - cancel
             - on_cancel
 
-            - search
-            - on_search
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - cancel
-            - on_cancel
-            - on_update
         optional_flows:
 
         validationModules: "../validations/trv11/validator#validate"
