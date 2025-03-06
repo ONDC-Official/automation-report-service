@@ -1,20 +1,43 @@
-import { Payload } from '../types/payload';
-import { ParsedPayload } from '../types/parsedPayload';
+import { Payload } from "../types/payload";
+import { ParsedPayload } from "../types/parsedPayload";
+import { RedisService } from "ondc-automation-cache-lib";
+import { FLOW_MAPPINGS } from "./constants";
 
-export async function parseFlows(flows: { [flowId: string]: Payload[] }): Promise<{ [flowId: string]: ParsedPayload }> {
+export async function parseFlows(
+  flows: {
+    [flowId: string]: Payload[];
+  },
+  sessionID: string
+): Promise<{ [flowId: string]: ParsedPayload }> {
   const parsedFlows: { [flowId: string]: ParsedPayload } = {};
+
+  let sessionDetails: any = await RedisService.getKey(
+    `sessionDetails:${sessionID}`
+  );
+
+  sessionDetails = JSON.parse(sessionDetails);
+
+  const domain = sessionDetails?.domain;
+  const version = sessionDetails?.version;
 
   // Parse each flow's payloads and create parsed payloads
   for (const [flowId, flowPayloads] of Object.entries(flows)) {
+    const mappedFlowId = FLOW_MAPPINGS[flowId];
+
     try {
-      parsedFlows[flowId] = parsePayloads(flowId, flowPayloads);
+      parsedFlows[flowId] = parsePayloads(
+        mappedFlowId,
+        flowPayloads,
+        domain,
+        version
+      );
     } catch (error) {
       console.error(`Error parsing flow ${flowId}:`, error);
       // Optionally handle invalid flows by adding an empty or error state.
       parsedFlows[flowId] = {
-        domain: "ONDC:TRV11",
-        version: "2.0.1",
-        flow: flowId,
+        domain: domain,
+        version: version,
+        flow: mappedFlowId,
         payload: {},
       };
     }
@@ -23,31 +46,44 @@ export async function parseFlows(flows: { [flowId: string]: Payload[] }): Promis
   return parsedFlows;
 }
 
-function parsePayloads(flowId: string, payloads: Payload[]): ParsedPayload {
+function parsePayloads(
+  flowId: string,
+  payloads: Payload[],
+  domain: string,
+  version: string
+): ParsedPayload {
   const parsedPayload: ParsedPayload = {
-    domain: "ONDC:TRV11",
-    version: "2.0.1",
+    domain: domain,
+    version: version,
     flow: flowId,
     payload: {},
   };
 
   // Group payloads by action
-  const groupedPayloads: { [key: string]: Payload[] } = payloads.reduce((groups, payload) => {
-    const action = payload.action?.toLowerCase();
-    if (!action) {
-      console.warn(`Missing action in payload for flow ID ${flowId}`, payload);
+  const groupedPayloads: { [key: string]: Payload[] } = payloads.reduce(
+    (groups, payload) => {
+      const action = payload.action?.toLowerCase();
+      if (!action) {
+        console.warn(
+          `Missing action in payload for flow ID ${flowId}`,
+          payload
+        );
+        return groups;
+      }
+      if (!groups[action]) {
+        groups[action] = [];
+      }
+      groups[action].push(payload);
       return groups;
-    }
-    if (!groups[action]) {
-      groups[action] = [];
-    }
-    groups[action].push(payload);
-    return groups;
-  }, {} as { [key: string]: Payload[] });
+    },
+    {} as { [key: string]: Payload[] }
+  );
 
   // Sort payloads by createdAt timestamp
   const allPayloads: Payload[] = Object.values(groupedPayloads).flat();
-  allPayloads.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  allPayloads.sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
 
   // Counters for numbered actions (search, on_search, cancel, on_cancel)
   const actionCounters: { [key: string]: number } = {
@@ -76,7 +112,16 @@ function parsePayloads(flowId: string, payloads: Payload[]): ParsedPayload {
       parsedPayload.payload[key] = payload.jsonRequest;
     }
     // Handling `select`, `on_select`, `init`, `on_init`, `confirm`, `on_confirm`, etc.
-    else if (action === "select" || action === "on_select" || action === "init" || action === "on_init" || action === "confirm" || action === "on_confirm" || action === "status" || action === "on_status") {
+    else if (
+      action === "select" ||
+      action === "on_select" ||
+      action === "init" ||
+      action === "on_init" ||
+      action === "confirm" ||
+      action === "on_confirm" ||
+      action === "status" ||
+      action === "on_status"
+    ) {
       parsedPayload.payload[action] = payload.jsonRequest;
     }
     // Handling `cancel` actions
@@ -103,11 +148,20 @@ function parsePayloads(flowId: string, payloads: Payload[]): ParsedPayload {
     }
   });
 
-   // Ensure all keys are added (even if empty)
-   const actionKeys = [
-     "select", "on_select", "init", "on_init", 
-    "confirm", "on_confirm", "status", "on_status", 
-    "soft_cancel", "soft_on_cancel", "cancel", "on_cancel"
+  // Ensure all keys are added (even if empty)
+  const actionKeys = [
+    "select",
+    "on_select",
+    "init",
+    "on_init",
+    "confirm",
+    "on_confirm",
+    "status",
+    "on_status",
+    "soft_cancel",
+    "soft_on_cancel",
+    "cancel",
+    "on_cancel",
   ];
 
   actionKeys.forEach((key) => {

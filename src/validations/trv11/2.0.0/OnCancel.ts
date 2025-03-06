@@ -40,7 +40,7 @@ export async function checkOnCancel(
         testResults.failed.push(`${error?.message}`);
       }
     } else if (apiMap[apiMap.length - 1] === "confirm_cancel") {
-      if (flowId === "USER_CANCEL_FLOW" || flowId === "TECHNICAL_CANCEL_FLOW") {
+      if (flowId === "USER_CANCELLATION_FLOW" || flowId === "TECHNICAL_CANCELLATION_FLOW") {
         try {
           assert.ok(
             orderStatus === "CANCELLED",
