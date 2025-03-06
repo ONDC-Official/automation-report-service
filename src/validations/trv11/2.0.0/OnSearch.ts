@@ -30,10 +30,11 @@ export async function checkOnSearch(
   const { jsonRequest, jsonResponse } = payload;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
+
   const { message } = jsonRequest;
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
-
+  
   const providers = message?.catalog?.providers || [];
 
   // Iterate over providers
