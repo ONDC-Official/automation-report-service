@@ -52,22 +52,22 @@ export async function validationModule(
           logger.error("testedFlows is not an array or is undefined");
         }
 
-        if (!domainConfig || !Array.isArray(domainConfig.optional_flows)) {
+        if (
+          !Array.isArray(domainConfig?.optional_flows) &&
+          !testedFlows.includes(allFlows[i])
+        ) {
           logger.error(
             "domainConfig.optional_flows is not an array or is undefined"
           );
-        }
-
-        if (!testedFlows.includes(allFlows[i])) {
+          MandatoryFlows.push(allFlows[i]);
+        } else if (!testedFlows.includes(allFlows[i])) {
           if (!domainConfig?.optional_flows.includes(allFlows[i])) {
             // Raise an error if flow is not in optional_flows
             MandatoryFlows.push(allFlows[i]);
           }
         }
       }
-      if (MandatoryFlows.length > 0) {
-        Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
-      }
+      Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
     }
 
     checkFlowExistence(testedFlows);
