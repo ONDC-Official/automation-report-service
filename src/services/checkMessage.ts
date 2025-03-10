@@ -1,4 +1,4 @@
-import { WrappedPayload } from "../types/payload";
+import { Payload, WrappedPayload } from "../types/payload";
 import { loadConfig } from "../utils/configLoader"; // Importing function to load configuration for validation modules
 import { logger } from "../utils/logger";
 
@@ -39,7 +39,7 @@ const dynamicValidator = (
 // Main function that checks the message validation based on the domain and action
 export const checkMessage = async (
   domain: string, // The domain (e.g., 'search', 'select') to determine the appropriate validation module
-  element: WrappedPayload, // The payload or element to be validated
+  element: Payload, // The payload or element to be validated
   action: string, // The specific action to be validated (e.g., 'init', 'confirm')
   sessionId: string,
   flowId: string,

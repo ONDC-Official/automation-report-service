@@ -1,92 +1,120 @@
 import { Result } from "../types/result";
 import { ApiResponse } from "../types/utilityResponse";
 
-/**
- * Generates an HTML report based on a list of flow IDs and their respective validation results.
- * @param flowReports An array where each item contains a flow ID and its validation result.
- * @returns A string representing the HTML report.
- */
 export function generateReportHTML(
-    flowReports: { flowId: string; results: Result }[]
-  ): string {
-    const reportRows = flowReports
-      .map(({ flowId, results }) => {
-        // Handle unsuccessful results
-        if (!results.success) {
-          return `
+  flowReports: { flowId: string; results: Result }[]
+): string {
+  const reportRows = flowReports
+    .map(({ flowId, results }) => {
+      if (!results.success) {
+        return `
             <tr>
               <td>${flowId}</td>
-              <td style="color: red;">FAILED</td>
+              <td class="failed">FAILED</td>
               <td>${results.error}</td>
-              <td>${results.details ? formatReportItems(results.details.response?.report) : "N/A"}</td>
+              <td>${
+                results.details
+                  ? formatReportItems(results.details.response?.report)
+                  : "N/A"
+              }
+              </td>
             </tr>
           `;
-        }
-  
-        // Extract data for successful results
-        const report = results.response?.response?.report;
-        if (!report) {
-          return `
+      }
+
+      const report = results.response?.response?.report;
+      if (!report) {
+        return `
             <tr>
               <td>${flowId}</td>
-              <td style="color: orange;">NO REPORT</td>
+              <td class="no-report">NO REPORT</td>
               <td colspan="2">The response did not include a report.</td>
             </tr>
           `;
-        }
-  
-        const transactions = Object.entries(report).map(
-          ([transactionId, transactionResult]) => `
+      }
+
+      const transactions = Object.entries(report).map(
+        ([transactionId, transactionResult]) => `
             <tr>
               <td>${transactionId}</td>
-              <td style="color: ${
-                transactionResult.status === "success" ? "green" : "red"
-              };">${transactionResult.status.toUpperCase()}</td>
-              <td>${transactionResult.details ? JSON.stringify(transactionResult.details) : "N/A"}</td>
+              <td class="${
+                transactionResult.status === "success" ? "success" : "failed"
+              }">
+                ${transactionResult.status.toUpperCase()}
+              </td>
+              <td>${
+                transactionResult.details
+                  ? JSON.stringify(transactionResult.details)
+                  : "N/A"
+              }</td>
               <td>${formatReportItems(transactionResult.details?.report)}</td>
             </tr>
           `
-        );
-  
-        return `
-          <tr>
-            <td colspan="4" style="font-weight: bold; background-color: #f9f9f9;">Flow ID: ${flowId}</td>
+      );
+
+      return `
+          <tr class="flow-header">
+            <td colspan="4">Flow ID: ${flowId}</td>
           </tr>
           ${transactions.join("")}
         `;
-      })
-      .join("");
-  
-    return `
+    })
+    .join("");
+
+  return `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Validation Results Report</title>
+          <title>Log Validation Utility Report</title>
           <style>
             body {
               font-family: Arial, sans-serif;
               margin: 20px;
+              background-color: #f4f9ff;
+              color: #333;
             }
             h1 {
               margin-bottom: 20px;
+              color: #0056b3;
             }
             table {
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 20px;
+              background-color: #ffffff;
+              box-shadow: 0px 0px 10px rgba(0, 86, 179, 0.2);
             }
             th, td {
               border: 1px solid #ddd;
-              padding: 8px;
+              padding: 10px;
+              text-align: left;
             }
             th {
-              background-color: #f2f2f2;
+              background-color: #0056b3;
+              color: white;
             }
             tr:nth-child(even) {
-              background-color: #f9f9f9;
+              background-color: #e6f0ff;
             }
             tr:hover {
-              background-color: #f1f1f1;
+              background-color: #cce0ff;
+            }
+            .flow-header {
+              font-weight: bold;
+              background-color: #d9e8ff;
+              text-align: center;
+            }
+            .success {
+              color: green;
+              font-weight: bold;
+            }
+            .failed {
+              color: red;
+              font-weight: bold;
+            }
+            .no-report {
+              color: orange;
+              font-weight: bold;
             }
             .cross-icon {
               color: red;
@@ -95,7 +123,7 @@ export function generateReportHTML(
           </style>
         </head>
         <body>
-          <h1>Validation Results Report</h1>
+          <h1>Log Validation Utility Report</h1>
           <table>
             <thead>
               <tr>
@@ -112,21 +140,15 @@ export function generateReportHTML(
         </body>
       </html>
     `;
-  }
-  
-  /**
-   * Formats report items into HTML with each line item on a new line, prefixed by a red cross.
-   * @param report The report object to format.
-   * @returns A string of HTML with formatted report items.
-   */
-  function formatReportItems(report: Record<string, any>): string {
-    if (!report || typeof report !== "object") return "N/A";
-  
-    return Object.entries(report)
-      .map(([key, value]) => {
-        // If the value contains multiple issues, format each issue separately
-        if (typeof value === "object" && !Array.isArray(value)) {
-          return `
+}
+
+function formatReportItems(report: Record<string, any>): string {
+  if (!report || typeof report !== "object") return "N/A";
+
+  return Object.entries(report)
+    .map(([key, value]) => {
+      if (typeof value === "object" && !Array.isArray(value)) {
+        return `
             <div>
               <strong>${key}:</strong>
               <ul>
@@ -143,9 +165,8 @@ export function generateReportHTML(
               </ul>
             </div>
           `;
-        } else if (Array.isArray(value)) {
-          // Handle array of issues
-          return `
+      } else if (Array.isArray(value)) {
+        return `
             <div>
               <strong>${key}:</strong>
               <ul>
@@ -162,14 +183,13 @@ export function generateReportHTML(
               </ul>
             </div>
           `;
-        } else {
-          // Single issue as a string or primitive
-          return `
+      } else {
+        return `
             <div>
               <strong>${key}:</strong> ${value}
             </div>
           `;
-        }
-      })
-      .join("");
-  }
+      }
+    })
+    .join("");
+}

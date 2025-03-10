@@ -1,14 +1,14 @@
 import assert from "assert";
-import { TestResult, WrappedPayload } from "../../../types/payload";
+import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 import { updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkOnConfirm(
-  element: WrappedPayload,
+  element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  const payload = element?.payload;
+  const payload = element;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 
@@ -23,7 +23,7 @@ export async function checkOnConfirm(
 
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
-  
+
   const { context, message } = jsonRequest;
   const contextTimestamp = context?.timestamp;
   const items = message?.order?.items;
@@ -37,7 +37,7 @@ export async function checkOnConfirm(
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const count = item?.quantity?.selected?.count;
-      const expectedLength = count ;
+      const expectedLength = count;
 
       // Assertion: Check if fulfillment_ids.length matches count + 1
       assert.ok(

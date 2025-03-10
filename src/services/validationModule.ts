@@ -1,4 +1,9 @@
-import { FlowValidationResult, WrappedPayload, Report } from "../types/payload"; // Importing types for flow validation results and payload structure
+import {
+  FlowValidationResult,
+  WrappedPayload,
+  Report,
+  Payload,
+} from "../types/payload"; // Importing types for flow validation results and payload structure
 import { loadConfig } from "../utils/configLoader"; // Import flow configuration for the sequence of expected actions
 import { checkMessage } from "./checkMessage"; // Import the checkMessage function for validating the actions
 import { actions } from "../utils/constants"; // Import available actions for validation
@@ -14,7 +19,7 @@ function isValidAction(action: string): action is ValidationAction {
 // Validation Module for processing grouped payloads and validating their sequence and actions
 export async function validationModule(
   groupedPayloads: {
-    [flowId: string]: WrappedPayload[]; // Grouping payloads by flowId
+    [flowId: string]: Payload[]; // Grouping payloads by flowId
   },
   sessionID: string
 ): Promise<Report> {
@@ -47,21 +52,24 @@ export async function validationModule(
           logger.error("testedFlows is not an array or is undefined");
         }
 
-        if (!domainConfig || !Array.isArray(domainConfig.optional_flows)) {
+        if (
+          !Array.isArray(domainConfig?.optional_flows) &&
+          !testedFlows.includes(allFlows[i])
+        ) {
           logger.error(
             "domainConfig.optional_flows is not an array or is undefined"
           );
-        }
-
-        if (!testedFlows.includes(allFlows[i])) {
+          MandatoryFlows.push(allFlows[i]);
+        } else if (!testedFlows.includes(allFlows[i])) {
           if (!domainConfig?.optional_flows.includes(allFlows[i])) {
             // Raise an error if flow is not in optional_flows
             MandatoryFlows.push(allFlows[i]);
           }
         }
       }
-
-      Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
+      console.log(MandatoryFlows);
+      if (MandatoryFlows.length > 0)
+        Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
     }
 
     checkFlowExistence(testedFlows);
@@ -71,29 +79,36 @@ export async function validationModule(
   // Iterate through each flowId in the grouped payloads
   for (const flowId in groupedPayloads) {
     const requiredSequence = domainConfig?.flows?.[flowId]; // Retrieve the required sequence of actions from config
+
     const payloads = groupedPayloads[flowId]; // Get the payloads for the current flowId
     const errors: string[] = []; // Initialize an array to store errors for the flow
     const messages: any = {}; // Initialize an object to store validation messages for each action
     let validSequence = true; // Flag to track whether the sequence of actions is valid
     logger.info(`Validating ${flowId}......`);
     // Step 1: Validate Action Sequence for each flow
-    for (let i = 0; i < requiredSequence.length; i++) {
-      let expectedAction = requiredSequence[i]; // Get the expected action from the sequence
-      const actualAction = payloads[i]?.payload?.action; // Get the actual action from the current payload
 
-      // If the actual action does not match the expected action, mark the sequence as invalid
-      if (actualAction?.toLowerCase() !== expectedAction) {
-        if (expectedAction === "select") expectedAction = `select or init`;
-        validSequence = false;
-        errors.push(
-          `Error: Expected '${expectedAction}' after '${payloads[
-            i - 1
-          ].payload?.action.toLowerCase()}', but found '${
-            actualAction?.toLowerCase() || "undefined"
-          }'.`
-        );
-        break; // Exit the loop since the sequence is broken
+    try {
+      for (let i = 0; i < requiredSequence.length; i++) {
+        let expectedAction = requiredSequence[i]; // Get the expected action from the sequence
+
+        const actualAction = payloads[i]?.action; // Get the actual action from the current payload
+
+        // If the actual action does not match the expected action, mark the sequence as invalid
+        if (actualAction?.toLowerCase() !== expectedAction) {
+          if (expectedAction === "select") expectedAction = `select or init`;
+          validSequence = false;
+          errors.push(
+            `Error: Expected '${expectedAction}' after '${payloads[
+              i - 1
+            ]?.action.toLowerCase()}', but found '${
+              actualAction?.toLowerCase() || "undefined"
+            }'.`
+          );
+          break; // Exit the loop since the sequence is broken
+        }
       }
+    } catch (error) {
+      logger.error(error);
     }
 
     // Define counters for each action to keep track of the number of occurrences in the sequence
@@ -119,11 +134,11 @@ export async function validationModule(
       const element = payloads[i]; // Get the current payload from the sequence
 
       // Convert the action to lowercase and check if it's valid
-      const action = element?.payload.action.toLowerCase();
+      const action = element?.action.toLowerCase();
 
       // Ensure the action is valid before proceeding with validation
       if (isValidAction(action)) {
-        const domain = element?.payload?.jsonRequest?.context?.domain; // Extract domain from the payload for validation
+        const domain = element?.jsonRequest?.context?.domain; // Extract domain from the payload for validation
 
         try {
           // Validate the message based on the domain, payload, and action

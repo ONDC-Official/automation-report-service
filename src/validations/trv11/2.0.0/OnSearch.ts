@@ -1,4 +1,4 @@
-import { TestResult, WrappedPayload } from "../../../types/payload";
+import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 import {
   getTransactionIds,
@@ -8,11 +8,11 @@ import {
 import assert from "assert";
 
 export async function checkOnSearch(
-  element: WrappedPayload,
+  element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  const payload = element?.payload;
+  const payload = element;
   if (!payload) {
     logger.error("Payload is missing");
     return { response: {}, passed: [], failed: ["Payload is missing"] };
@@ -30,10 +30,11 @@ export async function checkOnSearch(
   const { jsonRequest, jsonResponse } = payload;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
+
   const { message } = jsonRequest;
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
-
+  
   const providers = message?.catalog?.providers || [];
 
   // Iterate over providers

@@ -73,32 +73,44 @@ export const addTransactionId = async (
   transactionId: string
 ) => {
   // Check if the sessionId exists; initialize with a new Map containing the flowId if it doesn't
-  if (!sessionTransactionMap.has(sessionId)) {
-    const flowMap = new Map<string, { transactionId: string }[]>();
-    flowMap.set(flowId, []); // Initialize the flowId with an empty array
-    sessionTransactionMap.set(sessionId, flowMap);
+
+  try {
+    if (!sessionTransactionMap.has(sessionId)) {
+      const flowMap = new Map<string, { transactionId: string }[]>();
+      flowMap.set(flowId, []);
+      sessionTransactionMap.set(sessionId, flowMap);
+    }
+
+    // Get the flow map for the session
+    const flowMap = sessionTransactionMap.get(sessionId);
+
+    if (!flowMap?.has(flowId)) {
+      flowMap?.set(flowId, []);
+    }
+
+    const transactions = flowMap?.get(flowId) ?? [];
+
+    // Check if the transactionId already exists
+    const isDuplicate = transactions.some(
+      (t) => t.transactionId === transactionId
+    );
+
+    if (!isDuplicate) {
+      transactions.push({ transactionId });
+    }
+
+    flowMap?.set(flowId, transactions); // Ensure the updated list is stored
+
+    // Convert the nested structure to an object for storage in Redis
+    const sessionData = Object.fromEntries(flowMap?.entries() || []);
+
+    await RedisService.setKey(
+      `${sessionId}:transactionMap`,
+      JSON.stringify(sessionData)
+    );
+  } catch (error) {
+    logger.error(error);
   }
-
-  // Get the flow map for the session
-  const flowMap = sessionTransactionMap.get(sessionId);
-
-  // Ensure the flow exists in the session
-  if (!flowMap?.has(flowId)) {
-    flowMap?.set(flowId, []);
-  }
-
-  // Add the transaction ID to the flow's array
-  flowMap?.get(flowId)?.push({ transactionId });
-
-  // Convert the nested structure to an object for storage in Redis
-  const sessionData = Object.fromEntries(
-    Array.from(flowMap?.entries() || []).map(([key, value]) => [key, value])
-  );
-
-  await RedisService.setKey(
-    `${sessionId}:transactionMap`,
-    JSON.stringify(sessionData)
-  );
 };
 
 /**
