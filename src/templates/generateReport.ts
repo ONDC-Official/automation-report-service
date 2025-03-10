@@ -162,9 +162,10 @@ export function generateCustomHTMLReport(data: Report) {
             ${
               Object.entries(data?.finalReport).length
                 ? `<ul class="result-list">${Object.entries(data?.finalReport)
-                    .map(
-                      ([key, value]) =>
-                        `<li class="result-item failed"><span class="icon fail">✘</span>${value}</li>`
+                    .map(([key, value]) =>
+                      key.length > 0
+                        ? `<li class="result-item failed"><span class="icon fail">✘</span>${value}</li>`
+                        : ""
                     )
                     .join("")}</ul>`
                 : "<p>All flows have been tested</p>"
