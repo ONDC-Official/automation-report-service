@@ -10,6 +10,8 @@ domains:
           STATION_CODE_FLOW_ORDER:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -19,7 +21,9 @@ domains:
             - status
             - on_status
 
-          USER_CANCEL_FLOW:
+          USER_CANCELLATION_FLOW:
+            - search
+            - on_search
             - search
             - on_search
             - select
@@ -36,6 +40,8 @@ domains:
           TECHNICAL_CANCELLATION_FLOW:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -50,6 +56,8 @@ domains:
           DELAYED_CANCELLATION_FLOW_REJECTED:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -61,6 +69,8 @@ domains:
             - on_status
 
           DELAYED_CANCELLATION_FLOW_ACCEPTED:
+            - search
+            - on_search
             - search
             - on_search
             - select
@@ -84,6 +94,8 @@ domains:
           STATION_CODE_FLOW_ORDER:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -93,7 +105,9 @@ domains:
             - status
             - on_status
 
-          USER_CANCEL_FLOW:
+          USER_CANCELLATION_FLOW:
+            - search
+            - on_search
             - search
             - on_search
             - select
@@ -110,6 +124,8 @@ domains:
           TECHNICAL_CANCELLATION_FLOW:
             - search
             - on_search
+            - search
+            - on_search
             - select
             - on_select
             - init
@@ -121,31 +137,6 @@ domains:
             - cancel
             - on_cancel
 
-          DELAYED_CANCELLATION_FLOW_REJECTED:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - cancel
-            - on_cancel
-            - on_status
-
-          DELAYED_CANCELLATION_FLOW_ACCEPTED:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - cancel
-            - on_cancel
-            - on_update
         optional_flows:
-          - DELAYED_CANCELLATION_FLOW_REJECTED
+
         validationModules: "../validations/trv11/validator#validate"

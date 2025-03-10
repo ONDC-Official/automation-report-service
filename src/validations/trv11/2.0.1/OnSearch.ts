@@ -1,4 +1,4 @@
-import { TestResult, WrappedPayload } from "../../../types/payload";
+import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 import {
   getTransactionIds,
@@ -8,11 +8,11 @@ import {
 import assert from "assert";
 
 export async function checkOnSearch(
-  element: WrappedPayload,
+  element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  const payload = element?.payload;
+  const payload = element;
   if (!payload) {
     logger.error("Payload is missing");
     return { response: {}, passed: [], failed: ["Payload is missing"] };

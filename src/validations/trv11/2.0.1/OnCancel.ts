@@ -1,15 +1,15 @@
 import assert from "assert";
-import { TestResult, WrappedPayload } from "../../../types/payload";
+import { TestResult, Payload } from "../../../types/payload";
 import { checkCommon } from "./commonChecks";
 import { logger } from "../../../utils/logger";
 import { fetchData, updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkOnCancel(
-  element: WrappedPayload,
+  element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  const payload = element?.payload;
+  const payload = element;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 
@@ -40,7 +40,7 @@ export async function checkOnCancel(
         testResults.failed.push(`${error?.message}`);
       }
     } else if (apiMap[apiMap.length - 1] === "confirm_cancel") {
-      if (flowId === "USER_CANCEL_FLOW" || flowId === "TECHNICAL_CANCEL_FLOW") {
+      if (flowId === "USER_CANCELLATION_FLOW" || flowId === "TECHNICAL_CANCELLATION_FLOW") {
         try {
           assert.ok(
             orderStatus === "CANCELLED",

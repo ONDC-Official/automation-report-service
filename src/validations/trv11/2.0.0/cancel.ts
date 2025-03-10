@@ -1,15 +1,15 @@
 import assert from "assert";
-import { TestResult, WrappedPayload } from "../../../types/payload";
+import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 import { fetchData, updateApiMap } from "../../../utils/redisUtils";
 import { BUYER_CANCEL_CODES } from "../../../utils/constants";
 
 export async function checkCancel(
-  element: WrappedPayload,
+  element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  const payload = element?.payload;
+  const payload = element;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
 
