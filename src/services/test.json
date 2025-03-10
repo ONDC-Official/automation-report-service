@@ -1,0 +1,52 @@
+{
+  "STATION_CODE_FLOW_CATALOG": [
+    "c3dd032f-4d8b-436a-b7a6-c82f3c1cbf51",
+    "ca643838-0cbd-44f5-a692-47687eb7f313"
+  ],
+  "STATION_CODE_FLOW_ORDER": [
+    "eada64e9-f7ce-448a-9b7b-2568711e8d34",
+    "6fdcace9-8fb6-4129-b2ba-34f50e2925d2",
+    "727e1545-5c57-45d4-aad5-a062eefb3dfc",
+    "367d1a02-e933-4052-b354-c736da8b6410",
+    "8b761531-4603-4f90-bc48-68a4f38a5f2d",
+    "c93e3918-3ceb-4615-8c69-acf5e18a784c",
+    "886a917b-9912-4b5f-9398-6e6c6536993f",
+    "b41cd117-6000-44bd-aa5b-e427693fae1b",
+    "f2979d81-3b0b-45bc-a8ab-8e463240eafa",
+    "dd0a0712-2f7b-48ea-8c07-bcdac8966a25",
+    "86409db1-1dbd-499b-9100-c132c8e22b76",
+    "c7f1b770-4a72-4d71-9528-9c1e7be337ac"
+  ],
+  "TECHNICAL_CANCELLATION_FLOW": [
+    "b9cc596c-5de2-4ce0-8447-8d634b091974",
+    "e85d97cf-9551-4ee0-b897-c0553d7555d8",
+    "79dfcf00-4e7f-4484-94d2-0712d67d7eea",
+    "39f76e06-5364-447e-9c8b-970fc5953bf6",
+    "f0e7fe18-e213-4e8e-ab05-adf616c2c2fb",
+    "0e9054ee-07ca-4c2f-bb4c-5b6e784e4df9",
+    "6e81aedf-ee37-4a73-b44c-78e9598286e3",
+    "ca8ad465-8d5b-4a13-a617-b4a6cce1c1d6",
+    "0a75157d-de83-486f-80d6-4b5991bd15b3",
+    "e430a1a1-7edd-4280-b5c0-bb8648eb721d",
+    "dce615db-11d2-4808-ab1f-d04e596674d6",
+    "256863e8-9b3b-4928-9841-251440cd2be8",
+    "2f65ee8f-940b-49eb-8f74-7beaf31ec563",
+    "c090e42e-af3d-4e97-b258-a9acfff535e1"
+  ],
+  "USER_CANCELLATION_FLOW": [
+    "a53328f5-e0e4-4eb5-9845-2e508c5c90d8",
+    "03b12ec7-230e-4ef7-bfe7-43dc3ca32b24",
+    "20e48b2b-e05d-4dd4-8d04-c4cb83c014f0",
+    "0304571c-18ba-439b-8e14-e93be939e28e",
+    "949abebb-c07a-464c-80d7-5d4f626111a0",
+    "6ec5ce7b-0e74-49e1-869c-d5b52ced0a61",
+    "9d3da6fe-7da5-40fb-96d6-22a564c2f234",
+    "6a23a15a-ee5c-4f6c-b3de-b6ace1078092",
+    "bebe72d8-c93e-4fd2-8189-6a508d7e4ce4",
+    "a1a19fb5-da2a-4184-a2e6-a8b6ec3daeb6",
+    "3008caea-3ed5-492e-a922-a176ff45eb77",
+    "6be51c51-716e-4510-b6f0-ebfa533f388e",
+    "5992f69b-e5da-4e74-a8a6-f0c0a0631a88",
+    "42cdf956-68fe-4ddc-b5e3-eb1fe998ca9c"
+  ]
+}
