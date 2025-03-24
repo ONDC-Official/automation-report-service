@@ -46,12 +46,12 @@
 #### /on_status
 
 - Tracking should be enabled (`true`) for hyperlocal (Immediate Delivery).
-- If `categoryId` is 'Immediate Delivery' and `fulfillment.tracking !== true` and `ffState !== 'Cancelled'`, then tracking should be enabled.
 - If `on_status.state` is 'Complete' and `payment.type` is 'ON-FULFILLMENT`:
   - Payment status should be `'PAID'`.
   - Payment time should be recorded.
-- In case of RTO, fulfillment with type 'Delivery' needs to be in `RTO` state.
 - Pickup timestamp (`fulfillments/start/time/timestamp`) cannot change for fulfillment states `${ffState}` ('Out-for-delivery', 'At-destination-hub', 'In-transit').
+- pickup timestamp cannot be future dated
+- delivery timestamp cannot be future dated
 
 #### /on_track
 

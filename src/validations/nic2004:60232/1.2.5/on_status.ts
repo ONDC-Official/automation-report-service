@@ -1,7 +1,7 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
-import { fetchData } from "../../../utils/redisUtils";
+import { fetchData, saveData } from "../../../utils/redisUtils";
 
 export async function checkOnStatus(
   element: Payload,
@@ -109,6 +109,58 @@ export async function checkOnStatus(
         testResults.failed.push(error.message);
       }
 
+      if (ffState === "Order-picked-up") {
+        saveData(sessionID, transactionId, "pickupTimestamp", pickupTimestamp);
+      }
+
+      try {
+        assert.ok(
+          ffState == "Order-picked-up" &&
+            (contextTimestamp > pickupTimestamp ||
+              contextTimestamp === pickupTimestamp),
+          `Pickup timstamp (fulfillments/start/time/timestamp cannot change when fulfillment state is ${ffState}`
+        );
+        testResults.passed.push(
+          `Pickup timestamp validation passed (${ffState})`
+        );
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
+      try {
+        const pickedTimetamp = fetchData(
+          sessionID,
+          transactionId,
+          "pickupTimestamp"
+        );
+        assert.ok(
+          (ffState == "Out-for-delivery" ||
+            ffState == "At-destination-hub" ||
+            ffState == "In-transit") &&
+            pickupTimestamp !== pickedTimetamp,
+          `Pickup timstamp (fulfillments/start/time/timestamp cannot change when fulfillment state is ${ffState}`
+        );
+        testResults.passed.push(
+          `Pickup timestamp validation passed (${ffState})`
+        );
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
+      try {
+        assert.ok(
+          ffState == "Order-delivered" &&
+            (contextTimestamp > deliveryTimestamp ||
+              contextTimestamp === deliveryTimestamp),
+          `Delivery timstamp (fulfillments/end/time/timestamp cannot change when fulfillment state is ${ffState}`
+        );
+        testResults.passed.push(
+          `Delivery timestamp validation passed (${ffState})`
+        );
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
       // Tracking tag validation
       try {
         assert.ok(
