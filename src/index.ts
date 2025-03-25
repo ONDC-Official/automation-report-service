@@ -21,7 +21,7 @@ try {
 app.use(express.json());
 
 // Routes
-app.use("/generate-report", reportRouter);
+app.use("/report", reportRouter);
 
 // Global error handler middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
