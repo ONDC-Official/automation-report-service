@@ -1,4 +1,4 @@
-name: ONDC Automation Reporting Service Deployment
+name: Dev Deployment
 
 on:
   push:
