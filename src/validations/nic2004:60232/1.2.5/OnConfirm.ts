@@ -63,7 +63,7 @@ export async function checkOnConfirm(
   }
 
   try {
-    const confirmCreatedAt = fetchData(sessionID, transactionId, "createdAt");
+    const confirmCreatedAt = await fetchData(sessionID, transactionId, "createdAt");
     assert.ok(
       updatedAt !== confirmCreatedAt,
       "order/updated_at` should be updated w.r.t context/timestamp"

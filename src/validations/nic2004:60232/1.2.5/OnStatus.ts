@@ -30,7 +30,6 @@ export async function checkOnStatus(
   const paymentStatus = message?.order?.payment?.status;
   const paymentType = message?.order?.payment?.type;
   const paymentTimestamp = message?.order?.payment?.time?.timestamp;
-  console.log(JSON.stringify(message));
 
   if (orderState === "Complete" && paymentType === "ON-FULFILLMENT") {
     try {
@@ -84,135 +83,144 @@ export async function checkOnStatus(
   }
 
   try {
-    fulfillments.forEach((fulfillment: any) => {
-      const ffState = fulfillment?.state?.descriptor?.code;
-      const pickupTimestamp = fulfillment?.start?.time?.timestamp;
-      const deliveryTimestamp = fulfillment?.end?.time?.timestamp;
-      const trackingTag = fulfillment?.tags?.find(
-        (tag: { code: string }) => tag.code === "tracking"
-      );
+    fulfillments.forEach(async (fulfillment: any) => {
+      if (fulfillment.type === "Delivery") {
+        const ffState = fulfillment?.state?.descriptor?.code;
+        const pickupTimestamp = fulfillment?.start?.time?.timestamp;
+        const deliveryTimestamp = fulfillment?.end?.time?.timestamp;
+        const trackingTag = fulfillment?.tags?.find(
+          (tag: { code: string }) => tag.code === "tracking"
+        );
 
-      if (shipmentType === "P2H2P") {
-        try {
-          assert.ok(
-            fulfillment["@ondc/org/awb_no"],
-            "AWB no is required for P2H2P shipments"
-          );
-          testResults.passed.push("AWB number validation passed");
-        } catch (error: any) {
-          logger.error(`Error during ${action} validation: ${error.message}`);
-          testResults.failed.push(error.message);
+        if (shipmentType === "P2H2P") {
+          try {
+            assert.ok(
+              fulfillment["@ondc/org/awb_no"],
+              "AWB no is required for P2H2P shipments"
+            );
+            testResults.passed.push("AWB number validation passed");
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
         }
-      }
 
-      try {
-        const prePickupStates = [
-          "Pending",
-          "Agent-assigned",
-          "Searching-for-agent",
-          "At-pickup",
-        ].includes(ffState);
-        const hasTimestamps = pickupTimestamp || deliveryTimestamp;
-
-        assert.ok(
-          !(prePickupStates && hasTimestamps),
-          `Pickup/Delivery timestamp should not be provided when fulfillment state is '${ffState}'`
-        );
-
-        testResults.passed.push(
-          "Pickup/Delivery timestamp requirement validation passed"
-        );
-      } catch (error: any) {
-        logger.error(`Error during ${action} validation: ${error.message}`);
-        testResults.failed.push(error.message);
-      }
-
-      try {
-        assert.ok(
-          !(
-            ["Agent-assigned", "Order-picked-up", "Out-for-delivery"].includes(
-              ffState
-            ) && orderState !== "In-progress"
-          ),
-          "Order state should be 'In-progress'"
-        );
-        testResults.passed.push("Order state validation passed");
-      } catch (error: any) {
-        logger.error(`Error during ${action} validation: ${error.message}`);
-        testResults.failed.push(error.message);
-      }
-
-      if (ffState === "Order-picked-up" && pickupTimestamp) {
-        saveData(sessionID, transactionId, "pickupTimestamp", pickupTimestamp);
         try {
+          const prePickupStates = [
+            "Pending",
+            "Agent-assigned",
+            "Searching-for-agent",
+            "At-pickup",
+          ].includes(ffState);
+          const hasTimestamps = pickupTimestamp || deliveryTimestamp;
+
           assert.ok(
-            contextTimestamp >= pickupTimestamp,
-            "Pickup timestamp cannot be future-dated w.r.t context timestamp"
+            !(prePickupStates && hasTimestamps),
+            `Pickup/Delivery timestamp should not be provided when fulfillment state is '${ffState}'`
           );
-          testResults.passed.push("Pickup timestamp validation passed");
-        } catch (error: any) {
-          logger.error(`Error during ${action} validation: ${error.message}`);
-          testResults.failed.push(error.message);
-        }
-      }
-      const pickedTimestamp = fetchData(
-        sessionID,
-        transactionId,
-        "pickupTimestamp"
-      );
-      if (
-        ["Out-for-delivery", "At-destination-hub", "In-transit"].includes(
-          ffState
-        ) &&
-        pickedTimestamp
-      ) {
-        try {
-          assert.ok(
-            pickupTimestamp === pickedTimestamp,
-            `Pickup timestamp cannot change once fulfillment state is '${ffState}'`
-          );
+
           testResults.passed.push(
-            "Pickup timestamp immutability validation passed"
+            "Pickup/Delivery timestamp requirement validation passed"
           );
         } catch (error: any) {
           logger.error(`Error during ${action} validation: ${error.message}`);
           testResults.failed.push(error.message);
         }
-      }
-      if (ffState === "Order-delivered" && deliveryTimestamp) {
-        try {
-          assert.ok(
-            contextTimestamp >= deliveryTimestamp,
-            "Delivery timestamp cannot be future-dated w.r.t context timestamp"
-          );
-          testResults.passed.push("Delivery timestamp validation passed");
-        } catch (error: any) {
-          logger.error(`Error during ${action} validation: ${error.message}`);
-          testResults.failed.push(error.message);
-        }
-      }
 
-      const isOrderPickedUp =
-        ffState === "Order-picked-up" || ffState === "Out-for-delivery";
-      const isTrackingEnabled = Boolean(fulfillment.tracking); // Ensure boolean value
-      const isTrackingTagPresent =
-        trackingTag !== undefined && trackingTag !== null;
-      // Only check tracking tag if tracking is enabled
-      if (isOrderPickedUp && isTrackingEnabled) {
         try {
           assert.ok(
-            isTrackingTagPresent,
-            "Tracking tag must be provided once order is picked up and tracking is enabled"
+            !(
+              [
+                "Agent-assigned",
+                "Order-picked-up",
+                "Out-for-delivery",
+              ].includes(ffState) && orderState !== "In-progress"
+            ),
+            "Order state should be 'In-progress'"
           );
-          testResults.passed.push("Tracking tag validation passed");
+          testResults.passed.push("Order state validation passed");
         } catch (error: any) {
           logger.error(`Error during ${action} validation: ${error.message}`);
           testResults.failed.push(error.message);
         }
-      } else {
-        testResults.failed.push(
-          `tracking should be enabled (true) in fulfillments/tracking`
+
+        if (ffState === "Order-picked-up" && pickupTimestamp) {
+          saveData(
+            sessionID,
+            transactionId,
+            "pickupTimestamp",
+            pickupTimestamp
+          );
+          try {
+            assert.ok(
+              contextTimestamp >= pickupTimestamp,
+              "Pickup timestamp cannot be future-dated w.r.t context timestamp"
+            );
+            testResults.passed.push("Pickup timestamp validation passed");
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
+        }
+        const pickedTimestamp = await fetchData(
+          sessionID,
+          transactionId,
+          "pickupTimestamp"
         );
+        if (
+          ["Out-for-delivery", "At-destination-hub", "In-transit"].includes(
+            ffState
+          ) &&
+          pickedTimestamp
+        ) {
+          try {
+            assert.ok(
+              pickupTimestamp === pickedTimestamp,
+              `Pickup timestamp cannot change once fulfillment state is '${ffState}'`
+            );
+            testResults.passed.push(
+              "Pickup timestamp immutability validation passed"
+            );
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
+        }
+        if (ffState === "Order-delivered" && deliveryTimestamp) {
+          try {
+            assert.ok(
+              contextTimestamp >= deliveryTimestamp,
+              "Delivery timestamp cannot be future-dated w.r.t context timestamp"
+            );
+            testResults.passed.push("Delivery timestamp validation passed");
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
+        }
+
+        const isOrderPickedUp =
+          ffState === "Order-picked-up" || ffState === "Out-for-delivery";
+        const isTrackingEnabled = Boolean(fulfillment.tracking); // Ensure boolean value
+        const isTrackingTagPresent =
+          trackingTag !== undefined && trackingTag !== null;
+        // Only check tracking tag if tracking is enabled
+        if (isOrderPickedUp && isTrackingEnabled) {
+          try {
+            assert.ok(
+              isTrackingTagPresent,
+              "Tracking tag must be provided once order is picked up and tracking is enabled"
+            );
+            testResults.passed.push("Tracking tag validation passed");
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
+        } else {
+          testResults.failed.push(
+            `tracking should be enabled (true) in fulfillments/tracking`
+          );
+        }
       }
     });
   } catch (error: any) {

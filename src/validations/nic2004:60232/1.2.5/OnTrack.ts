@@ -2,7 +2,6 @@ import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 
-
 export async function checkOnTrack(
   element: Payload,
   sessionID: string,
@@ -22,21 +21,35 @@ export async function checkOnTrack(
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
   const { context, message } = jsonRequest;
-  const contextTimestamp = context?.timestamp;
-  const billingTimestamp = message?.billing?.time?.timestamp;
+
+  const contextTimestamp = new Date(context?.timestamp || "");
+  const locationTimestamp = new Date(message?.tracking?.location?.time?.timestamp || "");
+  const updatedTimestamp = new Date(message?.tracking?.location?.updated_at || "");
+
   try {
     assert.ok(
-      contextTimestamp > billingTimestamp ||
-        contextTimestamp === billingTimestamp,
-      "Billing timestamp should be less than or equal to context/timestamp"
+      locationTimestamp <= contextTimestamp && locationTimestamp <= updatedTimestamp,
+      "Location timestamp should not be future dated w.r.t context timestamp and updated timestamp"
     );
-    testResults.passed.push("Billing timestamp validation passed");
+    testResults.passed.push("Location timestamp validation passed");
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
+    testResults.failed.push(error.message);
   }
 
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
+  try {
+    assert.ok(
+      updatedTimestamp <= contextTimestamp,
+      "Updated timestamp should not be future dated w.r.t context timestamp"
+    );
+    testResults.passed.push("Updated timestamp validation passed");
+  } catch (error: any) {
+    logger.error(`Error during ${action} validation: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+
+  if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
+
   return testResults;
 }
