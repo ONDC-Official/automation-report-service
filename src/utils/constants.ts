@@ -11,7 +11,10 @@ export const actions: String[] = [
   "on_cancel",
   "update",
   "on_update",
+  "status",
   "on_status",
+  "track",
+  "on_track",
 ];
 
 export const MANDATORY_FLOWS: String[] = [
@@ -80,4 +83,3 @@ export const hasTwoOrLessDecimalPlaces = (inputString: string) => {
     return true; // No decimal part, automatically satisfies the condition
   }
 };
-

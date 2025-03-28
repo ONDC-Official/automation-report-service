@@ -27,7 +27,7 @@ export async function checkOnInit(
   const transactionId = context.transaction_id;
   const quote = message?.order?.quote;
   const billingTimestamp = message?.order?.billing?.time?.timestamp;
-  const billingTimeInit = fetchData(sessionID, transactionId, "billingTimestamp");
+  const billingTimeInit = await fetchData(sessionID, transactionId, "billingTimestamp");
 
   try {
     assert.ok(

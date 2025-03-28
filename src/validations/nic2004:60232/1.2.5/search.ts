@@ -32,10 +32,10 @@ export async function checkSearch(
             return compareDates(holidayDate, contextTimestamp);
           })
         : true, // If no holidays, the check should pass
-      "Holidays should not be past dated"
+      "provider/holidays should not be past dated"
     );
 
-    testResults.passed.push("Holidays validation passed");
+    testResults.passed.push("provider/holidays date check validation passed");
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(`${error.message}`);

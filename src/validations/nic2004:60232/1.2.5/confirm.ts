@@ -32,7 +32,7 @@ export async function checkConfirm(
   try {
     assert.ok(
       contextTimestamp > createdAt || contextTimestamp === createdAt,
-      "order.created_at timestamp should be less than or equal to context/timestamp"
+      "order.created_at timestamp cannot be future dated w.r.t context/timestamp"
     );
     testResults.passed.push("order.created_at timestamp validation passed");
   } catch (error: any) {
@@ -43,7 +43,7 @@ export async function checkConfirm(
   try {
     assert.ok(
       contextTimestamp > updatedAt || contextTimestamp === updatedAt,
-      "order.updated_at timestamp should be less than or equal to context/timestamp"
+      "order.updated_at cannot be future dated w.r.t context/timestamp"
     );
     testResults.passed.push("order.updated_at timestamp validation passed");
   } catch (error: any) {
