@@ -1,7 +1,7 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
-
+import { saveData } from "../../../utils/redisUtils";
 
 export async function checkInit(
   element: Payload,
@@ -23,7 +23,9 @@ export async function checkInit(
 
   const { context, message } = jsonRequest;
   const contextTimestamp = context?.timestamp;
-  const billingTimestamp = message?.billing?.time?.timestamp;
+  const transactionId = context.transaction_id;
+  const billingTimestamp = message?.order?.billing?.time?.timestamp;
+  saveData(sessionID, transactionId, "billingTimestamp", billingTimestamp);
   try {
     assert.ok(
       contextTimestamp > billingTimestamp ||
@@ -36,7 +38,7 @@ export async function checkInit(
     testResults.failed.push(`${error.message}`);
   }
 
-  if (testResults.passed.length < 1)
+  if (testResults.passed.length < 1 && testResults.failed.length<1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

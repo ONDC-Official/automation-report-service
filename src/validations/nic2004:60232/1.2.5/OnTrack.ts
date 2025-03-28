@@ -3,7 +3,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 
 
-export async function checkInit(
+export async function checkOnTrack(
   element: Payload,
   sessionID: string,
   flowId: string
@@ -36,7 +36,7 @@ export async function checkInit(
     testResults.failed.push(`${error.message}`);
   }
 
-  if (testResults.passed.length < 1)
+  if (testResults.passed.length < 1 && testResults.failed.length<1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

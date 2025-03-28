@@ -25,39 +25,40 @@ export async function checkOnUpdate(
   const transactionId = context?.transaction_id;
   const contextTimestamp = context?.timestamp;
   const fulfillments = message?.order?.fulfillments;
-  const shipmentType = message?.items[0].descriptor?.code;
+  const shipmentType = message?.order?.items[0].descriptor?.code;
 
-  try {
-    assert.ok(
-      fulfillments.every(
-        (fulfillment: any) =>
-          fulfillment["@ondc/org/awb_no"] && shipmentType === "P2H2P"
-      ),
-      "AWB no is required for P2H2P shipments"
-    );
-    testResults.passed.push("AWB number for P2H2P validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
+  if (shipmentType === "P2H2P") {
+    try {
+      assert.ok(
+        fulfillments.every(
+          (fulfillment: any) =>
+            fulfillment["@ondc/org/awb_no"] && shipmentType === "P2H2P"
+        ),
+        "AWB no is required for P2H2P shipments"
+      );
+      testResults.passed.push("AWB number for P2H2P validation passed");
+    } catch (error: any) {
+      logger.error(`Error during ${action} validation: ${error.message}`);
+      testResults.failed.push(error.message);
+    }
+
+    try {
+      assert.ok(
+        fulfillments.every((fulfillment: any) => {
+          const tags = fulfillment?.tags;
+          const shippingLabel = tags?.find(
+            (tag: any) => tag.code === "shipping_label"
+          );
+          shipmentType === "P2H2P" && shippingLabel;
+        }),
+        "Shipping label is required for P2H2P shipments"
+      );
+      testResults.passed.push("Shipping label for P2H2P validation passed");
+    } catch (error: any) {
+      logger.error(`Error during ${action} validation: ${error.message}`);
+      testResults.failed.push(error.message);
+    }
   }
-
-  try {
-    assert.ok(
-      fulfillments.every((fulfillment: any) => {
-        const tags = fulfillment?.tags;
-        const shippingLabel = tags?.find(
-          (tag: any) => tag.code === "shipping_label"
-        );
-        shipmentType === "P2H2P" && shippingLabel;
-      }),
-      "Shipping label is required for P2H2P shipments"
-    );
-    testResults.passed.push("Shipping label for P2H2P validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
-
   try {
     assert.ok(
       fulfillments.every(async (fulfillment: any) => {
@@ -94,7 +95,7 @@ export async function checkOnUpdate(
     testResults.failed.push(error.message);
   }
 
-  if (testResults.passed.length < 1)
+  if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

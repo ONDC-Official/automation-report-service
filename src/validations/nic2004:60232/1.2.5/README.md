@@ -6,7 +6,8 @@
 
 #### /on_search
 
-- categories/time/timestamp or items/time/timestamp should be relative to context/timestamp as per the TAT provided
+- categories/time/timestamp or items/time/timestamp should be relative to context/timestamp as per the TAT 
+- both forward and backward shipments should be provided
 
 #### /init
 
