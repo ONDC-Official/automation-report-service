@@ -40,7 +40,7 @@ export async function checkSearch(
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(`${error.message}`);
   }
-  if (testResults.passed.length < 1)
+  if (testResults.passed.length < 1 && testResults.failed.length<1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

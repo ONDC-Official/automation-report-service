@@ -69,3 +69,15 @@ export function compareDates(
     return false;
   }
 }
+
+export const hasTwoOrLessDecimalPlaces = (inputString: string) => {
+  const parts = inputString.split(".");
+
+  if (parts.length === 2) {
+    const decimalPart = parts[1];
+    return decimalPart.length <= 2;
+  } else {
+    return true; // No decimal part, automatically satisfies the condition
+  }
+};
+

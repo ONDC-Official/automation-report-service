@@ -140,47 +140,47 @@ domains:
         optional_flows:
 
         validationModules: "../validations/trv11/validator#validate"
-  nic2004:60232:
-    versions:
-      "1.2.5":
-        flows:
-          ORDER_FLOW_BASELINE:
-            - search
-            - on_search
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - update
-            - on_update
-            - status
-            - on_status
-            - on_status
-            - track
-            - on_track
-            - on_status
+  "nic2004:60232":
+      versions:
+        "1.2.5":
+          flows:
+            ORDER_FLOW_BASE_LINE:
+              - search
+              - on_search
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - update
+              - on_update
+              - status
+              - on_status
+              - on_status
+              - track
+              - on_track
+              - on_status
 
-          RTO_FLOW:
-            - search
-            - on_search
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - update
-            - on_update
-            - status
-            - on_status
-            - on_status
-            - on_status
-            - on_cancel
-            - on_status
+            RTO_FLOW:
+              - search
+              - on_search
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - update
+              - on_update
+              - status
+              - on_status
+              - on_status
+              - on_status
+              - on_cancel
+              - on_status
 
-          CASH_ON_DELIVERY_FLOW:
-          PREPAID_PAYMENT_FLOW:
-          QUICK_COMMERCE_FLOW:
-        optional_flows:
-          - CASH_ON_DELIVERY_FLOW
-          - PREPAID_PAYMENT_FLOW
-          - QUICK_COMMERCE_FLOW
-        validationModules: "../validations/nic2004:60232/validator#validate"
+            CASH_ON_DELIVERY_FLOW:
+            PREPAID_PAYMENT_FLOW:
+            QUICK_COMMERCE_FLOW:
+          optional_flows:
+            - CASH_ON_DELIVERY_FLOW
+            - PREPAID_PAYMENT_FLOW
+            - QUICK_COMMERCE_FLOW
+          validationModules: "../validations/nic2004:60232/validator#validate"

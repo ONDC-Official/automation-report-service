@@ -67,7 +67,7 @@ export async function validationModule(
           }
         }
       }
-      console.log(MandatoryFlows);
+
       if (MandatoryFlows.length > 0)
         Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
     }

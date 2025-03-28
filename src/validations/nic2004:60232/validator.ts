@@ -11,7 +11,7 @@ export const validate = async (
   flowId: string
 ): Promise<TestResult> => {
   // Extracting version from the JSON request context
-  const version = element?.jsonRequest?.context?.version;
+  const version = element?.jsonRequest?.context?.version || element?.jsonRequest?.context?.core_version;
 
 
   // Initializing an object to store test results (passed, failed, and response data)
@@ -29,16 +29,15 @@ export const validate = async (
     try {
       const { checkSearch } = await import(`./${version}/search`); // Importing the 'search' test based on the version
       const { checkOnSearch } = await import(`./${version}/OnSearch`); // Importing the 'on_search' test based on the version
-      const { checkSelect } = await import(`./${version}/select`); // Importing the 'select' test based on the version
-      const { checkOnSelect } = await import(`./${version}/OnSelect`); // Importing the 'on_select' test based on the version
       const { checkInit } = await import(`./${version}/init`); // Importing the 'init' test based on the version
       const { checkOnInit } = await import(`./${version}/OnInit`); // Importing the 'on_init' test based on the version
       const { checkConfirm } = await import(`./${version}/confirm`); // Importing the 'confirm' test based on the version
       const { checkOnConfirm } = await import(`./${version}/OnConfirm`); // Importing the 'on_confirm' test based on the version
       const { checkOnStatus } = await import(`./${version}/OnStatus`); // Importing the 'on_status' test based on the version
-      const { checkCancel } = await import(`./${version}/cancel`);
+      // const { checkCancel } = await import(`./${version}/cancel`);
       const { checkOnCancel } = await import(`./${version}/OnCancel`);
-      const { checkStatus } = await import(`./${version}/status`);
+      // const { checkStatus } = await import(`./${version}/status`);
+      const { checkUpdate } = await import(`./${version}/update`);
       const { checkOnUpdate } = await import(`./${version}/OnUpdate`);
 
       // Helper function to run a specific test and handle its result
@@ -77,14 +76,6 @@ export const validate = async (
           await runTest(checkOnSearch, element, testResults);
           break;
 
-        case "select":
-          await runTest(checkSelect, element, testResults);
-          break;
-
-        case "on_select":
-          await runTest(checkOnSelect, element, testResults);
-          break;
-
         case "init":
           await runTest(checkInit, element, testResults);
           break;
@@ -97,6 +88,11 @@ export const validate = async (
           await runTest(checkConfirm, element, testResults);
           break;
 
+          case "update":
+            await runTest(checkUpdate, element, testResults);
+            break;
+  
+
         case "on_confirm":
           await runTest(checkOnConfirm, element, testResults);
           break;
@@ -105,17 +101,17 @@ export const validate = async (
           await runTest(checkOnStatus, element, testResults);
           break;
 
-        case "cancel":
-          await runTest(checkCancel, element, testResults);
-          break;
+        // case "cancel":
+        //   await runTest(checkCancel, element, testResults);
+        //   break;
 
         case "on_cancel":
           await runTest(checkOnCancel, element, testResults);
           break;
 
-        case "status":
-          await runTest(checkStatus, element, testResults);
-          break;
+        // case "status":
+        //   await runTest(checkStatus, element, testResults);
+        //   break;
 
         case "on_update":
           await runTest(checkOnUpdate, element, testResults);
