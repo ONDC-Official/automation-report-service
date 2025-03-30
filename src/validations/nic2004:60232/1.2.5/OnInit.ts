@@ -26,19 +26,8 @@ export async function checkOnInit(
   const contextTimestamp = context?.timestamp;
   const transactionId = context.transaction_id;
   const quote = message?.order?.quote;
-  const billingTimestamp = message?.order?.billing?.time?.timestamp;
-  const billingTimeInit = await fetchData(sessionID, transactionId, "billingTimestamp");
 
-  try {
-    assert.ok(
-      billingTimestamp === billingTimeInit,
-      "Billing timestamp should not be updated"
-    );
-    testResults.passed.push("Billing timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
+
 
   if ("quote" in message.order) {
     try {

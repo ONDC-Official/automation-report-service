@@ -20,8 +20,8 @@ export async function checkOnSearch(
   const { jsonRequest, jsonResponse } = payload;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
-
   const { context, message } = jsonRequest;
+
   const contextTimestamp = new Date(context?.timestamp || "");
   const onSearch = message?.catalog;
   let validFulfillmentIDs = new Set<string>();
@@ -71,8 +71,7 @@ export async function checkOnSearch(
         testResults.failed.push(error.message);
       }
       provider.categories.forEach((category) => {
-        const tatHours = extractTATHours(category?.time?.range?.duration);
-
+        const tatHours = extractTATHours(category?.time?.duration);
         let expectedDate = tatHours
           ? formatDate(
               new Date(contextTimestamp.getTime() + tatHours * 60 * 60 * 1000)
@@ -83,7 +82,7 @@ export async function checkOnSearch(
           if (["Standard Delivery", "Express Delivery"].includes(category.id)) {
             assert.ok(
               category.time?.timestamp === expectedDate,
-              `In bpp/providers/categories, for ${category.id}, expected TAT date should be ${expectedDate} based on duration (${category?.time?.range?.duration})`
+              `In bpp/providers/categories, for ${category.id}, expected TAT date should be ${expectedDate} based on duration (${category?.time?.duration})`
             );
 
             testResults.passed.push(
@@ -117,7 +116,7 @@ export async function checkOnSearch(
       });
 
       provider.items.forEach((item, i) => {
-        const tatHours = extractTATHours(item?.time?.range?.duration);
+        const tatHours = extractTATHours(item?.time?.duration);
 
         let expectedDate = tatHours
           ? formatDate(
@@ -127,7 +126,10 @@ export async function checkOnSearch(
 
         try {
           if (
-            ["Standard Delivery", "Express Delivery"].includes(item.category_id)
+            ["Standard Delivery", "Express Delivery"].includes(
+              item.category_id
+            ) &&
+            item?.time
           ) {
             assert.ok(
               tatHours !== null,
@@ -136,7 +138,7 @@ export async function checkOnSearch(
 
             assert.ok(
               item.time?.timestamp === expectedDate,
-              `For item ${item.id} (${item.category_id}), expected TAT date should be ${expectedDate} based on duration (${item?.time?.range?.duration})`
+              `For item ${item.id} (${item.category_id}), expected TAT date should be ${expectedDate} based on duration (${item?.time?.duration})`
             );
 
             testResults.passed.push(

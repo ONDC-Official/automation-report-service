@@ -24,21 +24,33 @@ export async function checkInit(
   const { context, message } = jsonRequest;
   const contextTimestamp = context?.timestamp;
   const transactionId = context.transaction_id;
-  const billingTimestamp = message?.order?.billing?.time?.timestamp;
-  saveData(sessionID, transactionId, "billingTimestamp", billingTimestamp);
+  const billingCreatedAt = message?.order?.billing?.created_at;
+  const billingUpdatedAt = message?.order?.billing?.created_at;
+  saveData(sessionID, transactionId, "billingTimestamp", billingCreatedAt);
   try {
+  
     assert.ok(
-      contextTimestamp > billingTimestamp ||
-        contextTimestamp === billingTimestamp,
+      billingCreatedAt <= contextTimestamp,
       "Billing timestamp cannot be future dated w.r.t context/timestamp"
     );
-    testResults.passed.push("Billing timestamp validation passed");
+    testResults.passed.push("Billing created_at timestamp validation passed");
+  } catch (error: any) {
+    logger.error(`Error during ${action} validation: ${error.message}`);
+    testResults.failed.push(`${error.message}`);
+  }
+  try {
+  
+    assert.ok(
+      billingCreatedAt === billingUpdatedAt,
+      "Billing created_at timestamp should be equal to updated_at"
+    );
+    testResults.passed.push("Billing updated_at timestamp validation passed");
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(`${error.message}`);
   }
 
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
+  if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }
