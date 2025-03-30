@@ -51,7 +51,7 @@ export async function checkOnConfirm(
 
   try {
     assert.ok(
-      createdAt > updatedAt,
+      createdAt < updatedAt,
       "order/created_at` cannot be future dated w.r.t `order/updated_at"
     );
     testResults.passed.push(
@@ -100,7 +100,7 @@ export async function checkOnConfirm(
       }),
       "Delivery timestamp (fulfillments/end/time/timestamp cannot be provided before order is picked up"
     );
-    testResults.passed.push("Timestamp check in fulfillments/end/time passed");
+    testResults.passed.push("Timestamp (not required) check in fulfillments/end/time passed");
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(`${error.message}`);
@@ -120,7 +120,7 @@ export async function checkOnConfirm(
       }),
       `Pickup time range (fulfillments/start/time/range) should be provided if ready_to_ship = yes in /confirm`
     );
-    testResults.passed.push("Pickup time range validation passed");
+    testResults.passed.push("Pickup time range (not required) validation passed");
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(`${error.message}`);

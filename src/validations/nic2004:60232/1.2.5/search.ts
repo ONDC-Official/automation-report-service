@@ -23,7 +23,8 @@ export async function checkSearch(
 
   const { context, message } = jsonRequest;
   const contextTimestamp = context?.timestamp;
-  const holidays = message?.provider?.time?.schedule?.holidays;
+  const holidays = message?.intent?.provider?.time?.schedule?.holidays;
+
   try {
     assert.ok(
       Array.isArray(holidays) && holidays.length > 0
@@ -40,7 +41,7 @@ export async function checkSearch(
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(`${error.message}`);
   }
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
+  if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }
