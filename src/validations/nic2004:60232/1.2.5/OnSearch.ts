@@ -38,11 +38,36 @@ export async function checkOnSearch(
 
     return days + hours;
   };
+  function getTimestampFromDuration(
+    date: string | Date,
+    duration: string
+  ): string {
+    console.log("duratioN", duration);
+    const durationRegex = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?/;
+    const match = duration.match(durationRegex);
 
+    if (!match) {
+      throw new Error("Invalid ISO 8601 duration format");
+    }
+
+    const days = match[1] ? parseInt(match[1], 10) || 0 : 0;
+    const hours = match[2] ? parseInt(match[2], 10) || 0 : 0;
+    const minutes = match[3] ? parseInt(match[3], 10) || 0 : 0;
+    const seconds = match[4] ? parseInt(match[4], 10) || 0 : 0;
+
+    const futureDate = new Date(date);
+
+    futureDate.setDate(futureDate.getDate() + days);
+    futureDate.setHours(futureDate.getHours() + hours);
+    futureDate.setMinutes(futureDate.getMinutes() + minutes);
+    futureDate.setSeconds(futureDate.getSeconds() + seconds);
+
+    return futureDate.toISOString();
+  }
   const currentDate = formatDate(contextTimestamp);
-  const nextDate = formatDate(
-    new Date(contextTimestamp.setDate(contextTimestamp.getDate() + 1))
-  );
+  let nextDate: Date = new Date(contextTimestamp); // Ensure it's a Date object
+  nextDate.setDate(nextDate.getDate() + 1);
+  const formattedNextDate: string = formatDate(nextDate); // Store formatted string separately
   let hasForwardShipment = false;
   let hasBackwardShipment = false;
 
@@ -72,11 +97,11 @@ export async function checkOnSearch(
       }
       provider.categories.forEach((category) => {
         const tatHours = extractTATHours(category?.time?.duration);
-        let expectedDate = tatHours
-          ? formatDate(
-              new Date(contextTimestamp.getTime() + tatHours * 60 * 60 * 1000)
-            )
-          : null;
+        let expectedDate = new Date(
+          getTimestampFromDuration(contextTimestamp, category?.time?.duration)
+        )
+          .toISOString()
+          .split("T")[0]; // Extracts YYYY-MM-DD
 
         try {
           if (["Standard Delivery", "Express Delivery"].includes(category.id)) {
@@ -110,7 +135,7 @@ export async function checkOnSearch(
           category.time?.timestamp !== nextDate
         ) {
           testResults.failed.push(
-            `In bpp/providers/categories, for Next Day Delivery, TAT date should be ${nextDate}`
+            `In bpp/providers/categories, for Next Day Delivery, TAT date should be ${formattedNextDate}`
           );
         }
       });
@@ -131,11 +156,6 @@ export async function checkOnSearch(
             ) &&
             item?.time
           ) {
-            assert.ok(
-              tatHours !== null,
-              `For item ${item.id} (${item.category_id}), TAT duration is missing`
-            );
-
             assert.ok(
               item.time?.timestamp === expectedDate,
               `For item ${item.id} (${item.category_id}), expected TAT date should be ${expectedDate} based on duration (${item?.time?.duration})`
