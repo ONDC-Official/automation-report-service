@@ -41,22 +41,22 @@ export async function checkOnUpdate(
       logger.error(`Error during ${action} validation: ${error.message}`);
       testResults.failed.push(error.message);
     }
-
-    try {
-      assert.ok(
-        fulfillments.every((fulfillment: any) => {
-          const tags = fulfillment?.tags;
-          const shippingLabel = tags?.find(
-            (tag: any) => tag.code === "shipping_label"
-          );
-          shipmentType === "P2H2P" && shippingLabel;
-        }),
-        "Shipping label is required for P2H2P shipments"
-      );
-      testResults.passed.push("Shipping label for P2H2P validation passed");
-    } catch (error: any) {
-      logger.error(`Error during ${action} validation: ${error.message}`);
-      testResults.failed.push(error.message);
+    let shippingLabel;
+    fulfillments.every((fulfillment: any) => {
+      const tags = fulfillment?.tags;
+      shippingLabel = tags?.find((tag: any) => tag.code === "shipping_label");
+    });
+    if (shipmentType === "P2H2P") {
+      try {
+        assert.ok(
+          shippingLabel,
+          "Shipping label is required for P2H2P shipments"
+        );
+        testResults.passed.push("Shipping label for P2H2P validation passed");
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
     }
   }
   try {
