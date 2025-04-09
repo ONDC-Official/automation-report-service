@@ -4,10 +4,19 @@
 
 - Provider holidays should not be past dated.
 
+## to do
+- Feature discovery for all enhanced feature flows with their respective feature codes
+- for PREPAID_PAYMENT_FLOW - payment/type should be ON-ORDER
+- for COD flow, cod tag = yes in linked order
+- for immediate delivery flow, retail category should be F&B,Grocery and category should be 'Immediate Delivery'
+- Order prep time should be according to the logistics category (as per the mapping)
+
+
 #### /on_search
 
 - categories/time/timestamp or items/time/timestamp should be relative to context/timestamp as per the TAT 
 - both forward and backward shipments should be provided
+- Feature discovery for all enhanced feature flows with their respective feature codes
 
 #### /init
 

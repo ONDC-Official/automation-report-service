@@ -243,6 +243,9 @@ domains:
     versions:
       "1.2.5":
         flows:
+          FEATURE_DISCOVERY:
+            - search
+            - on_search
           ORDER_FLOW_BASE_LINE:
             - search
             - on_search
@@ -267,7 +270,6 @@ domains:
             - on_confirm
             - update
             - on_update
-            - on_status
             - on_status
             - on_status
             - on_cancel
@@ -308,12 +310,11 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - on_status
             - update
             - on_update
             - on_status
             - on_status
-            - track
-            - on_track
             - on_status
           IMMEDIATE_DELIVERY_FLOW:
             - search
@@ -343,6 +344,9 @@ domains:
     versions:
       "1.2.5":
         flows:
+          FEATURE_DISCOVERY:
+            - search
+            - on_search
           ORDER_FLOW_BASE_LINE:
             - search
             - on_search
@@ -368,6 +372,7 @@ domains:
             - on_status
             - on_status
             - on_status
+            - on_status
             - on_cancel
             - on_status
 
@@ -384,18 +389,6 @@ domains:
             - on_status
             - on_status
           PREPAID_PAYMENT_FLOW:
-            - search
-            - on_search
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - update
-            - on_update
-            - on_status
-            - on_status
-            - on_status
-          QUICK_COMMERCE_FLOW:
             - search
             - on_search
             - init
@@ -426,6 +419,5 @@ domains:
           - RTO_FLOW
           - CASH_ON_DELIVERY_FLOW
           - PREPAID_PAYMENT_FLOW
-          - QUICK_COMMERCE_FLOW
           - WEIGHT_DIFFERENTIAL_FLOW
         validationModules: "../validations/ONDC:LOG11/validator#validate"
