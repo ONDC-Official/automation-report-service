@@ -149,7 +149,9 @@ export function validateLBNPFeaturesForFlows(
   }
 
   // Get the lsp_features tag
-  const lbnpFeaturesTag = intentTags.find((tag) => tag.code === "lbnp_features");
+  const lbnpFeaturesTag = intentTags.find(
+    (tag) => tag.code === "lbnp_features"
+  );
   if (!lbnpFeaturesTag || !Array.isArray(lbnpFeaturesTag.list)) {
     return false;
   }
@@ -180,4 +182,13 @@ export const LSPfeatureFlow = [
 export const LBNPfeatureFlow = [
   "WEIGHT_DIFFERENTIAL_FLOW",
   "PICKUP_DELIVERY_ATTEMPT",
+];
+
+export const statesAfterPickup = [
+  "Order-picked-up",
+  "In-transit",
+  "At-destination-hub",
+  "At-delivery",
+  "Delivery-rescheduled",
+  "Order-delivered"
 ];

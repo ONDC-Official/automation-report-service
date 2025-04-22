@@ -55,6 +55,7 @@
 - `start/time/range` is required in `/fulfillments` when `ready_to_ship = yes` in `/update`.
 - `start/time/timestamp` or `end/time/timestamp` cannot be provided in `/fulfillments` when fulfillment state is `${ffState}`.
 - Shipping label (`/start/instructions/images`) is required for P2H2P shipments.
+- for weight differential flow, diff tags and quote will be updated
 
 #### /on_status
 
@@ -65,7 +66,9 @@
 - Pickup timestamp (`fulfillments/start/time/timestamp`) cannot change for fulfillment states `${ffState}` ('Out-for-delivery', 'At-destination-hub', 'In-transit').
 - pickup timestamp cannot be future dated
 - delivery timestamp cannot be future dated
-- - `cod_collection_detail' tag should be present for COD flow once order is delivered
+- `cod_collection_detail' tag should be present for COD flow once order is delivered
+- for pickup and delivery attempt flows, additional fulfillment states (pickup and delivery scheduled) along with fulfillment tags are required
+
 
 #### /on_track
 

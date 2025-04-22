@@ -25,14 +25,13 @@ export async function checkOnUpdate(
   const transactionId = context?.transaction_id;
   const contextTimestamp = context?.timestamp;
   const fulfillments = message?.order?.fulfillments;
-  const shipmentType = message?.order?.items[0].descriptor?.code;
+  const quote = message?.order?.quote;
 
-  if (shipmentType === "P2H2P") {
+  if (context?.domain === "ONDC:LOG11") {
     try {
       assert.ok(
         fulfillments.every(
-          (fulfillment: any) =>
-            fulfillment["@ondc/org/awb_no"] && shipmentType === "P2H2P"
+          (fulfillment: any) => fulfillment["@ondc/org/awb_no"]
         ),
         "AWB no is required for P2H2P shipments"
       );
@@ -46,17 +45,16 @@ export async function checkOnUpdate(
       const tags = fulfillment?.tags;
       shippingLabel = tags?.find((tag: any) => tag.code === "shipping_label");
     });
-    if (shipmentType === "P2H2P") {
-      try {
-        assert.ok(
-          shippingLabel,
-          "Shipping label is required for P2H2P shipments"
-        );
-        testResults.passed.push("Shipping label for P2H2P validation passed");
-      } catch (error: any) {
-        logger.error(`Error during ${action} validation: ${error.message}`);
-        testResults.failed.push(error.message);
-      }
+
+    try {
+      assert.ok(
+        shippingLabel,
+        "Shipping label is required for P2H2P shipments"
+      );
+      testResults.passed.push("Shipping label for P2H2P validation passed");
+    } catch (error: any) {
+      logger.error(`Error during ${action} validation: ${error.message}`);
+      testResults.failed.push(error.message);
     }
   }
   try {
@@ -94,7 +92,60 @@ export async function checkOnUpdate(
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(error.message);
   }
+  if (flowId === "WEIGHT_DIFFERENTIAL_FLOW") {
+    let diffTagsPresent = false;
 
+    for (const fulfillment of fulfillments) {
+      const ffState = fulfillment?.state?.descriptor?.code;
+      // Validate presence of 'linked_order_diff'
+      const hasDiffTag = fulfillment.tags.some(
+        (tag: { code: string }) => tag.code === "linked_order_diff"
+      );
+
+      // Validate presence of 'linked_order_diff_proof'
+      const hasDiffProofTag = fulfillment.tags.some(
+        (tag: { code: string }) => tag.code === "linked_order_diff_proof"
+      );
+
+      if (hasDiffTag) diffTagsPresent = true;
+      if (ffState !== "Agent-assigned") {
+        try {
+          assert.ok(
+            hasDiffProofTag && hasDiffTag,
+            `'linked_order_diff' and 'linked_order_diff_proof' tags are missing in fulfillment.tags`
+          );
+          testResults.passed.push("diff tags validation passed");
+        } catch (error: any) {
+          logger.error(`Error during ${action} validation: ${error.message}`);
+          testResults.failed.push(error.message);
+        }
+      }
+    }
+    if (diffTagsPresent) {
+      // Validate presence of 'diff' entry
+      const hasDiffBreakup = quote.breakup.some(
+        (b: { [x: string]: string }) => b["@ondc/org/title_type"] === "diff"
+      );
+
+      // Validate presence of 'tax_diff' entry
+      const hasTaxDiffBreakup = quote.breakup.some(
+        (b: { [x: string]: string }) => b["@ondc/org/title_type"] === "tax_diff"
+      );
+
+      try {
+        assert.ok(
+          hasDiffBreakup && hasTaxDiffBreakup,
+          `'diff' and 'tax_diff' titles are missing in quote.breakup`
+        );
+        testResults.passed.push(
+          "diff items in quote breakup validation passed"
+        );
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
+    }
+  }
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
