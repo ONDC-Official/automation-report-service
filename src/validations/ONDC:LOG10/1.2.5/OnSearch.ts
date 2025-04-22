@@ -1,6 +1,11 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
+import {
+  LSPfeatureFlow,
+  rules,
+  validateLSPFeaturesForFlows,
+} from "../../../utils/constants";
 
 export async function checkOnSearch(
   element: Payload,
@@ -24,6 +29,7 @@ export async function checkOnSearch(
 
   const contextTimestamp = new Date(context?.timestamp || "");
   const onSearch = message?.catalog;
+  const catalogTags = onSearch?.tags;
   let validFulfillmentIDs = new Set<string>();
 
   const formatDate = (date: Date): string => date.toISOString().split("T")[0];
@@ -173,8 +179,8 @@ export async function checkOnSearch(
             "Same Day Delivery",
             "Immediate Delivery",
             "Instant Delivery",
-          ].includes(item.category_id) &&
-          item.time?.timestamp !== currentDate
+          ].includes(item.category_id) && item?.time &&
+          item?.time?.timestamp !== currentDate
         ) {
           testResults.failed.push(
             `For ${item.category_id}, TAT date should be ${currentDate} (item ${item.id})`
@@ -205,6 +211,79 @@ export async function checkOnSearch(
     }
   );
 
+  if (LSPfeatureFlow.includes(flowId)) {
+    const isValid = validateLSPFeaturesForFlows(flowId, rules, catalogTags);
+    try {
+      assert.ok(
+        isValid,
+        `Feature code needs to be published in the catalog/tags`
+      );
+      testResults.passed.push(
+        `Feature code in catalog/tags validation passed `
+      );
+    } catch (error: any) {
+      testResults.failed.push(error.message);
+    }
+  }
+
+  if (flowId === "CASH_ON_DELIVERY_FLOW") {
+    const providers = onSearch?.["bpp/providers"];
+    let codOrderTagFound = false;
+    let codItemFound = false;
+
+    for (const provider of providers) {
+      //Check for special_req > cod_order = yes
+      const specialReqTag = provider?.tags?.find(
+        (tag: { code: string }) => tag.code === "special_req"
+      );
+      const codOrderTag = specialReqTag?.list?.find(
+        (entry: { code: string; value: string }) =>
+          entry.code === "cod_order" && entry.value.toLowerCase() === "yes"
+      );
+      if (codOrderTag) codOrderTagFound = true;
+
+      //Check for any item with type: cod
+      const items = provider?.items || [];
+      for (const item of items) {
+        const typeTag = item?.tags?.find(
+          (tag: { code: string }) => tag.code === "type"
+        );
+        const codType = typeTag?.list?.find(
+          (entry: { code: string; value: string }) =>
+            entry.code === "type" && entry.value.toLowerCase() === "cod"
+        );
+        if (codType) {
+          codItemFound = true;
+          break;
+        }
+      }
+
+      // Early exit if both found
+      if (codOrderTagFound && codItemFound) break;
+    }
+
+    try {
+      assert.ok(
+        codOrderTagFound,
+        `cod_order tag with value "yes" should be present inside "special_req" tag under bpp/providers.tags`
+      );
+      testResults.passed.push(
+        `cod_order tag inside special_req validation passed`
+      );
+    } catch (error: any) {
+      testResults.failed.push(error.message);
+    }
+
+    try {
+      assert.ok(
+        codItemFound,
+        `At least one item in bpp/providers/items should have tag with code "type" and value "cod"`
+      );
+      testResults.passed.push(`COD item tag validation passed`);
+    } catch (error: any) {
+      testResults.failed.push(error.message);
+    }
+  }
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;

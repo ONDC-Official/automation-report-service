@@ -25,7 +25,12 @@ export const MANDATORY_FLOWS: String[] = [
 export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
-export const ENABLED_DOMAINS: String[] = ["ONDC:TRV11", "nic2004:60232","ONDC:LOG10","ONDC:LOG11"];
+export const ENABLED_DOMAINS: String[] = [
+  "ONDC:TRV11",
+  "nic2004:60232",
+  "ONDC:LOG10",
+  "ONDC:LOG11",
+];
 
 export const FLOW_MAPPINGS: Record<string, string> = {
   //METRO
@@ -83,3 +88,96 @@ export const hasTwoOrLessDecimalPlaces = (inputString: string) => {
     return true; // No decimal part, automatically satisfies the condition
   }
 };
+
+type TagListItem = {
+  code: string;
+  value: string;
+};
+
+type Tag = {
+  code: string;
+  list: TagListItem[];
+};
+
+type FlowCodeRequirement = {
+  flowId: string;
+  code: string;
+};
+
+export function validateLSPFeaturesForFlows(
+  currentFlowId: string,
+  requirements: FlowCodeRequirement[],
+  catalogTags: Tag[]
+): boolean {
+  // Filter requirements that apply to the current flow
+  const relevantRequirements = requirements.filter(
+    (req) => req.flowId === currentFlowId
+  );
+
+  // If no relevant rules exist for this flowId, it's valid
+  if (relevantRequirements.length === 0) {
+    return true;
+  }
+
+  // Get the lsp_features tag
+  const lspFeaturesTag = catalogTags.find((tag) => tag.code === "lsp_features");
+  if (!lspFeaturesTag || !Array.isArray(lspFeaturesTag.list)) {
+    return false;
+  }
+
+  // Check that all required codes exist with value "yes"
+  return relevantRequirements.every((req) =>
+    lspFeaturesTag.list.some(
+      (item) => item.code === req.code && item.value.toLowerCase() === "yes"
+    )
+  );
+}
+
+export function validateLBNPFeaturesForFlows(
+  currentFlowId: string,
+  requirements: FlowCodeRequirement[],
+  intentTags: Tag[]
+): boolean {
+  // Filter requirements that apply to the current flow
+  const relevantRequirements = requirements.filter(
+    (req) => req.flowId === currentFlowId
+  );
+
+  // If no relevant rules exist for this flowId, it's valid
+  if (relevantRequirements.length === 0) {
+    return true;
+  }
+
+  // Get the lsp_features tag
+  const lbnpFeaturesTag = intentTags.find((tag) => tag.code === "lbnp_features");
+  if (!lbnpFeaturesTag || !Array.isArray(lbnpFeaturesTag.list)) {
+    return false;
+  }
+
+  // Check that all required codes exist with value "yes"
+  return relevantRequirements.every((req) =>
+    lbnpFeaturesTag.list.some(
+      (item) => item.code === req.code && item.value.toLowerCase() === "yes"
+    )
+  );
+}
+export const rules = [
+  { flowId: "CASH_ON_DELIVERY_FLOW", code: "008" },
+  { flowId: "PREPAID_PAYMENT_FLOW", code: "00D" },
+  { flowId: "IMMEDIATE_DELIVERY_FLOW", code: "00C" },
+  { flowId: "WEIGHT_DIFFERENTIAL_FLOW", code: "021" },
+  { flowId: "PICKUP_DELIVERY_ATTEMPT", code: "00E" },
+];
+
+export const LSPfeatureFlow = [
+  "CASH_ON_DELIVERY_FLOW",
+  "PREPAID_PAYMENT_FLOW",
+  "IMMEDIATE_DELIVERY_FLOW",
+  "WEIGHT_DIFFERENTIAL_FLOW",
+  "PICKUP_DELIVERY_ATTEMPT",
+];
+
+export const LBNPfeatureFlow = [
+  "WEIGHT_DIFFERENTIAL_FLOW",
+  "PICKUP_DELIVERY_ATTEMPT",
+];

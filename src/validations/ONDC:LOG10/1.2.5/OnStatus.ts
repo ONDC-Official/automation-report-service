@@ -25,7 +25,6 @@ export async function checkOnStatus(
   const transactionId = context?.transaction_id;
   const contextTimestamp = context?.timestamp;
   const fulfillments = message?.order?.fulfillments;
-  const shipmentType = message?.order?.items?.[0]?.descriptor?.code;
   const orderState = message?.order?.state;
   const paymentStatus = message?.order?.payment?.status;
   const paymentType = message?.order?.payment?.type;
@@ -92,7 +91,7 @@ export async function checkOnStatus(
           (tag: { code: string }) => tag.code === "tracking"
         );
 
-        if (shipmentType === "P2H2P") {
+        if (context.domain === "ONDC:LOG11") {
           try {
             assert.ok(
               fulfillment["@ondc/org/awb_no"],
@@ -199,6 +198,28 @@ export async function checkOnStatus(
           }
         }
 
+        if (
+          ffState === "Order-delivered" &&
+          flowId === "CASH_ON_DELIVERY_FLOW"
+        ) {
+          try {
+            const tags = fulfillment?.tags || [];
+            const hasCodSettlementTag = tags.some(
+              (tag: { code: string }) => tag.code === "cod_collection_detail"
+            );
+
+            assert.ok(
+              hasCodSettlementTag,
+              `fulfillments must have a tag with code "cod_settlement_details"`
+            );
+
+            testResults.passed.push(
+              `fulfillments have the "cod_settlement_details" tag`
+            );
+          } catch (error: any) {
+            testResults.failed.push(error.message);
+          }
+        }
         const isOrderPickedUp =
           ffState === "Order-picked-up" || ffState === "Out-for-delivery";
         const isTrackingEnabled = Boolean(fulfillment.tracking); // Ensure boolean value
