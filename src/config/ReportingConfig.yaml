@@ -333,11 +333,9 @@ domains:
             - on_status
 
         optional_flows:
-          - RTO_FLOW
           - CASH_ON_DELIVERY_FLOW
           - PREPAID_PAYMENT_FLOW
           - QUICK_COMMERCE_FLOW
-          - IMMEDIATE_DELIVERY_FLOW
         validationModules: "../validations/ONDC:LOG10/validator#validate"
 
   ONDC:LOG11:
@@ -445,7 +443,6 @@ domains:
             - on_status
 
         optional_flows:
-          - RTO_FLOW
           - CASH_ON_DELIVERY_FLOW
           - PREPAID_PAYMENT_FLOW
           - WEIGHT_DIFFERENTIAL_FLOW
