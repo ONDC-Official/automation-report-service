@@ -50,6 +50,43 @@ export async function checkInit(
     testResults.failed.push(`${error.message}`);
   }
 
+  if(flowId==='CASH_ON_DELIVERY_FLOW'){
+  try {
+    const items = message?.order?.items || [];
+    let baseItemFound = false;
+    let codItemFound = false;
+  
+    for (const item of items) {
+      const typeTag = item?.tags?.find(
+        (tag: { code: string }) => tag.code === "type"
+      );
+  
+      const typeValue = typeTag?.list?.find(
+        (entry: { code: string; value: string }) =>
+          entry.code === "type" && typeof entry.value === "string"
+      )?.value.toLowerCase();
+  
+      if (typeValue === "base") baseItemFound = true;
+      if (typeValue === "cod") codItemFound = true;
+  
+      if (baseItemFound && codItemFound) break;
+    }
+  
+    assert.ok(
+      baseItemFound,
+      `At least one item in message.order.items should have a type tag with value "base"`
+    );
+  
+    assert.ok(
+      codItemFound,
+      `At least one item in message.order.items should have a type tag with value "cod"`
+    );
+  
+    testResults.passed.push(`Both base and cod type items are present`);
+  } catch (error: any) {
+    testResults.failed.push(error.message);
+  }
+}
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;

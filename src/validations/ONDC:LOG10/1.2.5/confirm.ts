@@ -83,8 +83,37 @@ export async function checkConfirm(
   } catch (error: any) {
     logger.error(error.message);
   }
+  if (flowId === "CASH_ON_DELIVERY_FLOW") {
+    try {
+      const fulfillments = message?.order?.fulfillments || [];
 
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
+      let allFulfillmentsHaveTag = true;
+
+      for (const fulfillment of fulfillments) {
+        const tags = fulfillment?.tags || [];
+        const hasCodSettlementTag = tags.some(
+          (tag: { code: string }) => tag.code === "cod_settlement_detail"
+        );
+
+        if (!hasCodSettlementTag) {
+          allFulfillmentsHaveTag = false;
+          break;
+        }
+      }
+
+      assert.ok(
+        allFulfillmentsHaveTag,
+        `message.order.fulfillments must have a tag with code "cod_settlement_detail"`
+      );
+
+      testResults.passed.push(
+        `fulfillments have the "cod_settlement_detail" tag`
+      );
+    } catch (error: any) {
+      testResults.failed.push(error.message);
+    }
+  }
+  if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

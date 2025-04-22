@@ -256,9 +256,9 @@ domains:
             - update
             - on_update
             - on_status
-            - on_status
             - track
             - on_track
+            - on_status
             - on_status
 
           RTO_FLOW:
@@ -285,9 +285,9 @@ domains:
             - update
             - on_update
             - on_status
-            - on_status
             - track
             - on_track
+            - on_status
             - on_status
           PREPAID_PAYMENT_FLOW:
             - search
@@ -299,9 +299,9 @@ domains:
             - update
             - on_update
             - on_status
-            - on_status
             - track
             - on_track
+            - on_status
             - on_status
           QUICK_COMMERCE_FLOW:
             - search
@@ -327,9 +327,9 @@ domains:
             - on_update
             - on_status
             - on_status
-            - on_status
             - track
             - on_track
+            - on_status
             - on_status
 
         optional_flows:
@@ -359,6 +359,9 @@ domains:
             - on_status
             - on_status
             - on_status
+            - on_status
+            - on_status
+            - on_status
 
           RTO_FLOW:
             - search
@@ -369,6 +372,7 @@ domains:
             - on_confirm
             - update
             - on_update
+            - on_status
             - on_status
             - on_status
             - on_status
@@ -388,6 +392,9 @@ domains:
             - on_status
             - on_status
             - on_status
+            - on_status
+            - on_status
+            - on_status
           PREPAID_PAYMENT_FLOW:
             - search
             - on_search
@@ -397,6 +404,9 @@ domains:
             - on_confirm
             - update
             - on_update
+            - on_status
+            - on_status
+            - on_status
             - on_status
             - on_status
             - on_status
@@ -413,6 +423,25 @@ domains:
             - on_status
             - on_status
             - on_status
+            - on_update
+            - on_status
+            - on_status
+          PICKUP_DELIVERY_ATTEMPT:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
             - on_status
 
         optional_flows:
@@ -420,4 +449,5 @@ domains:
           - CASH_ON_DELIVERY_FLOW
           - PREPAID_PAYMENT_FLOW
           - WEIGHT_DIFFERENTIAL_FLOW
+          - PICKUP_DELIVERY_ATTEMPT
         validationModules: "../validations/ONDC:LOG11/validator#validate"
