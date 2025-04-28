@@ -73,7 +73,7 @@ export async function checkOnCancel(
   testResults.passed.push(...commonResults.passed);
   testResults.failed.push(...commonResults.failed);
 
-  if (testResults.passed.length < 1)
+  if (testResults.passed.length < 1 && testResults.failed.length<1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

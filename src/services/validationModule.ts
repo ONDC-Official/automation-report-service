@@ -67,7 +67,7 @@ export async function validationModule(
           }
         }
       }
-      console.log(MandatoryFlows);
+
       if (MandatoryFlows.length > 0)
         Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
     }
@@ -127,6 +127,8 @@ export async function validationModule(
       on_update: 1,
       on_status: 1,
       status: 1,
+      track: 1,
+      on_track:1
     };
 
     // Step 2: Process Each Payload Using checkMessage
