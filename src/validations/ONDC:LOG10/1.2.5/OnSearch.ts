@@ -110,7 +110,7 @@ export async function checkOnSearch(
           .split("T")[0]; // Extracts YYYY-MM-DD
 
         try {
-          if (["Standard Delivery", "Express Delivery"].includes(category.id)) {
+          if (["Standard Delivery", "Express Delivery","Next Day Delivery"].includes(category.id)) {
             assert.ok(
               category.time?.timestamp === expectedDate,
               `In bpp/providers/categories, for ${category.id}, expected TAT date should be ${expectedDate} based on duration (${category?.time?.duration})`
@@ -136,14 +136,14 @@ export async function checkOnSearch(
           );
         }
 
-        if (
-          category.id === "Next Day Delivery" &&
-          category.time?.timestamp !== nextDate
-        ) {
-          testResults.failed.push(
-            `In bpp/providers/categories, for Next Day Delivery, TAT date should be ${formattedNextDate}`
-          );
-        }
+        // if (
+        //   category.id === "Next Day Delivery" &&
+        //   category.time?.timestamp !== nextDate
+        // ) {
+        //   testResults.failed.push(
+        //     `In bpp/providers/categories, for Next Day Delivery, TAT date should be ${formattedNextDate}`
+        //   );
+        // }
       });
 
       provider.items.forEach((item, i) => {
@@ -157,7 +157,7 @@ export async function checkOnSearch(
 
         try {
           if (
-            ["Standard Delivery", "Express Delivery"].includes(
+            ["Standard Delivery", "Express Delivery","Next Day Delivery"].includes(
               item.category_id
             ) &&
             item?.time
@@ -187,14 +187,14 @@ export async function checkOnSearch(
           );
         }
 
-        if (
-          item.category_id === "Next Day Delivery" &&
-          item.time?.timestamp !== nextDate
-        ) {
-          testResults.failed.push(
-            `For Next Day Delivery, TAT date should be ${nextDate} - item ${item.id}`
-          );
-        }
+        // if (
+        //   item.category_id === "Next Day Delivery" &&
+        //   item.time?.timestamp !== nextDate
+        // ) {
+        //   testResults.failed.push(
+        //     `For Next Day Delivery, TAT date should be ${nextDate} - item ${item.id}`
+        //   );
+        // }
 
         try {
           assert.ok(
