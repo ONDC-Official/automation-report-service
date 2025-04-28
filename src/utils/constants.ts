@@ -166,7 +166,6 @@ export function validateLBNPFeaturesForFlows(
 export const rules = [
   { flowId: "CASH_ON_DELIVERY_FLOW", code: "008" },
   { flowId: "PREPAID_PAYMENT_FLOW", code: "00D" },
-  { flowId: "IMMEDIATE_DELIVERY_FLOW", code: "00C" },
   { flowId: "WEIGHT_DIFFERENTIAL_FLOW", code: "021" },
   { flowId: "PICKUP_DELIVERY_ATTEMPT", code: "00E" },
 ];
@@ -174,7 +173,6 @@ export const rules = [
 export const LSPfeatureFlow = [
   "CASH_ON_DELIVERY_FLOW",
   "PREPAID_PAYMENT_FLOW",
-  "IMMEDIATE_DELIVERY_FLOW",
   "WEIGHT_DIFFERENTIAL_FLOW",
   "PICKUP_DELIVERY_ATTEMPT",
 ];
