@@ -97,7 +97,7 @@ export async function checkSearch(
   // Log success validation for action
   logger.info(`Validated ${action}`);
 
-  if (testResults.passed.length < 1)
+  if (testResults.passed.length < 1 && testResults.failed.length<1)
     testResults.passed.push(`Validated ${action}`);
 
   return testResults;

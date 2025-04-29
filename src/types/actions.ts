@@ -11,5 +11,7 @@ export type ValidationAction =
   | "on_cancel"
   | "update"
   | "on_update"
-  |"status"
-  | "on_status";
+  | "status"
+  | "on_status"
+  | "track"
+  | "on_track";
