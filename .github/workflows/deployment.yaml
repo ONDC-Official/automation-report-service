@@ -57,7 +57,7 @@ jobs:
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> \$REPO_DIR/.env
           echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> \$REPO_DIR/.env
           echo "PORT=${{ secrets.PORT }}" >> \$REPO_DIR/.env
-          echo "STORAGE_URL=${{ vars.STORAGE_URL }}" >> \$REPO_DIR/.env
+          echo "STORAGE_URL=${{ vars.STORAGE_URL_STAGING }}" >> \$REPO_DIR/.env
           echo "VALIDATION_URL=${{ vars.VALIDATION_URL }}" >> \$REPO_DIR/.env
 
 
