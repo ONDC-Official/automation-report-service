@@ -1,6 +1,6 @@
 import { Payload, WrappedPayload } from "../types/payload";
 import { loadConfig } from "../utils/configLoader"; // Importing function to load configuration for validation modules
-import { logger } from "../utils/logger";
+import { logError, logger, logInfo } from "../utils/logger";
 
 // A function to dynamically load and execute a validation function based on the provided module path and function name
 const dynamicValidator = (
@@ -10,6 +10,10 @@ const dynamicValidator = (
   sessionID: string,
   flowId: string
 ) => {
+  logInfo({
+    message: "Entering dynamicValidator function.",
+    meta: { modulePathWithFunc, element, action, sessionID, flowId },
+  });
   // Splitting the modulePathWithFunc string into module path and function name
   const [modulePath, functionName] = modulePathWithFunc.split("#");
 
@@ -22,16 +26,29 @@ const dynamicValidator = (
 
     // If the function exists and is valid, invoke it with the element and action
     if (typeof validatorFunc === "function") {
+      logInfo({
+        message: "Exiting dynamicValidator function.",
+        meta: { modulePath, functionName, element, action },
+      });
       return validatorFunc(element, action, sessionID, flowId);
     } else {
       // Throw an error if the function is not found within the module
+      logError({
+        message: `Validator function '${functionName}' not found in '${modulePath}'`,
+        meta: { modulePath, functionName },
+      });
       throw new Error(
         `Validator function '${functionName}' not found in '${modulePath}'`
       );
     }
   } catch (error) {
     // Log any error encountered while loading the module or executing the function
-    logger.error("Error loading validator:", error);
+    // logger.error("Error loading validator:", error);
+    logError({
+      message: "Error in dynamicValidator function. ",
+      error,
+      meta: { modulePath, functionName },
+    });
     throw error; // Rethrow the error to be handled by the calling function
   }
 };
@@ -45,9 +62,16 @@ export const checkMessage = async (
   flowId: string,
   domainConfig: any
 ): Promise<object> => {
+  logInfo({
+    message: "Entering checkMessage function.",
+    meta: { domain, element, action, sessionId, flowId },
+  });
   // Get the module path and function name based on the version, or fall back to the default configuration
   const modulePathWithFunc = domainConfig?.validationModules;
-
+  logInfo({
+    message: "Exiting checkMessage function. Calling dynamicValidator.",
+    meta: { modulePathWithFunc },
+  });
   // Call the dynamicValidator to load and execute the validation function for the given domain, element, and action
   return dynamicValidator(
     modulePathWithFunc,
