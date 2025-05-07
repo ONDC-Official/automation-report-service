@@ -1,9 +1,14 @@
 import { Result } from "../types/result";
 import { ApiResponse } from "../types/utilityResponse";
+import { logInfo } from "../utils/logger";
 
 export function generateReportHTML(
   flowReports: { flowId: string; results: Result }[]
 ): string {
+  logInfo({
+    message: "Entering generateReportHTML function. Generating HTML report...",
+    meta: { flowReports },
+  });
   const reportRows = flowReports
     .map(({ flowId, results }) => {
       if (!results.success) {
@@ -60,7 +65,10 @@ export function generateReportHTML(
         `;
     })
     .join("");
-
+  logInfo({
+    message: "Exiting generateReportHTML function. Generated HTML report.",
+    meta: { reportRows },
+  });
   return `
       <!DOCTYPE html>
       <html>
@@ -143,8 +151,20 @@ export function generateReportHTML(
 }
 
 function formatReportItems(report: Record<string, any>): string {
-  if (!report || typeof report !== "object") return "N/A";
-
+  logInfo({
+    message: 'Entering formatReportItems function. Formatting report items...',
+    meta: { report },
+  });
+  if (!report || typeof report !== "object")
+  {
+    logInfo({
+      message: 'Exiting formatReportItems function. No report items to format.',
+    });
+    return "N/A";
+  } 
+  logInfo({
+    message: 'Exiting formatReportItems function. Formatted report items.',
+  });
   return Object.entries(report)
     .map(([key, value]) => {
       if (typeof value === "object" && !Array.isArray(value)) {
