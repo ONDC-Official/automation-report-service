@@ -1,6 +1,6 @@
 import express from 'express';
 import { generateReportController } from '../controllers/reportController';
-import otelTracing from '../services/tracing-service';
+import otelTracing from '../middleware/tracing';
 
 const router = express.Router();
 
