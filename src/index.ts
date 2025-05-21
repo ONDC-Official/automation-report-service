@@ -1,4 +1,4 @@
-require("./config/otelConfig")
+import "./config/otelConfig"
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import reportRouter from "./routes/reportRoute";
