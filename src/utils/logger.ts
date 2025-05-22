@@ -1,34 +1,8 @@
-// import { createLogger, format, transports } from "winston";
-// const { combine, timestamp, printf, colorize } = format;
-
-
-// // Custom log format
-// const customFormat = printf(({ level, message, timestamp }) => {
-//   return `[${timestamp}] ${level}: ${message}`;
-// });
-
-// // Create a logger instance
-// export const logger = createLogger({
-//   level: "info", // Default log level
-//   format: combine(
-//     timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-//     colorize(), // Adds color to log levels (e.g., error in red, info in green)
-//     customFormat
-//   ),
-//   transports: [
-//     new transports.Console(), // Log to the console
-//     new transports.File({ filename: "logs/application.log" }), // Log to a file
-//   ],
-// });
-
-// // Example usage:
-// // logger.info('This is an info message');
-// // logger.error('This is an error message');
-
 import winston from "winston";
 import chalk from "chalk";
 import LokiTransport from "winston-loki";
 import { LogParams } from "../types/log-params";
+import { isAxiosError } from "axios";
 
 
 const { combine, timestamp, printf, errors } = winston.format;
@@ -50,6 +24,8 @@ const messageColors: Record<string, chalk.Chalk> = {
 	default: chalk.gray, // Default gray for fallback
 };
 
+const environment = process.env.NODE_ENV || "development"; // Default to development if not set
+
 // Custom log format
 const logFormat = printf(({ level, message, timestamp, stack, transaction_id , ...meta}) => {
 	const levelColor = levelColors[level] || levelColors.default; // Colorize level
@@ -61,7 +37,8 @@ const logFormat = printf(({ level, message, timestamp, stack, transaction_id , .
 	const coloredStack = stack ? chalk.dim(stack) : ""; // Dim stack trace if present
 	const coloredtransaction_id = transaction_id ? chalk.yellow(`[${transaction_id}] `) : ""; // Yellow for transaction ID
 	const coloredMeta = meta && Object.keys(meta).length > 0 ? chalk.gray(JSON.stringify(meta)) : "";
-	return `${coloredTimestamp} ${coloredtransaction_id}${coloredLevel}: ${coloredMessage} ${coloredStack} ${coloredMeta}`;
+	const printable = environment === "prod" ? `${coloredtransaction_id}${coloredLevel}: ${coloredMessage} ${coloredStack}` : `${coloredTimestamp} ${coloredtransaction_id}${coloredLevel}: ${coloredMessage} ${coloredStack} ${coloredMeta}`;
+	return printable;
 });
 
 // Determine log level based on environment
@@ -104,7 +81,13 @@ const logInfo = ({ message, transaction_id, meta }: LogParams): void => {
   };
   
   const logError = ({ message, transaction_id, error, meta }: LogParams): void => {
-	if (error instanceof Error) {
+	if(isAxiosError(error)) {
+
+		message = error.response ? error.response?.data : error.code;
+	  logger.error(`Axios Error : Status Code [${error.status}] : `+ JSON.stringify(message) , { transaction_id, ...meta });
+	return;
+	}
+	  if (error instanceof Error) {
 	  logger.error(message, { transaction_id, stack: error.stack, ...meta });
 	} else {
 	  logger.error(message, { transaction_id, ...meta });
