@@ -1,8 +1,13 @@
 import { writeFileSync } from "fs";
 import { FlowValidationResult, ParsedMessage, Report } from "../types/payload";
+import { logInfo } from "../utils/logger";
 
 // Generate the HTML report
 export function generateCustomHTMLReport(data: Report) {
+  logInfo({
+    message: "Entering generateCustomHTMLReport function.  Generating custom HTML report",
+    meta: {data},
+    });
   const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">
@@ -280,6 +285,11 @@ export function generateCustomHTMLReport(data: Report) {
       </body>
       </html>
     `;
-
+  logInfo({
+    message: "Exiting generateCustomHTMLReport function. Generated custom HTML report",
+    meta: {
+      htmlContent,
+    },
+  });
   return htmlContent;
 }
