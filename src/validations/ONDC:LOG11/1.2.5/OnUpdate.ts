@@ -108,7 +108,7 @@ export async function checkOnUpdate(
       );
 
       if (hasDiffTag) diffTagsPresent = true;
-      if (ffState !== "Agent-assigned") {
+      if (ffState === "Out-for-pickup" ||ffState === "At-destination-hub" ) {
         try {
           assert.ok(
             hasDiffProofTag && hasDiffTag,

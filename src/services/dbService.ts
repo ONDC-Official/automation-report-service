@@ -6,7 +6,7 @@ import { logError, logInfo } from "../utils/logger";
 // Load environment variables
 dotenv.config();
 
-const API_URL = `${process.env.STORAGE_URL}/payload/ids`;
+const API_URL = `${process.env.DATA_BASE_URL}/payload/ids`;
 
 export async function fetchPayloads(requestBody: Record<string, string[]>): Promise<Record<string, Payload[]>> {
   logInfo({
@@ -73,7 +73,7 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
     },
   });
   try {
-    const storageUrl = `${process.env.STORAGE_URL}/api/sessions/${sessionID}`;
+    const storageUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionID}`;
     const response = await axios.get<WrappedPayload[]>(storageUrl);
     logInfo({
       message: `Exiting fetchSessionDetails function. Fetched session details.`,
