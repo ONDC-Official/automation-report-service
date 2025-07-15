@@ -30,6 +30,8 @@ export async function parseFlows(
   // Parse each flow's payloads and create parsed payloads
   for (const [flowId, flowPayloads] of Object.entries(flows)) {
     let mappedFlowId;
+    // Retail domains (like ONDC:RET11) use special flow mappings for external validation
+    // Other domains use standard FLOW_MAPPINGS for internal validation
     if (domain === "ONDC:RET11") {
       mappedFlowId = getRetailCurlFlowId(flowId);
     } else {

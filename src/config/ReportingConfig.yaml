@@ -675,6 +675,8 @@ domains:
             - BUYER_CANCEL
             - BUYER_INSTRUCTIONS_AND_ADDRESS_UPDATE_FLOW
             - MULTI_OPTION_FULFILLMENT_FLOW
-          validationModules: "../validations/retail/validator#validate"
+          # Note: validationModules not required for retail domains
+          # Retail domains use external validation API (https://log-validation.ondc.org/api/validate)
+          # Since ONDC:RET11 is NOT in ENABLED_DOMAINS, it automatically uses external validation
 
     

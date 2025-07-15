@@ -1,3 +1,6 @@
+// Retail domains use external validation, not internal validation modules
+// This mapping translates flow names to numeric IDs expected by the external validation API
+// The numeric IDs correspond to flows defined in utility_curls.sh
 // Explicit mapping for ONDC:RET11 (retail domain) flowIds to curl structure IDs as per utility_curls.sh
 export const RETAIL_FLOW_CURL_MAPPINGS: Record<string, string> = {
   FULL_CATALOG: "1",
@@ -7,7 +10,7 @@ export const RETAIL_FLOW_CURL_MAPPINGS: Record<string, string> = {
   BUYER_CANCEL: "4",
   RTO_PLUS_PART_CANCELLATION: "5",
   RETURN_FLOW: "6",
-  FORCE_CANCEL: "7",
+  FORCE_CANCEL: "005",
   // Add more mappings as needed based on utility_curls.sh
 };
 
