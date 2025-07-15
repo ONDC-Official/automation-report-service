@@ -3,12 +3,14 @@ import { ParsedPayload } from "../types/parsedPayload";
 import { RedisService } from "ondc-automation-cache-lib";
 import { FLOW_MAPPINGS } from "./constants";
 import { logError, logInfo } from "./logger";
+import { getRetailCurlFlowId, getUtilityFlowPayload, RETAIL_FLOW_CURL_MAPPINGS } from "./flowMappings";
 
 export async function parseFlows(
   flows: {
     [flowId: string]: Payload[];
   },
-  sessionID: string
+  sessionID: string,
+  isUtility: boolean = false
 ): Promise<{ [flowId: string]: ParsedPayload }> {
   logInfo({
     message: "Entering parseFlows function. Parsing flows...",
@@ -27,14 +29,20 @@ export async function parseFlows(
 
   // Parse each flow's payloads and create parsed payloads
   for (const [flowId, flowPayloads] of Object.entries(flows)) {
-    const mappedFlowId = FLOW_MAPPINGS[flowId];
+    let mappedFlowId;
+    if (domain === "ONDC:RET11") {
+      mappedFlowId = getRetailCurlFlowId(flowId);
+    } else {
+      mappedFlowId = FLOW_MAPPINGS[flowId] || flowId;
+    }
 
     try {
       parsedFlows[flowId] = parsePayloads(
         mappedFlowId,
         flowPayloads,
         domain,
-        version
+        version,
+        isUtility
       );
     } catch (error) {
       // console.error(`Error parsing flow ${flowId}:`, error);
@@ -65,7 +73,8 @@ function parsePayloads(
   flowId: string,
   payloads: Payload[],
   domain: string,
-  version: string
+  version: string,
+  isUtility: boolean = false
 ): ParsedPayload {
   logInfo({
     message: "Entering parsePayloads function. Parsing payloads...",
@@ -77,6 +86,23 @@ function parsePayloads(
     flow: flowId,
     payload: {},
   };
+
+  // For utility flows, use the utility flow mapping
+  if (isUtility && domain === "ONDC:RET11") {
+    // Get the original flowId from the RETAIL_FLOW_CURL_MAPPINGS
+    const originalFlowId = Object.keys(RETAIL_FLOW_CURL_MAPPINGS).find(key => 
+      RETAIL_FLOW_CURL_MAPPINGS[key] === flowId
+    );
+    
+    if (originalFlowId) {
+      parsedPayload.payload = getUtilityFlowPayload(flowId, originalFlowId, payloads);
+    }
+    logInfo({
+      message: "Exiting parsePayloads function. Parsed utility payloads.",
+      meta: { flowId, originalFlowId, parsedPayload },
+    });
+    return parsedPayload;
+  }
 
   // Group payloads by action
   const groupedPayloads: { [key: string]: Payload[] } = payloads.reduce(
@@ -147,7 +173,7 @@ function parsePayloads(
     // Handling `search` and `on_search` actions with numbering
     if (action === "search" || action === "on_search") {
       actionCounters[action]++;
-      const key = `${action}_${actionCounters[action]}`;
+      let key = `${action}_${actionCounters[action]}`;
       parsedPayload.payload[key] = payload.jsonRequest;
     }
     // Handling `select`, `on_select`, `init`, `on_init`, `confirm`, `on_confirm`, etc.

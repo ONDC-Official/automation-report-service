@@ -37,6 +37,8 @@ export const FLOW_MAPPINGS: Record<string, string> = {
   STATION_CODE_FLOW_ORDER: "METRO_STATION_CODE",
   STATION_CODE_FLOW_CATALOG: "METRO_STATION_CODE",
   TECHNICAL_CANCELLATION_FLOW: "METRO_TECHNICAL_CANCEL",
+  // RETAIL
+  FULL_CATALOG: "1", // Explicit mapping for retail FULL_CATALOG flow
 };
 
 export const VALIDATION_URL: Record<string, string> = {

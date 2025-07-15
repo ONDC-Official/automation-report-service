@@ -3,3 +3,6 @@ node_modules
 .vscode
 /logs
 /dist
+*.md
+*.sh
+utility_validation_response.json

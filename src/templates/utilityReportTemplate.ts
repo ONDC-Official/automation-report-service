@@ -39,22 +39,28 @@ export function generateReportHTML(
       }
 
       const transactions = Object.entries(report).map(
-        ([transactionId, transactionResult]) => `
+        ([transactionId, transactionResult]) => {
+          // Handle different response structures
+          const hasErrors = transactionResult && 
+            (typeof transactionResult === 'object' && Object.keys(transactionResult).length > 0) ||
+            (typeof transactionResult === 'string' && transactionResult.includes('Missing'));
+          
+          const status = hasErrors ? 'failed' : 'success';
+          const errorDetails = typeof transactionResult === 'string' 
+            ? transactionResult 
+            : (typeof transactionResult === 'object' ? JSON.stringify(transactionResult, null, 2) : 'N/A');
+          
+          return `
             <tr>
               <td>${transactionId}</td>
-              <td class="${
-                transactionResult.status === "success" ? "success" : "failed"
-              }">
-                ${transactionResult.status.toUpperCase()}
+              <td class="${status}">
+                ${status.toUpperCase()}
               </td>
-              <td>${
-                transactionResult.details
-                  ? JSON.stringify(transactionResult.details)
-                  : "N/A"
-              }</td>
-              <td>${formatReportItems(transactionResult.details?.report)}</td>
+              <td>${errorDetails}</td>
+              <td>${formatReportItems(transactionResult)}</td>
             </tr>
-          `
+          `;
+        }
       );
 
       return `
