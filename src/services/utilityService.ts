@@ -3,14 +3,33 @@ import { Result } from "../types/result";
 import { logInfo } from "../utils/logger";
 import { parseFlows } from "../utils/parseutils";
 import { validateLogs } from "./validateLogs";
+import { generateDebugSummary } from "../utils/flowMappings";
 
 export async function utilityReport(flows: any, sessionID: string) {
   logInfo({
     message: "Entering utilityReport function. Generating utility report...",
     meta: { sessionID, flows },
     });
+  
+  // Extract search and on_search payloads from FULL_CATALOG flow
+  let catalogPayloads: any = null;
+  if (flows.FULL_CATALOG) {
+    const fullCatalogPayloads = flows.FULL_CATALOG;
+    catalogPayloads = {
+      search: fullCatalogPayloads.find((p: any) => p.action?.toLowerCase() === 'search'),
+      on_search: fullCatalogPayloads.find((p: any) => p.action?.toLowerCase() === 'on_search')
+    };
+    logInfo({
+      message: "Extracted catalog payloads from FULL_CATALOG",
+      meta: { 
+        hasSearch: !!catalogPayloads.search,
+        hasOnSearch: !!catalogPayloads.on_search
+      }
+    });
+  }
+  
   //parse flows
-  const parsedFlows = await parseFlows(flows, sessionID, true);
+  const parsedFlows = await parseFlows(flows, sessionID, true, catalogPayloads);
 
   // Validate flows
   const validatedFlows: { flowId: string; results: Result }[] = await Promise.all(
@@ -30,6 +49,10 @@ export async function utilityReport(flows: any, sessionID: string) {
 
   // Generate HTML report
   const htmlReport = generateReportHTML(validatedFlows);
+  
+  // Generate debug summary after all flows are processed
+  generateDebugSummary();
+  
   logInfo({
     message: "Exiting utilityReport function. Generated utility report.",
     meta: { sessionID, htmlReport },

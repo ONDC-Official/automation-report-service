@@ -5,6 +5,8 @@ import { Result } from "../types/result";
 import dotenv from "dotenv";
 import { VALIDATION_URL } from "../utils/constants";
 import { logError, logger, logInfo } from "../utils/logger";
+import { writeFileSync, appendFileSync } from "fs";
+import path from "path";
 dotenv.config();
 
 export async function validateFlows(parsedFlows: {
@@ -84,17 +86,66 @@ function constructIds(
   return { bap_id, bpp_id };
 }
 
+// Helper function to generate and save curl command
+function saveCurlCommand(
+  url: string,
+  payload: any,
+  flowId: string,
+  domain: string,
+  isUtility: boolean = false
+): void {
+  try {
+    const timestamp = new Date().toISOString();
+    const curlCommand = `#!/bin/bash
+# Generated at: ${timestamp}
+# Flow: ${flowId}
+# Domain: ${domain}
+# Type: ${isUtility ? 'Utility' : 'Regular'} Validation
+
+curl --location --request POST '${url}' \\
+--header 'Content-Type: application/json' \\
+--data '${JSON.stringify(payload, null, 2)}'
+`;
+
+    const fileName = isUtility ? 'utility_validation_curl.sh' : 'validation_curl.sh';
+    const filePath = path.join(process.cwd(), fileName);
+    
+    // Write to file (overwrites if exists)
+    writeFileSync(filePath, curlCommand, { mode: 0o755 });
+    
+    logInfo({
+      message: `Curl command saved to ${fileName}`,
+      meta: { flowId, domain, filePath }
+    });
+  } catch (error) {
+    logError({
+      message: "Failed to save curl command",
+      error,
+      meta: { flowId, domain }
+    });
+  }
+}
+
 export async function validateLogs(
   flowId: string,
   parsedPayload: ParsedPayload,
   originalPayloads?: Array<{ key: string, jsonRequest: any }>,
   options?: { isUtility?: boolean; sessionId?: string }
 ): Promise<Result> {
+  let validationPayload: any = null;
   logInfo({
     message: "Entering validateLogs function. Validating logs...",
-    meta: { flowId, parsedPayload, isUtility: options?.isUtility },
+    meta: { 
+      flowId, 
+      domain: parsedPayload?.domain,
+      version: parsedPayload?.version,
+      flow: parsedPayload?.flow,
+      isUtility: options?.isUtility,
+      sessionId: options?.sessionId,
+      payloadKeys: parsedPayload?.payload ? Object.keys(parsedPayload.payload) : []
+    },
   });
-  const validationUrl = VALIDATION_URL[parsedPayload?.domain] || "https://log-validation.ondc.org/api/validate";
+  const validationUrl = process.env.VALIDATION_URL || VALIDATION_URL[parsedPayload?.domain] || "https://log-validation.ondc.org/api/validate";
 
   try {
     // Get session details from Redis
@@ -123,7 +174,7 @@ export async function validateLogs(
       sessionDetails
     );
     // Construct the validation payload
-    const validationPayload = originalPayloads && originalPayloads.length > 0 ? {
+    validationPayload = originalPayloads && originalPayloads.length > 0 ? {
       domain: parsedPayload.domain,
       version: parsedPayload.version,
       flow: parsedPayload.flow,
@@ -138,9 +189,43 @@ export async function validateLogs(
       bap_id,
       bpp_id
     };
+    // Log the validation payload structure
+    logInfo({
+      message: "Validation payload constructed",
+      meta: {
+        flowId,
+        domain: validationPayload.domain,
+        version: validationPayload.version,
+        flow: validationPayload.flow,
+        bap_id: validationPayload.bap_id,
+        bpp_id: validationPayload.bpp_id,
+        payloadKeys: Object.keys(validationPayload.payload || {}),
+        validationUrl
+      }
+    });
+
+    // Save the curl command before making the request
+    saveCurlCommand(
+      validationUrl,
+      validationPayload,
+      flowId,
+      parsedPayload.domain,
+      options?.isUtility || false
+    );
+    
+    logInfo({
+      message: "Sending validation request",
+      meta: { flowId, url: validationUrl, payloadSize: JSON.stringify(validationPayload).length }
+    });
+
     const response = await axios.post<ApiResponse>(
       validationUrl,
-      validationPayload
+      validationPayload,
+      {
+        timeout: 60000, // 60 seconds timeout
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity
+      }
     );
  
     // Wrap the successful response in a `ValidationResult`
@@ -154,6 +239,30 @@ export async function validateLogs(
       const errorDetails = axiosError.response?.data || {
         message: "No response data",
       };
+      // Special handling for socket hang up
+      if (axiosError.code === 'ECONNRESET' || axiosError.message?.includes('socket hang up')) {
+        logError({
+          message: "Socket hang up error during validation - possible timeout or large payload",
+          error: axiosError,
+          meta: {
+            flowId,
+            errorCode: axiosError.code,
+            validationUrl,
+            payloadSize: JSON.stringify(validationPayload).length,
+            suggestion: "Consider reducing payload size or increasing timeout"
+          }
+        });
+        return {
+          success: false,
+          error: "Connection lost - socket hang up. This might be due to large payload size or network timeout.",
+          details: {
+            code: axiosError.code,
+            message: axiosError.message,
+            payloadSize: JSON.stringify(validationPayload).length
+          }
+        };
+      }
+      
       logError({
         message: "Error occurred during validation : Axios error",
         error: axiosError,
@@ -161,6 +270,13 @@ export async function validateLogs(
           flowId,
           statusCode,
           errorDetails,
+          validationUrl,
+          requestData: {
+            domain: validationPayload.domain,
+            version: validationPayload.version,
+            flow: validationPayload.flow,
+            payloadKeys: Object.keys(validationPayload.payload || {})
+          }
         },
       });
       return {

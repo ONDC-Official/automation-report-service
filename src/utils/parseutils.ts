@@ -10,7 +10,8 @@ export async function parseFlows(
     [flowId: string]: Payload[];
   },
   sessionID: string,
-  isUtility: boolean = false
+  isUtility: boolean = false,
+  catalogPayloads?: any
 ): Promise<{ [flowId: string]: ParsedPayload }> {
   logInfo({
     message: "Entering parseFlows function. Parsing flows...",
@@ -34,8 +35,23 @@ export async function parseFlows(
     // Other domains use standard FLOW_MAPPINGS for internal validation
     if (domain === "ONDC:RET11") {
       mappedFlowId = getRetailCurlFlowId(flowId);
+      logInfo({
+        message: `Retail domain flow mapping: ${flowId} -> ${mappedFlowId}`,
+        meta: {
+          domain,
+          isUtility,
+          availableRetailMappings: Object.keys(RETAIL_FLOW_CURL_MAPPINGS)
+        }
+      });
     } else {
       mappedFlowId = FLOW_MAPPINGS[flowId] || flowId;
+      logInfo({
+        message: `Non-retail domain flow mapping: ${flowId} -> ${mappedFlowId}`,
+        meta: {
+          domain,
+          isUtility
+        }
+      });
     }
 
     try {
@@ -44,7 +60,9 @@ export async function parseFlows(
         flowPayloads,
         domain,
         version,
-        isUtility
+        isUtility,
+        catalogPayloads,
+        flowId
       );
     } catch (error) {
       // console.error(`Error parsing flow ${flowId}:`, error);
@@ -76,7 +94,9 @@ function parsePayloads(
   payloads: Payload[],
   domain: string,
   version: string,
-  isUtility: boolean = false
+  isUtility: boolean = false,
+  catalogPayloads?: any,
+  originalFlowId?: string
 ): ParsedPayload {
   logInfo({
     message: "Entering parsePayloads function. Parsing payloads...",
@@ -96,9 +116,27 @@ function parsePayloads(
       RETAIL_FLOW_CURL_MAPPINGS[key] === flowId
     );
     
+    logInfo({
+      message: "Utility flow processing",
+      meta: {
+        flowId,
+        originalFlowId,
+        found: !!originalFlowId,
+        payloadCount: payloads.length,
+        actions: payloads.map(p => p.action)
+      }
+    });
+    
     if (originalFlowId) {
-      parsedPayload.payload = getUtilityFlowPayload(flowId, originalFlowId, payloads);
+      parsedPayload.payload = getUtilityFlowPayload(flowId, originalFlowId, payloads, catalogPayloads);
+    } else {
+      logError({
+        message: `No original flowId found for utility flow ${flowId}`,
+        error: new Error("Missing original flow ID"),
+        meta: { flowId, RETAIL_FLOW_CURL_MAPPINGS }
+      });
     }
+    
     logInfo({
       message: "Exiting parsePayloads function. Parsed utility payloads.",
       meta: { flowId, originalFlowId, parsedPayload },

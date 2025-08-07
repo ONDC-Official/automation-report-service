@@ -6,3 +6,4 @@ node_modules
 *.md
 *.sh
 utility_validation_response.json
+/debug
