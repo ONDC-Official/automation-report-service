@@ -3,7 +3,6 @@ import { Result } from "../types/result";
 import { logInfo } from "../utils/logger";
 import { parseFlows } from "../utils/parseutils";
 import { validateLogs } from "./validateLogs";
-import { generateDebugSummary } from "../utils/flowMappings";
 
 export async function utilityReport(flows: any, sessionID: string) {
   logInfo({
@@ -49,9 +48,6 @@ export async function utilityReport(flows: any, sessionID: string) {
 
   // Generate HTML report
   const htmlReport = generateReportHTML(validatedFlows);
-  
-  // Generate debug summary after all flows are processed
-  generateDebugSummary();
   
   logInfo({
     message: "Exiting utilityReport function. Generated utility report.",

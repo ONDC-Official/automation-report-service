@@ -1,30 +1,4 @@
 import { logInfo, logError } from "../utils/logger";
-import * as fs from "fs";
-import * as path from "path";
-
-// Helper function to save debug data to file
-function saveDebugData(filename: string, data: any, directory: string = 'debug'): void {
-  try {
-    const debugPath = path.join(process.cwd(), directory);
-    if (!fs.existsSync(debugPath)) {
-      fs.mkdirSync(debugPath, { recursive: true });
-    }
-    fs.writeFileSync(
-      path.join(debugPath, filename), 
-      JSON.stringify(data, null, 2)
-    );
-    logInfo({
-      message: `Debug data saved to ${directory}/${filename}`,
-      meta: { filename, directory }
-    });
-  } catch (error) {
-    logError({
-      message: 'Failed to save debug data',
-      error,
-      meta: { filename, directory }
-    });
-  }
-}
 
 // Helper function to group payloads by context.action
 function groupPayloadsByAction(payloads: any[]): Record<string, any[]> {
@@ -443,117 +417,12 @@ export function getRetailCurlFlowId(flowId: string): string {
   return RETAIL_FLOW_CURL_MAPPINGS[flowId] || flowId;
 }
 
-// Function to generate debug summary report
-export function generateDebugSummary(): void {
-  try {
-    // Only generate summary in debug mode
-    if (process.env.DEBUG_MODE !== 'true') {
-      return;
-    }
-    const debugPath = path.join(process.cwd(), 'debug');
-    const mappingsPath = path.join(debugPath, 'mappings');
-    const diagnosticsPath = path.join(debugPath, 'diagnostics');
-    
-    if (!fs.existsSync(mappingsPath) || !fs.existsSync(diagnosticsPath)) {
-      logInfo({ message: 'No debug data found to generate summary' });
-      return;
-    }
-
-    const summary: any = {
-      generatedAt: new Date().toISOString(),
-      flows: {},
-      overallStats: {
-        totalFlows: 0,
-        totalMissingPayloads: 0,
-        commonMissingKeys: {},
-        commonMissingStates: {}
-      }
-    };
-
-    // Read all mapping result files
-    const mappingFiles = fs.readdirSync(mappingsPath)
-      .filter(f => f.endsWith('_mapping_results.json'));
-    
-    mappingFiles.forEach(file => {
-      const data = JSON.parse(fs.readFileSync(path.join(mappingsPath, file), 'utf-8'));
-      const flowKey = `${data.flowId}_${data.originalFlowId}`;
-      
-      summary.flows[flowKey] = {
-        flowId: data.flowId,
-        originalFlowId: data.originalFlowId,
-        timestamp: data.timestamp,
-        successRate: data.successRate,
-        summary: data.summary,
-        missingKeys: data.missingPayloads.map((m: any) => m.expectedKey)
-      };
-      
-      summary.overallStats.totalFlows++;
-      summary.overallStats.totalMissingPayloads += data.missingCount;
-      
-      // Track common missing keys
-      data.missingPayloads.forEach((missing: any) => {
-        const key = missing.expectedKey;
-        summary.overallStats.commonMissingKeys[key] = 
-          (summary.overallStats.commonMissingKeys[key] || 0) + 1;
-        
-        if (missing.expectedState) {
-          summary.overallStats.commonMissingStates[missing.expectedState] = 
-            (summary.overallStats.commonMissingStates[missing.expectedState] || 0) + 1;
-        }
-      });
-    });
-
-    // Read status analysis files for more insights
-    const statusFiles = fs.readdirSync(diagnosticsPath)
-      .filter(f => f.endsWith('_on_status_analysis.json'));
-    
-    statusFiles.forEach(file => {
-      const data = JSON.parse(fs.readFileSync(path.join(diagnosticsPath, file), 'utf-8'));
-      const flowKey = data.flowId;
-      
-      if (summary.flows[flowKey]) {
-        summary.flows[flowKey].statusAnalysis = {
-          foundStates: data.foundStates,
-          missingStates: data.missingStates.map((s: any) => s.state)
-        };
-      }
-    });
-
-    // Sort common missing keys by frequency
-    summary.overallStats.commonMissingKeys = Object.entries(summary.overallStats.commonMissingKeys)
-      .sort(([, a], [, b]) => (b as number) - (a as number))
-      .reduce((acc, [key, count]) => ({ ...acc, [key]: count }), {});
-    
-    summary.overallStats.commonMissingStates = Object.entries(summary.overallStats.commonMissingStates)
-      .sort(([, a], [, b]) => (b as number) - (a as number))
-      .reduce((acc, [state, count]) => ({ ...acc, [state]: count }), {});
-
-    // Save summary
-    saveDebugData('debug_summary.json', summary);
-    
-    logInfo({
-      message: 'Debug summary generated',
-      meta: {
-        totalFlows: summary.overallStats.totalFlows,
-        totalMissingPayloads: summary.overallStats.totalMissingPayloads
-      }
-    });
-  } catch (error) {
-    logError({
-      message: 'Failed to generate debug summary',
-      error
-    });
-  }
-}
-
 export function getUtilityFlowPayload(
   flowId: string,
   originalFlowId: string,
   payloads: any[],
   catalogPayloads?: any
 ): Record<string, any> {
-  // Check if debug mode is enabled via environment variable
-  const debugMode = process.env.DEBUG_MODE === 'true';
   logInfo({
     message: "getUtilityFlowPayload called",
     meta: {
@@ -600,11 +469,6 @@ export function getUtilityFlowPayload(
 
   const result: Record<string, any> = {};
 
-  // Initialize all expected keys with empty objects
-  Object.values(keyMappings).forEach((key) => {
-    result[key] = {};
-  });
-
   // Group payloads by action for easy lookup
   const payloadsByAction = groupPayloadsByAction(payloads);
   
@@ -621,87 +485,8 @@ export function getUtilityFlowPayload(
     }
   });
 
-  // Save raw payload analysis only in debug mode
-  if (debugMode) {
-    saveDebugData(`payloads/${flowId}_${originalFlowId}_raw.json`, {
-    flowId,
-    originalFlowId,
-    timestamp: new Date().toISOString(),
-    payloadCount: payloads.length,
-    payloadsByAction: Object.entries(payloadsByAction).reduce((acc, [action, actionPayloads]) => {
-      acc[action] = actionPayloads.map(p => ({
-        timestamp: p.jsonRequest?.context?.timestamp,
-        message_id: p.jsonRequest?.context?.message_id,
-        transaction_id: p.jsonRequest?.context?.transaction_id,
-        order_id: p.jsonRequest?.message?.order_id,
-        action: p.jsonRequest?.context?.action
-      }));
-      return acc;
-    }, {} as Record<string, any[]>),
-    actionCounts: Object.entries(payloadsByAction).reduce((counts, [action, payloads]) => {
-      counts[action] = payloads.length;
-      return counts;
-    }, {} as Record<string, number>),
-    allActions: Object.keys(payloadsByAction)
-    });
-  }
 
-  // Save on_status analysis only in debug mode
-  if (debugMode && payloadsByAction['on_status']) {
-    const statusAnalysis = payloadsByAction['on_status'].map(p => ({
-      timestamp: p.jsonRequest?.context?.timestamp,
-      fulfillmentState: extractFulfillmentState(p.jsonRequest),
-      fulfillmentId: p.jsonRequest?.message?.order?.fulfillments?.[0]?.id,
-      orderId: p.jsonRequest?.message?.order_id,
-      orderState: p.jsonRequest?.message?.order?.state,
-      fullPath: 'message.order.fulfillments[0].state.descriptor.code',
-      rawFulfillment: p.jsonRequest?.message?.order?.fulfillments?.[0]
-    }));
-    
-    saveDebugData(`diagnostics/${flowId}_on_status_analysis.json`, {
-      flowId,
-      statusPayloadCount: statusAnalysis.length,
-      statusPayloads: statusAnalysis,
-      expectedStates: Object.entries(keyMappings)
-        .filter(([, key]) => key.startsWith('on_status_'))
-        .map(([position, key]) => ({ 
-          position, 
-          key, 
-          expectedState: STATUS_KEY_MAPPING[key] 
-        })),
-      foundStates: [...new Set(statusAnalysis.map(s => s.fulfillmentState))],
-      missingStates: Object.entries(STATUS_KEY_MAPPING)
-        .filter(([key]) => Object.values(keyMappings).includes(key))
-        .filter(([, state]) => !statusAnalysis.some(s => s.fulfillmentState === state))
-        .map(([key, state]) => ({ key, state }))
-    });
-  }
 
-  // Save cancel analysis only in debug mode
-  if (debugMode && payloadsByAction['cancel']) {
-    const cancelAnalysis = payloadsByAction['cancel'].map(p => ({
-      timestamp: p.jsonRequest?.context?.timestamp,
-      forceParam: extractForceParameter(p.jsonRequest),
-      orderId: p.jsonRequest?.message?.order_id,
-      cancellationReasonId: p.jsonRequest?.message?.cancellation_reason_id,
-      descriptorName: p.jsonRequest?.message?.descriptor?.name,
-      descriptorShortDesc: p.jsonRequest?.message?.descriptor?.short_desc,
-      tags: p.jsonRequest?.message?.descriptor?.tags,
-      fullPath: 'message.descriptor.tags[].list[].code=force',
-      rawDescriptor: p.jsonRequest?.message?.descriptor
-    }));
-    
-    saveDebugData(`diagnostics/${flowId}_cancel_analysis.json`, {
-      flowId,
-      cancelPayloadCount: cancelAnalysis.length,
-      cancelPayloads: cancelAnalysis,
-      expectedCancelKeys: Object.entries(keyMappings)
-        .filter(([, key]) => key === 'cancel' || key === 'force_cancel')
-        .map(([position, key]) => ({ position, key })),
-      hasForceNo: cancelAnalysis.some(c => c.forceParam === 'no'),
-      hasForceYes: cancelAnalysis.some(c => c.forceParam === 'yes')
-    });
-  }
 
   // Fill in payload data using action-based matching
   Object.entries(keyMappings).forEach(([position, expectedKey]) => {
@@ -796,33 +581,6 @@ export function getUtilityFlowPayload(
     });
   }
 
-  // Save final mapping results only in debug mode
-  if (debugMode) {
-    const mappingResults = {
-    flowId,
-    originalFlowId,
-    timestamp: new Date().toISOString(),
-    expectedKeys: Object.values(keyMappings),
-    totalExpectedKeys: Object.keys(keyMappings).length,
-    mappingResults: Object.entries(result).map(([key, value]) => ({
-      key,
-      hasPayload: !!value && Object.keys(value).length > 0,
-      payloadKeys: Object.keys(value || {}),
-      isEmpty: !value || Object.keys(value).length === 0
-    })),
-    missingPayloads,
-    missingCount: missingPayloads.length,
-    successRate: `${((Object.keys(keyMappings).length - missingPayloads.length) / Object.keys(keyMappings).length * 100).toFixed(2)}%`,
-    summary: {
-      totalExpected: Object.keys(keyMappings).length,
-      totalFound: Object.keys(keyMappings).length - missingPayloads.length,
-      totalMissing: missingPayloads.length,
-      missingKeys: missingPayloads.map(m => m.expectedKey)
-    }
-  };
-    
-    saveDebugData(`mappings/${flowId}_mapping_results.json`, mappingResults);
-  }
 
   logInfo({
     message: "Final utility payload generated",

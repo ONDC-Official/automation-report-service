@@ -4,8 +4,8 @@ import { ParsedPayload } from "../types/parsedPayload";
 import { Result } from "../types/result";
 import dotenv from "dotenv";
 import { VALIDATION_URL } from "../utils/constants";
-import { logError, logger, logInfo } from "../utils/logger";
-import { writeFileSync, appendFileSync } from "fs";
+import { logError, logInfo } from "../utils/logger";
+import { writeFileSync } from "fs";
 import path from "path";
 dotenv.config();
 
