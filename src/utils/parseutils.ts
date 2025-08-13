@@ -3,12 +3,15 @@ import { ParsedPayload } from "../types/parsedPayload";
 import { RedisService } from "ondc-automation-cache-lib";
 import { FLOW_MAPPINGS } from "./constants";
 import { logError, logInfo } from "./logger";
+import { getRetailCurlFlowId, getUtilityFlowPayload, RETAIL_FLOW_CURL_MAPPINGS } from "./flowMappings";
 
 export async function parseFlows(
   flows: {
     [flowId: string]: Payload[];
   },
-  sessionID: string
+  sessionID: string,
+  isUtility: boolean = false,
+  catalogPayloads?: any
 ): Promise<{ [flowId: string]: ParsedPayload }> {
   logInfo({
     message: "Entering parseFlows function. Parsing flows...",
@@ -27,14 +30,39 @@ export async function parseFlows(
 
   // Parse each flow's payloads and create parsed payloads
   for (const [flowId, flowPayloads] of Object.entries(flows)) {
-    const mappedFlowId = FLOW_MAPPINGS[flowId];
+    let mappedFlowId;
+    // Retail domains (like ONDC:RET11) use special flow mappings for external validation
+    // Other domains use standard FLOW_MAPPINGS for internal validation
+    if (domain === "ONDC:RET11") {
+      mappedFlowId = getRetailCurlFlowId(flowId);
+      logInfo({
+        message: `Retail domain flow mapping: ${flowId} -> ${mappedFlowId}`,
+        meta: {
+          domain,
+          isUtility,
+          availableRetailMappings: Object.keys(RETAIL_FLOW_CURL_MAPPINGS)
+        }
+      });
+    } else {
+      mappedFlowId = FLOW_MAPPINGS[flowId] || flowId;
+      logInfo({
+        message: `Non-retail domain flow mapping: ${flowId} -> ${mappedFlowId}`,
+        meta: {
+          domain,
+          isUtility
+        }
+      });
+    }
 
     try {
       parsedFlows[flowId] = parsePayloads(
         mappedFlowId,
         flowPayloads,
         domain,
-        version
+        version,
+        isUtility,
+        catalogPayloads,
+        flowId
       );
     } catch (error) {
       // console.error(`Error parsing flow ${flowId}:`, error);
@@ -65,7 +93,10 @@ function parsePayloads(
   flowId: string,
   payloads: Payload[],
   domain: string,
-  version: string
+  version: string,
+  isUtility: boolean = false,
+  catalogPayloads?: any,
+  originalFlowId?: string
 ): ParsedPayload {
   logInfo({
     message: "Entering parsePayloads function. Parsing payloads...",
@@ -77,6 +108,41 @@ function parsePayloads(
     flow: flowId,
     payload: {},
   };
+
+  // For utility flows, use the utility flow mapping
+  if (isUtility && domain === "ONDC:RET11") {
+    // Get the original flowId from the RETAIL_FLOW_CURL_MAPPINGS
+    const originalFlowId = Object.keys(RETAIL_FLOW_CURL_MAPPINGS).find(key => 
+      RETAIL_FLOW_CURL_MAPPINGS[key] === flowId
+    );
+    
+    logInfo({
+      message: "Utility flow processing",
+      meta: {
+        flowId,
+        originalFlowId,
+        found: !!originalFlowId,
+        payloadCount: payloads.length,
+        actions: payloads.map(p => p.action)
+      }
+    });
+    
+    if (originalFlowId) {
+      parsedPayload.payload = getUtilityFlowPayload(flowId, originalFlowId, payloads, catalogPayloads);
+    } else {
+      logError({
+        message: `No original flowId found for utility flow ${flowId}`,
+        error: new Error("Missing original flow ID"),
+        meta: { flowId, RETAIL_FLOW_CURL_MAPPINGS }
+      });
+    }
+    
+    logInfo({
+      message: "Exiting parsePayloads function. Parsed utility payloads.",
+      meta: { flowId, originalFlowId, parsedPayload },
+    });
+    return parsedPayload;
+  }
 
   // Group payloads by action
   const groupedPayloads: { [key: string]: Payload[] } = payloads.reduce(
@@ -147,7 +213,7 @@ function parsePayloads(
     // Handling `search` and `on_search` actions with numbering
     if (action === "search" || action === "on_search") {
       actionCounters[action]++;
-      const key = `${action}_${actionCounters[action]}`;
+      let key = `${action}_${actionCounters[action]}`;
       parsedPayload.payload[key] = payload.jsonRequest;
     }
     // Handling `select`, `on_select`, `init`, `on_init`, `confirm`, `on_confirm`, etc.

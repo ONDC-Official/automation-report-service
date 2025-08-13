@@ -463,3 +463,220 @@ domains:
           - PICKUP_DELIVERY_ATTEMPT
           - FEATURE_DISCOVERY
         validationModules: "../validations/ONDC:LOG11/validator#validate"
+  ONDC:RET11:
+      versions:
+        "1.2.5":
+          flows:
+            FULL_CATALOG:
+              - search
+              - on_search
+
+            INCREMENTAL_CATALOG:
+              - search
+              - on_search
+              - on_search
+              - on_search
+              - search
+
+            ORDER_FLOW:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - track
+              - on_track
+              - on_status
+              - on_status
+
+            OUT_OF_STOCK:
+              - select
+              - on_select
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+
+            BUYER_CANCEL:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - cancel
+              - on_cancel
+
+            RTO_PLUS_PART_CANCELLATION:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_update
+              - update
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_cancel
+              - on_status
+
+            RETURN_FLOW:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - update
+              - on_update
+              - on_update
+              - update
+
+            FORCE_CANCEL:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - cancel
+              - cancel
+              - on_cancel
+              - update
+
+            OFFERS_FLOW:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - cancel
+              - on_cancel
+
+            SELF_PICKUP:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - on_status
+
+            SLOTTED_DELIVERY:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+
+            BUYER_DELIVERY:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - update
+              - on_update
+              - update
+              - on_update
+
+            BUYER_INSTRUCTIONS_AND_ADDRESS_UPDATE_FLOW:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - update
+              - on_update
+              - update
+              - on_update
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_update
+              - on_status
+              - on_status
+
+            MULTI_OPTION_FULFILLMENT_FLOW:
+              - select
+              - on_select
+              - init
+              - on_init
+              - confirm
+              - on_confirm
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+              - on_status
+
+          optional_flows:
+            - INCREMENTAL_CATALOG
+            - OUT_OF_STOCK
+            - RTO_PLUS_PART_CANCELLATION
+            - RETURN_FLOW
+            - FORCE_CANCEL
+            - OFFERS_FLOW
+            - SELF_PICKUP
+            - SLOTTED_DELIVERY
+            - BUYER_DELIVERY
+            - ORDER_FLOW
+            - BUYER_CANCEL
+            - BUYER_INSTRUCTIONS_AND_ADDRESS_UPDATE_FLOW
+            - MULTI_OPTION_FULFILLMENT_FLOW
+          # Note: validationModules not required for retail domains
+          # Retail domains use external validation API (https://log-validation.ondc.org/api/validate)
+          # Since ONDC:RET11 is NOT in ENABLED_DOMAINS, it automatically uses external validation
+
+    

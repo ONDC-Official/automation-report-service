@@ -3,3 +3,8 @@ node_modules
 .vscode
 /logs
 /dist
+utility_validation_response.json
+/debug
+# Keep run-debug.sh in version control
+*.md
+*.sh

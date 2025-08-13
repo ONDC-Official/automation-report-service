@@ -25,18 +25,26 @@ export const MANDATORY_FLOWS: String[] = [
 export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
+
+// Domains listed here use internal validation modules from /validations/[domain]/
+// Domains NOT listed here (like ONDC:RET11) use external validation APIs
 export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV11",
   "nic2004:60232",
   "ONDC:LOG10",
   "ONDC:LOG11",
+  // Note: ONDC:RET11 and other retail domains intentionally NOT included
+  // They use external validation at https://log-validation.ondc.org/api/validate
 ];
 
+// Flow mappings for domains that use internal validation (domains in ENABLED_DOMAINS)
+// Note: Retail domains (like ONDC:RET11) use RETAIL_FLOW_CURL_MAPPINGS in flowMappings.ts instead
 export const FLOW_MAPPINGS: Record<string, string> = {
-  //METRO
+  // METRO (ONDC:TRV11)
   STATION_CODE_FLOW_ORDER: "METRO_STATION_CODE",
   STATION_CODE_FLOW_CATALOG: "METRO_STATION_CODE",
   TECHNICAL_CANCELLATION_FLOW: "METRO_TECHNICAL_CANCEL",
+  // Add mappings for other non-retail domains (LOG10, LOG11) as needed
 };
 
 export const VALIDATION_URL: Record<string, string> = {
