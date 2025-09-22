@@ -2,6 +2,7 @@ import axios from "axios";
 import { Payload, WrappedPayload } from "../types/payload";
 import dotenv from "dotenv";
 import { logError, logInfo } from "../utils/logger";
+import { MESSAGES } from "../utils/messages";
 
 // Load environment variables
 dotenv.config();
@@ -10,7 +11,7 @@ const API_URL = `${process.env.DATA_BASE_URL}/payload/ids`;
 
 export async function fetchPayloads(requestBody: Record<string, string[]>): Promise<Record<string, Payload[]>> {
   logInfo({
-    message: `Entering fetchPayloads function. Fetching payloads...`,
+    message: MESSAGES.services.fetchPayloadsEnter,
     meta: {
       requestBody,
     },
@@ -46,7 +47,7 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
       })
     );
     logInfo({
-      message: "Exiting fetchPayloads function. Fetched payloads.",
+      message: MESSAGES.services.fetchPayloadsExit,
       meta: {
         results,
       },
@@ -55,7 +56,7 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
   } catch (error) {
     // console.error("Error fetching data:", error);
     logError({
-      message: "Error in fetchPayloads function",
+      message: MESSAGES.services.fetchPayloadsError,
       error: new Error("Failed to fetch payloads"),
       meta: {
         error,
@@ -67,7 +68,7 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
 
 export async function fetchSessionDetails(sessionID: string): Promise<any> {
   logInfo({
-    message: `Entering fetchSessionDetails function. Fetching session details for session ID: ${sessionID}`,
+    message: MESSAGES.services.fetchSessionEnter(sessionID),
     meta: {
       sessionID,
     },
@@ -76,7 +77,7 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
     const storageUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionID}`;
     const response = await axios.get<WrappedPayload[]>(storageUrl);
     logInfo({
-      message: `Exiting fetchSessionDetails function. Fetched session details.`,
+      message: MESSAGES.services.fetchSessionExit,
       meta: {
         sessionID,
         response: response.data,
@@ -92,7 +93,7 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
     
     // console.error(`Failed to fetch details for session ID ${sessionID}:`, errorDetails);
     logError({
-      message: `Failed to fetch details for session ID ${sessionID}`,
+      message: MESSAGES.services.fetchSessionError(sessionID),
       error: new Error(errorDetails),
       meta: {
         sessionID,

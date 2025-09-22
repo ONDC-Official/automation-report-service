@@ -9,6 +9,7 @@ import { checkMessage } from "./checkMessage"; // Import the checkMessage functi
 import { actions } from "../utils/constants"; // Import available actions for validation
 import { ValidationAction } from "../types/actions"; // Import the type for valid validation actions
 import { logError, logger, logInfo } from "../utils/logger";
+import { MESSAGES } from "../utils/messages";
 import { RedisService } from "ondc-automation-cache-lib";
 
 // Type guard to ensure the action is a valid ValidationAction from the predefined actions list
@@ -26,7 +27,7 @@ export async function validationModule(
   // Return type that contains validation results per flowId
   logInfo
     ({
-      message: "Entering validationModule function.",
+      message: MESSAGES.services.validationEnter,
       meta: { sessionID, groupedPayloads },
     });
   let sessionDetails: any = await RedisService.getKey(
@@ -45,7 +46,7 @@ export async function validationModule(
   try {
     // logger.info(`Checking if all the required flows are tested`);
     logInfo({
-      message: "Checking if all the required flows are tested",
+      message: MESSAGES.validations.checkingMandatoryFlows,
       meta: { testedFlows },
     });
     // Function to check if a flow is tested or optional
@@ -93,7 +94,7 @@ export async function validationModule(
     }
     checkFlowExistence(testedFlows);
     logInfo({
-      message: "Mandatory flows check completed",
+      message: MESSAGES.validations.mandatoryFlowsDone,
       meta: { testedFlows },
     });
   } catch (error: any) {
@@ -113,7 +114,7 @@ export async function validationModule(
     let validSequence = true; // Flag to track whether the sequence of actions is valid
     // logger.info(`Validating ${flowId}......`);
     logInfo({
-      message: `Validating ${flowId}...`,
+      message: MESSAGES.validations.actionValidationStart(flowId),
       meta: { flowId },
     });
     // Step 1: Validate Action Sequence for each flow
@@ -147,7 +148,7 @@ export async function validationModule(
       });
     }
     logInfo({
-      message: `Action sequence validation completed for ${flowId}`,
+      message: MESSAGES.validations.actionValidationDone(flowId),
       meta: { flowId },
       });
     // Define counters for each action to keep track of the number of occurrences in the sequence
@@ -216,7 +217,7 @@ export async function validationModule(
       }
     }
     logInfo({
-      message: `Payload processing completed for ${flowId} using checkMessage`,
+      message: MESSAGES.validations.payloadProcessingDone(flowId),
       meta: { flowId },
     });
     // Step 3: Compile and Store Validation Report for Current Flow
@@ -230,7 +231,7 @@ export async function validationModule(
 
   // Return the final report containing the validation results for all flows
   logInfo({
-    message: "Exiting validationModule function. Validation completed.",
+    message: MESSAGES.services.validationExit,
     meta: { sessionID, flowsReport },
   });
   return Report;

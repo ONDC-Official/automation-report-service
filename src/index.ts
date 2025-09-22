@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import reportRouter from "./routes/reportRoute";
 import { RedisService } from "ondc-automation-cache-lib";
 import { logError, logger, logInfo } from "./utils/logger";
+import { MESSAGES } from "./utils/messages";
+import { apiResponse } from "./utils/responseHandler";
 
 // Initialize dotenv to load environment variables
 dotenv.config();
@@ -28,16 +30,16 @@ app.use("/", reportRouter);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   // logger.error(err.stack);
   logError({
-    message: "Internal Server Error",
+    message: MESSAGES.app.internalError,
     error: err,
   });
-  res.status(500).send("Something went wrong!");
+  apiResponse.internalError(res, MESSAGES.responses.generic500, err);
 });
 
 // Start the server
 app.listen(PORT, () => {
   // logger.info(`Server is running on http://localhost:${PORT}`);
   logInfo({
-    message: `Server is running on http://localhost:${PORT}`,
+    message: MESSAGES.app.serverStarted(Number(PORT)),
     });
 });
