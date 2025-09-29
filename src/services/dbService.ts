@@ -75,7 +75,11 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
   });
   try {
     const storageUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionID}`;
-    const response = await axios.get<WrappedPayload[]>(storageUrl);
+    const response = await axios.get<WrappedPayload[]>(storageUrl, {
+      headers: {
+        "x-api-key": process.env.API_SERVICE_KEY
+      }
+    });
     logInfo({
       message: MESSAGES.services.fetchSessionExit,
       meta: {

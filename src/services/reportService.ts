@@ -10,7 +10,6 @@ export class ReportService {
   static async generate(sessionId: string, flowIdToPayloadIdsMap: Record<string, string[]>): Promise<string> {
     const sessionDetails = await fetchSessionDetails(sessionId);
     await CacheService.set(`sessionDetails:${sessionId}`, JSON.stringify(sessionDetails));
-
     const payloads = await fetchPayloads(flowIdToPayloadIdsMap);
     const flows = sortPayloadsByCreatedAt(payloads);
 

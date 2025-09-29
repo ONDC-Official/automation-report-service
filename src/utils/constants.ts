@@ -25,6 +25,7 @@ export const MANDATORY_FLOWS: String[] = [
 export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
+
 export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV11",
   "nic2004:60232",

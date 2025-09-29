@@ -1,13 +1,9 @@
 import { TestResult } from "../../types/payload";
+import { Validation } from "./contextValidator";
 import Joi from "joi";
 
-/**
- * Validate the structure of the JSON response using Joi.
- * @param jsonResponse - The JSON response to validate.
- * @returns An object with `isValid` and `errors` properties.
- */
-export const validateJsonResponse = (jsonResponse: any) => {
-  const schema = Joi.object({
+// Default ACK/NACK schema (used when a schema isn't provided)
+const defaultAckSchema = Joi.object({
     context: Joi.object({
       domain: Joi.string().required(),
       country: Joi.string().required(),
@@ -21,7 +17,7 @@ export const validateJsonResponse = (jsonResponse: any) => {
       timestamp: Joi.string().isoDate().required(),
       bpp_id: Joi.string(),
       bpp_uri: Joi.string().uri(),
-      ttl: Joi.string()
+      ttl: Joi.string(),
     }).required(),
 
     message: Joi.object({
@@ -29,7 +25,7 @@ export const validateJsonResponse = (jsonResponse: any) => {
         status: Joi.string().valid("ACK", "NACK").required(),
       }).required(),
     }).required(),
-
+    
     error: Joi.when(Joi.ref("message.ack.status"), {
       is: "NACK",
       then: Joi.object({
@@ -38,9 +34,14 @@ export const validateJsonResponse = (jsonResponse: any) => {
       }).required(),
       otherwise: Joi.forbidden(),
     }),
-  });
+});
 
-  const { error } = schema.validate(jsonResponse, { abortEarly: false });
+export const validateJsonResponse = (
+  jsonResponse: any,
+  schema?: Joi.ObjectSchema<any>
+) => {
+  const effectiveSchema = schema ?? defaultAckSchema;
+  const { error } = effectiveSchema.validate(jsonResponse, { abortEarly: false });
 
   return {
     isValid: !error,
@@ -50,10 +51,22 @@ export const validateJsonResponse = (jsonResponse: any) => {
 
 export const checkJsonResponse = (
   jsonResponse: any,
-  testResults: TestResult
+  testResults: TestResult,
+  schema?: Joi.ObjectSchema<any>
 ) => {
-  const { isValid, errors } = validateJsonResponse(jsonResponse?.response);
-
-  !isValid &&
-    testResults.failed.push(`Issue with sync response: ${errors.join(", ")}`);
+  const { isValid, errors } = validateJsonResponse(jsonResponse?.response, schema);
+  if (!isValid) testResults.failed.push(`Issue with sync response: ${errors.join(", ")}`);
 };
+
+export async function runValidations(validations: Validation[], payload: unknown) {
+  const errors: string[] = [];
+  for (const v of validations) {
+    const res = await v.run(payload);
+    if (!res.ok) {
+      errors.push(...res.errors.map(e => `${v.name}: ${e}`));
+    }
+  }
+  return { ok: errors.length === 0, errors };
+}
+
+
