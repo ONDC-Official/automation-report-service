@@ -13,6 +13,7 @@ export class ReportService {
     const payloads = await fetchPayloads(flowIdToPayloadIdsMap);
     const flows = sortPayloadsByCreatedAt(payloads);
 
+    console.log("flows=>>>>>>>>>>>>",JSON.stringify(flows));
     if (!ENABLED_DOMAINS.includes(sessionDetails?.domain)) {
       return await utilityReport(flows, sessionId);
     }

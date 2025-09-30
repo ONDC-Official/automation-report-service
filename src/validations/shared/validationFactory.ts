@@ -412,7 +412,6 @@ export function createConfirmValidator(...config: string[]) {
 
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
-
     return testResults;
   };
 }
