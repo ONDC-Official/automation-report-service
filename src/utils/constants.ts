@@ -31,6 +31,7 @@ export const ENABLED_DOMAINS: String[] = [
   "nic2004:60232",
   "ONDC:LOG10",
   "ONDC:LOG11",
+  "ONDC:FIS11",
 ];
 
 export const FLOW_MAPPINGS: Record<string, string> = {

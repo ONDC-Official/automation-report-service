@@ -9,6 +9,7 @@ import {
   validateLBNPFeaturesForFlows,
   validateLSPFeaturesForFlows,
 } from "../../utils/constants";
+import { getTransactionIds } from "../../utils/redisUtils";
 
 /**
  * Common validation setup that initializes TestResult and extracts basic payload data
@@ -363,3 +364,45 @@ export function validateCommonOnSearch(
 
   return testResults;
 }
+
+/**
+ * Validates transaction_id against stored transaction IDs in Redis
+ * This validation checks if the transaction ID exists for the same flow
+ */
+export async function validateTransactionId(
+  sessionID: string,
+  flowId: string,
+  currentTransactionId: string,
+  testResults: TestResult
+): Promise<void> {
+  try {
+    
+    if (!currentTransactionId) {
+      testResults.failed.push("Transaction ID is missing in context");
+      return;
+    }
+
+    // Get all stored transaction IDs for this session and flow from Redis
+    const storedTransactionIds = await getTransactionIds(sessionID, flowId);
+    
+    if (storedTransactionIds.length === 0) {
+      testResults.failed.push("No transaction IDs found for this flow. Flow may not have started properly.");
+      return;
+    }
+
+    // Check if current transaction_id matches any stored transaction_id
+    const isValidTransactionId = storedTransactionIds.includes(currentTransactionId);
+    
+    if (isValidTransactionId) {
+      testResults.passed.push(`Transaction ID '${currentTransactionId}' is valid and exists in flow`);
+    } else {
+      testResults.failed.push(
+        `Transaction ID '${currentTransactionId}' is invalid. Expected one of: ${storedTransactionIds.join(', ')}`
+      );
+    }
+  } catch (error: any) {
+    logger.error("Error validating transaction ID:", error);
+    testResults.failed.push(`Transaction ID validation failed: ${error.message}`);
+  }
+}
+

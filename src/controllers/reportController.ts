@@ -29,6 +29,7 @@ export async function generateReportController(req: Request, res: Response) {
       apiResponse.badRequest(res, MESSAGES.responses.missingSessionId);
       return;
     }
+
     const htmlReport = await ReportService.generate(sessionId, flowIdToPayloadIdsMap);
     apiResponse.successHTML(res, htmlReport);
     logInfo({
