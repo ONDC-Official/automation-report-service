@@ -1,6 +1,7 @@
-import { Payload, WrappedPayload } from "../types/payload";
-import { loadConfig } from "../utils/configLoader"; // Importing function to load configuration for validation modules
-import { logError, logger, logInfo } from "../utils/logger";
+import { Payload } from "../types/payload";
+import { runValidations } from "../validations/shared/schemaValidator";
+import { contextValidators } from "../validations/shared/contextValidator";
+import { logError,logInfo } from "../utils/logger";
 
 // A function to dynamically load and execute a validation function based on the provided module path and function name
 const dynamicValidator = (
@@ -54,7 +55,7 @@ const dynamicValidator = (
 };
 
 // Main function that checks the message validation based on the domain and action
-export const checkMessage = async (
+export const checkPayload = async (
   domain: string, // The domain (e.g., 'search', 'select') to determine the appropriate validation module
   element: Payload, // The payload or element to be validated
   action: string, // The specific action to be validated (e.g., 'init', 'confirm')
@@ -63,9 +64,19 @@ export const checkMessage = async (
   domainConfig: any
 ): Promise<object> => {
   logInfo({
-    message: "Entering checkMessage function.",
+    message: "Entering checkPayload function.",
     meta: { domain, element, action, sessionId, flowId },
   });
+  // 0) Always validate common context before any domain/action-specific checks
+  const commonCtxResult = await runValidations(contextValidators(), element?.jsonRequest);
+  if (!commonCtxResult.ok) {
+    return {
+      response: {},
+      passed: [],
+      failed: commonCtxResult.errors,
+    };
+  }
+
   // Get the module path and function name based on the version, or fall back to the default configuration
   const modulePathWithFunc = domainConfig?.validationModules;
   logInfo({

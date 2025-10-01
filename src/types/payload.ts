@@ -4,6 +4,7 @@ export interface Payload {
   transactionId: string;
   flowId: string;
   action: string; // e.g., "SEARCH"
+  action_id: string | null; // e.g., "search_LOGISTICS"
   bppId: string | null; // Can be null
   bapId: string;
   payloadId: string;
