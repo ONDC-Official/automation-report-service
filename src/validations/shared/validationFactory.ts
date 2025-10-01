@@ -9,12 +9,15 @@ import {
   addDefaultValidationMessage,
   validateTransactionId,
 } from "./commonValidations";
-import { addTransactionId, updateApiMap} from "../../utils/redisUtils";
+import { addTransactionId, updateApiMap } from "../../utils/redisUtils";
 import {
   validateTATForFulfillments,
   validateShipmentTypes,
 } from "./onSearchValidations";
 import { validatorConstant } from "./validatorConstant";
+
+const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
+const log11Validators = validatorConstant.beckn.ondc.log.v125;
 
 /**
  * Wrapper function to validate TAT for on_select, on_init, and on_confirm actions
@@ -25,7 +28,11 @@ function validateTAT(message: any, testResults: TestResult): void {
     const contextTimestamp = new Date();
     catalog["bpp/providers"].forEach((provider: any) => {
       if (provider.fulfillments) {
-        validateTATForFulfillments(provider.fulfillments, contextTimestamp, testResults);
+        validateTATForFulfillments(
+          provider.fulfillments,
+          contextTimestamp,
+          testResults
+        );
       }
     });
   }
@@ -34,7 +41,10 @@ function validateTAT(message: any, testResults: TestResult): void {
 /**
  * Wrapper function to validate shipment types for on_select, on_init, and on_confirm actions
  */
-function validateShipmentTypesWrapper(message: any, testResults: TestResult): void {
+function validateShipmentTypesWrapper(
+  message: any,
+  testResults: TestResult
+): void {
   const catalog = message?.catalog;
   if (catalog?.["bpp/providers"]) {
     catalog["bpp/providers"].forEach((provider: any) => {
@@ -65,7 +75,10 @@ function validateIntent(message: any, testResults: TestResult): void {
   }
 }
 
-function validatePaymentCollectedBy(message: any, testResults: TestResult): void {
+function validatePaymentCollectedBy(
+  message: any,
+  testResults: TestResult
+): void {
   const payment = message?.intent?.payment;
   if (payment?.collected_by && ["BAP", "BPP"].includes(payment.collected_by)) {
     testResults.passed.push("Payment collected_by has valid value");
@@ -75,11 +88,12 @@ function validatePaymentCollectedBy(message: any, testResults: TestResult): void
 }
 
 function validateTags(message: any, testResults: TestResult): void {
-  const tags = message?.intent?.tags || message?.order?.tags || message?.catalog?.tags;
+  const tags =
+    message?.intent?.tags || message?.order?.tags || message?.catalog?.tags;
   if (tags && Array.isArray(tags)) {
-    const bapTerms = tags.find(tag => tag.descriptor?.code === "BAP_TERMS");
-    const bppTerms = tags.find(tag => tag.descriptor?.code === "BPP_TERMS");
-    
+    const bapTerms = tags.find((tag) => tag.descriptor?.code === "BAP_TERMS");
+    const bppTerms = tags.find((tag) => tag.descriptor?.code === "BPP_TERMS");
+
     if (bapTerms) {
       testResults.passed.push("BAP_TERMS tag is present");
     }
@@ -155,7 +169,8 @@ function validateProvider(message: any, testResults: TestResult): void {
 }
 
 function validateItems(message: any, testResults: TestResult): void {
-  const items = message?.catalog?.providers?.[0]?.items || message?.order?.items;
+  const items =
+    message?.catalog?.providers?.[0]?.items || message?.order?.items;
   if (!items || !Array.isArray(items)) {
     testResults.failed.push("Items array is missing or invalid");
     return;
@@ -183,7 +198,9 @@ function validateItems(message: any, testResults: TestResult): void {
 }
 
 function validateFulfillments(message: any, testResults: TestResult): void {
-  const fulfillments = message?.catalog?.providers?.[0]?.fulfillments || message?.order?.fulfillments;
+  const fulfillments =
+    message?.catalog?.providers?.[0]?.fulfillments ||
+    message?.order?.fulfillments;
   if (!fulfillments || !Array.isArray(fulfillments)) {
     testResults.failed.push("Fulfillments array is missing or invalid");
     return;
@@ -205,7 +222,8 @@ function validateFulfillments(message: any, testResults: TestResult): void {
 }
 
 function validatePayments(message: any, testResults: TestResult): void {
-  const payments = message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
+  const payments =
+    message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
   if (!payments || !Array.isArray(payments)) {
     testResults.failed.push("Payments array is missing or invalid");
     return;
@@ -218,7 +236,10 @@ function validatePayments(message: any, testResults: TestResult): void {
       testResults.passed.push(`Payment ${index} collected_by is present`);
     }
 
-    if (payment.type && !["PRE_ORDER", "ON_ORDER", "POST_FULFILLMENT"].includes(payment.type)) {
+    if (
+      payment.type &&
+      !["PRE_ORDER", "ON_ORDER", "POST_FULFILLMENT"].includes(payment.type)
+    ) {
       testResults.failed.push(`Payment ${index} type has invalid value`);
     } else if (payment.type) {
       testResults.passed.push(`Payment ${index} type has valid value`);
@@ -295,7 +316,8 @@ export function createSearchValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
 
     // Store transaction ID (only in search action - first action in flow)
     const transactionId = context?.transaction_id;
@@ -303,9 +325,13 @@ export function createSearchValidator(...config: string[]) {
       try {
         await updateApiMap(sessionID, transactionId, action);
         await addTransactionId(sessionID, flowId, transactionId);
-        testResults.passed.push(`Transaction ID '${transactionId}' stored successfully`);
+        testResults.passed.push(
+          `Transaction ID '${transactionId}' stored successfully`
+        );
       } catch (error: any) {
-        testResults.failed.push(`Transaction ID storage failed: ${error.message}`);
+        testResults.failed.push(
+          `Transaction ID storage failed: ${error.message}`
+        );
       }
     } else {
       testResults.failed.push("Transaction ID is missing in context");
@@ -315,37 +341,37 @@ export function createSearchValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateHolidays':
+          case log11Validators.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case 'validateLBNP':
+          case log11Validators.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case 'validatePrepaidPayment':
+          case log11Validators.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case 'validateCOD':
+          case log11Validators.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateIntent':
+          case fis11Validators.validate_intent:
             validateIntent(message, testResults);
             break;
-          case 'validatePaymentCollectedBy':
+          case fis11Validators.validate_payment_collected_by:
             validatePaymentCollectedBy(message, testResults);
             break;
-          case 'validateTags':
+          case fis11Validators.validate_tags:
             validateTags(message, testResults);
-            break;    
+            break;
           default:
             break;
-         }
-       }
-     }
+        }
+      }
+    }
 
-     // Add default message if no validations ran
-     addDefaultValidationMessage(testResults, action);
+    // Add default message if no validations ran
+    addDefaultValidationMessage(testResults, action);
     return testResults;
   };
 }
@@ -359,7 +385,8 @@ export function createOnSearchValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
     const transactionId = context?.transaction_id;
 
     // Validate transaction ID exists for this flow
@@ -378,30 +405,30 @@ export function createOnSearchValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateLSP':
+          case log11Validators.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case 'validateTAT':
+          case log11Validators.validate_tat:
             validateTAT(message, testResults);
             break;
-          case 'validateShipmentTypes':
+          case log11Validators.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateCatalog':
+          case fis11Validators.validate_catalog:
             validateCatalog(message, testResults);
             break;
-          case 'validateProviders':
+          case fis11Validators.validate_providers:
             validateProviders(message, testResults);
             break;
-          case 'validateItems':
+          case fis11Validators.validate_items:
             validateItems(message, testResults);
             break;
-          case 'validateFulfillments':
+          case fis11Validators.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case 'validatePayments':
+          case fis11Validators.validate_payments:
             validatePayments(message, testResults);
             break;
           default:
@@ -426,7 +453,8 @@ export function createSelectValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
 
     const transactionId = context?.transaction_id;
 
@@ -444,33 +472,33 @@ export function createSelectValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateHolidays':
+          case log11Validators.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case 'validateLBNP':
+          case log11Validators.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case 'validatePrepaidPayment':
+          case log11Validators.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case 'validateCOD':
+          case log11Validators.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateOrder':
+          case fis11Validators.validate_order:
             validateOrder(message, testResults);
             break;
-          case 'validateProvider':
+          case fis11Validators.validate_provider:
             validateProvider(message, testResults);
             break;
-          case 'validateItems':
+          case fis11Validators.validate_items:
             validateItems(message, testResults);
             break;
-          case 'validateFulfillments':
+          case fis11Validators.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          
+
           default:
             break;
         }
@@ -479,7 +507,6 @@ export function createSelectValidator(...config: string[]) {
 
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
-
     return testResults;
   };
 }
@@ -493,7 +520,8 @@ export function createOnSelectValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
 
     const transactionId = context?.transaction_id;
 
@@ -511,33 +539,33 @@ export function createOnSelectValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateLSP':
+          case log11Validators.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case 'validateTAT':
+          case log11Validators.validate_tat:
             validateTAT(message, testResults);
             break;
-          case 'validateShipmentTypes':
+          case log11Validators.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateOrder':
+          case fis11Validators.validate_order:
             validateOrder(message, testResults);
             break;
-          case 'validateQuote':
+          case fis11Validators.validate_quote:
             validateQuote(message, testResults);
             break;
-          case 'validateProvider':
+          case fis11Validators.validate_provider:
             validateProvider(message, testResults);
             break;
-          case 'validateItems':
+          case fis11Validators.validate_items:
             validateItems(message, testResults);
             break;
-          case 'validateFulfillments':
+          case fis11Validators.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          
+
           default:
             break;
         }
@@ -560,7 +588,8 @@ export function createInitValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
 
     const transactionId = context?.transaction_id;
 
@@ -578,39 +607,39 @@ export function createInitValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateHolidays':
+          case log11Validators.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case 'validateLBNP':
+          case log11Validators.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case 'validatePrepaidPayment':
+          case log11Validators.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case 'validateCOD':
+          case log11Validators.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateOrder':
+          case fis11Validators.validate_order:
             validateOrder(message, testResults);
             break;
-          case 'validateProvider':
+          case fis11Validators.validate_provider:
             validateProvider(message, testResults);
             break;
-          case 'validateItems':
+          case fis11Validators.validate_items:
             validateItems(message, testResults);
             break;
-          case 'validateFulfillments':
+          case fis11Validators.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case 'validatePayments':
+          case fis11Validators.validate_payments:
             validatePayments(message, testResults);
             break;
-          case 'validateBilling':
+          case fis11Validators.validate_billing:
             validateBilling(message, testResults);
             break;
-          
+
           default:
             break;
         }
@@ -633,7 +662,8 @@ export function createConfirmValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
 
     const transactionId = context?.transaction_id;
 
@@ -651,39 +681,39 @@ export function createConfirmValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateHolidays':
+          case log11Validators.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case 'validateLBNP':
+          case log11Validators.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case 'validatePrepaidPayment':
+          case log11Validators.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case 'validateCOD':
+          case log11Validators.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateOrder':
+          case fis11Validators.validate_order:
             validateOrder(message, testResults);
             break;
-          case 'validateProvider':
+          case fis11Validators.validate_provider:
             validateProvider(message, testResults);
             break;
-          case 'validateItems':
+          case fis11Validators.validate_items:
             validateItems(message, testResults);
             break;
-          case 'validateFulfillments':
+          case fis11Validators.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case 'validatePayments':
+          case fis11Validators.validate_payments:
             validatePayments(message, testResults);
             break;
-          case 'validateBilling':
+          case fis11Validators.validate_billing:
             validateBilling(message, testResults);
             break;
-          
+
           default:
             break;
         }
@@ -705,7 +735,8 @@ export function createOnInitValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
 
     const transactionId = context?.transaction_id;
 
@@ -723,39 +754,39 @@ export function createOnInitValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateLSP':
+          case log11Validators.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case 'validateTAT':
+          case log11Validators.validate_tat:
             validateTAT(message, testResults);
             break;
-          case 'validateShipmentTypes':
+          case log11Validators.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateOrder':
+          case fis11Validators.validate_order:
             validateOrder(message, testResults);
             break;
-          case 'validateQuote':
+          case fis11Validators.validate_quote:
             validateQuote(message, testResults);
             break;
-          case 'validateProvider':
+          case fis11Validators.validate_provider:
             validateProvider(message, testResults);
             break;
-          case 'validateItems':
+          case fis11Validators.validate_items:
             validateItems(message, testResults);
             break;
-          case 'validateFulfillments':
+          case fis11Validators.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case 'validatePayments':
+          case fis11Validators.validate_payments:
             validatePayments(message, testResults);
             break;
-          case 'validateBilling':
+          case fis11Validators.validate_billing:
             validateBilling(message, testResults);
             break;
-          
+
           default:
             break;
         }
@@ -768,7 +799,6 @@ export function createOnInitValidator(...config: string[]) {
     return testResults;
   };
 }
-
 
 /**
  * Creates an on_confirm validation function with configurable validations
@@ -779,7 +809,8 @@ export function createOnConfirmValidator(...config: string[]) {
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    const { testResults, action, context, message } = createBaseValidationSetup(element);
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
     const transactionId = context?.transaction_id;
 
     // Validate transaction ID exists for this flow
@@ -796,42 +827,42 @@ export function createOnConfirmValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case 'validateLSP':
+          case log11Validators.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case 'validateTAT':
+          case log11Validators.validate_tat:
             validateTAT(message, testResults);
             break;
-          case 'validateShipmentTypes':
+          case log11Validators.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
-          
+
           // Financial services validations
-          case 'validateOrder':
+          case fis11Validators.validate_order:
             validateOrder(message, testResults);
             break;
-          case 'validateQuote':
+          case fis11Validators.validate_quote:
             validateQuote(message, testResults);
             break;
-          case 'validateProvider':
+          case fis11Validators.validate_provider:
             validateProvider(message, testResults);
             break;
-          case 'validateItems':
+          case fis11Validators.validate_items:
             validateItems(message, testResults);
             break;
-          case 'validateFulfillments':
+          case fis11Validators.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case 'validatePayments':
+          case fis11Validators.validate_payments:
             validatePayments(message, testResults);
             break;
-          case 'validateBilling':
+          case fis11Validators.validate_billing:
             validateBilling(message, testResults);
             break;
-          case 'validateOrderStatus':
+          case fis11Validators.validate_order_status:
             validateOrderStatus(message, testResults);
             break;
-          
+
           default:
             break;
         }
@@ -844,9 +875,3 @@ export function createOnConfirmValidator(...config: string[]) {
     return testResults;
   };
 }
-
-
-
-
-
-

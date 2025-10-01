@@ -5,6 +5,8 @@ import { validatorConstant } from "./validatorConstant";
  * Pre-configured validators for common domain patterns
  */
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
+const log11Validators = validatorConstant.beckn.ondc.log.v125;
+
 
 export const DomainValidators = {
     fis11Search: createSearchValidator(
@@ -77,102 +79,68 @@ export const DomainValidators = {
     ),
   
     ondclogSearch: createSearchValidator(
-      "validateHolidays",
-      "validateLBNP",
-      "validatePrepaidPayment",
-      "validateCOD"
+     log11Validators.validate_holidays,
+      log11Validators.validate_lbnp,
+      log11Validators.validate_prepaid_payment,
+      log11Validators.validate_cod
     ),
   
   
      ondclogOnSearch: createOnSearchValidator(
-      "validateLSP",
-      "validateTAT", 
-      "validateShipmentTypes"
+      log11Validators.validate_lsp,
+      log11Validators.validate_tat, 
+      log11Validators.validate_shipment_types
     ),
   
    
-    nic2004Search: createSearchValidator("validateHolidays"),
+    nic2004Search: createSearchValidator(log11Validators.validate_holidays),
   
     
     ondclogSelect: createSelectValidator(
-      "validateHolidays",
-      "validateLBNP",
-      "validatePrepaidPayment",
-      "validateCOD"
+      log11Validators.validate_holidays,
+      log11Validators.validate_lbnp,
+      log11Validators.validate_prepaid_payment,
+      log11Validators.validate_cod
     ),
   
     /**
      * ONDC LOG10/LOG11 on_select validator with comprehensive validations
      */
     ondclogOnSelect: createOnSelectValidator(
-      "validateLSP",
-      "validateTAT",
-      "validateShipmentTypes"
+      log11Validators.validate_lsp,
+      log11Validators.validate_tat,
+      log11Validators.validate_shipment_types
     ),
   
     /**
      * ONDC LOG10/LOG11 init validator with all validations
      */
     ondclogInit: createInitValidator(
-      "validateHolidays",
-      "validateLBNP",
-      "validatePrepaidPayment",
-      "validateCOD"
+      log11Validators.validate_holidays,
+      log11Validators.validate_lbnp,
+      log11Validators.validate_prepaid_payment,
+      log11Validators.validate_cod
     ),
   
     /**
      * ONDC LOG10/LOG11 on_init validator with comprehensive validations
      */
     ondclogOnInit: createOnInitValidator(
-      "validateLSP",
-      "validateTAT",
-      "validateShipmentTypes"
+      log11Validators.validate_lsp,
+      log11Validators.validate_tat,
+      log11Validators.validate_shipment_types
     ),
   
-    // /**
-    //  * ONDC LOG10/LOG11 confirm validator with all validations
-    //  */
-    // ondclogConfirm: createConfirmValidator({
-    //   validateHolidays: true,
-    //   validateLBNP: true,
-    //   validatePrepaidPayment: true,
-    //   validateCOD: true,
-    // }),
-  
-    // /**
-    //  * ONDC LOG10/LOG11 on_confirm validator with comprehensive validations
-    //  */
-    // ondclogOnConfirm: createOnConfirmValidator({
-    //   validateLSP: true,
-    //   validateTAT: true,
-    //   validateShipmentTypes: true,
-    // }),
-  
-    // /**
-    //  * Generic OnSearch validator with basic validations
-    //  */
-    // genericOnSearch: createOnSearchValidator({
-    //   validateLSP: true,
-    // }),
-  
-    // /**
-    //  * Generic validator for actions that don't need specific validations
-    //  */
-    // generic: createGenericValidator("generic"),
-  
-    /**
-     * Universal validators - can be used across all domains with different parameter configurations
-     */
-    
     ondclogConfirm: createConfirmValidator(
-      "validateHolidays",
-      "validateLBNP",
-      "validatePrepaidPayment",
+      log11Validators.validate_holidays,
+      log11Validators.validate_lbnp,
+      log11Validators.validate_prepaid_payment,
     ),
   
     ondclogOnConfirm: createOnConfirmValidator(
-      "validateLSP",
-      "validateTAT",
-      "validateShipmentTypes",
+      log11Validators.validate_lsp,
+      log11Validators.validate_tat, 
+      log11Validators.validate_shipment_types
+
     )
   };
