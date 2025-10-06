@@ -30,7 +30,7 @@ export async function generateReportController(req: Request, res: Response) {
       return;
     }
 
-    const htmlReport = await ReportService.generate(sessionId, flowIdToPayloadIdsMap);
+    const htmlReport = await new ReportService().generate(sessionId, flowIdToPayloadIdsMap);
     apiResponse.successHTML(res, htmlReport);
     logInfo({
       message: MESSAGES.report.reportSent,
