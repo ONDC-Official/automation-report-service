@@ -5,31 +5,71 @@ export const validatorConstant = {
       fis: {
         fis11: {
           v200: {
-            validate_intent: "validateIntent",
-            validate_payment_collected_by: "validatePaymentCollectedBy",
-            validate_tags: "validateTags",
-            validate_catalog: "validateCatalog",
-            validate_providers: "validateProviders",
-            validate_items: "validateItems",
-            validate_fulfillments: "validateFulfillments",
-            validate_payments: "validatePayments",
-            validate_order: "validateOrder",
-            validate_provider: "validateProvider",
-            validate_quote: "validateQuote",
-            validate_billing: "validateBilling",
-            validate_order_status: "validateOrderStatus",
+            intent: {
+              validate_intent: "validateIntent",
+            },
+            payment: {
+              validate_payment_collected_by: "validatePaymentCollectedBy",
+            },
+            tags: {
+              validate_tags: "validateTags",
+            },
+            catalog: {
+              validate_catalog: "validateCatalog",
+            },
+            providers: {
+              validate_providers: "validateProviders",
+            },
+            items: {
+              validate_items: "validateItems",
+            },
+            fulfillments: {
+              validate_fulfillments: "validateFulfillments",
+            },
+            payments: {
+              validate_payments: "validatePayments",
+            },
+            order: {
+              validate_order: "validateOrder",
+            },
+            provider: {
+              validate_provider: "validateProvider",
+            },
+            quote: {
+              validate_quote: "validateQuote",
+            },
+            billing: {
+              validate_billing: "validateBilling",
+            },
+            order_status: {
+              validate_order_status: "validateOrderStatus",
+            },
           },
         },
       },
       log: {
         v125: {
-          validate_holidays: "validateHolidays",
-          validate_lbnp: "validateLBNP",
-          validate_prepaid_payment: "validatePrepaidPayment",
-          validate_cod: "validateCOD",
-          validate_tat: "validateTAT",
-          validate_lsp: "validateLSP",
-          validate_shipment_types: "validateShipmentTypes",
+          holidays: {
+            validate_holidays: "validateHolidays",
+          },
+          lbnp: {
+            validate_lbnp: "validateLBNP",
+          },
+          prepaid_payment: {
+            validate_prepaid_payment: "validatePrepaidPayment",
+          },
+          cod: {
+            validate_cod: "validateCOD",
+          },
+          tat: {
+            validate_tat: "validateTAT",
+          },
+          lsp: {
+            validate_lsp: "validateLSP",
+          },
+          shipment_types: {
+            validate_shipment_types: "validateShipmentTypes",
+          },
         },
       },
     },
