@@ -1,5 +1,5 @@
 import { TestResult, Payload } from "../../../types/payload";
-import { DomainValidators } from "../../shared/validationFactory";
+import { DomainValidators } from "../../shared/domainValidator";
 
 export default async function confirm_card_balance_success(
   element: Payload,
