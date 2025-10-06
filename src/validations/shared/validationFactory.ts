@@ -341,27 +341,27 @@ export function createSearchValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_holidays:
+          case log11Validators.holidays.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case log11Validators.validate_lbnp:
+          case log11Validators.lbnp.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_prepaid_payment:
+          case log11Validators.prepaid_payment.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case log11Validators.validate_cod:
+          case log11Validators.cod.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_intent:
+          case fis11Validators.intent.validate_intent:
             validateIntent(message, testResults);
             break;
-          case fis11Validators.validate_payment_collected_by:
+          case fis11Validators.payment.validate_payment_collected_by:
             validatePaymentCollectedBy(message, testResults);
             break;
-          case fis11Validators.validate_tags:
+          case fis11Validators.tags.validate_tags:
             validateTags(message, testResults);
             break;
           default:
@@ -405,30 +405,30 @@ export function createOnSearchValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_lsp:
+          case log11Validators.lsp.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_tat:
+          case log11Validators.tat.validate_tat:
             validateTAT(message, testResults);
             break;
-          case log11Validators.validate_shipment_types:
+          case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_catalog:
+          case fis11Validators.catalog.validate_catalog:
             validateCatalog(message, testResults);
             break;
-          case fis11Validators.validate_providers:
+          case fis11Validators.providers.validate_providers:
             validateProviders(message, testResults);
             break;
-          case fis11Validators.validate_items:
+          case fis11Validators.items.validate_items:
             validateItems(message, testResults);
             break;
-          case fis11Validators.validate_fulfillments:
+          case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case fis11Validators.validate_payments:
+          case fis11Validators.payments.validate_payments:
             validatePayments(message, testResults);
             break;
           default:
@@ -472,30 +472,30 @@ export function createSelectValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_holidays:
+          case log11Validators.holidays.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case log11Validators.validate_lbnp:
+          case log11Validators.lbnp.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_prepaid_payment:
+          case log11Validators.prepaid_payment.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case log11Validators.validate_cod:
+          case log11Validators.cod.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_order:
+          case fis11Validators.order.validate_order:
             validateOrder(message, testResults);
             break;
-          case fis11Validators.validate_provider:
+          case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults);
             break;
-          case fis11Validators.validate_items:
+          case fis11Validators.items.validate_items:
             validateItems(message, testResults);
             break;
-          case fis11Validators.validate_fulfillments:
+          case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
 
@@ -539,30 +539,30 @@ export function createOnSelectValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_lsp:
+          case log11Validators.lsp.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_tat:
+          case log11Validators.tat.validate_tat:
             validateTAT(message, testResults);
             break;
-          case log11Validators.validate_shipment_types:
+          case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_order:
+          case fis11Validators.order.validate_order:
             validateOrder(message, testResults);
             break;
-          case fis11Validators.validate_quote:
+          case fis11Validators.quote.validate_quote:
             validateQuote(message, testResults);
             break;
-          case fis11Validators.validate_provider:
+          case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults);
             break;
-          case fis11Validators.validate_items:
+          case fis11Validators.items.validate_items:
             validateItems(message, testResults);
             break;
-          case fis11Validators.validate_fulfillments:
+          case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
 
@@ -607,36 +607,36 @@ export function createInitValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_holidays:
+          case log11Validators.holidays.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case log11Validators.validate_lbnp:
+          case log11Validators.lbnp.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_prepaid_payment:
+          case log11Validators.prepaid_payment.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case log11Validators.validate_cod:
+          case log11Validators.cod.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_order:
+          case fis11Validators.order.validate_order:
             validateOrder(message, testResults);
             break;
-          case fis11Validators.validate_provider:
+          case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults);
             break;
-          case fis11Validators.validate_items:
+          case fis11Validators.items.validate_items:
             validateItems(message, testResults);
             break;
-          case fis11Validators.validate_fulfillments:
+          case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case fis11Validators.validate_payments:
+          case fis11Validators.payments.validate_payments:
             validatePayments(message, testResults);
             break;
-          case fis11Validators.validate_billing:
+          case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
             break;
 
@@ -681,36 +681,36 @@ export function createConfirmValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_holidays:
+          case log11Validators.holidays.validate_holidays:
             validateHolidays(message, context, action, testResults);
             break;
-          case log11Validators.validate_lbnp:
+          case log11Validators.lbnp.validate_lbnp:
             validateLBNPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_prepaid_payment:
+          case log11Validators.prepaid_payment.validate_prepaid_payment:
             validatePrepaidPaymentFlow(flowId, message, testResults);
             break;
-          case log11Validators.validate_cod:
+          case log11Validators.cod.validate_cod:
             validateCODFlow(flowId, message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_order:
+          case fis11Validators.order.validate_order:
             validateOrder(message, testResults);
             break;
-          case fis11Validators.validate_provider:
+          case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults);
             break;
-          case fis11Validators.validate_items:
+          case fis11Validators.items.validate_items:
             validateItems(message, testResults);
             break;
-          case fis11Validators.validate_fulfillments:
+          case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case fis11Validators.validate_payments:
+          case fis11Validators.payments.validate_payments:
             validatePayments(message, testResults);
             break;
-          case fis11Validators.validate_billing:
+          case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
             break;
 
@@ -754,36 +754,36 @@ export function createOnInitValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_lsp:
+          case log11Validators.lsp.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_tat:
+          case log11Validators.tat.validate_tat:
             validateTAT(message, testResults);
             break;
-          case log11Validators.validate_shipment_types:
+          case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_order:
+          case fis11Validators.order.validate_order:
             validateOrder(message, testResults);
             break;
-          case fis11Validators.validate_quote:
+          case fis11Validators.quote.validate_quote:
             validateQuote(message, testResults);
             break;
-          case fis11Validators.validate_provider:
+          case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults);
             break;
-          case fis11Validators.validate_items:
+          case fis11Validators.items.validate_items:
             validateItems(message, testResults);
             break;
-          case fis11Validators.validate_fulfillments:
+          case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case fis11Validators.validate_payments:
+          case fis11Validators.payments.validate_payments:
             validatePayments(message, testResults);
             break;
-          case fis11Validators.validate_billing:
+          case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
             break;
 
@@ -827,39 +827,39 @@ export function createOnConfirmValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           // Logistics validations
-          case log11Validators.validate_lsp:
+          case log11Validators.lsp.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
             break;
-          case log11Validators.validate_tat:
+          case log11Validators.tat.validate_tat:
             validateTAT(message, testResults);
             break;
-          case log11Validators.validate_shipment_types:
+          case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
 
           // Financial services validations
-          case fis11Validators.validate_order:
+          case fis11Validators.order.validate_order:
             validateOrder(message, testResults);
             break;
-          case fis11Validators.validate_quote:
+          case fis11Validators.quote.validate_quote:
             validateQuote(message, testResults);
             break;
-          case fis11Validators.validate_provider:
+          case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults);
             break;
-          case fis11Validators.validate_items:
+          case fis11Validators.items.validate_items:
             validateItems(message, testResults);
             break;
-          case fis11Validators.validate_fulfillments:
+          case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
             break;
-          case fis11Validators.validate_payments:
+          case fis11Validators.payments.validate_payments:
             validatePayments(message, testResults);
             break;
-          case fis11Validators.validate_billing:
+          case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
             break;
-          case fis11Validators.validate_order_status:
+          case fis11Validators.order_status.validate_order_status:
             validateOrderStatus(message, testResults);
             break;
 
