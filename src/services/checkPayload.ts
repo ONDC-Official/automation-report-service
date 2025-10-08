@@ -7,13 +7,13 @@ import { logError,logInfo } from "../utils/logger";
 const dynamicValidator = (
   modulePathWithFunc: string, // The full path to the module and function (e.g., 'module#function')
   element: any, // The payload or element to be validated
-  action: string, // The action to be validated (e.g., 'search', 'init')
   sessionID: string,
   flowId: string
 ) => {
+  console.log("modulePathWithFunc=>>>>>>>>>>>>>>>>>dynamicValidator", modulePathWithFunc, element, sessionID, flowId);
   logInfo({
     message: "Entering dynamicValidator function.",
-    meta: { modulePathWithFunc, element, action, sessionID, flowId },
+    meta: { modulePathWithFunc, element, sessionID, flowId },
   });
   // Splitting the modulePathWithFunc string into module path and function name
   const [modulePath, functionName] = modulePathWithFunc.split("#");
@@ -29,9 +29,10 @@ const dynamicValidator = (
     if (typeof validatorFunc === "function") {
       logInfo({
         message: "Exiting dynamicValidator function.",
-        meta: { modulePath, functionName, element, action },
+        meta: { modulePath, functionName, element },
       });
-      return validatorFunc(element, action, sessionID, flowId);
+      console.log("validatorFunc=>>>>>>>>>>>>>>>>>dynamicValidator", element, sessionID, flowId,validatorFunc);
+      return validatorFunc(element, sessionID, flowId);
     } else {
       // Throw an error if the function is not found within the module
       logError({
@@ -58,14 +59,14 @@ const dynamicValidator = (
 export const checkPayload = async (
   domain: string, // The domain (e.g., 'search', 'select') to determine the appropriate validation module
   element: Payload, // The payload or element to be validated
-  action: string, // The specific action to be validated (e.g., 'init', 'confirm')
   sessionId: string,
   flowId: string,
   domainConfig: any
 ): Promise<object> => {
+  console.log("domain=>>>>>>>>>>>>>>>>>checkPayload",  sessionId, flowId, domainConfig);
   logInfo({
     message: "Entering checkPayload function.",
-    meta: { domain, element, action, sessionId, flowId },
+    meta: { domain, element, sessionId, flowId },
   });
   // 0) Always validate common context before any domain/action-specific checks
   const commonCtxResult = await runValidations(contextValidators(), element?.jsonRequest);
@@ -87,7 +88,6 @@ export const checkPayload = async (
   return dynamicValidator(
     modulePathWithFunc,
     element,
-    action,
     sessionId,
     flowId
   );

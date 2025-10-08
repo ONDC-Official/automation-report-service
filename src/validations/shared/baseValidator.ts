@@ -20,6 +20,7 @@ export function createDomainValidator(
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
+    console.log("validate=>>>>>>>>>>>>>>>>>validate", element,sessionID, flowId);
     const version = resolveVersion(element);
 
     let testResults: TestResult = { response: {}, passed: [], failed: [] };

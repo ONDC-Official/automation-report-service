@@ -2,8 +2,8 @@ import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 import { fetchData } from "../../../utils/redisUtils";
-import { DomainValidators } from "../../shared/validationFactory";
 import { validateOrderQuote } from "../../shared/quoteValidations";
+import { DomainValidators } from "../../shared/domainValidator";
 
 export async function checkOnInit(
   element: Payload,

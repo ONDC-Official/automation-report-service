@@ -21,9 +21,11 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
     const results = await Promise.all(
       Object.entries(requestBody).map(async ([flowId, payloadIds]) => {
         try {
+          console.log("payloadIds=>>>>>>>>>>>>>>>>>fetchPayloads",API_URL,flowId, payloadIds);
           const response = await axios.post<{ payloads: Payload[] }>(API_URL, { payload_ids: payloadIds }, {
             headers: { "Content-Type": "application/json" },
           });
+          console.log("response=>>>>>>>>>>>>>>>>>fetchPayloads", response.data);
           logInfo({
             message: `Fetched payloads for flow ID ${flowId}`,
             meta: {

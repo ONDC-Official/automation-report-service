@@ -2,7 +2,7 @@ import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import { logger } from "../../../utils/logger";
 import { saveData } from "../../../utils/redisUtils";
-import { DomainValidators } from "../../shared/validationFactory";
+import { DomainValidators } from "../../shared/domainValidator";
 
 export async function checkInit(
   element: Payload,
