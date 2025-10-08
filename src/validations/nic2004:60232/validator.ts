@@ -29,4 +29,4 @@ const resolveVersion = (element: Payload) =>
 const checkJsonResponseWithSchema = (jsonResponse: any, testResults: TestResult) =>
   checkJsonResponse(jsonResponse, testResults, ackResponseSchema);
 
-export const validate = createDomainValidator(actionToFileMap, resolveVersion, checkJsonResponseWithSchema);
+export const validate = createDomainValidator(resolveVersion, checkJsonResponseWithSchema);

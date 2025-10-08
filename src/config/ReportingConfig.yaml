@@ -490,4 +490,126 @@ domains:
             - confirm
             - on_confirm
         validationModules: "../validations/ONDC:FIS11/validator#validate"
-
+  ONDC:RET16:
+    versions:
+      "1.2.5":
+        flows:
+          Discovery_Flow_full_catalog:
+            - search
+            - on_search
+          
+          ORDER_FLOW_BASE_LINE:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            
+          CANCELLATION_FLOW:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+            
+          UPDATE_FLOW:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            
+          TRACKING_FLOW:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - track
+            - on_track
+            
+        optional_flows:
+          - CANCELLATION_FLOW
+          - UPDATE_FLOW
+          - TRACKING_FLOW
+        validationModules: "../validations/ONDC:RET16/validator#validate"
+  ONDC:RET15:
+    versions:
+      "1.2.5":
+        flows:
+          Discovery_Flow_full_catalog:
+            - search
+            - on_search
+          
+          ORDER_FLOW_BASE_LINE:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            
+          CANCELLATION_FLOW:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+            
+          UPDATE_FLOW:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            
+          TRACKING_FLOW:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - track
+            - on_track
+            
+        optional_flows:
+          - CANCELLATION_FLOW
+          - UPDATE_FLOW
+          - TRACKING_FLOW
+        validationModules: "../validations/ONDC:RET15/validator#validate"
+# For adding the flows and additional flows
