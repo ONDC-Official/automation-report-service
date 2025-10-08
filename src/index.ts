@@ -1,7 +1,7 @@
 import "./config/otelConfig"
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import reportRouter from "./routes/reportRoute";
+import reportRouter from "./routes/reportRoutes";
 import { RedisService } from "ondc-automation-cache-lib";
 import { logError, logger, logInfo } from "./utils/logger";
 
