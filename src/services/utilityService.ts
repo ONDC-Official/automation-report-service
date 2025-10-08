@@ -1,12 +1,13 @@
 import { generateReportHTML } from "../templates/utilityReportTemplate";
 import { Result } from "../types/result";
 import { logInfo } from "../utils/logger";
+import { MESSAGES } from "../utils/messages";
 import { parseFlows } from "../utils/parseutils";
 import { validateFlows } from "./validateLogs";
 
 export async function utilityReport(flows: any, sessionID: string) {
   logInfo({
-    message: "Entering utilityReport function. Generating utility report...",
+    message: MESSAGES.services.utilityEnter,
     meta: { sessionID, flows },
     });
   //parse flows
@@ -19,7 +20,7 @@ export async function utilityReport(flows: any, sessionID: string) {
   // Generate HTML report
   const htmlReport = generateReportHTML(validatedFlows);
   logInfo({
-    message: "Exiting utilityReport function. Generated utility report.",
+    message: MESSAGES.services.utilityExit,
     meta: { sessionID, htmlReport },
   });
   return htmlReport;

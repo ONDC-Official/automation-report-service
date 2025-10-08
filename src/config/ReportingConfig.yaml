@@ -463,3 +463,31 @@ domains:
           - PICKUP_DELIVERY_ATTEMPT
           - FEATURE_DISCOVERY
         validationModules: "../validations/ONDC:LOG11/validator#validate"
+
+  ONDC:FIS11:
+    versions:
+      "2.0.0":
+        flows:
+          Discovery of Metro Card Recharge:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            
+          Metro Card Balance - Success:
+            - search
+            - on_search
+            - confirm
+            - on_confirm
+
+          Metro Card Balance - Failure:
+            - search
+            - on_search
+            - confirm
+            - on_confirm
+        validationModules: "../validations/ONDC:FIS11/validator#validate"
+

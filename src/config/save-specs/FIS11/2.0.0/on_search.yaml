@@ -1,0 +1,7 @@
+save-data:
+  message_id: "$.context.message_id"
+  transaction_id: "$.context.transaction_id"
+  catalog_descriptor: "$.message.catalog.descriptor"
+  providers: "$.message.catalog.providers[*]"
+
+
