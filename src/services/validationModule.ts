@@ -169,7 +169,6 @@ async function processPayloads(
       const result = await checkPayload(
         domain,
         element,
-        action,
         sessionID,
         flowId,
         domainConfig

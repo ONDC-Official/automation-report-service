@@ -10,6 +10,71 @@ import { logger } from "./logger";
  * @param {string} key - The key to add.
  * @param {string} value - The value to add.
  */
+
+export const saveFlowData = async (
+  sessionId: string,
+  flowId: string,
+  transactionId: string,
+  key: string,
+  value: Record<string, any> // Accept JSON object
+): Promise<void> => {
+  try {
+    console.log(
+      "saveFlowData=>>>>>>>>>>>>>>>>>saveFlowData",
+      sessionId,
+      flowId,
+      transactionId,
+      key,
+      value
+    );
+    // Create a unique key in the format sessionId:transactionId:key
+    const redisKey = `${sessionId}:${flowId}:${transactionId}:${key}`;
+   console.log("redisKey=>>>>>>>>>>>>>>>>>redisKey", redisKey);
+    // Serialize the JSON object to a string
+    const serializedValue = JSON.stringify(value);
+
+    // Save the serialized value with optional TTL
+    await RedisService.setKey(redisKey, serializedValue, 3600);
+  } catch (error) {
+    logger.error("Error saving data:", error);
+  }
+};
+
+// Function to fetch data for a specific key under sessionId and transactionId
+export const fetchFlowData = async (
+  sessionId: string,
+  flowId: string,
+  transactionId: string,
+  key: string
+): Promise<Record<string, any> | null> => {
+  try {
+    console.log(
+      "fetchFlowData=>>>>>>>>>>>>>>>>>fetchFlowData",
+      sessionId,
+      flowId,
+      transactionId,
+      key
+    );
+    const redisKey = `${sessionId}:${flowId}:${transactionId}:${key}`;
+    console.log("redisKey=>>>>>>>>>>>>>>>>>getkey", redisKey);
+
+    // Fetch the serialized value
+    const serializedValue = await RedisService.getKey(redisKey);
+  
+    if (!serializedValue) {
+      logger.error(`No data found for key: ${redisKey}`);
+      return null;
+    }
+    // Deserialize the JSON object
+    const value = JSON.parse(serializedValue);
+
+    return value;
+  } catch (error) {
+    logger.error("Error fetching data:", error);
+    return null;
+  }
+};
+
 export const saveData = async (
   sessionId: string,
   transactionId: string,
