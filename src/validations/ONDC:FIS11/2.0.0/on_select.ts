@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
+import { saveFromElement } from "../../../utils/specLoader";
 
 export default async function on_select(
   element: Payload,
@@ -75,6 +76,6 @@ export default async function on_select(
       }
     }
   } catch (_) {}
-
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
   return result;
 }
