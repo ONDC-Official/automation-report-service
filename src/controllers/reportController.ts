@@ -18,7 +18,7 @@ export async function generateReportController(req: Request, res: Response) {
   try {
     // Retrieve sessionId from query parameters
     const sessionId = req.query.sessionId as string;
-    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
+    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]> || "";
 
     console.log("req body : ", flowIdToPayloadIdsMap);
 
