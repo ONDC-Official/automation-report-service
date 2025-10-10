@@ -11,8 +11,12 @@ export async function checkOnInit(
   flowId: string
 ): Promise<TestResult> {
   // First run common validations
-  const commonTestResults = await DomainValidators.ondclogOnInit(element, sessionID, flowId);
-  
+  const commonTestResults = await DomainValidators.ondclogOnInit(
+    element,
+    sessionID,
+    flowId
+  );
+
   const payload = element;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
@@ -34,7 +38,7 @@ export async function checkOnInit(
     validateTaxPresence: true,
     validateTotalMatch: true,
     validateCODBreakup: true,
-    flowId: flowId
+    flowId: flowId,
   });
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);

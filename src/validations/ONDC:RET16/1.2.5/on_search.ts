@@ -1,10 +1,10 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 
-export async function checkSearch(
+export async function checkOnSearch(
   element: Payload,
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  return await DomainValidators.ondclogSearch(element, sessionID, flowId);
+  return await DomainValidators.ondcretOnSearch(element, sessionID, flowId);
 }

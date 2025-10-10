@@ -24,7 +24,7 @@ export async function generateReportController(req: Request, res: Response) {
     if (!sessionId) {
       // logger.error("Missing sessionId parameter");
       logInfo({
-        message: MESSAGES.report.missingSessionId
+        message: MESSAGES.report.missingSessionId,
       });
       apiResponse.badRequest(res, MESSAGES.responses.missingSessionId);
       return;
@@ -47,6 +47,10 @@ export async function generateReportController(req: Request, res: Response) {
     });
     // console.trace(error);
     // Send a 500 response if an error occurs
-    apiResponse.internalError(res, MESSAGES.responses.failedToGenerateReport, error);
+    apiResponse.internalError(
+      res,
+      MESSAGES.responses.failedToGenerateReport,
+      error
+    );
   }
 }

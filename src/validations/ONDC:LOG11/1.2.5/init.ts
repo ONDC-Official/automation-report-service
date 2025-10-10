@@ -10,8 +10,12 @@ export async function checkInit(
   flowId: string
 ): Promise<TestResult> {
   // First run common validations
-  const commonTestResults = await DomainValidators.ondclogInit(element, sessionID, flowId);
-  
+  const commonTestResults = await DomainValidators.ondclogInit(
+    element,
+    sessionID,
+    flowId
+  );
+
   const testResults: TestResult = {
     response: commonTestResults.response,
     passed: [...commonTestResults.passed],
@@ -31,7 +35,6 @@ export async function checkInit(
 
   saveData(sessionID, transactionId, "billingTimestamp", billingCreatedAt);
   try {
-  
     assert.ok(
       billingCreatedAt <= contextTimestamp,
       "Billing timestamp cannot be future dated w.r.t context/timestamp"
@@ -42,7 +45,6 @@ export async function checkInit(
     testResults.failed.push(`${error.message}`);
   }
   try {
-  
     assert.ok(
       billingCreatedAt === billingUpdatedAt,
       "Billing created_at timestamp should be equal to updated_at"
@@ -53,43 +55,45 @@ export async function checkInit(
     testResults.failed.push(`${error.message}`);
   }
 
-  if(flowId==='CASH_ON_DELIVERY_FLOW'){
-  try {
-    const items = message?.order?.items || [];
-    let baseItemFound = false;
-    let codItemFound = false;
-  
-    for (const item of items) {
-      const typeTag = item?.tags?.find(
-        (tag: { code: string }) => tag.code === "type"
+  if (flowId === "CASH_ON_DELIVERY_FLOW") {
+    try {
+      const items = message?.order?.items || [];
+      let baseItemFound = false;
+      let codItemFound = false;
+
+      for (const item of items) {
+        const typeTag = item?.tags?.find(
+          (tag: { code: string }) => tag.code === "type"
+        );
+
+        const typeValue = typeTag?.list
+          ?.find(
+            (entry: { code: string; value: string }) =>
+              entry.code === "type" && typeof entry.value === "string"
+          )
+          ?.value.toLowerCase();
+
+        if (typeValue === "base") baseItemFound = true;
+        if (typeValue === "cod") codItemFound = true;
+
+        if (baseItemFound && codItemFound) break;
+      }
+
+      assert.ok(
+        baseItemFound,
+        `At least one item in message.order.items should have a type tag with value "base"`
       );
-  
-      const typeValue = typeTag?.list?.find(
-        (entry: { code: string; value: string }) =>
-          entry.code === "type" && typeof entry.value === "string"
-      )?.value.toLowerCase();
-  
-      if (typeValue === "base") baseItemFound = true;
-      if (typeValue === "cod") codItemFound = true;
-  
-      if (baseItemFound && codItemFound) break;
+
+      assert.ok(
+        codItemFound,
+        `At least one item in message.order.items should have a type tag with value "cod"`
+      );
+
+      testResults.passed.push(`Both base and cod type items are present`);
+    } catch (error: any) {
+      testResults.failed.push(error.message);
     }
-  
-    assert.ok(
-      baseItemFound,
-      `At least one item in message.order.items should have a type tag with value "base"`
-    );
-  
-    assert.ok(
-      codItemFound,
-      `At least one item in message.order.items should have a type tag with value "cod"`
-    );
-  
-    testResults.passed.push(`Both base and cod type items are present`);
-  } catch (error: any) {
-    testResults.failed.push(error.message);
   }
-}
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;

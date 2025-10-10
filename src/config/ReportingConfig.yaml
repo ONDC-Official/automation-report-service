@@ -477,7 +477,7 @@ domains:
             - on_init
             - confirm
             - on_confirm
-            
+
           Metro Card Balance - Success:
             - search
             - on_search
@@ -490,4 +490,12 @@ domains:
             - confirm
             - on_confirm
         validationModules: "../validations/ONDC:FIS11/validator#validate"
-
+  ONDC:RET16:
+    versions:
+      "1.2.5":
+        flows:
+          Discovery_Flow_full_catalog:
+            - search
+            - on_search
+        validationModules: "../validations/ONDC:RET16/validator#validate"
+# For adding the flows and additional flows

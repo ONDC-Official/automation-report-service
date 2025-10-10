@@ -72,6 +72,9 @@ export const validatorConstant = {
           },
         },
       },
+      ret: {
+        v125: { validate_test: "validateTest" },
+      },
     },
   },
 };

@@ -1,5 +1,5 @@
 import { TestResult, Payload } from "../../../types/payload";
-import { DomainValidators } from "../../shared/validationFactory";
+import { DomainValidators } from "../../shared/domainValidator";
 
 export async function checkOnSearch(
   element: Payload,

@@ -6,5 +6,5 @@ export async function checkSearch(
   sessionID: string,
   flowId: string
 ): Promise<TestResult> {
-  return await DomainValidators.ondclogSearch(element, sessionID, flowId);
+  return await DomainValidators.ondcretSearch(element, sessionID, flowId);
 }

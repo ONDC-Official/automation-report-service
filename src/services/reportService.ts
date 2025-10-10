@@ -8,7 +8,6 @@ import { ENABLED_DOMAINS } from "../utils/constants";
 import axios from "axios";
 
 export class ReportService {
-
   async generate(
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>
@@ -16,27 +15,37 @@ export class ReportService {
     try {
       // Fetch session details first
       const sessionDetails = await fetchSessionDetails(sessionId);
-      
+
       if (!sessionDetails) {
         throw new Error(`Session details not found for session: ${sessionId}`);
       }
-      
+
       // Cache session details (non-blocking)
-      CacheService.set(`sessionDetails:${sessionId}`, JSON.stringify(sessionDetails)).catch(console.error);
+      CacheService.set(
+        `sessionDetails:${sessionId}`,
+        JSON.stringify(sessionDetails)
+      ).catch(console.error);
 
       const requestedFlows = Object.keys(flowIdToPayloadIdsMap);
       const flowMap: Record<string, string> = sessionDetails?.flowMap ?? {};
 
       // Fetch current states
-      const currentStates = await this.fetchCurrentStates(sessionId, requestedFlows, flowMap);
-      
+      const currentStates = await this.fetchCurrentStates(
+        sessionId,
+        requestedFlows,
+        flowMap
+      );
+
       // Cache current states (non-blocking)
-      CacheService.set(`flowStates:${sessionId}`, JSON.stringify(currentStates)).catch(console.error);
+      CacheService.set(
+        `flowStates:${sessionId}`,
+        JSON.stringify(currentStates)
+      ).catch(console.error);
 
       // Build payload IDs and action ID mapping in parallel
       const [payloadIdsFromStates, payloadIdToActionId] = await Promise.all([
         Promise.resolve(this.buildPayloadIdsFromStates(currentStates)),
-        Promise.resolve(this.buildPayloadIdToActionId(currentStates))
+        Promise.resolve(this.buildPayloadIdToActionId(currentStates)),
       ]);
 
       const payloads = await fetchPayloads(payloadIdsFromStates);
@@ -52,7 +61,11 @@ export class ReportService {
       return generateCustomHTMLReport(result);
     } catch (error) {
       console.error(`Error generating report for session ${sessionId}:`, error);
-      throw new Error(`Failed to generate report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to generate report: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
@@ -69,26 +82,31 @@ export class ReportService {
             console.warn(`No transaction ID found for flow: ${flowName}`);
             return [flowName, null] as const;
           }
-          
+
           try {
             const { data } = await axios.get(
               `${process.env.AUTOMATION_BACKEND}/flow/current-state`,
               {
                 params: { transaction_id: txnId, session_id: sessionId },
-                timeout: 10000 // 10 second timeout
+                timeout: 10000, // 10 second timeout
               }
             );
             return [flowName, data] as const;
           } catch (error) {
-            console.error(`Failed to fetch current state for flow ${flowName}:`, error);
+            console.error(
+              `Failed to fetch current state for flow ${flowName}:`,
+              error
+            );
             return [flowName, null] as const;
           }
         })
       );
       return Object.fromEntries(entries);
     } catch (error) {
-      console.error('Error in fetchCurrentStates:', error);
-      throw new Error(`Failed to fetch current states for session ${sessionId}`);
+      console.error("Error in fetchCurrentStates:", error);
+      throw new Error(
+        `Failed to fetch current states for session ${sessionId}`
+      );
     }
   }
 

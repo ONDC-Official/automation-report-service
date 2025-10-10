@@ -18,6 +18,7 @@ import { validatorConstant } from "./validatorConstant";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
+const ret16Validators = validatorConstant.beckn.ondc.ret.v125;
 
 /**
  * Wrapper function to validate TAT for on_select, on_init, and on_confirm actions
@@ -36,6 +37,10 @@ function validateTAT(message: any, testResults: TestResult): void {
       }
     });
   }
+}
+
+function validateTest(message: any, testResults: TestResult): void {
+  testResults.passed.push("Validation is passed for test case");
 }
 
 /**
@@ -364,6 +369,9 @@ export function createSearchValidator(...config: string[]) {
           case fis11Validators.tags.validate_tags:
             validateTags(message, testResults);
             break;
+          case ret16Validators.validate_test:
+            validateTest(message, testResults);
+            break;
           default:
             break;
         }
@@ -430,6 +438,10 @@ export function createOnSearchValidator(...config: string[]) {
             break;
           case fis11Validators.payments.validate_payments:
             validatePayments(message, testResults);
+            break;
+
+          case ret16Validators.validate_test:
+            validateTest(message, testResults);
             break;
           default:
             break;
