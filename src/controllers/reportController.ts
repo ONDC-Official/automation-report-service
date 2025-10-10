@@ -18,9 +18,7 @@ export async function generateReportController(req: Request, res: Response) {
   try {
     // Retrieve sessionId from query parameters
     const sessionId = req.query.sessionId as string;
-    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]> || "";
-
-    console.log("req body : ", flowIdToPayloadIdsMap);
+    const flowIdToPayloadIdsMap = (req?.body as Record<string, string[]>) || "";
 
     // Log the received sessionId
     // logger.info(`Received sessionId: ${sessionId}`);
@@ -37,8 +35,6 @@ export async function generateReportController(req: Request, res: Response) {
       `sessionDetails:${sessionId}`,
       JSON.stringify(sessionDetails)
     );
-
-    RedisService.useDb(0);
     const sessionDataJson = JSON.parse(
       (await RedisService.getKey(sessionId)) || "{}"
     );
@@ -46,32 +42,32 @@ export async function generateReportController(req: Request, res: Response) {
     const subscriberId = getNetworkParticipantId(sessionDetails);
     const testId = `PW_${sessionDetails.sessionId}`;
     const tests = generateTestsFromPayloads(sessionDetails);
-
     const body = {
       id: subscriberId,
       version: sessionDetails.version,
       domain: sessionDetails.domain,
       environment: process.env.PRAMAAN_ENVIRONMENT || "Staging",
-      type: sessionDataJson.usecaseId.toUpperCase(),
-      test_id: testId,
+      type: sessionDataJson.usecaseId?.toUpperCase() || "BUS",
       tests: tests,
+      test_id: testId
     };
+    console.log("The body is ", body);
     const pramaanUrl = process.env.PRAAMAN_URL;
     if (!pramaanUrl) {
       throw new Error("PRAAMAN_URL is not defined in environment variables");
     }
-    try{
+    try {
       const pramaanResponse = await axios.post(pramaanUrl, body, {
         headers: { "Content-Type": "application/json" },
       });
       console.log("Successfully sent data to Pramaan:", pramaanResponse.status);
       res.status(200).send(pramaanResponse.data);
-      return
-    } catch(err){
-      res.status(500).send("Failed to generate report");
-      console.error("Error sending data to Pramaan:", err);
-      return
-    } 
+      return;
+    } catch (err: any) {
+      res.status(500).send(err.response.data.message);
+      console.error("Error sending data to Pramaan:", err.response.data.message);
+      return;
+    }
 
     // Fetch payloads from the database based on the sessionId
     // logger.info("Fetching payloads from the database...");
@@ -125,6 +121,7 @@ export async function generateReportController(req: Request, res: Response) {
     });
     // console.trace(error);
     // Send a 500 response if an error occurs
-    res.status(500).send("Failed to generate report");
+    console.log(error);
+    res.status(500).send("Failed to generate report myerror");
   }
 }

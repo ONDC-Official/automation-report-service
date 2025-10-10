@@ -190,3 +190,7 @@ export const statesAfterPickup = [
   "Delivery-rescheduled",
   "Order-delivered"
 ];
+
+export const FLOW_ID_MAP: Record<string, string> = {
+  STATION_CODE_FLOW_ORDER: "MBL_8",
+};
