@@ -46,7 +46,7 @@ export async function generateReportController(req: Request, res: Response) {
       id: subscriberId,
       version: sessionDetails.version,
       domain: sessionDetails.domain,
-      environment: process.env.PRAMAAN_ENVIRONMENT || "Staging",
+      environment: process.env.PRAMAAN_ENVIRONMENT || "Preprod",
       type: sessionDataJson.usecaseId?.toUpperCase() || "BUS",
       tests: tests,
       test_id: testId
