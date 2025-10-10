@@ -8,7 +8,9 @@ dotenv.config();
 
 const API_URL = `${process.env.DATA_BASE_URL}/payload/ids`;
 
-export async function fetchPayloads(requestBody: Record<string, string[]>): Promise<Record<string, Payload[]>> {
+export async function fetchPayloads(
+  requestBody: Record<string, string[]>
+): Promise<Record<string, Payload[]>> {
   logInfo({
     message: `Entering fetchPayloads function. Fetching payloads...`,
     meta: {
@@ -20,9 +22,13 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
     const results = await Promise.all(
       Object.entries(requestBody).map(async ([flowId, payloadIds]) => {
         try {
-          const response = await axios.post<{ payloads: Payload[] }>(API_URL, { payload_ids: payloadIds }, {
-            headers: { "Content-Type": "application/json" },
-          });
+          const response = await axios.post<{ payloads: Payload[] }>(
+            API_URL,
+            { payload_ids: payloadIds },
+            {
+              headers: { "Content-Type": "application/json" },
+            }
+          );
           logInfo({
             message: `Fetched payloads for flow ID ${flowId}`,
             meta: {
@@ -74,22 +80,26 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
   });
   try {
     const storageUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionID}`;
-    const response = await axios.get<WrappedPayload[]>(storageUrl);
-    logInfo({
-      message: `Exiting fetchSessionDetails function. Fetched session details.`,
-      meta: {
-        sessionID,
-        response: response.data,
+    const response = await axios.get<WrappedPayload[]>(storageUrl, {
+      headers: {
+        "x-api-key": process.env.API_SERVICE_KEY, // replace with your header name if different
       },
     });
+    // logInfo({
+    //   message: `Exiting fetchSessionDetails function. Fetched session details.`,
+    //   meta: {
+    //     sessionID,
+    //     response: response.data,
+    //   },
+    // });
     return response.data;
   } catch (error) {
     let errorDetails = "Unknown error";
-    
+
     if (axios.isAxiosError(error) && error.response) {
       errorDetails = JSON.stringify(error.response.data);
     }
-    
+
     // console.error(`Failed to fetch details for session ID ${sessionID}:`, errorDetails);
     logError({
       message: `Failed to fetch details for session ID ${sessionID}`,
@@ -99,6 +109,41 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
         errorDetails,
       },
     });
-    throw new Error(`Failed to fetch details for session ID ${sessionID}, Details: ${errorDetails}`);
+    throw new Error(
+      `Failed to fetch details for session ID ${sessionID}, Details: ${errorDetails}`
+    );
+  }
+}
+
+export async function getPayloadsByTransactionAndSession(
+  transactionId: string,
+  sessionId?: string
+) {
+  try {
+    const response = await axios.get(
+      `${process.env.DATA_BASE_URL}/payload/logs/${transactionId}`,
+      {
+        headers: {
+          "x-api-key": process.env.API_SERVICE_KEY, 
+        },
+      }
+    );
+    const payloads = response.data;
+    // Filter by sessionId if provided
+    const filteredPayloads = Array.isArray(payloads)
+      ? sessionId
+        ? payloads.filter(
+            (p: any) => String(p.sessionId).trim() === String(sessionId).trim()
+          )
+        : payloads
+      : [];
+
+    return filteredPayloads;
+  } catch (error) {
+    console.error(
+      `Error fetching payloads for transactionId ${transactionId}:`,
+      error
+    );
+    throw new Error("Failed to fetch payloads from DB API");
   }
 }

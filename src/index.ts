@@ -1,7 +1,7 @@
 import "./config/otelConfig"
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import reportRouter from "./routes/reportRoute";
+import Router from "./routes/routes";
 import { RedisService } from "ondc-automation-cache-lib";
 import { logError, logger, logInfo } from "./utils/logger";
 
@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // Set up Redis database connection
 try {
-  RedisService.useDb(2);
+  RedisService.useDb(0);
 } catch (err) {
   logger.error(err);
 }
@@ -22,7 +22,7 @@ try {
 app.use(express.json());
 
 // Routes
-app.use("/", reportRouter);
+app.use("/", Router);
 
 // Global error handler middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
