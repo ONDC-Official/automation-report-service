@@ -19,17 +19,12 @@ export const saveFlowData = async (
   value: Record<string, any> // Accept JSON object
 ): Promise<void> => {
   try {
-    console.log(
-      "saveFlowData=>>>>>>>>>>>>>>>>>saveFlowData",
-      sessionId,
-      flowId,
-      transactionId,
-      key,
-      value
-    );
     // Create a unique key in the format sessionId:transactionId:key
-    const redisKey = `${sessionId}:${flowId}:${transactionId}:${key}`;
-   console.log("redisKey=>>>>>>>>>>>>>>>>>redisKey", redisKey);
+    const redisKey =
+      key === "on_search" || key === "search"
+        ? `${sessionId}:${transactionId}:${key}`
+        : `${sessionId}:${flowId}:${transactionId}:${key}`;
+
     // Serialize the JSON object to a string
     const serializedValue = JSON.stringify(value);
 
@@ -55,12 +50,15 @@ export const fetchFlowData = async (
       transactionId,
       key
     );
-    const redisKey = `${sessionId}:${flowId}:${transactionId}:${key}`;
-    console.log("redisKey=>>>>>>>>>>>>>>>>>getkey", redisKey);
+    const redisKey =
+      key === "on_search" || key === "search"
+        ? `${sessionId}:${transactionId}:${key}`
+        : `${sessionId}:${flowId}:${transactionId}:${key}`;
+
 
     // Fetch the serialized value
     const serializedValue = await RedisService.getKey(redisKey);
-  
+
     if (!serializedValue) {
       logger.error(`No data found for key: ${redisKey}`);
       return null;

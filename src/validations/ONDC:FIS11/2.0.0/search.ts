@@ -5,10 +5,10 @@ import { saveFromElement } from "../../../utils/specLoader";
 export default async function search(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  console.log("result=>>>>>>>>>>>>>>>>>search", element,sessionID, flowId);
+  const result = await DomainValidators.fis11Search(element, sessionID, flowId, actionId);
   await saveFromElement(element,sessionID,flowId, "jsonRequest");
-  const result = await DomainValidators.fis11Search(element, sessionID, flowId);
   return result;
 }

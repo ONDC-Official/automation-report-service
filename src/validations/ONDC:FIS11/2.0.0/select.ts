@@ -6,9 +6,10 @@ import { getActionData, compareSelectVsOnSearch } from "../../../services/action
 export default async function select(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis11Select(element, sessionID, flowId);
+  const result = await DomainValidators.fis11Select(element, sessionID, flowId, actionId);
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {

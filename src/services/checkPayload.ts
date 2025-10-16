@@ -10,7 +10,6 @@ const dynamicValidator = (
   sessionID: string,
   flowId: string
 ) => {
-  console.log("modulePathWithFunc=>>>>>>>>>>>>>>>>>dynamicValidator", modulePathWithFunc, element, sessionID, flowId);
   logInfo({
     message: "Entering dynamicValidator function.",
     meta: { modulePathWithFunc, element, sessionID, flowId },
@@ -31,7 +30,6 @@ const dynamicValidator = (
         message: "Exiting dynamicValidator function.",
         meta: { modulePath, functionName, element },
       });
-      console.log("validatorFunc=>>>>>>>>>>>>>>>>>dynamicValidator", element, sessionID, flowId,validatorFunc);
       return validatorFunc(element, sessionID, flowId);
     } else {
       // Throw an error if the function is not found within the module
@@ -63,7 +61,6 @@ export const checkPayload = async (
   flowId: string,
   domainConfig: any
 ): Promise<object> => {
-  console.log("domain=>>>>>>>>>>>>>>>>>checkPayload",  sessionId, flowId, domainConfig);
   logInfo({
     message: "Entering checkPayload function.",
     meta: { domain, element, sessionId, flowId },

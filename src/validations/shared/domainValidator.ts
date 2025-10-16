@@ -1,4 +1,14 @@
-import { createConfirmValidator, createInitValidator, createOnConfirmValidator, createOnInitValidator, createOnSearchValidator, createOnSelectValidator, createSearchValidator, createSelectValidator } from "./validationFactory";
+
+import { 
+  createConfirmValidator, 
+  createInitValidator, 
+  createOnConfirmValidator, 
+  createOnInitValidator, 
+  createOnSearchValidator, 
+  createOnSelectValidator, 
+  createSearchValidator, 
+  createSelectValidator 
+} from "./validationFactory";
 import { validatorConstant } from "./validatorConstant";
 
 /**
@@ -6,7 +16,6 @@ import { validatorConstant } from "./validatorConstant";
  */
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
-
 
 export const DomainValidators = {
     fis11Search: createSearchValidator(
@@ -74,6 +83,16 @@ export const DomainValidators = {
       fis11Validators.items.validate_items,
       fis11Validators.fulfillments.validate_fulfillments,
       fis11Validators.payments.validate_payments,
+      fis11Validators.billing.validate_billing,
+      fis11Validators.order_status.validate_order_status
+    ),
+
+    fis11OnConfirmSuccess: createOnConfirmValidator(
+      fis11Validators.order.validate_order,
+      fis11Validators.quote.validate_quote,
+      fis11Validators.provider.validate_provider,
+      fis11Validators.items.validate_items,
+      fis11Validators.fulfillments.validate_fulfillments,
       fis11Validators.billing.validate_billing,
       fis11Validators.order_status.validate_order_status
     ),

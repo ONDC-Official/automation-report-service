@@ -1,29 +1,32 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
+import { saveFromElement } from "../../../utils/specLoader";
+import { compareSelectVsOnSearch, getActionData } from "../../../services/actionDataService";
 
-export default async function confirm_card_balance_faliure(
+export default async function confirm(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  // Use the same validator as regular confirm but with additional balance-specific validations
-  const result = await DomainValidators.fis11Confirm(element, sessionID, flowId);
-  
-  // Add balance-specific validations for failure scenario
-  const message = element.jsonRequest?.message;
-  if (message?.order?.items) {
-    const balanceItem = message.order.items.find((item: any) => 
-      item.descriptor?.code === "BALANCE_CHECK" || item.id === "I2"
-    );
-    
-    if (balanceItem) {
-      if (balanceItem.price?.value === "0") {
-        result.passed.push("Balance check item has zero price as expected");
-      } else {
-        result.failed.push("Balance check item should have zero price");
+  const result = await DomainValidators.fis11Select(element, sessionID, flowId, actionId);
+  try {
+    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    if (txnId) {
+      const onSearchData = await getActionData(sessionID,flowId, txnId, "on_search");
+      (result.response as any) = { ...(result.response || {}), on_search: onSearchData };
+
+      const cmp = compareSelectVsOnSearch(element?.jsonRequest?.message, onSearchData);
+      result.passed.push(...cmp.passed);
+      result.failed.push(...cmp.failed);
+      if (Object.keys(cmp.details).length) {
+        (result.response as any).select_vs_on_search = cmp.details;
       }
     }
+  } catch (_) {}
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
+  if (actionId) {
+    (result.response as any) = { ...(result.response || {}), action_id: actionId };
   }
-  
   return result;
 }

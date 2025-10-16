@@ -20,7 +20,6 @@ export function createDomainValidator(
     sessionID: string,
     flowId: string
   ): Promise<TestResult> {
-    console.log("validate=>>>>>>>>>>>>>>>>>validate", element,sessionID, flowId);
     const version = resolveVersion(element);
 
     let testResults: TestResult = { response: {}, passed: [], failed: [] };
@@ -38,19 +37,15 @@ export function createDomainValidator(
           return testResults;
         }
 
-        // Dynamic import of action module based on version
         const mod: any = await import(`../${element.jsonRequest.context.domain}/${version}/${fileName}`);
-
-        // Detect exported function name (check<ActionPascalCase>)
         const exportedFnName = Object.keys(mod).find((k) => typeof (mod as any)[k] === "function");
         const testFunction: Function | undefined = exportedFnName ? (mod as any)[exportedFnName] : undefined;
-
         if (!testFunction) {
           testResults.failed.push(`No matching test function found for ${action_id}.`);
           return testResults;
         }
 
-        const testResult: TestResult = await testFunction(element, sessionID, flowId);
+        const testResult: TestResult = await testFunction(element, sessionID, flowId, action_id);
         testResults.passed.push(...(testResult.passed || []));
         testResults.failed.push(...(testResult.failed || []));
         if (testResult.response) {

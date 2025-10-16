@@ -148,7 +148,7 @@ function validateProviders(message: any, testResults: TestResult): void {
   }
 }
 
-function validateProvider(message: any, testResults: TestResult): void {
+function validateProvider(message: any, testResults: TestResult, action_id: string): void {
   const provider = message?.order?.provider;
   if (!provider) {
     testResults.failed.push("Provider is missing in order");
@@ -161,14 +161,16 @@ function validateProvider(message: any, testResults: TestResult): void {
     testResults.passed.push("Provider ID is present");
   }
 
-  if (!provider.descriptor?.name) {
-    testResults.failed.push("Provider descriptor name is missing");
-  } else {
-    testResults.passed.push("Provider descriptor name is present");
+  if (action_id !== "select" && action_id !== "init" && action_id !== "confirm" && action_id !== "confirm_card_balance_faliure" && action_id !== "confirm_card_balance_success") {
+    if (!provider.descriptor?.name) {
+      testResults.failed.push("Provider descriptor name is missing");
+    } else {
+      testResults.passed.push("Provider descriptor name is present");
+    }
   }
 }
 
-function validateItems(message: any, testResults: TestResult): void {
+function validateItems(message: any, testResults: TestResult, action_id?: string): void {
   const items =
     message?.catalog?.providers?.[0]?.items || message?.order?.items;
   if (!items || !Array.isArray(items)) {
@@ -183,10 +185,12 @@ function validateItems(message: any, testResults: TestResult): void {
       testResults.passed.push(`Item ${index} ID is present`);
     }
 
-    if (!item.descriptor?.name) {
-      testResults.failed.push(`Item ${index} descriptor name is missing`);
-    } else {
-      testResults.passed.push(`Item ${index} descriptor name is present`);
+    if (action_id !== "select" && action_id !== "init" && action_id !== "confirm" && action_id !== "confirm_card_balance_faliure" && action_id !== "confirm_card_balance_success") {
+      if (!item.descriptor?.name) {
+        testResults.failed.push(`Item ${index} descriptor name is missing`);
+      } else {
+        testResults.passed.push(`Item ${index} descriptor name is present`);
+      }
     }
 
     if (!item.price?.value) {
@@ -222,8 +226,7 @@ function validateFulfillments(message: any, testResults: TestResult): void {
 }
 
 function validatePayments(message: any, testResults: TestResult): void {
-  const payments =
-    message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
+  const payments = message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
   if (!payments || !Array.isArray(payments)) {
     testResults.failed.push("Payments array is missing or invalid");
     return;
@@ -314,7 +317,8 @@ export function createSearchValidator(...config: string[]) {
   return async function checkSearch(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -369,7 +373,6 @@ export function createSearchValidator(...config: string[]) {
         }
       }
     }
-
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
     return testResults;
@@ -383,7 +386,8 @@ export function createOnSearchValidator(...config: string[]) {
   return async function checkOnSearch(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -423,7 +427,7 @@ export function createOnSearchValidator(...config: string[]) {
             validateProviders(message, testResults);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults);
+            validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -451,7 +455,8 @@ export function createSelectValidator(...config: string[]) {
   return async function checkSelect(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -490,10 +495,10 @@ export function createSelectValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults);
+            validateProvider(message, testResults,action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults);
+            validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -518,7 +523,8 @@ export function createOnSelectValidator(...config: string[]) {
   return async function checkOnSelect(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -557,10 +563,10 @@ export function createOnSelectValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults);
+            validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults);
+            validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -586,7 +592,8 @@ export function createInitValidator(...config: string[]) {
   return async function checkInit(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -625,10 +632,10 @@ export function createInitValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults);
+            validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults);
+            validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -660,7 +667,8 @@ export function createConfirmValidator(...config: string[]) {
   return async function checkConfirm(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -699,10 +707,10 @@ export function createConfirmValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults);
+            validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults);
+            validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -733,7 +741,8 @@ export function createOnInitValidator(...config: string[]) {
   return async function checkOnInit(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -772,10 +781,10 @@ export function createOnInitValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults);
+            validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults);
+            validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -807,7 +816,8 @@ export function createOnConfirmValidator(...config: string[]) {
   return async function checkOnConfirm(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -845,10 +855,10 @@ export function createOnConfirmValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults);
+            validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults);
+            validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);

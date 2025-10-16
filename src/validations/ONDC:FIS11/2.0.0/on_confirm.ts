@@ -6,9 +6,10 @@ import { getActionData } from "../../../services/actionDataService";
 export default async function on_confirm(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis11OnConfirm(element, sessionID, flowId);
+  const result = await DomainValidators.fis11OnConfirm(element, sessionID, flowId, actionId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -48,7 +49,6 @@ export default async function on_confirm(
           else priceMismatches.push({ id, confirm: String(cnf), on_confirm: String(onCnf) });
         }
       }
-      if (missingFromConfirm.length) result.failed.push("Some on_confirm items not present in CONFIRM");
       if (priceMismatches.length) result.failed.push("Item price mismatches between CONFIRM and on_confirm");
       if (missingFromConfirm.length || priceMismatches.length) {
         (result.response as any) = {

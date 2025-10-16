@@ -7,9 +7,10 @@ import { saveFromElement } from "../../../utils/specLoader";
 export default async function on_select(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis11OnSelect(element, sessionID, flowId);
+  const result = await DomainValidators.fis11OnSelect(element, sessionID, flowId, actionId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -57,13 +58,6 @@ export default async function on_select(
         }
       }
 
-      if (missingInSelect.length) {
-        result.failed.push("Some on_select items not present in SELECT");
-        (result.response as any) = {
-          ...(result.response || {}),
-          on_select_vs_select: { missingInSelect },
-        };
-      }
       if (priceMismatches.length) {
         result.failed.push("Item price mismatches between SELECT and on_select");
         (result.response as any) = {

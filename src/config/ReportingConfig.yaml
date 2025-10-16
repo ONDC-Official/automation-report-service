@@ -468,7 +468,7 @@ domains:
     versions:
       "2.0.0":
         flows:
-          Discovery of Metro Card Recharge:
+          Discovery of Metro Card Recharge.:
             - search
             - on_search
             - select
@@ -489,5 +489,8 @@ domains:
             - on_search
             - confirm
             - on_confirm
+        optional_flows:
+          - Metro Card Balance - Success
+          - Metro Card Balance - Failure
         validationModules: "../validations/ONDC:FIS11/validator#validate"
 

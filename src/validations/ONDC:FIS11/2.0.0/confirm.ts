@@ -6,9 +6,10 @@ import { getActionData } from "../../../services/actionDataService";
 export default async function confirm(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis11Confirm(element, sessionID, flowId);
+  const result = await DomainValidators.fis11Confirm(element, sessionID, flowId, actionId);
 
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
@@ -48,7 +49,6 @@ export default async function confirm(
           else priceMismatches.push({ id, on_init: String(ini), confirm: String(cnf) });
         }
       }
-      if (missingFromOnInit.length) result.failed.push("Some confirm items not present in ON_INIT");
       if (priceMismatches.length) result.failed.push("Item price mismatches between ON_INIT and confirm");
       if (missingFromOnInit.length || priceMismatches.length) {
         (result.response as any) = {

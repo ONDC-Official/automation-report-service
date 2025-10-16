@@ -53,9 +53,13 @@ interface DomainConfig {
 /**
  * Retrieves and parses session details from Redis
  */
-async function getSessionDetails(sessionID: string): Promise<SessionDetails | null> {
+async function getSessionDetails(
+  sessionID: string
+): Promise<SessionDetails | null> {
   try {
-    const sessionData = await RedisService.getKey(`sessionDetails:${sessionID}`);
+    const sessionData = await RedisService.getKey(
+      `sessionDetails:${sessionID}`
+    );
     return sessionData ? JSON.parse(sessionData) : null;
   } catch (error) {
     logError({
@@ -88,17 +92,19 @@ function checkMandatoryFlows(
 
   for (const flowId of allFlows) {
     if (!testedFlows.includes(flowId)) {
-      const isOptional = Array.isArray(domainConfig?.optional_flows) && 
-                        domainConfig.optional_flows.includes(flowId);
-      
+      const isOptional =
+        Array.isArray(domainConfig?.optional_flows) &&
+        domainConfig.optional_flows.includes(flowId);
+
       if (!isOptional) {
         mandatoryFlows.push(flowId);
       }
     }
   }
-
   if (mandatoryFlows.length > 0) {
-    report.finalReport.mandatoryFlows = `${mandatoryFlows.join(', ')} is/are mandatory and should be tested.`;
+    report.finalReport.mandatoryFlows = `${mandatoryFlows.join(
+      ", "
+    )} is/are mandatory and should be tested.`;
   }
 }
 
@@ -118,10 +124,13 @@ function validateActionSequence(
       const actualAction = payloads[i]?.action;
 
       if (actualAction?.toLowerCase() !== expectedAction) {
-        const displayExpectedAction = expectedAction === "select" ? "select or init" : expectedAction;
+        const displayExpectedAction =
+          expectedAction === "select" ? "select or init" : expectedAction;
         validSequence = false;
         errors.push(
-          `Error: Expected '${displayExpectedAction}' after '${payloads[i - 1]?.action?.toLowerCase() || 'start'}', but found '${actualAction?.toLowerCase() || "undefined"}'.`
+          `Error: Expected '${displayExpectedAction}' after '${
+            payloads[i - 1]?.action?.toLowerCase() || "start"
+          }', but found '${actualAction?.toLowerCase() || "undefined"}'.`
         );
         break;
       }
@@ -204,7 +213,7 @@ export async function validationModule(
 
   // Get session details and domain configuration
   const sessionDetails = await getSessionDetails(sessionID);
-  const domainConfig: DomainConfig = sessionDetails 
+  const domainConfig: DomainConfig = sessionDetails
     ? loadConfig(sessionDetails.domain, sessionDetails.version)
     : { flows: {} };
 
@@ -214,9 +223,9 @@ export async function validationModule(
       message: MESSAGES.validations.checkingMandatoryFlows,
       meta: { testedFlows },
     });
-    
+
     checkMandatoryFlows(testedFlows, domainConfig, report);
-    
+
     logInfo({
       message: MESSAGES.validations.mandatoryFlowsDone,
       meta: { testedFlows },
@@ -239,7 +248,10 @@ export async function validationModule(
     });
 
     // Step 1: Validate action sequence
-    const { validSequence, errors } = validateActionSequence(payloads, requiredSequence || []);
+    const { validSequence, errors } = validateActionSequence(
+      payloads,
+      requiredSequence || []
+    );
 
     logInfo({
       message: MESSAGES.validations.actionValidationDone(flowId),
@@ -247,7 +259,12 @@ export async function validationModule(
     });
 
     // Step 2: Process payloads
-    const messages = await processPayloads(payloads, sessionID, flowId, domainConfig);
+    const messages = await processPayloads(
+      payloads,
+      sessionID,
+      flowId,
+      domainConfig
+    );
 
     logInfo({
       message: MESSAGES.validations.payloadProcessingDone(flowId),

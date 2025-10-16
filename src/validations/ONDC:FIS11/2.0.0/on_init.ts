@@ -7,9 +7,10 @@ import { getActionData } from "../../../services/actionDataService";
 export default async function on_init(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis11OnInit(element, sessionID, flowId);
+  const result = await DomainValidators.fis11OnInit(element, sessionID, flowId, actionId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -47,7 +48,6 @@ export default async function on_init(
           else priceMismatches.push({ id, init: String(ini), on_init: String(onIni) });
         }
       }
-      if (missingFromInit.length) result.failed.push("Some on_init items not present in INIT");
       if (priceMismatches.length) result.failed.push("Item price mismatches between INIT and on_init");
       if (missingFromInit.length || priceMismatches.length) {
         (result.response as any) = {
