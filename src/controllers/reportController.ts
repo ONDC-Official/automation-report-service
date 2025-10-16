@@ -2,8 +2,7 @@ import { Request, Response } from "express";
 import axios from "axios";
 import { logger } from "../utils/logger";
 import { fetchSessionDetails } from "../services/dbService";
-import { generateTestsFromPayloads, getNetworkParticipantId } from "../utils/payloadUtils";
-import { reportEmitter } from "../utils/eventEmitter";
+import { generateTestsFromPayloads } from "../utils/payloadUtils";
 
 export async function generateReportController(
   req: Request,
@@ -16,19 +15,19 @@ export async function generateReportController(
       res.status(400).send("Missing sessionId parameter");
       return;
     }
+    
     logger.info(`Received generate report request for sessionId: ${sessionId}`);
 
     // Fetch session details
     const sessionDetails = await fetchSessionDetails(sessionId);
-    const subscriberId = getNetworkParticipantId(sessionDetails);
     const testId = `PW_${sessionDetails.sessionId}`;
-    const tests = generateTestsFromPayloads(sessionDetails);
+    const { tests, subscriber_id } = await generateTestsFromPayloads(sessionDetails);
 
     logger.info(`Fetched session details and generated testId: ${testId}`);
 
-    // Build request body
+    // Build request body for Pramaan
     const body = {
-      id: subscriberId,
+      id: subscriber_id,
       version: sessionDetails.version,
       domain: sessionDetails.domain,
       environment: process.env.PRAMAAN_ENVIRONMENT || "Preprod",
@@ -39,7 +38,6 @@ export async function generateReportController(
 
     const pramaanUrl = process.env.PRAAMAN_URL;
     if (!pramaanUrl) {
-      logger.error("PRAAMAN_URL is not defined in environment variables");
       throw new Error("PRAAMAN_URL is not defined in environment variables");
     }
 
@@ -47,53 +45,35 @@ export async function generateReportController(
     const pramaanResponse = await axios.post(pramaanUrl, body, {
       headers: { "Content-Type": "application/json" },
     });
-    logger.info(`Received sync response from Pramaan: ${JSON.stringify(pramaanResponse.data)}`);
 
-    if (pramaanResponse.data.status === "NACK") {
+    logger.info(`Received response from Pramaan: ${JSON.stringify(pramaanResponse.data)}`);
+
+    // Extract ack status safely
+    const ackStatus = pramaanResponse.data?.message?.ack?.status;
+
+    if (ackStatus === "NACK") {
       logger.warn(`Pramaan responded with NACK for testId: ${testId}`);
-      res.status(500).send(pramaanResponse.data);
-      return;
+      res.status(500).json({
+        error: "Pramaan responded with NACK",
+        response: pramaanResponse.data,
+      });
+      return
     }
 
-    logger.info(`Waiting for async report callback for testId: ${testId}`);
+    if (ackStatus === "ACK") {
+      logger.info(`Pramaan responded with ACK for testId: ${testId}`);
+      res.status(200).json(pramaanResponse.data);
+      return
+    }
 
-    // Wait for async report using EventEmitter
-    const reportData: Buffer = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reportEmitter.removeAllListeners(testId);
-        logger.error(`Timeout waiting for async report for testId: ${testId}`);
-        reject(new Error("Timeout waiting for async report"));
-      }, 60000); // 60s timeout
-
-      reportEmitter.once(
-        testId,
-        (data: { base64Data?: string; error?: string }) => {
-          clearTimeout(timeout);
-          if (data.error) {
-            logger.error(`Error in async report callback for testId ${testId}: ${data.error}`);
-            return reject(new Error(data.error));
-          }
-          if (data.base64Data) {
-            logger.info(`Received async report for testId: ${testId}`);
-            resolve(Buffer.from(data.base64Data, "base64"));
-          } else {
-            logger.error(`Invalid data received in async callback for testId: ${testId}`);
-            reject(new Error("Invalid data from callback"));
-          }
-        }
-      );
+    // Unexpected structure
+    logger.error(`Unexpected Pramaan response format for testId: ${testId}`);
+    res.status(500).json({
+      error: "Unexpected response format from Pramaan",
+      response: pramaanResponse.data,
     });
-
-    // Send as HTML file download
-    logger.info(`Sending HTML report for testId: ${testId}`);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=report_${testId}.html`
-    );
-    res.setHeader("Content-Type", "text/html");
-    res.send(reportData.toString("utf-8")); // convert Buffer to string
   } catch (err: any) {
     logger.error("Error in generateReportController:", err);
-    res.status(500).send({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 }
