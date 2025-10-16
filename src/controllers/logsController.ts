@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { getPayloadsByTransactionAndSession } from "../services/dbService";
 import { mapPayloadsToLogFormat } from "../utils/payloadUtils"; 
-import { logger } from "../utils/logger";
+import logger from "@ondc/automation-logger";
 
 export const fetchLogsController = async (req: Request, res: Response): Promise<void> => {
   try {

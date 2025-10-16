@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import axios from "axios";
-import { logger } from "../utils/logger";
+import logger from "@ondc/automation-logger";
 import { fetchSessionDetails } from "../services/dbService";
 import { generateTestsFromPayloads } from "../utils/payloadUtils";
 
@@ -52,7 +52,7 @@ export async function generateReportController(
     const ackStatus = pramaanResponse.data?.message?.ack?.status;
 
     if (ackStatus === "NACK") {
-      logger.warn(`Pramaan responded with NACK for testId: ${testId}`);
+      logger.warning(`Pramaan responded with NACK for testId: ${testId}`);
       res.status(500).json({
         error: "Pramaan responded with NACK",
         response: pramaanResponse.data,
