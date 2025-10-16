@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import Router from "./routes/routes";
 import { RedisService } from "ondc-automation-cache-lib";
-import { logError, logger, logInfo } from "./utils/logger";
+import logger from "@ondc/automation-logger";
 
 // Initialize dotenv to load environment variables
 dotenv.config();
@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 try {
   RedisService.useDb(0);
 } catch (err) {
-  logger.error(err);
+  logger.error("Error in setting up Redis Database connection",{},err);
 }
 
 // Middleware setup
@@ -27,17 +27,12 @@ app.use("/", Router);
 // Global error handler middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   // logger.error(err.stack);
-  logError({
-    message: "Internal Server Error",
-    error: err,
-  });
+  logger.error("Internal server error",{},err);
   res.status(500).send("Something went wrong!");
 });
 
 // Start the server
 app.listen(PORT, () => {
   // logger.info(`Server is running on http://localhost:${PORT}`);
-  logInfo({
-    message: `Server is running on http://localhost:${PORT}`,
-    });
+  logger.info(`Server is running on http://localhost:${PORT}`)
 });

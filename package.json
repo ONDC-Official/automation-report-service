@@ -14,12 +14,13 @@
   "license": "ISC",
   "dependencies": {
     "@cucumber/cucumber": "^11.1.1",
+    "@ondc/automation-logger": "^1.1.0",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/auto-instrumentations-node": "0.57.1",
     "@opentelemetry/exporter-jaeger": "2.0.0",
     "@opentelemetry/exporter-prometheus": "0.200.0",
-    "@opentelemetry/resources": "^2.0.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.201.0",
+    "@opentelemetry/resources": "^2.0.0",
     "@opentelemetry/sdk-logs": "0.200.0",
     "@opentelemetry/sdk-metrics": "2.0.0",
     "@opentelemetry/sdk-node": "0.200.0",
@@ -42,6 +43,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/js-yaml": "^4.0.9",
+    "@types/lodash": "^4.17.16",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.1",
     "@types/winston": "^2.4.4",
@@ -52,8 +54,6 @@
     "nodemon": "^3.1.7",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2",
-    "@types/lodash": "^4.17.16"
-
+    "typescript": "^5.7.2"
   }
 }

@@ -1,8 +1,7 @@
 import axios from "axios";
 import { Payload, WrappedPayload } from "../types/payload";
 import dotenv from "dotenv";
-import { logError, logInfo } from "../utils/logger";
-
+import logger from "@ondc/automation-logger";
 // Load environment variables
 dotenv.config();
 
@@ -11,11 +10,8 @@ const API_URL = `${process.env.DATA_BASE_URL}/payload/ids`;
 export async function fetchPayloads(
   requestBody: Record<string, string[]>
 ): Promise<Record<string, Payload[]>> {
-  logInfo({
-    message: `Entering fetchPayloads function. Fetching payloads...`,
-    meta: {
-      requestBody,
-    },
+  logger.info(`Entering fetchPayloads function. Fetching payloads...`, {
+    requestBody,
   });
 
   try {
@@ -29,55 +25,49 @@ export async function fetchPayloads(
               headers: { "Content-Type": "application/json" },
             }
           );
-          logInfo({
-            message: `Fetched payloads for flow ID ${flowId}`,
-            meta: {
-              flowId,
-              payloads: response.data.payloads,
-            },
+          logger.info(`Fetched payloads for flow ID ${flowId}`, {
+            flowId,
+            payloads: response.data.payloads,
           });
           return { [flowId]: response.data.payloads };
         } catch (error) {
           // console.error(`Error fetching payloads for flow ID ${flowId}:`, error);
-          logError({
-            message: `Error fetching payloads for flow ID ${flowId}`,
-            error,
-            meta: {
+          logger.error(
+            `Error fetching payloads for flow ID ${flowId}`,
+            {
               flowId,
               error,
             },
-          });
+            error
+          );
           return { [flowId]: [] }; // Return an empty array in case of an error
         }
       })
     );
-    logInfo({
-      message: "Exiting fetchPayloads function. Fetched payloads.",
-      meta: {
-        results,
-      },
+    logger.info("Exiting fetchPayloads function. Fetched payloads.", {
+      results,
     });
     return Object.assign({}, ...results);
   } catch (error) {
     // console.error("Error fetching data:", error);
-    logError({
-      message: "Error in fetchPayloads function",
-      error: new Error("Failed to fetch payloads"),
-      meta: {
+    logger.error(
+      "Error in fetchPayloads function",
+      {
         error,
       },
-    });
+      new Error("Failed to fetch payloads")
+    );
     throw new Error("Failed to fetch payloads");
   }
 }
 
 export async function fetchSessionDetails(sessionID: string): Promise<any> {
-  logInfo({
-    message: `Entering fetchSessionDetails function. Fetching session details for session ID: ${sessionID}`,
-    meta: {
+  logger.info(
+    `Entering fetchSessionDetails function. Fetching session details for session ID: ${sessionID}`,
+    {
       sessionID,
-    },
-  });
+    }
+  );
   try {
     const storageUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionID}`;
     const response = await axios.get<WrappedPayload[]>(storageUrl, {
@@ -101,14 +91,14 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
     }
 
     // console.error(`Failed to fetch details for session ID ${sessionID}:`, errorDetails);
-    logError({
-      message: `Failed to fetch details for session ID ${sessionID}`,
-      error: new Error(errorDetails),
-      meta: {
+    logger.error(
+      `Failed to fetch details for session ID ${sessionID}`,
+      {
         sessionID,
         errorDetails,
       },
-    });
+      new Error(errorDetails)
+    );
     throw new Error(
       `Failed to fetch details for session ID ${sessionID}, Details: ${errorDetails}`
     );
@@ -124,7 +114,7 @@ export async function getPayloadsByTransactionAndSession(
       `${process.env.DATA_BASE_URL}/payload/logs/${transactionId}`,
       {
         headers: {
-          "x-api-key": process.env.API_SERVICE_KEY, 
+          "x-api-key": process.env.API_SERVICE_KEY,
         },
       }
     );
