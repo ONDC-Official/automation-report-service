@@ -36,7 +36,7 @@ export async function generateReportController(
       test_id: testId,
     };
 
-    const pramaanUrl = process.env.PRAMAAN_URL;
+    const pramaanUrl = process.env.PRAMAAN_URL
     if (!pramaanUrl) {
       throw new Error("PRAMAAN_URL is not defined in environment variables");
     }
