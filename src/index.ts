@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import reportRouter from "./routes/reportRoute";
 import { RedisService } from "ondc-automation-cache-lib";
-import { logError, logger, logInfo } from "./utils/logger";
+import logger from "@ondc/automation-logger";
 import { MESSAGES } from "./utils/messages";
 import { apiResponse } from "./utils/responseHandler";
 
@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 try {
   RedisService.useDb(2);
 } catch (err) {
-  logger.error(err);
+  logger.error(String(err));
 }
 
 // Middleware setup
@@ -29,17 +29,14 @@ app.use("/report", reportRouter);
 // Global error handler middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   // logger.error(err.stack);
-  logError({
-    message: MESSAGES.app.internalError,
-    error: err,
-  });
+  logger.info(MESSAGES.app.internalError,
+    {error: err},
+  );
   apiResponse.internalError(res, MESSAGES.responses.generic500, err);
 });
 
 // Start the server
 app.listen(PORT, () => {
   // logger.info(`Server is running on http://localhost:${PORT}`);
-  logInfo({
-    message: MESSAGES.app.serverStarted(Number(PORT)),
-    });
+  logger.info(MESSAGES.app.serverStarted(Number(PORT)));
 });

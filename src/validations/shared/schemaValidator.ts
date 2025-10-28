@@ -1,5 +1,4 @@
-import { TestResult } from "../../types/payload";
-import { Validation } from "./contextValidator";
+import { TestResult,Validation } from "../../types/payload";
 import Joi from "joi";
 
 // Default ACK/NACK schema (used when a schema isn't provided)
@@ -46,10 +45,37 @@ export const checkJsonResponse = (
 
 export async function runValidations(validations: Validation[], payload: unknown) {
   const errors: string[] = [];
+  console.log("validations=>>>>>>>>>>>>>>>>>>>>>", validations);
   for (const v of validations) {
+    console.log("v=>>>>>>>>>>>>>>>>>>>>>", v);
     const res = await v.run(payload);
-    if (!res.ok) {
-      errors.push(...res.errors.map(e => `${v.name}: ${e}`));
+    // Support both legacy/new shapes from validators:
+    // 1) { ok: boolean, errors: string[] }
+    // 2) { valid: boolean, results: { valid:boolean, description:string }[] }
+    let ok: boolean | undefined;
+    let errs: string[] | undefined;
+
+    if (res && typeof res === 'object') {
+      if ('ok' in res && 'errors' in res) {
+        ok = (res as any).ok as boolean;
+        const rErrors = (res as any).errors;
+        errs = Array.isArray(rErrors) ? rErrors.map(String) : rErrors != null ? [String(rErrors)] : [];
+      } else if ('valid' in res && 'results' in res) {
+        ok = (res as any).valid as boolean;
+        const results = (res as any).results ?? [];
+        errs = Array.isArray(results)
+          ? results.filter((r: any) => r && r.valid === false).map((r: any) => String(r.description ?? 'Invalid'))
+          : [];
+      }
+    }
+
+    if (ok === undefined || errs === undefined) {
+      errors.push(`${v.name}: Validation result missing required properties`);
+      continue;
+    }
+
+    if (!ok) {
+      errors.push(...errs.map((e: string) => `${v.name}: ${e}`));
     }
   }
   return { ok: errors.length === 0, errors };

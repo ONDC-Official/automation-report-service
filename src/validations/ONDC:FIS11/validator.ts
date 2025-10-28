@@ -1,4 +1,3 @@
-import { ValidationAction } from "../../types/actions";
 import { Payload, TestResult } from "../../types/payload";
 import { createDomainValidator } from "../shared/baseValidator";
 import { ackResponseSchema } from "../shared/responseSchemas";

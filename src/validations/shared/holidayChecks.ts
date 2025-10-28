@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult } from "../../types/payload";
-import { logger } from "../../utils/logger";
+import logger from "@ondc/automation-logger";
 import { compareDates } from "../../utils/constants";
 
 export function validateProviderHolidays(

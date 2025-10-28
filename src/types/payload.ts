@@ -57,10 +57,26 @@ export interface Context {
   timestamp: string;
   ttl: string;
 }
+export interface UnitResult {
+  valid: boolean;
+  description: string;
+  code: number;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  results: UnitResult[];
+}
+
 export interface TestResult {
-  response: object;
+  response: Record<string, any>;
   passed: string[];
   failed: string[];
+}
+
+export interface Validation {
+  name: string;
+  run: (payload: unknown) => ValidationResult | Promise<ValidationResult>;
 }
 
 export interface Report {

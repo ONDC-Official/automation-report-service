@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
+import logger from "@ondc/automation-logger";
 import { saveData } from "../../../utils/redisUtils";
 import { DomainValidators } from "../../shared/domainValidator";
 

@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
+import { logError, logInfo } from "@ondc/automation-logger";
 import { fetchData, updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkSelect(
@@ -10,7 +10,10 @@ export async function checkSelect(
 ): Promise<TestResult> {
   const payload = element;
   const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
+  logInfo({
+    message: `Inside ${action} validations`,
+    meta: { action, sessionID, flowId }
+  });
 
   const testResults: TestResult = {
     response: {},

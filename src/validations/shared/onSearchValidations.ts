@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../types/payload";
-import { logger } from "../../utils/logger";
+import logger from "@ondc/automation-logger";
 import {
   createBaseValidationSetup,
   validateLSPFeatures,
@@ -170,7 +170,7 @@ export function validateProviderItems(
 /**
  * Creates a comprehensive OnSearch validator
  */
-export function createOnSearchValidator(config: {
+export function createOnSearchValidatorLegacy(config: {
   validateLSP?: boolean;
   validateTAT?: boolean;
   validateShipmentTypes?: boolean;

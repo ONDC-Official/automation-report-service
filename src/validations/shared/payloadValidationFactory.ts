@@ -1,6 +1,6 @@
 import { ValidationAction } from "../../types/actions";
 import { TestResult, Payload } from "../../types/payload";
-import { logger } from "../../utils/logger";
+import logger from "@ondc/automation-logger"
 import { checkJsonResponse } from "./schemaValidator";
 
 type VersionResolver = (element: Payload) => string | undefined;

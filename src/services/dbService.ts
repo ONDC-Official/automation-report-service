@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Payload, WrappedPayload } from "../types/payload";
 import dotenv from "dotenv";
-import { logError, logInfo } from "../utils/logger";
+import logger from "@ondc/automation-logger";
 import { MESSAGES } from "../utils/messages";
 
 // Load environment variables
@@ -10,12 +10,11 @@ dotenv.config();
 const API_URL = `${process.env.DATA_BASE_URL}/payload/ids`;
 
 export async function fetchPayloads(requestBody: Record<string, string[]>): Promise<Record<string, Payload[]>> {
-  logInfo({
-    message: MESSAGES.services.fetchPayloadsEnter,
-    meta: {
+  logger.info( MESSAGES.services.fetchPayloadsEnter,
+  {  meta: {
       requestBody,
-    },
-  });
+    }},
+  );
 
   try {
     const results = await Promise.all(
@@ -24,40 +23,33 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
           const response = await axios.post<{ payloads: Payload[] }>(API_URL, { payload_ids: payloadIds }, {
             headers: { "Content-Type": "application/json" },
           });
-          logInfo({
-            message: `Fetched payloads for flow ID ${flowId}`,
-            meta: {
+          logger.info(`Fetched payloads for flow ID ${flowId}`,
+            {meta: {
               flowId,
               payloads: response.data.payloads,
-            },
-          });
+            }},
+          );
           return { [flowId]: response.data.payloads };
         } catch (error) {
-          // console.error(`Error fetching payloads for flow ID ${flowId}:`, error);
-          logError({
-            message: `Error fetching payloads for flow ID ${flowId}`,
-            error,
+          logger.error(`Error fetching payloads for flow ID ${flowId}`,
+            {error,
             meta: {
               flowId,
               error,
-            },
-          });
+            }}
+          );
           return { [flowId]: [] }; // Return an empty array in case of an error
         }
       })
     );
-    logInfo({
-      message: MESSAGES.services.fetchPayloadsExit,
-      meta: {
+    logger.info(MESSAGES.services.fetchPayloadsExit,
+      {meta: {
         results,
-      },
-    });
+      }});
     return Object.assign({}, ...results);
   } catch (error) {
-    // console.error("Error fetching data:", error);
-    logError({
-      message: MESSAGES.services.fetchPayloadsError,
-      error: new Error("Failed to fetch payloads"),
+    logger.error(MESSAGES.services.fetchPayloadsError,
+      {error: new Error("Failed to fetch payloads"),
       meta: {
         error,
       },
@@ -67,12 +59,11 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
 }
 
 export async function fetchSessionDetails(sessionID: string): Promise<any> {
-  logInfo({
-    message: MESSAGES.services.fetchSessionEnter(sessionID),
-    meta: {
+  logger.info(MESSAGES.services.fetchSessionEnter(sessionID),
+    {meta: {
       sessionID,
-    },
-  });
+    }},
+  );
   try {
     const storageUrl = `${process.env.AUTOMATION_BACKEND}/sessions`;
     const response = await axios.get<WrappedPayload[]>(storageUrl, {
@@ -83,13 +74,11 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
         session_id: sessionID
       }
     });
-    logInfo({
-      message: MESSAGES.services.fetchSessionExit,
-      meta: {
+    logger.info(MESSAGES.services.fetchSessionExit,
+      {meta: {
         sessionID,
         response: response.data,
-      },
-    });
+      }});
     return response.data;
   } catch (error) {
     let errorDetails = "Unknown error";
@@ -98,15 +87,13 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
       errorDetails = JSON.stringify(error.response.data);
     }
     
-    // console.error(`Failed to fetch details for session ID ${sessionID}:`, errorDetails);
-    logError({
-      message: MESSAGES.services.fetchSessionError(sessionID),
-      error: new Error(errorDetails),
+    logger.error(MESSAGES.services.fetchSessionError(sessionID),
+     { error: new Error(errorDetails),
       meta: {
         sessionID,
         errorDetails,
-      },
-    });
+      }},
+    );
     throw new Error(`Failed to fetch details for session ID ${sessionID}, Details: ${errorDetails}`);
   }
 }

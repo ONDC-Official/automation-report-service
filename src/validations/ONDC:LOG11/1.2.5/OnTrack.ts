@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
+import logger from "@ondc/automation-logger";
 
 export async function checkOnTrack(
   element: Payload,

@@ -7,7 +7,7 @@ import {
 import { loadConfig } from "../utils/configLoader";
 import { actions } from "../utils/constants";
 import { ValidationAction } from "../types/actions";
-import { logError, logger, logInfo } from "../utils/logger";
+import logger from "@ondc/automation-logger";
 import { MESSAGES } from "../utils/messages";
 import { RedisService } from "ondc-automation-cache-lib";
 import { checkPayload } from "./checkPayload";
@@ -62,11 +62,7 @@ async function getSessionDetails(
     );
     return sessionData ? JSON.parse(sessionData) : null;
   } catch (error) {
-    logError({
-      message: "Failed to retrieve session details",
-      error,
-      meta: { sessionID },
-    });
+    logger.error("Failed to retrieve session details", error, { sessionID });
     return null;
   }
 }
@@ -80,10 +76,7 @@ function checkMandatoryFlows(
   report: Report
 ): void {
   if (!Array.isArray(testedFlows)) {
-    logError({
-      message: "testedFlows is not an array or is undefined",
-      meta: { testedFlows },
-    });
+    logger.error("testedFlows is not an array or is undefined", { testedFlows });
     return;
   }
 
@@ -136,11 +129,7 @@ function validateActionSequence(
       }
     }
   } catch (error) {
-    logError({
-      message: "Error occurred during action sequence validation",
-      error,
-      meta: { requiredSequence },
-    });
+    logger.error("Error occurred during action sequence validation", error, { requiredSequence });
     validSequence = false;
     errors.push("Error occurred during action sequence validation");
   }
@@ -165,10 +154,7 @@ async function processPayloads(
     const action = element?.action?.toLowerCase();
 
     if (!isValidAction(action)) {
-      logError({
-        message: `Invalid action: ${action}`,
-        meta: { flowId, action, index: i },
-      });
+      logger.error(`Invalid action: ${action}`, { flowId, action, index: i });
       continue;
     }
 
@@ -186,11 +172,7 @@ async function processPayloads(
       messages[`${action}_${actionCounters[action]}`] = JSON.stringify(result);
       actionCounters[action] += 1;
     } catch (error) {
-      logError({
-        message: `Error occurred for action ${action} at index ${i}`,
-        error,
-        meta: { flowId, action, index: i },
-      });
+      logger.error(`Error occurred for action ${action} at index ${i}`, error, { flowId, action, index: i });
     }
   }
 
@@ -202,10 +184,7 @@ export async function validationModule(
   groupedPayloads: Record<string, Payload[]>,
   sessionID: string
 ): Promise<Report> {
-  logInfo({
-    message: MESSAGES.services.validationEnter,
-    meta: { sessionID, flowCount: Object.keys(groupedPayloads).length },
-  });
+  logger.info(MESSAGES.services.validationEnter, { sessionID, flowCount: Object.keys(groupedPayloads).length });
 
   const report: Report = { finalReport: {}, flowErrors: {} };
   const flowsReport: Record<string, FlowValidationResult> = {};
@@ -219,33 +198,20 @@ export async function validationModule(
 
   // Check mandatory flows
   try {
-    logInfo({
-      message: MESSAGES.validations.checkingMandatoryFlows,
-      meta: { testedFlows },
-    });
+    logger.info(MESSAGES.validations.checkingMandatoryFlows, { testedFlows });
 
     checkMandatoryFlows(testedFlows, domainConfig, report);
 
-    logInfo({
-      message: MESSAGES.validations.mandatoryFlowsDone,
-      meta: { testedFlows },
-    });
+    logger.info(MESSAGES.validations.mandatoryFlowsDone, { testedFlows });
   } catch (error: any) {
-    logError({
-      message: "Error checking mandatory flows",
-      error,
-      meta: { testedFlows },
-    });
+    logger.error("Error checking mandatory flows", error, { testedFlows });
   }
   // Process each flow
   for (const flowId in groupedPayloads) {
     const requiredSequence = domainConfig?.flows?.[flowId];
     const payloads = groupedPayloads[flowId];
 
-    logInfo({
-      message: MESSAGES.validations.actionValidationStart(flowId),
-      meta: { flowId },
-    });
+    logger.info(MESSAGES.validations.actionValidationStart(flowId), { flowId });
 
     // Step 1: Validate action sequence
     const { validSequence, errors } = validateActionSequence(
@@ -253,10 +219,7 @@ export async function validationModule(
       requiredSequence || []
     );
 
-    logInfo({
-      message: MESSAGES.validations.actionValidationDone(flowId),
-      meta: { flowId },
-    });
+    logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });
 
     // Step 2: Process payloads
     const messages = await processPayloads(
@@ -266,10 +229,7 @@ export async function validationModule(
       domainConfig
     );
 
-    logInfo({
-      message: MESSAGES.validations.payloadProcessingDone(flowId),
-      meta: { flowId },
-    });
+    logger.info(MESSAGES.validations.payloadProcessingDone(flowId), { flowId });
 
     // Step 3: Store validation results
     flowsReport[flowId] = {
@@ -281,10 +241,7 @@ export async function validationModule(
 
   report.flowErrors = flowsReport;
 
-  logInfo({
-    message: MESSAGES.services.validationExit,
-    meta: { sessionID, flowCount: Object.keys(flowsReport).length },
-  });
+  logger.info(MESSAGES.services.validationExit, { sessionID, flowCount: Object.keys(flowsReport).length });
 
   return report;
 }

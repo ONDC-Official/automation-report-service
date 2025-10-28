@@ -1,12 +1,4 @@
-export interface ValidationResult {
-  ok: boolean;
-  errors: string[];
-}
-
-export interface Validation {
-  name: string;
-  run: (payload: unknown) => ValidationResult | Promise<ValidationResult>;
-}
+import { Validation, ValidationResult, UnitResult } from "../../types/payload";
 
 function isIsoTimestamp(value: unknown): boolean {
   if (typeof value !== 'string') return false;
@@ -15,6 +7,7 @@ function isIsoTimestamp(value: unknown): boolean {
 }
 
 export function contextValidators(): Validation[] {
+  console.log("contextValidators=>>>>>>>>>>>>>>>>>>>>>");
   return [
     {
       name: 'context:required',
@@ -30,18 +23,18 @@ export function contextValidators(): Validation[] {
         if (!ctx?.transaction_id) missing.push('context.transaction_id');
         if (!ctx?.timestamp) missing.push('context.timestamp');
         return missing.length
-          ? { ok: false, errors: missing.map(f => `${f} is required`) }
-          : { ok: true, errors: [] };
+          ? { valid: false, results: missing.map(f => ({ valid: false, description: `${f} is required`, code: 400 })) }
+          : { valid: true, results: [] };
       },
     },
     {
       name: 'context:timestamp-format',
       run: (payload: any) => {
         const ts = payload?.context?.timestamp;
-        if (ts == null) return { ok: true, errors: [] };
+        if (ts == null) return { valid: true, results: [] };
         return isIsoTimestamp(ts)
-          ? { ok: true, errors: [] }
-          : { ok: false, errors: ['context.timestamp must be ISO-8601 with milliseconds and Z'] };
+          ? { valid: true, results: [] }
+          : { valid: false, results: [{ valid: false, description: 'context.timestamp must be ISO-8601 with milliseconds and Z', code: 400 }] };
       },
     },
     {
@@ -54,11 +47,9 @@ export function contextValidators(): Validation[] {
         if (!country) missing.push('context.country|location.country.code');
         if (!city) missing.push('context.city|location.city.code');
         return missing.length
-          ? { ok: false, errors: missing.map(f => `${f} is required`) }
-          : { ok: true, errors: [] };
+          ? { valid: false, results: missing.map(f => ({ valid: false, description: `${f} is required`, code: 400 })) }
+          : { valid: true, results: [] };
       },
     },
   ];
 }
-
-

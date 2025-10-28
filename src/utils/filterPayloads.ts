@@ -1,5 +1,5 @@
 import { WrappedPayload } from "../types/payload";
-import { logger } from "./logger";
+import logger from "@ondc/automation-logger";
 
 export async function filterPayloads(
   payloads: WrappedPayload[],
