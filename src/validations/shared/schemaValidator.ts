@@ -45,9 +45,7 @@ export const checkJsonResponse = (
 
 export async function runValidations(validations: Validation[], payload: unknown) {
   const errors: string[] = [];
-  console.log("validations=>>>>>>>>>>>>>>>>>>>>>", validations);
   for (const v of validations) {
-    console.log("v=>>>>>>>>>>>>>>>>>>>>>", v);
     const res = await v.run(payload);
     // Support both legacy/new shapes from validators:
     // 1) { ok: boolean, errors: string[] }

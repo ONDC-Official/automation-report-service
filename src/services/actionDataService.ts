@@ -10,14 +10,6 @@ export async function saveActionData(
   spec: SaveSpec
 ): Promise<Record<string, any>> {
   const extracted = extractBySpec(payload, spec);
-  console.log(
-    "extracteddddddddddddd",
-    extracted,
-    sessionId,
-    flowId,
-    transactionId,
-    action
-  );
   await saveFlowData(sessionId, flowId, transactionId, action, extracted);
   return extracted;
 }
@@ -28,12 +20,6 @@ export async function getActionData(
   transactionId: string,
   action: string
 ): Promise<Record<string, any> | null> {
-  console.log(
-    "getActionData=====>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
-    sessionId,
-    transactionId,
-    action
-  );
   return await fetchFlowData(sessionId, flowId, transactionId, action);
 }
 

@@ -7,7 +7,6 @@ function isIsoTimestamp(value: unknown): boolean {
 }
 
 export function contextValidators(): Validation[] {
-  console.log("contextValidators=>>>>>>>>>>>>>>>>>>>>>");
   return [
     {
       name: 'context:required',
