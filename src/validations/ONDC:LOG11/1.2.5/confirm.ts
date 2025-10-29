@@ -1,9 +1,5 @@
-import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
-import { fetchData } from "../../../utils/redisUtils";
 import { DomainValidators } from "../../shared/domainValidator";
-import { deepCompareObjects } from "../../shared";
 
 export async function checkConfirm(
   element: Payload,

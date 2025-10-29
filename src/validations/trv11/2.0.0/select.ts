@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logError, logInfo } from "@ondc/automation-logger";
+import logger from "@ondc/automation-logger";
 import { fetchData, updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkSelect(
@@ -10,10 +10,7 @@ export async function checkSelect(
 ): Promise<TestResult> {
   const payload = element;
   const action = payload?.action.toLowerCase();
-  logInfo({
-    message: `Inside ${action} validations`,
-    meta: { action, sessionID, flowId }
-  });
+    logger.info(`Inside ${action} validations`,{ action, sessionID, flowId });
 
   const testResults: TestResult = {
     response: {},
@@ -27,7 +24,7 @@ export async function checkSelect(
 
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
-  logger.info("Validating items in select");
+  logger.info("Validating items in select",{ sessionID, transactionId });
   const items = message?.order?.items;
   const onSearchItems = await fetchData(
     sessionID,
@@ -44,7 +41,7 @@ export async function checkSelect(
       );
 
       if (!catalogItem) {
-        console.error(`Catalog item with ID ${item.id} not found.`);
+        logger.error(`Catalog item with ID ${item.id} not found.`,{ itemId: item.id, sessionID, flowId });
         continue;
       }
 
@@ -56,8 +53,7 @@ export async function checkSelect(
         );
         testResults.passed.push(`Valid item quantity for item id: ${item?.id}`);
       } catch (error: any) {
-        logger.error(error.message);
-        testResults.failed.push(`${error.message}`);
+        logger.error(error.message,{ itemId: item.id, sessionID, flowId },error as Error as Error);
       }
     }
   }

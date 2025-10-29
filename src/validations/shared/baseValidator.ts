@@ -1,5 +1,6 @@
 import { ValidationAction } from "../../types/actions";
 import { TestResult, Payload } from "../../types/payload";
+import { DOMAINS } from "../../utils/constants";
 import { getFileName } from "./validationFactory";
 
 import logger from "@ondc/automation-logger"
@@ -32,8 +33,11 @@ export function createDomainValidator(
       }
 
       try {
-        const fileName = getFileName(action);
-        console.log("payload in base validator",JSON.stringify(element));
+        const domain = element?.jsonRequest?.context?.domain;
+        const fileName = domain && domain.startsWith(DOMAINS.FIS11)
+          ? `${action_id}.ts`
+          : getFileName(action);
+        logger.info("payload in base validator",JSON.stringify(element),"action",action, "fileName",fileName);
         
         
         if (!fileName || !version) {

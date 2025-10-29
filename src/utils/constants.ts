@@ -34,6 +34,14 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS11",
 ];
 
+export const DOMAINS = {
+  TRV11:"ONDC:TRV11",
+  NIC:"nic2004:60232",
+  LOG10:"ONDC:LOG10",
+  LOG11:"ONDC:LOG11",
+  FIS11:"ONDC:FIS11",
+};
+
 export const FLOW_MAPPINGS: Record<string, string> = {
   //METRO
   STATION_CODE_FLOW_ORDER: "METRO_STATION_CODE",

@@ -283,8 +283,5 @@ export function generateCustomHTMLReport(data: Report) {
       </body>
       </html>
     `;
-    logger.info("Exiting generateCustomHTMLReport function. Generated custom HTML report",
-    {meta: { htmlContent },
-  });
   return htmlContent;
 }
