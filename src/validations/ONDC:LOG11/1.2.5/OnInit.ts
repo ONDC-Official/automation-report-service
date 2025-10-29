@@ -2,16 +2,17 @@ import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import logger from "@ondc/automation-logger";
 import { fetchData } from "../../../utils/redisUtils";
-import { validateOrderQuote } from "../../shared/quoteValidations";
 import { DomainValidators } from "../../shared/domainValidator";
+import { validateOrderQuote } from "../../shared/quoteValidations";
 
 export async function checkOnInit(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id:string
 ): Promise<TestResult> {
   // First run common validations
-  const commonTestResults = await DomainValidators.ondclogOnInit(element, sessionID, flowId);
+  const commonTestResults = await DomainValidators.ondclogOnInit(element, sessionID, flowId,action_id);
   
   const payload = element;
   const action = payload?.action.toLowerCase();

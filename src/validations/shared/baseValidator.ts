@@ -1,5 +1,7 @@
 import { ValidationAction } from "../../types/actions";
 import { TestResult, Payload } from "../../types/payload";
+import { getFileName } from "./validationFactory";
+
 import logger from "@ondc/automation-logger"
 type CheckJsonResponseFn = (jsonResponse: any, testResults: TestResult) => void;
 
@@ -24,13 +26,16 @@ export function createDomainValidator(
     let testResults: TestResult = { response: {}, passed: [], failed: [] };
 
     try {
-      const { jsonResponse, action_id } = element;
+      const { jsonResponse, action_id,action } = element;
       if (jsonResponse) {
         checkJsonResponse(jsonResponse, testResults);
       }
 
       try {
-        const fileName = action_id;
+        const fileName = getFileName(action);
+        console.log("payload in base validator",JSON.stringify(element));
+        
+        
         if (!fileName || !version) {
           testResults.failed.push(`Incorrect version or unsupported action: ${action_id}`);
           return testResults;

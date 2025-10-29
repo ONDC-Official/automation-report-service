@@ -3,20 +3,80 @@ import Joi from "joi";
 
 // Default ACK/NACK schema (used when a schema isn't provided)
 const defaultAckSchema = Joi.object({
-    message: Joi.object({
-      ack: Joi.object({
-        status: Joi.string().valid("ACK", "NACK").required(),
-      }).required(),
+  context: Joi.object({
+    domain: Joi.string()
+      .pattern(/^ONDC:[A-Z0-9]+$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'domain must start with "ONDC:" followed by uppercase letters/numbers',
+      }),
+
+    country: Joi.string()
+      .valid('IND')
+      .required(),
+
+    city: Joi.string()
+      .pattern(/^std:\d+$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'city must be in format std:<city_code> (e.g., std:080)',
+      }),
+
+    action: Joi.string()
+      .valid('search', 'select', 'init', 'confirm', 'status', 'track', 'cancel', 'update', 'rating', 'support', 'on_search', 'on_select', 'on_init', 'on_confirm', 'on_status', 'on_track', 'on_cancel', 'on_update', 'on_rating', 'on_support')
+      .required(),
+
+    core_version: Joi.string()
+      .pattern(/^\d+\.\d+\.\d+$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'core_version must be in semver format (e.g., 1.2.5)',
+      }),
+
+    bap_id: Joi.string()
+      .domain()
+      .required()
+      .messages({
+        'string.domain': 'bap_id must be a valid domain',
+      }),
+
+    bap_uri: Joi.string()
+      .uri()
+      .required(),
+
+    message_id: Joi.string()
+      .uuid()
+      .required(),
+
+    timestamp: Joi.string()
+      .isoDate()
+      .required(),
+
+    transaction_id: Joi.string()
+      .uuid()
+      .required(),
+
+    ttl: Joi.string()
+      .pattern(/^PT\d+S$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'ttl must be in ISO 8601 duration format like PT30S',
+      }),
+  }).required(),
+  message: Joi.object({
+    ack: Joi.object({
+      status: Joi.string().valid("ACK", "NACK").required(),
     }).required(),
-    
-    error: Joi.when(Joi.ref("message.ack.status"), {
-      is: "NACK",
-      then: Joi.object({
-        code: Joi.string().required(),
-        message: Joi.string().required(),
-      }).required(),
-      otherwise: Joi.forbidden(),
-    }),
+  }).required(),
+
+  error: Joi.when(Joi.ref("message.ack.status"), {
+    is: "NACK",
+    then: Joi.object({
+      code: Joi.string().required(),
+      message: Joi.string().required(),
+    }).required(),
+    otherwise: Joi.forbidden(),
+  }),
 });
 
 export const validateJsonResponse = (

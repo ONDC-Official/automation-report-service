@@ -15,7 +15,7 @@ import { validatorConstant } from "./validatorConstant";
  * Pre-configured validators for common domain patterns
  */
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
-const log11Validators = validatorConstant.beckn.ondc.log.v125;
+const logValidators = validatorConstant.beckn.ondc.log.v125;
 
 export const DomainValidators = {
     fis11Search: createSearchValidator(
@@ -98,68 +98,80 @@ export const DomainValidators = {
     ),
   
     ondclogSearch: createSearchValidator(
-     log11Validators.holidays.validate_holidays,
-      log11Validators.lbnp.validate_lbnp,
-      log11Validators.prepaid_payment.validate_prepaid_payment,
-      log11Validators.cod.validate_cod
+      logValidators.holidays.validate_holidays,
+      logValidators.lbnp.validate_lbnp,
+      logValidators.prepaid_payment.validate_prepaid_payment,
+      logValidators.cod.validate_cod,
+      logValidators.sla_metrics.validate_sla_metrics
     ),
+
   
   
      ondclogOnSearch: createOnSearchValidator(
-      log11Validators.lsp.validate_lsp,
-      log11Validators.tat.validate_tat, 
-      log11Validators.shipment_types.validate_shipment_types
+      logValidators.lsp.validate_lsp,
+      logValidators.tat.validate_tat, 
+      logValidators.shipment_types.validate_shipment_types,
+      logValidators.cod.validate_cod,
+      logValidators.tax_type_rcm.validate_np_tax_type_rcm,
+      logValidators.codified_static_terms.validate_codified_static_terms,
+      logValidators.public_special_capabilities.validate_public_special_capabilities
     ),
   
    
-    nic2004Search: createSearchValidator(log11Validators.holidays.validate_holidays),
+    nic2004Search: createSearchValidator(logValidators.holidays.validate_holidays),
   
     
     ondclogSelect: createSelectValidator(
-      log11Validators.holidays.validate_holidays,
-      log11Validators.lbnp.validate_lbnp,
-      log11Validators.prepaid_payment.validate_prepaid_payment,
-      log11Validators.cod.validate_cod
+      logValidators.holidays.validate_holidays,
+      logValidators.lbnp.validate_lbnp,
+      logValidators.prepaid_payment.validate_prepaid_payment,
+      logValidators.cod.validate_cod
     ),
   
     /**
      * ONDC LOG10/LOG11 on_select validator with comprehensive validations
      */
     ondclogOnSelect: createOnSelectValidator(
-      log11Validators.lsp.validate_lsp,
-      log11Validators.tat.validate_tat,
-      log11Validators.shipment_types.validate_shipment_types
+      logValidators.lsp.validate_lsp,
+      logValidators.tat.validate_tat,
+      logValidators.shipment_types.validate_shipment_types
     ),
   
     /**
      * ONDC LOG10/LOG11 init validator with all validations
      */
     ondclogInit: createInitValidator(
-      log11Validators.holidays.validate_holidays,
-      log11Validators.lbnp.validate_lbnp,
-      log11Validators.prepaid_payment.validate_prepaid_payment,
-      log11Validators.cod.validate_cod
+      logValidators.holidays.validate_holidays,
+      logValidators.lbnp.validate_lbnp,
+      logValidators.prepaid_payment.validate_prepaid_payment,
+      logValidators.cod.validate_cod
     ),
   
     /**
      * ONDC LOG10/LOG11 on_init validator with comprehensive validations
      */
     ondclogOnInit: createOnInitValidator(
-      log11Validators.lsp.validate_lsp,
-      log11Validators.tat.validate_tat,
-      log11Validators.shipment_types.validate_shipment_types
+      logValidators.lsp.validate_lsp,
+      logValidators.tat.validate_tat,
+      logValidators.shipment_types.validate_shipment_types
     ),
   
     ondclogConfirm: createConfirmValidator(
-      log11Validators.holidays.validate_holidays,
-      log11Validators.lbnp.validate_lbnp,
-      log11Validators.prepaid_payment.validate_prepaid_payment,
+      logValidators.holidays.validate_holidays,
+      logValidators.lbnp.validate_lbnp,
+      logValidators.prepaid_payment.validate_prepaid_payment,
+      logValidators.sla_metrics.validate_sla_metrics,
+      logValidators.exchange_customer_contact_details.validate_customer_contact_details,
+      logValidators.seller_creds.validate_seller_creds
     ),
   
     ondclogOnConfirm: createOnConfirmValidator(
-      log11Validators.lsp.validate_lsp,
-      log11Validators.tat.validate_tat, 
-      log11Validators.shipment_types.validate_shipment_types
-
+      logValidators.lsp.validate_lsp,
+      logValidators.tat.validate_tat, 
+      logValidators.shipment_types.validate_shipment_types,
+      logValidators.sla_metrics.validate_sla_metrics,
+      logValidators.tax_type_rcm.validate_np_tax_type_rcm,
+      logValidators.codified_static_terms.validate_codified_static_terms,
+      logValidators.exchange_customer_contact_details.validate_customer_contact_details,
     )
   };
