@@ -1,31 +1,35 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
+import logger from "@ondc/automation-logger";
 import { saveData } from "../../../utils/redisUtils";
+import { DomainValidators } from "../../shared/domainValidator";
 
 export async function checkInit(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id:string
 ): Promise<TestResult> {
+  // First run common validations
+  const commonTestResults = await DomainValidators.ondclogInit(element, sessionID, flowId,action_id);
+  
+  const testResults: TestResult = {
+    response: commonTestResults.response,
+    passed: [...commonTestResults.passed],
+    failed: [...commonTestResults.failed],
+  };
+
   const payload = element;
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
-
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
-
   const { jsonRequest, jsonResponse } = payload;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-
   const { context, message } = jsonRequest;
   const contextTimestamp = context?.timestamp;
   const transactionId = context.transaction_id;
   const billingCreatedAt = message?.order?.billing?.created_at;
   const billingUpdatedAt = message?.order?.billing?.created_at;
+
   saveData(sessionID, transactionId, "billingTimestamp", billingCreatedAt);
   try {
   

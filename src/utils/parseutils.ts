@@ -2,7 +2,7 @@ import { Payload } from "../types/payload";
 import { ParsedPayload } from "../types/parsedPayload";
 import { RedisService } from "ondc-automation-cache-lib";
 import { FLOW_MAPPINGS } from "./constants";
-import { logError, logInfo } from "./logger";
+import logger from "@ondc/automation-logger";
 
 export async function parseFlows(
   flows: {
@@ -10,9 +10,8 @@ export async function parseFlows(
   },
   sessionID: string
 ): Promise<{ [flowId: string]: ParsedPayload }> {
-  logInfo({
-    message: "Entering parseFlows function. Parsing flows...",
-    meta: { sessionID, flows },
+  logger.info("Entering parseFlows function. Parsing flows...",
+    {meta: { sessionID, flows },
   });
   const parsedFlows: { [flowId: string]: ParsedPayload } = {};
 
@@ -37,14 +36,12 @@ export async function parseFlows(
         version
       );
     } catch (error) {
-      // console.error(`Error parsing flow ${flowId}:`, error);
-      logError({
-        message: `Error parsing flow ${flowId}`,
-        error,
+      logger.error(`Error parsing flow ${flowId}`,
+        {error,
         meta: {
           flowId,
-        },
-      });
+        }},
+      );
       // Optionally handle invalid flows by adding an empty or error state.
       parsedFlows[flowId] = {
         domain: domain,
@@ -54,9 +51,8 @@ export async function parseFlows(
       };
     }
   }
-  logInfo({
-    message: "Exiting parseFlows function. Parsed flows.",
-    meta: { sessionID, parsedFlows },
+  logger.info("Exiting parseFlows function. Parsed flows.",
+    {meta: { sessionID, parsedFlows },
   });
   return parsedFlows;
 }
@@ -67,9 +63,8 @@ function parsePayloads(
   domain: string,
   version: string
 ): ParsedPayload {
-  logInfo({
-    message: "Entering parsePayloads function. Parsing payloads...",
-    meta: { flowId, payloads, domain, version },
+  logger.info("Entering parsePayloads function. Parsing payloads...",
+    {meta: { flowId, payloads, domain, version },
   });
   const parsedPayload: ParsedPayload = {
     domain: domain,
@@ -83,17 +78,15 @@ function parsePayloads(
     (groups, payload) => {
       const action = payload.action?.toLowerCase();
       if (!action) {
-        // console.warn(
         //   `Missing action in payload for flow ID ${flowId}`,
         //   payload
         // );
-        logInfo({
-          message: `Missing action in payload for flow ID ${flowId}`,
-          meta: {
+        logger.info(`Missing action in payload for flow ID ${flowId}`,
+          {meta: {
             flowId,
             payload,
-          },
-        });
+          }},
+        );
         return groups;
       }
       if (!groups[action]) {
@@ -110,13 +103,12 @@ function parsePayloads(
   allPayloads.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
-  logInfo({
-    message: "Sorted payloads by action and createdAt timestamp",
-    meta: {
+      logger.info("Sorted payloads by action and createdAt timestamp",
+    {meta: {
       flowId,
       allPayloads,
-    },
-    });
+    }},
+  );
   // Counters for numbered actions (search, on_search, cancel, on_cancel)
   const actionCounters: { [key: string]: number } = {
     search: 0,
@@ -133,14 +125,12 @@ function parsePayloads(
   allPayloads.forEach((payload) => {
     const action = payload.action?.toLowerCase();
     if (!action) {
-      // console.warn(`Missing action in payload for flow ID ${flowId}`, payload);
-      logInfo({
-        message: `Missing action in payload for flow ID ${flowId}`,
-        meta: {
+      logger.info(`Missing action in payload for flow ID ${flowId}`,
+        {meta: {
           flowId,
           payload,
-        },
-      });
+        }},
+      );
       return;
     }
 
@@ -208,9 +198,8 @@ function parsePayloads(
       parsedPayload.payload[key] = {};
     }
   });
-  logInfo({
-    message: "Exiting parsePayloads function. Parsed payloads.",
-    meta: { flowId, parsedPayload },
+  logger.info("Exiting parsePayloads function. Parsed payloads.",
+    {meta: { flowId, parsedPayload },
   });
   
   return parsedPayload;

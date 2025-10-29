@@ -4,15 +4,14 @@ import { ParsedPayload } from "../types/parsedPayload";
 import { Result } from "../types/result";
 import dotenv from "dotenv";
 import { VALIDATION_URL } from "../utils/constants";
-import { logError, logger, logInfo } from "../utils/logger";
+import logger from "@ondc/automation-logger";
 dotenv.config();
 
 export async function validateFlows(parsedFlows: {
   [flowId: string]: ParsedPayload;
 }): Promise<{ flowId: string; results: Result }[]> {
-  logInfo({
-    message: "Entering validateFlows function. Validating flows...",
-    meta: parsedFlows,
+  logger.info("Entering validateFlows function. Validating flows...",
+    {meta: parsedFlows,
   });
   try {
     const validatedFlows = await Promise.all(
@@ -21,20 +20,17 @@ export async function validateFlows(parsedFlows: {
         return { flowId, results };
       })
     );
-    logInfo({
-      message: "Exiting validateFlows function. Validated flows.",
-      meta: {validatedFlows},
+    logger.info("Exiting validateFlows function. Validated flows.",
+      {meta: {validatedFlows},
     });
     return validatedFlows;
   } catch (error) {
-    // console.error("Error occurred while validating flows:", error);
-    logInfo({
-      message: "Error occurred while validating flows",
-      error,
+    logger.error("Error occurred while validating flows",
+      {error,
       meta: {
         parsedFlows,
-      },
-    });
+      }},
+    );
     throw error;
   }
 }
@@ -43,27 +39,24 @@ export async function validateLogs(
   flowId: string,
   parsedPayload: ParsedPayload
 ): Promise<Result> {
-  logInfo({
-    message: "Entering validateLogs function. Validating logs...",
-    meta: { flowId, parsedPayload },
+  logger.info("Entering validateLogs function. Validating logs...",
+    { meta: { flowId, parsedPayload },
   });
   const validationUrl =
    VALIDATION_URL[parsedPayload?.domain] ||
     "https://log-validation.ondc.org/api/validate";
 
   // logger.info(`Utility URL : ${validationUrl}`);
-  logInfo({
-    message: "Utility URL:",
-    meta: { validationUrl },
+  logger.info("Utility URL: ${validationUrl}",
+    {meta: { validationUrl },
   });
   try {
     const response = await axios.post<ApiResponse>(
       validationUrl,
       parsedPayload
     );
-    logInfo({
-      message: "Exiting validateLogs function. Validated logs.",
-      meta: { flowId, response: response.data },
+    logger.info("Exiting validateLogs function. Validated logs.",
+      {meta: { flowId, response: response.data },
     }); 
     // Wrap the successful response in a `ValidationResult`
     return { success: true, response: response.data };
@@ -76,9 +69,8 @@ export async function validateLogs(
       const errorDetails = axiosError.response?.data || {
         message: "No response data",
       };
-      logError({
-        message: "Error occurred during validation : Axios error",
-        error: axiosError,
+      logger.error("Error occurred during validation : Axios error",
+        { error: axiosError,
         meta: {
           flowId,
           statusCode,
@@ -91,13 +83,12 @@ export async function validateLogs(
         details: errorDetails,
       };
     }
-    logError({
-      message: "Error occurred during validation : Non-axios error",
-      error,
+    logger.error("Error occurred during validation : Non-axios error",
+      { error,
       meta: {
         flowId,
-      },
-    });
+      }},
+    );
     // Handle unexpected errors
     return {
       success: false,
