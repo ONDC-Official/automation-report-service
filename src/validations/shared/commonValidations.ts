@@ -9,7 +9,7 @@ import {
   validateLBNPFeaturesForFlows,
   validateLSPFeaturesForFlows,
 } from "../../utils/constants";
-import { getTransactionIds } from "../../utils/redisUtils";
+import { fetchData, getTransactionIds, saveData } from "../../utils/redisUtils";
 
 /**
  * Common validation setup that initializes TestResult and extracts basic payload data
@@ -376,7 +376,7 @@ export async function validateTransactionId(
   testResults: TestResult
 ): Promise<void> {
   try {
-    
+
     if (!currentTransactionId) {
       testResults.failed.push("Transaction ID is missing in context");
       return;
@@ -384,7 +384,9 @@ export async function validateTransactionId(
 
     // Get all stored transaction IDs for this session and flow from Redis
     const storedTransactionIds = await getTransactionIds(sessionID, flowId);
-    
+    console.log("storedTransactionIds");
+
+
     if (storedTransactionIds.length === 0) {
       testResults.failed.push("No transaction IDs found for this flow. Flow may not have started properly.");
       return;
@@ -392,7 +394,7 @@ export async function validateTransactionId(
 
     // Check if current transaction_id matches any stored transaction_id
     const isValidTransactionId = storedTransactionIds.includes(currentTransactionId);
-    
+
     if (isValidTransactionId) {
       testResults.passed.push(`Transaction ID '${currentTransactionId}' is valid and exists in flow`);
     } else {
@@ -404,6 +406,635 @@ export async function validateTransactionId(
     logger.error("Error validating transaction ID:", error);
     testResults.failed.push(`Transaction ID validation failed: ${error.message}`);
   }
+}
+
+export async function validateSlaMetricsSearch(sessionID: string, transactionId: string, flowId: string, message: any, testResults: TestResult, action: string) {
+  try {
+    if (flowId === 'ORDER_FLOW_BASE_LINE_SLA_METRICS' && action.toLowerCase() === "search") {
+      try {
+        const tags = message?.intent?.tags || [];
+        const slaTerms = tags.filter((tag: any) => tag.code === 'lbnp_sla_terms');
+
+        assert.ok(
+          slaTerms.length > 0,
+          'At least one tag with code "lbnp_sla_terms" must be present'
+        );
+
+        const allowedMetrics = [
+          'Order_Accept',
+          'Pickup_ETA',
+          'Delivery_ETA',
+          'RTO',
+          'Item_MD',
+          'MDND'
+        ];
+
+        for (const term of slaTerms) {
+          const list = term?.list || [];
+
+          const getValue = (code: string) =>
+            list.find((entry: any) => entry.code === code)?.value;
+
+          const metric = getValue('metric');
+          const baseUnit = getValue('base_unit');
+          const baseMin = getValue('base_min');
+          const baseMax = getValue('base_max');
+          const penaltyMin = getValue('penalty_min');
+          const penaltyMax = getValue('penalty_max');
+          const penaltyUnit = getValue('penalty_unit');
+          const penaltyValue = getValue('penalty_value');
+
+          //  Basic presence checks
+          assert.ok(metric, `Metric must be present in lbnp_sla_terms`);
+          assert.ok(allowedMetrics.includes(metric),
+            `Invalid metric "${metric}" found in lbnp_sla_terms`
+          );
+
+          assert.ok(baseUnit, `Base unit must be present for metric ${metric}`);
+          assert.ok(
+            ['mins', 'percent', 'per_order'].includes(baseUnit),
+            `Invalid base_unit "${baseUnit}" for metric ${metric}`
+          );
+
+          //  Numeric validations
+          const numericFields = { baseMin, baseMax, penaltyMin, penaltyValue };
+          for (const [key, val] of Object.entries(numericFields)) {
+            assert.ok(
+              !isNaN(Number(val)),
+              `${key} must be a valid number for metric ${metric}`
+            );
+          }
+
+          // 3️⃣ Penalty unit must be valid
+          assert.ok(
+            ['percent', 'per_order'].includes(penaltyUnit),
+            `Invalid penalty_unit "${penaltyUnit}" for metric ${metric}`
+          );
+
+          // Optional: validate logical ordering (min <= max)
+          if (baseMax && baseMin)
+            assert.ok(
+              Number(baseMin) <= Number(baseMax),
+              `base_min should be <= base_max for metric ${metric}`
+            );
+
+          if (penaltyMax && penaltyMin)
+            assert.ok(
+              Number(penaltyMin) <= Number(penaltyMax),
+              `penalty_min should be <= penalty_max for metric ${metric}`
+            );
+        }
+
+        saveData(
+          sessionID,
+          transactionId,
+          "slaTerms",
+          slaTerms
+        );
+
+        testResults.passed.push(
+          'All lbnp_sla_terms entries are valid for ORDER_FLOW_BASE_LINE_SLA_METRICS'
+        );
+      } catch (error: any) {
+        testResults.failed.push(error.message);
+      }
+    }
+  } catch (error: any) {
+    testResults.failed.push(error.message);
+  }
+}
+
+export async function validateSlaMetricsConfirm(sessionID: string, transactionId: string, action_id: string, message: any, testResults: TestResult, action: string) {
+  if (action_id === "confirm_LOGISTICS_SLA" || action_id === "on_confirm_LOGISTICS_SLA") {
+    try {
+      // Fetch saved and current SLA terms
+      const savedSlaTerms = await fetchData(sessionID, transactionId, "slaTerms");
+      const currentTags = message?.order?.tags || [];
+      const currentSlaTerms = currentTags.filter(
+        (tag: any) => tag.code === "lbnp_sla_terms"
+      );
+
+      assert.ok(
+        savedSlaTerms,
+        "No saved SLA terms found in Redis for comparison"
+      );
+      assert.ok(
+        currentSlaTerms.length > 0,
+        `No lbnp_sla_terms found in ${action} payload`
+      );
+
+      // Deep compare each SLA term object
+      const allDifferences: any[] = [];
+
+      for (let i = 0; i < currentSlaTerms.length; i++) {
+        const saved = savedSlaTerms[i];
+        const current = currentSlaTerms[i];
+
+        if (!saved) {
+          allDifferences.push({
+            key: `slaTerms[${i}]`,
+            savedValue: undefined,
+            currentValue: current,
+          });
+          continue;
+        }
+
+        const diffs = await deepCompareObjects(saved, current, `slaTerms[${i}]`);
+        allDifferences.push(...diffs);
+      }
+
+      assert.ok(
+        allDifferences.length === 0,
+        `SLA Terms mismatch detected:\n${allDifferences
+          .map(
+            (d) =>
+              `→ ${d.key}: expected "${JSON.stringify(
+                d.savedValue
+              )}", got "${JSON.stringify(d.currentValue)}"`
+          )
+          .join("\n")}`
+      );
+
+      testResults.passed.push(
+        "SLA Terms validation passed — all keys and values match saved data."
+      );
+    } catch (error: any) {
+      logger.error(`Error during SLA validation: ${error.message}`);
+      testResults.failed.push(error.message);
+    }
+  }
+}
+
+export async function validateNpTaxType(flowId: string, message: any, testResults: TestResult, action: string) {
+  try {
+    if (flowId === "ORDER_FLOW_RCM") {
+
+      const tags = action.toLowerCase() === "search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags || [];
+      const bppTermsTag = tags.find((tag: any) => tag.code === "bpp_terms");
+
+      assert.ok(
+        bppTermsTag,
+        'Tag with code "bpp_terms" must be present under bpp/descriptor'
+      );
+
+      const npTaxTypeEntry = bppTermsTag?.list?.find(
+        (entry: any) => entry.code === "np_tax_type"
+      );
+
+      assert.ok(
+        npTaxTypeEntry,
+        'Entry with code "np_tax_type" must be present in bpp_terms.list'
+      );
+
+      assert.ok(
+        npTaxTypeEntry.value === "RCM",
+        `np_tax_type value must be "RCM", found "${npTaxTypeEntry.value}"`
+      );
+
+      testResults.passed.push(
+        'np_tax_type validation passed — value is correctly set to "RCM"'
+      );
+    }
+  } catch (error: any) {
+    logger.error(`Error during on_search_LOGISTICS_RCM validation: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+}
+
+export async function validateCodifiedStaticTerms(
+  action_id: string,
+  message: any,
+  sessionID: string,
+  transactionId: string,
+  testResults: TestResult,
+  action: string
+) {
+  try {
+    const tags = action.toLowerCase() === "search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags || [];
+    const bppTerms = tags.find(
+      (tag: any) => tag.code === "bpp_terms"
+    );
+
+    const list = bppTerms?.list || [];
+
+    assert.ok(
+      list.length > 0,
+      `bpp_terms list must be present under bpp/descriptor.tags`
+    );
+
+    // Convert list to key-value object for easier validation
+    const termsObj = list.reduce((acc: any, entry: any) => {
+      acc[entry.code] = entry.value;
+      return acc;
+    }, {});
+
+    //  Required keys to be present
+    const requiredKeys = [
+      "max_liability",
+      "max_liability_cap",
+      "mandatory_arbitration",
+      "court_jurisdiction",
+      "delay_interest",
+    ];
+
+    // Validate on_search_LOGISTICS_CODIFIED_TERMS
+    if (action_id === "on_search_LOGISTICS_CODIFIED_TERMS") {
+      for (const key of requiredKeys) {
+        assert.ok(
+          key in termsObj,
+          `Missing required codified term "${key}" in on_search payload`
+        );
+
+        // Optional — ensure value is not empty
+        assert.ok(
+          termsObj[key] !== undefined && termsObj[key] !== "",
+          `Value for "${key}" cannot be empty in on_search payload`
+        );
+      }
+
+      // Save validated data to Redis
+      await saveData(sessionID, transactionId, "codifiedTerms", list);
+
+      testResults.passed.push(
+        "All required codified static terms validated and saved successfully from on_search payload"
+      );
+    }
+
+    //  Validate on_confirm_LOGISTICS_CODIFIED_TERMS
+    else if (action_id === "on_confirm_LOGISTICS_CODIFIED_TERMS") {
+      const savedTerms = await fetchData(
+        sessionID,
+        transactionId,
+        "codifiedTerms"
+      );
+
+      assert.ok(savedTerms, "No saved codifiedTerms found in Redis");
+
+      const differences = await deepCompareObjects(savedTerms, list);
+
+      assert.ok(
+        differences.length === 0,
+        `Codified static terms mismatch detected: ${JSON.stringify(
+          differences,
+          null,
+          2
+        )}`
+      );
+
+      testResults.passed.push(
+        "Codified static terms matched successfully between on_search and on_confirm"
+      );
+    }
+  } catch (error: any) {
+    logger.error(`Error in codified static terms validation: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+}
+
+export async function validateCustomerContactDetails(
+  action_id: string,
+  message: any,
+  sessionID: string,
+  transactionId: string,
+  testResults: TestResult
+) {
+  try {
+    const tags = message?.order?.tags || [];
+
+    // Determine which term to check based on flowId
+    const tagCode =
+      action_id === "confirm_LOGISTICS_EXCHANGE"
+        ? "bap_terms"
+        : action_id === "on_confirm_LOGISTICS_EXCHANGE"
+          ? "bpp_terms"
+          : null;
+
+    if (!tagCode) {
+      testResults.failed.push(`Unsupported flowId: ${action_id}`);
+      return;
+    }
+
+    // Extract tag section
+    const termsTag = tags.find((tag: any) => tag.code === tagCode);
+    assert.ok(termsTag, `Missing "${tagCode}" tag in message.order.tags`);
+
+    const list = termsTag.list || [];
+    const phoneEntry = list.find((entry: any) => entry.code === "phone");
+    assert.ok(phoneEntry, `Missing "phone" entry inside ${tagCode}.list`);
+
+    const phoneValue = phoneEntry.value;
+    assert.ok(phoneValue, `Phone number value missing inside ${tagCode}.list`);
+    testResults.passed.push(
+      `Phone number "${phoneValue}" saved successfully from ${tagCode}`
+    );
+
+    //  CASE 1: confirm_LOGISTICS_EXCHANGE — Save to Redis
+    if (action_id === "confirm_LOGISTICS_EXCHANGE") {
+      await saveData(sessionID, transactionId, "exchangePhone", phoneValue);
+      testResults.passed.push(
+        `Phone number "${phoneValue}" saved successfully from ${tagCode}`
+      );
+    }
+
+    //  CASE 2: on_confirm_LOGISTICS_EXCHANGE — Compare with saved
+    else if (action_id === "on_confirm_LOGISTICS_EXCHANGE") {
+      const savedPhone = await fetchData(
+        sessionID,
+        transactionId,
+        "exchangePhone"
+      );
+
+      assert.ok(savedPhone, "No saved phone number found in Redis");
+
+      assert.strictEqual(
+        savedPhone,
+        phoneValue,
+        `Phone mismatch: expected "${savedPhone}", got "${phoneValue}"`
+      );
+
+      testResults.passed.push(
+        `Phone number matched successfully between confirm and on_confirm (${phoneValue})`
+      );
+    }
+  } catch (error: any) {
+    logger.error(`Error validating exchange phone term: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+}
+
+export async function validatePublicSpecialCapabilities(
+  flowId: string,
+  message: any,
+  sessionID: string,
+  transactionId: string,
+  testResults: TestResult
+) {
+  try {
+    if (flowId === "on_search_LOGISTICS_PUBLIC_SPECIAL") {
+      //  Extract provider tags based on action
+      const providers = message?.catalog?.["bpp/providers"] || [];
+      assert.ok(providers.length > 0, "No providers found in catalog");
+
+      const provider = providers[0]; // Assuming validation for first provider
+      const tags = provider?.tags || [];
+
+      //  Find special_req tag
+      const specialReqTag = tags.find((t: any) => t.code === "special_req");
+      assert.ok(specialReqTag, `"special_req" tag must be present under provider.tags`);
+
+      const list = specialReqTag.list || [];
+      assert.ok(list.length > 0, `"special_req".list must not be empty`);
+
+      //  Convert to key-value for easy validation
+      const specialReqMap = list.reduce((acc: any, entry: any) => {
+        acc[entry.code] = entry.value;
+        return acc;
+      }, {});
+
+      // Expected keys
+      const expectedKeys = [
+        "dangerous_goods",
+        "cold_storage",
+        "open_box_delivery",
+        "fragile_handling",
+        "cod_order"
+      ];
+
+      // Validate keys and values
+      for (const key of expectedKeys) {
+        assert.ok(
+          key in specialReqMap,
+          `Missing required capability "${key}" under special_req.list`
+        );
+
+        const value = specialReqMap[key]?.toLowerCase();
+        assert.ok(
+          value === "yes" || value === "no",
+          `Invalid value for "${key}". Expected "yes" or "no", got "${specialReqMap[key]}"`
+        );
+      }
+
+      //  Save validated data in Redis for later comparison if needed
+      await saveData(sessionID, transactionId, "specialCapabilities", specialReqMap);
+
+      testResults.passed.push(
+        `All special capabilities validated successfully in on_search payload`
+      );
+    }
+  } catch (error: any) {
+    logger.error(`Error validating special capabilities: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+}
+
+export async function validateSellerCreds(
+  flowId: string,
+  message: any,
+  sessionID: string,
+  transactionId: string,
+  testResults: TestResult
+) {
+  try {
+    if (flowId === "ORDER_FLOW_BASE_LINE_SELLER_CREDS") {
+      const fulfillments = message?.order?.fulfillments || [];
+      assert.ok(fulfillments.length > 0, "No fulfillments found in order");
+
+      let linkedProviderTagFound = false;
+
+      for (const fulfillment of fulfillments) {
+        const tags = fulfillment?.tags || [];
+
+        // 🔍 Find the "linked_provider" tag
+        const linkedProviderTag = tags.find(
+          (tag: any) => tag.code === "linked_provider"
+        );
+        if (!linkedProviderTag) continue;
+
+        linkedProviderTagFound = true;
+        const list = linkedProviderTag.list || [];
+
+        // Required codes that must exist
+        const requiredCodes = ["id", "name", "cred_code", "cred_desc"];
+
+        // Check all required codes exist and are valid
+        for (const code of requiredCodes) {
+          const entry = list.find((item: any) => item.code === code);
+
+          assert.ok(
+            entry,
+            `Missing required code "${code}" under linked_provider.list`
+          );
+
+          assert.ok(
+            typeof entry.value === "string" && entry.value.trim() !== "",
+            `Value for "${code}" under linked_provider.list must be a non-empty string`
+          );
+        }
+
+        // Convert list to object (preserving any extra codes too)
+        const providerData = list.reduce((acc: any, item: any) => {
+          acc[item.code] = item.value;
+          return acc;
+        }, {});
+
+        // Save validated data for future comparison (optional)
+        await saveData(
+          sessionID,
+          transactionId,
+          `sellerCreds_${fulfillment.type}`,
+          providerData
+        );
+      }
+
+      assert.ok(
+        linkedProviderTagFound,
+        `"linked_provider" tag must exist in at least one fulfillment`
+      );
+
+      testResults.passed.push(
+        `Seller credentials (linked_provider) validated successfully`
+      );
+    }
+  } catch (error: any) {
+    logger.error(`Error in validateSellerCreds: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+}
+
+export async function validateEpodProofs(
+  flowId: string,
+  message: any,
+  testResults: any
+) {
+  try {
+    if (flowId === "E-POD") {
+      const fulfillments = message?.order?.fulfillments || [];
+      assert.ok(fulfillments.length > 0, "No fulfillments found in order");
+
+      let proofFound = false;
+      const allowedTypes = ["webp", "jpeg", "png", "pdf"];
+
+      for (const fulfillment of fulfillments) {
+        const tags = fulfillment?.tags || [];
+        const proofTags = tags.filter((tag: any) => tag.code === "fulfillment_proof");
+
+        for (const proofTag of proofTags) {
+          proofFound = true;
+          const list = proofTag?.list || [];
+
+          // Required fields inside list
+          const requiredFields = ["state", "type", "url"];
+
+          for (const field of requiredFields) {
+            const entry = list.find((item: any) => item.code === field);
+            assert.ok(
+              entry,
+              `Missing required field "${field}" inside fulfillment_proof.list`
+            );
+
+            assert.ok(
+              typeof entry.value === "string" && entry.value.trim() !== "",
+              `Value for "${field}" must be a non-empty string`
+            );
+
+            // Validate type enums
+            if (field === "type") {
+              assert.ok(
+                allowedTypes.includes(entry.value.toLowerCase()),
+                `Invalid type "${entry.value}". Must be one of ${allowedTypes.join(
+                  ", "
+                )}`
+              );
+            }
+          }
+        }
+      }
+
+      assert.ok(
+        proofFound,
+        `At least one tag with code "fulfillment_proof" must be present in fulfillments`
+      );
+
+      testResults.passed.push(
+        `All fulfillment_proof tags validated successfully under E-POD flow`
+      );
+    }
+  } catch (error: any) {
+    logger.error(`Error in validateEpodProofs: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+}
+
+export function validateP2H2PRequirements(
+  context: any,
+  message:any,
+  testResults: TestResult,
+  action: string
+) {
+  if (context?.domain !== "ONDC:LOG11") return;
+  const fulfillments = message?.order?.fulfillments || []
+  try {
+    assert.ok(
+      fulfillments.every((fulfillment:any) => fulfillment["@ondc/org/awb_no"]),
+      "AWB no is required for P2H2P shipments"
+    );
+    testResults.passed.push("AWB number for P2H2P validation passed");
+  } catch (error: any) {
+    logger.error(`Error during ${action} validation: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+
+  try {
+    const hasShippingLabel = fulfillments.some((fulfillment:any) => {
+      const tags = fulfillment?.tags || [];
+      return tags.some((tag:any) => tag.code === "shipping_label");
+    });
+
+    assert.ok(hasShippingLabel, "Shipping label is required for P2H2P shipments");
+    testResults.passed.push("Shipping label for P2H2P validation passed");
+  } catch (error: any) {
+    logger.error(`Error during ${action} validation: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+}
+
+
+export async function deepCompareObjects(saved: any, current: any, parentKey = "") {
+  const differences = [];
+
+  const allKeys = new Set([
+    ...Object.keys(saved || {}),
+    ...Object.keys(current || {}),
+  ]);
+
+  for (const key of allKeys) {
+    const fullKey = parentKey ? `${parentKey}.${key}` : key;
+    const savedValue = saved?.[key];
+    const currentValue = current?.[key];
+
+    const bothObjects =
+      savedValue &&
+      currentValue &&
+      typeof savedValue === "object" &&
+      typeof currentValue === "object" &&
+      !Array.isArray(savedValue) &&
+      !Array.isArray(currentValue);
+
+    if (bothObjects) {
+      // Recursively compare nested objects
+      const nestedDiffs: any = deepCompareObjects(savedValue, currentValue, fullKey);
+      differences.push(...nestedDiffs);
+    } else if (JSON.stringify(savedValue) !== JSON.stringify(currentValue)) {
+      // Record mismatch if value differs or missing
+      differences.push({
+        key: fullKey,
+        savedValue,
+        currentValue,
+      });
+    }
+  }
+
+  return differences;
 }
 
 

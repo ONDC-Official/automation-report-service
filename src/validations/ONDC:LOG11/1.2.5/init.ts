@@ -7,10 +7,11 @@ import { DomainValidators } from "../../shared/domainValidator";
 export async function checkInit(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id:string
 ): Promise<TestResult> {
   // First run common validations
-  const commonTestResults = await DomainValidators.ondclogInit(element, sessionID, flowId);
+  const commonTestResults = await DomainValidators.ondclogInit(element, sessionID, flowId,action_id);
   
   const testResults: TestResult = {
     response: commonTestResults.response,

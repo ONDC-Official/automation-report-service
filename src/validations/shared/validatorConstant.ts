@@ -70,6 +70,30 @@ export const validatorConstant = {
           shipment_types: {
             validate_shipment_types: "validateShipmentTypes",
           },
+          sla_metrics:{
+            validate_sla_metrics: "validateSlaMetrics"
+          },
+          tax_type_rcm:{
+            validate_np_tax_type_rcm: "validateNpTaxTypeRCM"
+          },
+          codified_static_terms:{
+            validate_codified_static_terms: "validateCodifiedStaticTerms"
+          },
+          exchange_customer_contact_details:{
+            validate_customer_contact_details:"validateCustomerContactDetails"
+          },
+          public_special_capabilities:{
+            validate_public_special_capabilities:"validatePublicSpecialCapabilities"
+          },
+          seller_creds:{
+            validate_seller_creds:"validateSellerCreds"
+          },
+          e_pod:{
+            validate_e_pod:"validateEPOD"
+          },
+          awb_shipping_label:{
+            validate_awb_shipping_label:"validateAWB_Shipping_Label"
+          }
         },
       },
     },

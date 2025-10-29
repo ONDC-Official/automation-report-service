@@ -8,6 +8,15 @@ import {
   validateCODFlow,
   addDefaultValidationMessage,
   validateTransactionId,
+  validateSlaMetricsSearch,
+  validateSlaMetricsConfirm,
+  validateNpTaxType,
+  validateCodifiedStaticTerms,
+  validateCustomerContactDetails,
+  validatePublicSpecialCapabilities,
+  validateSellerCreds,
+  validateEpodProofs,
+  validateP2H2PRequirements,
 } from "./commonValidations";
 import { addTransactionId, updateApiMap } from "../../utils/redisUtils";
 import {
@@ -310,6 +319,23 @@ function validateOrderStatus(message: any, testResults: TestResult): void {
   }
 }
 
+export function getFileName(action: string): string {
+  if (action.includes("_")) {
+    // Example: ON_SEARCH → OnSearch.ts
+    return (
+      action
+        .split("_") // ["ON", "SEARCH"]
+        .map(
+          (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        )
+        .join("") + ".ts"
+    );
+  } else {
+    // Example: SEARCH → search.ts
+    return action.toLowerCase() + ".ts";
+  }
+}
+
 /**
  * Creates a search validation function with configurable validations
  */
@@ -356,6 +382,9 @@ export function createSearchValidator(...config: string[]) {
             break;
           case log11Validators.cod.validate_cod:
             validateCODFlow(flowId, message, testResults);
+            break;
+          case log11Validators.sla_metrics.validate_sla_metrics:
+            validateSlaMetricsSearch(sessionID,transactionId,flowId,message,testResults,action)
             break;
 
           // Financial services validations
@@ -418,6 +447,20 @@ export function createOnSearchValidator(...config: string[]) {
           case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
+          case log11Validators.cod.validate_cod:
+            validateCODFlow(flowId, message, testResults);
+            break;
+
+          case log11Validators.tax_type_rcm.validate_np_tax_type_rcm:
+            validateNpTaxType(flowId,message,testResults,action);
+            break;
+          
+          case log11Validators.codified_static_terms.validate_codified_static_terms:
+            validateCodifiedStaticTerms(action_id,message,sessionID,transactionId,testResults,action);
+            break;
+
+          case log11Validators.public_special_capabilities.validate_public_special_capabilities:
+            validatePublicSpecialCapabilities(flowId,message,sessionID,transactionId,testResults)
 
           // Financial services validations
           case fis11Validators.catalog.validate_catalog:
@@ -702,6 +745,18 @@ export function createConfirmValidator(...config: string[]) {
             validateCODFlow(flowId, message, testResults);
             break;
 
+          case log11Validators.sla_metrics.validate_sla_metrics:
+            validateSlaMetricsConfirm(sessionID,transactionId,action_id,message,testResults,action)
+            break;
+
+          case log11Validators.exchange_customer_contact_details.validate_customer_contact_details:
+            validateCustomerContactDetails(action_id,message,sessionID,transactionId,testResults)
+            break;
+
+          case log11Validators.seller_creds.validate_seller_creds:
+            validateSellerCreds(flowId,message,sessionID,transactionId,testResults)
+            break;
+
           // Financial services validations
           case fis11Validators.order.validate_order:
             validateOrder(message, testResults);
@@ -727,6 +782,9 @@ export function createConfirmValidator(...config: string[]) {
         }
       }
     }
+
+    console.log("testResults in confirm",JSON.stringify(testResults));
+    
 
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
@@ -823,7 +881,7 @@ export function createOnConfirmValidator(...config: string[]) {
       createBaseValidationSetup(element);
     const transactionId = context?.transaction_id;
 
-    // Validate transaction ID exists for this flow
+    // Validate transactivalidateP2H2PRequirementson ID exists for this flow
     await validateTransactionId(sessionID, flowId, transactionId, testResults);
     if (transactionId) {
       try {
@@ -845,6 +903,22 @@ export function createOnConfirmValidator(...config: string[]) {
             break;
           case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
+            break;
+          
+          case log11Validators.sla_metrics.validate_sla_metrics:
+            validateSlaMetricsConfirm(sessionID,transactionId,action_id,message,testResults,action)
+            break;
+
+          case log11Validators.tax_type_rcm.validate_np_tax_type_rcm:
+            validateNpTaxType(flowId,message,testResults,action);
+            break;
+
+          case log11Validators.codified_static_terms.validate_codified_static_terms:
+            validateCodifiedStaticTerms(flowId,message,sessionID,transactionId,testResults,action);
+            break;
+
+          case log11Validators.exchange_customer_contact_details.validate_customer_contact_details:
+            validateCustomerContactDetails(action_id,message,sessionID,transactionId,testResults)
             break;
 
           // Financial services validations
@@ -885,3 +959,84 @@ export function createOnConfirmValidator(...config: string[]) {
     return testResults;
   };
 }
+
+export function createOnUpdateValidator(...config: string[]) {
+  return async function checkOnUpdate(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
+    const transactionId = context?.transaction_id;
+
+    // Validate transactivalidateP2H2PRequirementson ID exists for this flow
+    await validateTransactionId(sessionID, flowId, transactionId, testResults);
+    if (transactionId) {
+      try {
+        await updateApiMap(sessionID, transactionId, action);
+      } catch (error: any) {
+        testResults.failed.push(`API map update failed: ${error.message}`);
+      }
+    }
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          // Logistics validations
+          case log11Validators.lsp.validate_lsp:
+            validateLSPFeatures(flowId, message, testResults);
+            break;
+          case log11Validators.tat.validate_tat:
+            validateTAT(message, testResults);
+            break;
+          case log11Validators.shipment_types.validate_shipment_types:
+            validateShipmentTypesWrapper(message, testResults);
+            break;
+          case log11Validators.awb_shipping_label.validate_awb_shipping_label:
+            validateP2H2PRequirements(context,message,testResults,action)
+            
+          case log11Validators.e_pod.validate_e_pod:
+               validateEpodProofs(flowId,message,testResults)
+               break;
+
+          // Financial services validations
+          case fis11Validators.order.validate_order:
+            validateOrder(message, testResults);
+            break;
+          case fis11Validators.quote.validate_quote:
+            validateQuote(message, testResults);
+            break;
+          case fis11Validators.provider.validate_provider:
+            validateProvider(message, testResults, action_id);
+            break;
+          case fis11Validators.items.validate_items:
+            validateItems(message, testResults, action_id);
+            break;
+          case fis11Validators.fulfillments.validate_fulfillments:
+            validateFulfillments(message, testResults);
+            break;
+          case fis11Validators.payments.validate_payments:
+            validatePayments(message, testResults);
+            break;
+          case fis11Validators.billing.validate_billing:
+            validateBilling(message, testResults);
+            break;
+          case fis11Validators.order_status.validate_order_status:
+            validateOrderStatus(message, testResults);
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+
+    // Add default message if no validations ran
+    addDefaultValidationMessage(testResults, action);
+
+    return testResults;
+  };
+}
+

@@ -2,6 +2,7 @@ import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import logger from "@ondc/automation-logger";
 import { fetchData } from "../../../utils/redisUtils";
+import { validateEpodProofs } from "../../shared";
 
 export async function checkOnUpdate(
   element: Payload,
@@ -146,6 +147,9 @@ export async function checkOnUpdate(
       }
     }
   }
+  if(flowId === "E-POD"){
+      validateEpodProofs(flowId,message,testResults)
+    }
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
