@@ -4,44 +4,36 @@ import { MESSAGES } from "../utils/messages";
 import { ReportService } from "../services/reportService";
 import { apiResponse } from "../utils/responseHandler";
 
-// The main controller function that generates a report
-export async function generateReportController(req: Request, res: Response) {
+export async function generateReportController(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
-    logger.info(MESSAGES.report.enteringController,
-      {meta: {
-        sessionId: req.query.sessionId as string,
-      }});
-    // Retrieve sessionId from query parameters
     const sessionId = req.query.sessionId as string;
-    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
-
-    // Log the received sessionId
-    // logger.info(`Received sessionId: ${sessionId}`);
-
-    // If sessionId is missing, send a 400 response with an error message
     if (!sessionId) {
-      // logger.error("Missing sessionId parameter");
-      logger.info(MESSAGES.report.missingSessionId,
-        {meta: {
-          sessionId: req.query.sessionId as string,
-        }});
-      apiResponse.badRequest(res, MESSAGES.responses.missingSessionId);
+      logger.error(MESSAGES.responses.missingSessionId);
+      apiResponse.badRequest(res,MESSAGES.responses.missingSessionId);
       return;
     }
 
-    const htmlReport = await new ReportService().generate(sessionId, flowIdToPayloadIdsMap);
+    logger.info(`${MESSAGES.report.enteringController} ${sessionId}`);
+    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
+    const htmlReport = await new ReportService().generate(
+      sessionId,
+      flowIdToPayloadIdsMap
+    );
     apiResponse.successHTML(res, htmlReport);
-      logger.info(MESSAGES.report.reportSent,
-      {meta: {
+    logger.info(MESSAGES.report.reportSent, {
+      meta: {
         sessionId,
-      }});
-  } catch (error) {
-    // Log any error that occurs during report generation
-    // logger.error("Error generating report:", error);
-      logger.info(MESSAGES.report.errorGenerating,
-      {error: error});
-    // console.trace(error);
-    // Send a 500 response if an error occurs
-    apiResponse.internalError(res, MESSAGES.responses.failedToGenerateReport, error);
+      },
+    });
+  } catch (err: any) {
+    logger.info(MESSAGES.report.errorGenerating, { error: err });
+    apiResponse.internalError(
+      res,
+      MESSAGES.responses.failedToGenerateReport,
+      err
+    );
   }
 }
