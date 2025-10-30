@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { logError } from "../utils/logger";
+import logger from "@ondc/automation-logger";
 import { MESSAGES } from "../utils/messages";
 import { apiResponse } from "../utils/responseHandler";
 export default (req: Request, res: Response, next: NextFunction) => {
@@ -7,7 +7,7 @@ export default (req: Request, res: Response, next: NextFunction) => {
     const serverApiKey = process.env.API_SERVICE_KEY;
 
     if(!serverApiKey) {
-        logError({
+        logger.error(MESSAGES.auth.apiKeyNotConfigured, {
             message: MESSAGES.auth.apiKeyNotConfigured
         });
         throw new Error(MESSAGES.auth.apiKeyNotConfigured);

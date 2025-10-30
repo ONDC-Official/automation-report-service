@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { logDebug } from "../utils/logger";
+import logger from "@ondc/automation-logger";
 
 export default (req: Request, res: Response, next: NextFunction) => {
     const originalJson = res.json;
     const originalSend = res.send;
     res.json = function (data: any) {
         const transaction_id = req.body?.context?.transaction_id;
-        logDebug({
+        logger.info(`Response Log`, {
             message: `Response Log`,
             transaction_id,
             meta: {
@@ -22,7 +22,7 @@ export default (req: Request, res: Response, next: NextFunction) => {
     };
     res.send = function (data: any) {
         const transaction_id = req.body?.context?.transaction_id;
-        logDebug({
+        logger.info(`Response Log`, {
             message: `Response Log`,
             transaction_id,
             meta: {
