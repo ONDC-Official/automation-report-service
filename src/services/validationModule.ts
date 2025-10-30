@@ -3,235 +3,245 @@ import {
   WrappedPayload,
   Report,
   Payload,
-} from "../types/payload"; // Importing types for flow validation results and payload structure
-import { loadConfig } from "../utils/configLoader"; // Import flow configuration for the sequence of expected actions
-import { checkMessage } from "./checkMessage"; // Import the checkMessage function for validating the actions
-import { actions } from "../utils/constants"; // Import available actions for validation
-import { ValidationAction } from "../types/actions"; // Import the type for valid validation actions
-import { logError, logger, logInfo } from "../utils/logger";
+} from "../types/payload";
+import { loadConfig } from "../utils/configLoader";
+import { actions } from "../utils/constants";
+import { ValidationAction } from "../types/actions";
+import logger from "@ondc/automation-logger";
+import { MESSAGES } from "../utils/messages";
 import { RedisService } from "ondc-automation-cache-lib";
+import { checkPayload } from "./checkPayload";
 
 // Type guard to ensure the action is a valid ValidationAction from the predefined actions list
 function isValidAction(action: string): action is ValidationAction {
   return actions.includes(action);
 }
 
-// Validation Module for processing grouped payloads and validating their sequence and actions
-export async function validationModule(
-  groupedPayloads: {
-    [flowId: string]: Payload[]; // Grouping payloads by flowId
-  },
+// Pre-computed action counters for better performance
+const INITIAL_ACTION_COUNTERS: Record<ValidationAction, number> = {
+  search: 1,
+  on_search: 1,
+  select: 1,
+  on_select: 1,
+  init: 1,
+  on_init: 1,
+  confirm: 1,
+  on_confirm: 1,
+  cancel: 1,
+  on_cancel: 1,
+  update: 1,
+  on_update: 1,
+  on_status: 1,
+  status: 1,
+  track: 1,
+  on_track: 1,
+};
+
+// Interface for session details
+interface SessionDetails {
+  domain: string;
+  version: string;
+}
+
+// Interface for domain configuration
+interface DomainConfig {
+  flows: Record<string, string[]>;
+  optional_flows?: string[];
+  validationModules?: string;
+}
+
+/**
+ * Retrieves and parses session details from Redis
+ */
+async function getSessionDetails(
   sessionID: string
-): Promise<Report> {
-  // Return type that contains validation results per flowId
-  logInfo
-    ({
-      message: "Entering validationModule function.",
-      meta: { sessionID, groupedPayloads },
-    });
-  let sessionDetails: any = await RedisService.getKey(
-    `sessionDetails:${sessionID}`
-  );
-  sessionDetails = JSON.parse(sessionDetails);
-
-  let domainConfig: any;
-  if (sessionDetails) {
-    domainConfig = loadConfig(sessionDetails?.domain, sessionDetails?.version);
-  }
-  const Report: Report = { finalReport: {}, flowErrors: {} };
-  const flowsReport: { [flowId: string]: FlowValidationResult } = {}; // Initialize an object to store the final validation report
-  const testedFlows = Object.keys(groupedPayloads);
-  const MandatoryFlows: string[] = [];
+): Promise<SessionDetails | null> {
   try {
-    // logger.info(`Checking if all the required flows are tested`);
-    logInfo({
-      message: "Checking if all the required flows are tested",
-      meta: { testedFlows },
-    });
-    // Function to check if a flow is tested or optional
-    function checkFlowExistence(testedFlows: string[]) {
-      logInfo({
-        message: "Checking flow existence",
-        meta: { testedFlows },
-      });
-      const allFlows = Object.keys(domainConfig?.flows);
-
-      // Iterate through all the flows in domainConfig
-      for (let i = 0; i < allFlows.length; i++) {
-        // If flow is not in testedFlows, check if it's in optional_flows
-
-        if (!Array.isArray(testedFlows)) {
-          // logger.error("testedFlows is not an array or is undefined");
-          logError({
-            message: "testedFlows is not an array or is undefined",
-            meta: { testedFlows },
-          });
-        }
-
-        if (
-          !Array.isArray(domainConfig?.optional_flows) &&
-          !testedFlows.includes(allFlows[i])
-        ) {
-          // logger.error(
-          //   "domainConfig.optional_flows is not an array or is undefined"
-          // );
-          logError({
-            message: "domainConfig.optional_flows is not an array or is undefined",
-            meta: { domainConfig },
-          });
-          MandatoryFlows.push(allFlows[i]);
-        } else if (!testedFlows.includes(allFlows[i])) {
-          if (!domainConfig?.optional_flows.includes(allFlows[i])) {
-            // Raise an error if flow is not in optional_flows
-            MandatoryFlows.push(allFlows[i]);
-          }
-        }
-      }
-
-      if (MandatoryFlows.length > 0)
-        Report.finalReport.mandatoryFlows = `${MandatoryFlows} is/are mandatory and should be tested.`;
-    }
-    checkFlowExistence(testedFlows);
-    logInfo({
-      message: "Mandatory flows check completed",
-      meta: { testedFlows },
-    });
-  } catch (error: any) {
-    // logger.error(`${error?.message}`);
-    logError({
-      message: `${error?.message}`,
-      error,
-    });
+    const sessionData = await RedisService.getKey(
+      `sessionDetails:${sessionID}`
+    );
+    return sessionData ? JSON.parse(sessionData) : null;
+  } catch (error) {
+    logger.error("Failed to retrieve session details", error, { sessionID });
+    return null;
   }
-  // Iterate through each flowId in the grouped payloads
-  for (const flowId in groupedPayloads) {
-    const requiredSequence = domainConfig?.flows?.[flowId]; // Retrieve the required sequence of actions from config
+}
 
-    const payloads = groupedPayloads[flowId]; // Get the payloads for the current flowId
-    const errors: string[] = []; // Initialize an array to store errors for the flow
-    const messages: any = {}; // Initialize an object to store validation messages for each action
-    let validSequence = true; // Flag to track whether the sequence of actions is valid
-    // logger.info(`Validating ${flowId}......`);
-    logInfo({
-      message: `Validating ${flowId}...`,
-      meta: { flowId },
-    });
-    // Step 1: Validate Action Sequence for each flow
+/**
+ * Checks if all mandatory flows are tested
+ */
+function checkMandatoryFlows(
+  testedFlows: string[],
+  domainConfig: DomainConfig,
+  report: Report
+): void {
+  if (!Array.isArray(testedFlows)) {
+    logger.error("testedFlows is not an array or is undefined", { testedFlows });
+    return;
+  }
+
+  const allFlows = Object.keys(domainConfig?.flows || {});
+  const mandatoryFlows: string[] = [];
+
+  for (const flowId of allFlows) {
+    if (!testedFlows.includes(flowId)) {
+      const isOptional =
+        Array.isArray(domainConfig?.optional_flows) &&
+        domainConfig.optional_flows.includes(flowId);
+
+      if (!isOptional) {
+        mandatoryFlows.push(flowId);
+      }
+    }
+  }
+  if (mandatoryFlows.length > 0) {
+    report.finalReport.mandatoryFlows = `${mandatoryFlows.join(
+      ", "
+    )} is/are mandatory and should be tested.`;
+  }
+}
+
+/**
+ * Validates the action sequence for a flow
+ */
+function validateActionSequence(
+  payloads: Payload[],
+  requiredSequence: string[]
+): { validSequence: boolean; errors: string[] } {
+  const errors: string[] = [];
+  let validSequence = true;
+
+  try {
+    for (let i = 0; i < requiredSequence.length; i++) {
+      const expectedAction = requiredSequence[i];
+      const actualAction = payloads[i]?.action;
+
+      if (actualAction?.toLowerCase() !== expectedAction) {
+        const displayExpectedAction =
+          expectedAction === "select" ? "select or init" : expectedAction;
+        validSequence = false;
+        errors.push(
+          `Error: Expected '${displayExpectedAction}' after '${
+            payloads[i - 1]?.action?.toLowerCase() || "start"
+          }', but found '${actualAction?.toLowerCase() || "undefined"}'.`
+        );
+        break;
+      }
+    }
+  } catch (error) {
+    logger.error("Error occurred during action sequence validation", error, { requiredSequence });
+    validSequence = false;
+    errors.push("Error occurred during action sequence validation");
+  }
+
+  return { validSequence, errors };
+}
+
+/**
+ * Processes payloads and validates them using checkPayload
+ */
+async function processPayloads(
+  payloads: Payload[],
+  sessionID: string,
+  flowId: string,
+  domainConfig: DomainConfig
+): Promise<Record<string, string>> {
+  const messages: Record<string, string> = {};
+  const actionCounters = { ...INITIAL_ACTION_COUNTERS };
+
+  for (let i = 0; i < payloads.length; i++) {
+    const element = payloads[i];
+    const action = element?.action?.toLowerCase();
+
+    if (!isValidAction(action)) {
+      logger.error(`Invalid action: ${action}`, { flowId, action, index: i });
+      continue;
+    }
+
+    const domain = element?.jsonRequest?.context?.domain;
 
     try {
-      for (let i = 0; i < requiredSequence.length; i++) {
-        let expectedAction = requiredSequence[i]; // Get the expected action from the sequence
+      const result = await checkPayload(
+        domain,
+        element,
+        sessionID,
+        flowId,
+        domainConfig
+      );
 
-        const actualAction = payloads[i]?.action; // Get the actual action from the current payload
-
-        // If the actual action does not match the expected action, mark the sequence as invalid
-        if (actualAction?.toLowerCase() !== expectedAction) {
-          if (expectedAction === "select") expectedAction = `select or init`;
-          validSequence = false;
-          errors.push(
-            `Error: Expected '${expectedAction}' after '${payloads[
-              i - 1
-            ]?.action.toLowerCase()}', but found '${
-              actualAction?.toLowerCase() || "undefined"
-            }'.`
-          );
-          break; // Exit the loop since the sequence is broken
-        }
-      }
+      messages[`${action}_${actionCounters[action]}`] = JSON.stringify(result);
+      actionCounters[action] += 1;
     } catch (error) {
-      // logger.error(error);
-      logError({
-        message: "Error occurred during action sequence validation",
-        error,
-        meta: { flowId, requiredSequence },
-      });
+      logger.error(`Error occurred for action ${action} at index ${i}`, error, { flowId, action, index: i });
     }
-    logInfo({
-      message: `Action sequence validation completed for ${flowId}`,
-      meta: { flowId },
-      });
-    // Define counters for each action to keep track of the number of occurrences in the sequence
-    const actionCounters: Record<ValidationAction, number> = {
-      search: 1,
-      on_search: 1,
-      select: 1,
-      on_select: 1,
-      init: 1,
-      on_init: 1,
-      confirm: 1,
-      on_confirm: 1,
-      cancel: 1,
-      on_cancel: 1,
-      update: 1,
-      on_update: 1,
-      on_status: 1,
-      status: 1,
-      track: 1,
-      on_track:1
-    };
-    logInfo({
-      message: `Action counters initialized for ${flowId}`,
-      meta: { flowId },
-    });
-    // Step 2: Process Each Payload Using checkMessage
-    for (let i = 0; i < payloads.length; i++) {
-      const element = payloads[i]; // Get the current payload from the sequence
+  }
 
-      // Convert the action to lowercase and check if it's valid
-      const action = element?.action.toLowerCase();
+  return messages;
+}
 
-      // Ensure the action is valid before proceeding with validation
-      if (isValidAction(action)) {
-        const domain = element?.jsonRequest?.context?.domain; // Extract domain from the payload for validation
+// Main validation module function
+export async function validationModule(
+  groupedPayloads: Record<string, Payload[]>,
+  sessionID: string
+): Promise<Report> {
+  logger.info(MESSAGES.services.validationEnter, { sessionID, flowCount: Object.keys(groupedPayloads).length });
 
-        try {
-          // Validate the message based on the domain, payload, and action
-          const result = await checkMessage(
-            domain,
-            element,
-            action,
-            sessionID,
-            flowId,
-            domainConfig
-          );
+  const report: Report = { finalReport: {}, flowErrors: {} };
+  const flowsReport: Record<string, FlowValidationResult> = {};
+  const testedFlows = Object.keys(groupedPayloads);
 
-          // Store the result in the messages object, using action and counter as keys
-          messages[`${action}_${actionCounters[action]}`] =
-            JSON.stringify(result);
+  // Get session details and domain configuration
+  const sessionDetails = await getSessionDetails(sessionID);
+  const domainConfig: DomainConfig = sessionDetails
+    ? loadConfig(sessionDetails.domain, sessionDetails.version)
+    : { flows: {} };
 
-          // Increment the action counter for this action
-          actionCounters[action] += 1;
-        } catch (error) {
-          // Handle errors that occur during the async validation operation
-          // logger.error(
-          //   `Error occurred for action ${action} at index ${i}:`,
-          //   error
-          // );
-          logError({
-            message: `Error occurred for action ${action} at index ${i}:`,
-            error,
-            meta: { flowId, action, index: i },
-          });
-        }
-      }
-    }
-    logInfo({
-      message: `Payload processing completed for ${flowId} using checkMessage`,
-      meta: { flowId },
-    });
-    // Step 3: Compile and Store Validation Report for Current Flow
+  // Check mandatory flows
+  try {
+    logger.info(MESSAGES.validations.checkingMandatoryFlows, { testedFlows });
+
+    checkMandatoryFlows(testedFlows, domainConfig, report);
+
+    logger.info(MESSAGES.validations.mandatoryFlowsDone, { testedFlows });
+  } catch (error: any) {
+    logger.error("Error checking mandatory flows", error, { testedFlows });
+  }
+  // Process each flow
+  for (const flowId in groupedPayloads) {
+    const requiredSequence = domainConfig?.flows?.[flowId];
+    const payloads = groupedPayloads[flowId];
+
+    logger.info(MESSAGES.validations.actionValidationStart(flowId), { flowId });
+
+    // Step 1: Validate action sequence
+    const { validSequence, errors } = validateActionSequence(
+      payloads,
+      requiredSequence || []
+    );
+
+    logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });
+
+    // Step 2: Process payloads
+    const messages = await processPayloads(
+      payloads,
+      sessionID,
+      flowId,
+      domainConfig
+    );
+
+    logger.info(MESSAGES.validations.payloadProcessingDone(flowId), { flowId });
+
+    // Step 3: Store validation results
     flowsReport[flowId] = {
-      valid_flow: validSequence, // Whether the flow has a valid sequence of actions
-      errors, // List of errors encountered in this flow
-      messages, // List of validation messages for each action
+      valid_flow: validSequence,
+      errors,
+      messages,
     };
   }
-  Report.flowErrors = flowsReport;
 
-  // Return the final report containing the validation results for all flows
-  logInfo({
-    message: "Exiting validationModule function. Validation completed.",
-    meta: { sessionID, flowsReport },
-  });
-  return Report;
+  report.flowErrors = flowsReport;
+
+  logger.info(MESSAGES.services.validationExit, { sessionID, flowCount: Object.keys(flowsReport).length });
+
+  return report;
 }

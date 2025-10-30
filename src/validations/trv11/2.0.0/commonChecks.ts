@@ -1,5 +1,5 @@
 import { Payload, TestResult } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
+import logger from "@ondc/automation-logger";
 import assert from "assert";
 export async function checkCommon(
   payload: Payload,

@@ -1,18 +1,18 @@
-import { Payload, WrappedPayload } from "../types/payload";
-import { loadConfig } from "../utils/configLoader"; // Importing function to load configuration for validation modules
+import { Payload } from "../types/payload";
 import logger from "@ondc/automation-logger";
+import { runValidations } from "../validations/shared/schemaValidator";
+import { contextValidators } from "../validations/shared/contextValidator";
+
 // A function to dynamically load and execute a validation function based on the provided module path and function name
 const dynamicValidator = (
   modulePathWithFunc: string, // The full path to the module and function (e.g., 'module#function')
   element: any, // The payload or element to be validated
-  action: string, // The action to be validated (e.g., 'search', 'init')
   sessionID: string,
   flowId: string
 ) => {
   logger.info("Entering dynamicValidator function.", {
     modulePathWithFunc,
     element,
-    action,
     sessionID,
     flowId,
   });
@@ -32,15 +32,14 @@ const dynamicValidator = (
         modulePath,
         functionName,
         element,
-        action,
       });
-      return validatorFunc(element, action, sessionID, flowId);
+      return validatorFunc(element, sessionID, flowId);
     } else {
       // Throw an error if the function is not found within the module
-      logger.error(
-        `Validator function '${functionName}' not found in '${modulePath}'`,
-        { modulePath, functionName }
-      );
+      logger.error(`Validator function '${functionName}' not found in '${modulePath}'`, {
+        modulePath,
+        functionName,
+      });
       throw new Error(
         `Validator function '${functionName}' not found in '${modulePath}'`
       );
@@ -48,42 +47,51 @@ const dynamicValidator = (
   } catch (error) {
     // Log any error encountered while loading the module or executing the function
     // logger.error("Error loading validator:", error);
-    logger.error(
-      "Error in dynamicValidator function. ",
-      { modulePath, functionName },
-      error
-    );
+    logger.error("Error in dynamicValidator function. ", {
+      error,
+      modulePath,
+      functionName,
+    });
     throw error; // Rethrow the error to be handled by the calling function
   }
 };
 
 // Main function that checks the message validation based on the domain and action
-export const checkMessage = async (
+export const checkPayload = async (
   domain: string, // The domain (e.g., 'search', 'select') to determine the appropriate validation module
   element: Payload, // The payload or element to be validated
-  action: string, // The specific action to be validated (e.g., 'init', 'confirm')
   sessionId: string,
   flowId: string,
   domainConfig: any
 ): Promise<object> => {
-  logger.info("Entering checkMessage function.", {
+  logger.info("Entering checkPayload function.", {
     domain,
     element,
-    action,
     sessionId,
     flowId,
   });
+  // 0) Always validate common context before any domain/action-specific checks
+  const commonCtxResult = await runValidations(contextValidators(), element?.jsonRequest);
+  if (!commonCtxResult.ok) {
+    return {
+      response: {},
+      passed: [],
+      failed: commonCtxResult.errors,
+    };
+  }
+
   // Get the module path and function name based on the version, or fall back to the default configuration
   const modulePathWithFunc = domainConfig?.validationModules;
-  logger.info(
-    "Exiting checkMessage function. Calling dynamicValidator.",
-    { modulePathWithFunc },
-  );
+  logger.info("Exiting checkPayload function. Calling dynamicValidator.", {
+    modulePathWithFunc,
+    element,
+    sessionId,
+    flowId,
+  });
   // Call the dynamicValidator to load and execute the validation function for the given domain, element, and action
   return dynamicValidator(
     modulePathWithFunc,
     element,
-    action,
     sessionId,
     flowId
   );

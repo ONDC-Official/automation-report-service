@@ -1,7 +1,7 @@
 import assert from "assert";
 import { Payload, TestResult, WrappedPayload } from "../../../types/payload";
 import { checkCommon } from "./commonChecks";
-import { logger } from "../../../utils/logger";
+import logger from "@ondc/automation-logger";
 import { updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkConfirm(  element: Payload,
