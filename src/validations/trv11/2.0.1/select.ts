@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logError, logInfo } from "@ondc/automation-logger";
+import logger from "@ondc/automation-logger";
 import { fetchData, updateApiMap } from "../../../utils/redisUtils";
 
 export async function checkSelect(
@@ -10,11 +10,11 @@ export async function checkSelect(
 ): Promise<TestResult> {
   const payload = element;
   const action = payload?.action.toLowerCase();
-  logInfo({
-    message: `Inside ${action} validations`,
-    meta: { action, sessionID, flowId }
+  logger.info(`Inside ${action} validations`, {
+    action,
+    sessionID,
+    flowId
   });
-
   const testResults: TestResult = {
     response: {},
     passed: [],
@@ -27,9 +27,9 @@ export async function checkSelect(
 
   const transactionId = jsonRequest.context?.transaction_id;
   await updateApiMap(sessionID, transactionId, action);
-  logInfo({
-    message: "Validating items in select",
-    meta: { sessionID, transactionId }
+  logger.info("Validating items in select", {
+    sessionID,
+    transactionId
   });
   const items = message?.order?.items;
   const onSearchItems = await fetchData(
@@ -47,7 +47,7 @@ export async function checkSelect(
       );
 
       if (!catalogItem) {
-        logError({
+        logger.error(`Catalog item with ID ${item.id} not found.`, {
           message: `Catalog item with ID ${item.id} not found.`,
           meta: { itemId: item.id, sessionID, flowId }
         });
@@ -62,7 +62,7 @@ export async function checkSelect(
         );
         testResults.passed.push(`Valid item quantity for item id: ${item?.id}`);
       } catch (error: any) {
-        logError({
+        logger.error(error.message, {        
           message: error.message,
           error,
           meta: { itemId: item.id, sessionID, flowId }

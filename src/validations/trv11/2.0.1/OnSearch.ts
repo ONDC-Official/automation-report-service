@@ -66,7 +66,7 @@ export async function checkOnSearch(
         await saveData(sessionID, transactionId, "onSearchItemArr", {
           value: items,
         });
-      } catch (error) {
+      } catch (error:any) {
         logger.error(error);
       }
 

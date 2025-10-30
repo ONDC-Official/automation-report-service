@@ -173,5 +173,5 @@ export const DomainValidators = {
       logValidators.tax_type_rcm.validate_np_tax_type_rcm,
       logValidators.codified_static_terms.validate_codified_static_terms,
       logValidators.exchange_customer_contact_details.validate_customer_contact_details,
-    )
+    ),
   };
