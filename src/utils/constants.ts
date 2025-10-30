@@ -27,7 +27,6 @@ export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
 
 export const ENABLED_DOMAINS: String[] = [
-  "ONDC:TRV11",
   "nic2004:60232",
   "ONDC:LOG10",
   "ONDC:LOG11",
@@ -35,7 +34,6 @@ export const ENABLED_DOMAINS: String[] = [
 ];
 
 export const DOMAINS = {
-  TRV11:"ONDC:TRV11",
   NIC:"nic2004:60232",
   LOG10:"ONDC:LOG10",
   LOG11:"ONDC:LOG11",
@@ -200,3 +198,7 @@ export const statesAfterPickup = [
   "Delivery-rescheduled",
   "Order-delivered"
 ];
+
+export const FLOW_ID_MAP: Record<string, string> = {
+  STATION_CODE_FLOW_ORDER: "MBL_8",
+};

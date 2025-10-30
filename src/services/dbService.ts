@@ -99,3 +99,36 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
     throw new Error(`Failed to fetch details for session ID ${sessionID}, Details: ${errorDetails}`);
   }
 }
+
+export async function getPayloadsByTransactionAndSession(
+  transactionId: string,
+  sessionId?: string
+) {
+  try {
+    const response = await axios.get(
+      `${process.env.DATA_BASE_URL}/payload/logs/${transactionId}`,
+      {
+        headers: {
+          "x-api-key": process.env.API_SERVICE_KEY,
+        },
+      }
+    );
+    const payloads = response.data;
+    // Filter by sessionId if provided
+    const filteredPayloads = Array.isArray(payloads)
+      ? sessionId
+        ? payloads.filter(
+            (p: any) => String(p.sessionId).trim() === String(sessionId).trim()
+          )
+        : payloads
+      : [];
+
+    return filteredPayloads;
+  } catch (error) {
+    console.error(
+      `Error fetching payloads for transactionId ${transactionId}:`,
+      error
+    );
+    throw new Error("Failed to fetch payloads from DB API");
+  }
+}

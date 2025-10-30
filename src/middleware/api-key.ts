@@ -7,9 +7,7 @@ export default (req: Request, res: Response, next: NextFunction) => {
     const serverApiKey = process.env.API_SERVICE_KEY;
 
     if(!serverApiKey) {
-        logger.error(MESSAGES.auth.apiKeyNotConfigured, {
-            message: MESSAGES.auth.apiKeyNotConfigured
-        });
+        logger.error(MESSAGES.auth.apiKeyNotConfigured, { serverApiKey });
         throw new Error(MESSAGES.auth.apiKeyNotConfigured);
     }
 

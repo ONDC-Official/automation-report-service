@@ -4,7 +4,6 @@ import logger from "@ondc/automation-logger";
 import { MESSAGES } from "../utils/messages";
 import { parseFlows } from "../utils/parseutils";
 import { validateFlows } from "./validateLogs";
-
 export async function utilityReport(flows: any, sessionID: string) {
   logger.info(MESSAGES.services.utilityEnter,
     MESSAGES.services.utilityEnter,

@@ -33,8 +33,8 @@ export default (req: Request, res: Response, next: NextFunction) => {
             },
         });
 
-        // Call the original res.send with the data
-        return originalSend.call(this, data);
-    };
-    next();
+    // Call the original res.send with the data
+    return originalSend.call(this, data);
+  };
+  next();
 };
