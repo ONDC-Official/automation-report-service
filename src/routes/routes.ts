@@ -7,7 +7,7 @@ const router = Router();
 
 // Mount session and payload related routes
 router.use(apiKeyMiddleware);
-router.use("/report",ReportRoutes);
+router.use("/generate-report",ReportRoutes);
 router.use("/logs",LogRoutes);
 router.use("/callback",CallbackRoutes)
 

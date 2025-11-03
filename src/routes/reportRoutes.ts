@@ -5,5 +5,5 @@ import apiKeyValidation from '../middleware/api-key';
 
 const router = express.Router();
 
-router.post('/generate-report', generateReportController);
+router.post('/', generateReportController);
 export default router;
