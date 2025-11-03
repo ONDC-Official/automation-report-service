@@ -1,6 +1,5 @@
 import { Payload, WrappedPayload } from "../types/payload";
-import { logInfo } from "./logger";
-
+import logger from "@ondc/automation-logger";
 // Function to group payloads by flowId and sort within each group by createdAt
 // export function groupAndSortPayloadsByFlowId(flowID: string, payloads: Payload[]): Record<string, WrappedPayload[]> {
 //   return payloads.reduce((grouped, element) => {
@@ -27,12 +26,10 @@ import { logInfo } from "./logger";
 export function sortPayloadsByCreatedAt(
   grouped: Record<string, Payload[]>
 ): Record<string, Payload[]> {
-  logInfo({
-    message: "Entering sortPayloadsByCreatedAt function. Sorting payloads by createdAt...",
-    meta: {
+  logger.info("Entering sortPayloadsByCreatedAt function. Sorting payloads by createdAt...",
+   { meta: {
       grouped,
-    },
-  });
+    }});
   Object.keys(grouped).forEach((key) => {
     if (Array.isArray(grouped[key])) {
       grouped[key].sort(
@@ -41,9 +38,8 @@ export function sortPayloadsByCreatedAt(
       );
     }
   });
-  logInfo({
-    message: "Exiting sortPayloadsByCreatedAt function. Sorted payloads by createdAt.",
-    meta: {
+  logger.info( "Exiting sortPayloadsByCreatedAt function. Sorted payloads by createdAt.",
+    {meta: {
       grouped,
     },
   });

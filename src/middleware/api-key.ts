@@ -1,19 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 import logger from "@ondc/automation-logger";
+import { MESSAGES } from "../utils/messages";
+import { apiResponse } from "../utils/responseHandler";
 export default (req: Request, res: Response, next: NextFunction) => {
     const clientApiKey = req.get("x-api-key");
     const serverApiKey = process.env.API_SERVICE_KEY;
 
     if(!serverApiKey) {
-        logger.error("API key is not set in the environment variables");
-        throw new Error("API key is not set in the environment variables");
+        logger.error(MESSAGES.auth.apiKeyNotConfigured, { serverApiKey });
+        throw new Error(MESSAGES.auth.apiKeyNotConfigured);
     }
+
     if (!clientApiKey) {
-        res.status(403).send("API key is missing in the request");
+        apiResponse.forbidden(res, MESSAGES.auth.apiKeyMissing);
         return;
     }
+    
     if(!(serverApiKey === clientApiKey)) {
-        res.status(403).send("API key is invalid.");
+        apiResponse.forbidden(res, MESSAGES.auth.apiKeyInvalid);
         return;
     }
     next();

@@ -61,6 +61,9 @@ jobs:
           echo "API_SERVICE_KEY=${{ secrets.API_SERVICE_KEY }}" >> \$REPO_DIR/.env
           echo "NODE_ENV=${{ vars.NODE_ENV }}" >> \$REPO_DIR/.env
           echo "LOKI_HOST=${{ vars.LOKI_HOST }}" >> \$REPO_DIR/.env
+          echo "PRAMAAN_ENVIRONMENT=${{ vars.PRAMAAN_ENVIRONMENT }}" >> \$REPO_DIR/.env
+          echo "PRAMAAN_URL=${{ vars.PRAMAAN_URL }}" >> \$REPO_DIR/.env
+          
           EOF
 
       - name: Verify .env and docker-compose.yml files
