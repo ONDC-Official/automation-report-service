@@ -96,6 +96,7 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
         errorDetails,
       }},
     );
+    console.log("The error is",error)
     throw new Error(`Failed to fetch details for session ID ${sessionID}, Details: ${errorDetails}`);
   }
 }
