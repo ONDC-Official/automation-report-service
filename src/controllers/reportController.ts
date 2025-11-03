@@ -3,6 +3,7 @@ import axios from "axios";
 import logger from "@ondc/automation-logger";
 import { fetchSessionDetails } from "../services/dbService";
 import { generateTestsFromPayloads } from "../utils/payloadUtils";
+import { RedisService } from "ondc-automation-cache-lib";
 
 export async function generateReportController(
   req: Request,
@@ -20,6 +21,8 @@ export async function generateReportController(
 
     // Fetch session details
     const sessionDetails = await fetchSessionDetails(sessionId);
+    const cacheSessionDetails = await RedisService.getKey(sessionId)
+    const sessionDetailsJson = JSON.parse(cacheSessionDetails || '{}');
     const testId = `PW_${sessionDetails.sessionId}`;
     const { tests, subscriber_id } = await generateTestsFromPayloads(sessionDetails);
 
@@ -31,7 +34,7 @@ export async function generateReportController(
       version: sessionDetails.version,
       domain: sessionDetails.domain,
       environment: process.env.PRAMAAN_ENVIRONMENT || "Preprod",
-      type: "BUS",
+      type: sessionDetailsJson.usecaseId || "BUS",
       tests,
       test_id: testId,
     };
