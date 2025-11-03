@@ -22,6 +22,7 @@ export async function generateReportController(
       sessionId,
       flowIdToPayloadIdsMap
     );
+    console.log("Request Completed")
     apiResponse.successHTML(res, htmlReport);
     logger.info(MESSAGES.report.reportSent, {
       meta: {
