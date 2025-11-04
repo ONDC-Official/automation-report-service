@@ -26,10 +26,6 @@ import logger from "@ondc/automation-logger";
 export function sortPayloadsByCreatedAt(
   grouped: Record<string, Payload[]>
 ): Record<string, Payload[]> {
-  logger.info("Entering sortPayloadsByCreatedAt function. Sorting payloads by createdAt...",
-   { meta: {
-      grouped,
-    }});
   Object.keys(grouped).forEach((key) => {
     if (Array.isArray(grouped[key])) {
       grouped[key].sort(
@@ -37,11 +33,6 @@ export function sortPayloadsByCreatedAt(
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
     }
-  });
-  logger.info( "Exiting sortPayloadsByCreatedAt function. Sorted payloads by createdAt.",
-    {meta: {
-      grouped,
-    },
   });
   return grouped;
 }

@@ -39,9 +39,7 @@ export async function validateLogs(
   flowId: string,
   parsedPayload: ParsedPayload
 ): Promise<Result> {
-  logger.info("Entering validateLogs function. Validating logs...",
-    { meta: { flowId, parsedPayload },
-  });
+ 
   const validationUrl =
    VALIDATION_URL[parsedPayload?.domain] ||
     "https://log-validation.ondc.org/api/validate";
@@ -55,9 +53,7 @@ export async function validateLogs(
       validationUrl,
       parsedPayload
     );
-    logger.info("Exiting validateLogs function. Validated logs.",
-      {meta: { flowId, response: response.data },
-    }); 
+
     // Wrap the successful response in a `ValidationResult`
     return { success: true, response: response.data };
   } catch (error) {

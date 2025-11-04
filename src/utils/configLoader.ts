@@ -18,7 +18,6 @@ export const loadConfig = (domain: string, version: string) => {
       logger.error(`Configuration for domain '${domain}' and version '${version}' not found.`, { domain, version });
       return;
     }
-    logger.info("Exiting loadConfig function. Loaded ReportingConfig.yaml.", { domain, version, domainConfig });
     return domainConfig;
   } catch (error) {
     logger.error("Error loading ReportingConfig.yaml", error, { domain, version });

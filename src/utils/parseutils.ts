@@ -51,9 +51,7 @@ export async function parseFlows(
       };
     }
   }
-  logger.info("Exiting parseFlows function. Parsed flows.",
-    {meta: { sessionID, parsedFlows },
-  });
+ 
   return parsedFlows;
 }
 
@@ -64,7 +62,7 @@ function parsePayloads(
   version: string
 ): ParsedPayload {
   logger.info("Entering parsePayloads function. Parsing payloads...",
-    {meta: { flowId, payloads, domain, version },
+    {meta: { flowId, domain, version },
   });
   const parsedPayload: ParsedPayload = {
     domain: domain,
@@ -83,9 +81,8 @@ function parsePayloads(
         // );
         logger.info(`Missing action in payload for flow ID ${flowId}`,
           {meta: {
-            flowId,
-            payload,
-          }},
+            flowId
+                    }},
         );
         return groups;
       }
@@ -105,8 +102,7 @@ function parsePayloads(
   );
       logger.info("Sorted payloads by action and createdAt timestamp",
     {meta: {
-      flowId,
-      allPayloads,
+      flowId
     }},
   );
   // Counters for numbered actions (search, on_search, cancel, on_cancel)
@@ -127,8 +123,7 @@ function parsePayloads(
     if (!action) {
       logger.info(`Missing action in payload for flow ID ${flowId}`,
         {meta: {
-          flowId,
-          payload,
+          flowId
         }},
       );
       return;
@@ -199,7 +194,7 @@ function parsePayloads(
     }
   });
   logger.info("Exiting parsePayloads function. Parsed payloads.",
-    {meta: { flowId, parsedPayload },
+    {meta: { flowId },
   });
   
   return parsedPayload;

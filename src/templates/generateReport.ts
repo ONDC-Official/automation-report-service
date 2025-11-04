@@ -3,9 +3,6 @@ import { FlowValidationResult, ParsedMessage, Report } from "../types/payload";
 import logger from "@ondc/automation-logger";
 // Generate the HTML report
 export function generateCustomHTMLReport(data: Report) {
-  logger.info("Entering generateCustomHTMLReport function.  Generating custom HTML report",
-    {meta: {data},
-    });
   const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">

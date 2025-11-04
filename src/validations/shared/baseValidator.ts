@@ -36,9 +36,7 @@ export function createDomainValidator(
         const domain = element?.jsonRequest?.context?.domain;
         const fileName = domain && domain.startsWith(DOMAINS.FIS11)
           ? `${action_id}.ts`
-          : getFileName(action);
-        logger.info("payload in base validator",JSON.stringify(element),"action",action, "fileName",fileName);
-        
+          : getFileName(action);        
         
         if (!fileName || !version) {
           testResults.failed.push(`Incorrect version or unsupported action: ${action_id}`);

@@ -45,9 +45,6 @@ export const fetchFlowData = async (
   key: string
 ): Promise<Record<string, any> | null> => {
   try {
-    logger.info("fetchFlowData called",
-      {meta: { sessionId, flowId, transactionId, key }
-    });
     const redisKey =
       key === "on_search" || key === "search"
         ? `${sessionId}:${transactionId}:${key}`

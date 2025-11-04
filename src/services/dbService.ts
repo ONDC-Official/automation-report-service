@@ -10,11 +10,6 @@ dotenv.config();
 const API_URL = `${process.env.DATA_BASE_URL}/payload/ids`;
 
 export async function fetchPayloads(requestBody: Record<string, string[]>): Promise<Record<string, Payload[]>> {
-  logger.info( MESSAGES.services.fetchPayloadsEnter,
-  {  meta: {
-      requestBody,
-    }},
-  );
 
   try {
     const results = await Promise.all(
@@ -25,12 +20,6 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
               "x-api-key": process.env.API_SERVICE_KEY
              },
           });
-          logger.info(`Fetched payloads for flow ID ${flowId}`,
-            {meta: {
-              flowId,
-              payloads: response.data.payloads,
-            }},
-          );
           return { [flowId]: response.data.payloads };
         } catch (error) {
           logger.error(`Error fetching payloads for flow ID ${flowId}`,
@@ -44,10 +33,6 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
         }
       })
     );
-    logger.info(MESSAGES.services.fetchPayloadsExit,
-      {meta: {
-        results,
-      }});
     return Object.assign({}, ...results);
   } catch (error) {
     logger.error(MESSAGES.services.fetchPayloadsError,
@@ -61,11 +46,6 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
 }
 
 export async function fetchSessionDetails(sessionID: string): Promise<any> {
-  logger.info(MESSAGES.services.fetchSessionEnter(sessionID),
-    {meta: {
-      sessionID,
-    }},
-  );
   try {
     const storageUrl = `${process.env.AUTOMATION_BACKEND}/sessions`;
     const response = await axios.get<WrappedPayload[]>(storageUrl, {
@@ -76,11 +56,6 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
         session_id: sessionID
       }
     });
-    logger.info(MESSAGES.services.fetchSessionExit,
-      {meta: {
-        sessionID,
-        response: response.data,
-      }});
     return response.data;
   } catch (error) {
     let errorDetails = "Unknown error";
