@@ -24,14 +24,14 @@ export function getNetworkParticipantId(sessionData: any): string | undefined {
   return undefined;
 }
 
-export async function generateTestsFromPayloads(sessionData: any): Promise<{
+export async function generateTestsFromPayloads(sessionData: any, sessionId: string): Promise<{
   tests: TestItem[];
   subscriber_id: string;
 }> {
   const flowMap: Record<string, TestItem & { timestamp: string }> = {};
 
   const response = await axios.get(
-    `${process.env.DATA_BASE_URL}/api/sessions/payload/${sessionData.sessionId}`,
+    `${process.env.DATA_BASE_URL}/api/sessions/payload/${sessionId}`,
     {
       headers: {
         "x-api-key": process.env.API_SERVICE_KEY,
@@ -40,7 +40,7 @@ export async function generateTestsFromPayloads(sessionData: any): Promise<{
   );
 
   const payloads = response.data;
-
+  console.log("I am here in this function")
   if (!payloads.length) {
     return { tests: [], subscriber_id: "" };
   }

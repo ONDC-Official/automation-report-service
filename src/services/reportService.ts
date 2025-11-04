@@ -17,7 +17,8 @@ export class ReportService {
     try {
       // Fetch session details first
       const sessionDetails = await fetchSessionDetails(sessionId);
-
+      console.log("sessionID", sessionId)
+      console.log("Getting sessionData", sessionDetails)
       if (!sessionDetails) {
         throw new Error(`Session details not found for session: ${sessionId}`);
       }
@@ -57,7 +58,7 @@ export class ReportService {
       
       // Check if domain is not in enabled domains - use Pramaan report
       if (!ENABLED_DOMAINS.includes(sessionDetails.domain)) {
-        return await this.checkPramaanReport(sessionDetails);
+        return await this.checkPramaanReport(sessionDetails, sessionId);
       }
 
       const result = await validationModule(flows, sessionId);
@@ -77,10 +78,11 @@ export class ReportService {
    * @param sessionDetails - Session details object containing sessionId, domain, version, etc.
    * @returns Pramaan response data or error object
    */
-  private async checkPramaanReport(sessionDetails: any): Promise<any> {
-    const testId = `PW_${sessionDetails.sessionId}`;
+  private async checkPramaanReport(sessionDetails: any, sessionId: string): Promise<any> {
+    const testId = `PW_${sessionId}`;
     const { tests, subscriber_id } = await generateTestsFromPayloads(
-      sessionDetails
+      sessionDetails,
+      sessionId
     );
 
     logger.info(
