@@ -27,6 +27,7 @@ import { validatorConstant } from "./validatorConstant";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
+const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 
 /**
  * Wrapper function to validate TAT for on_select, on_init, and on_confirm actions
@@ -64,7 +65,11 @@ function validateShipmentTypesWrapper(
   }
 }
 
-function validateIntent(message: any, testResults: TestResult): void {
+function validateIntent(
+  message: any,
+  testResults: TestResult,
+  action_id?: string
+): void {
   const intent = message?.intent;
   if (!intent) {
     testResults.failed.push("Intent is missing in search request");
@@ -74,6 +79,25 @@ function validateIntent(message: any, testResults: TestResult): void {
   if (!intent.category?.descriptor?.code) {
     testResults.failed.push("Intent category descriptor code is missing");
   } else {
+    if (action_id === "search_rental") {
+      if (intent.category?.descriptor?.code !== "ON_DEMAND_RENTAL") {
+        testResults.failed.push(
+          "Intent category descriptor code should be ON_DEMAND_RENTAL for on_search_rental"
+        );
+      }
+    } else if (action_id === "search_schedule_rental") {
+      if (intent.category?.descriptor?.code !== "SCHEDULED_RENTAL") {
+        testResults.failed.push(
+          "Intent category descriptor code should be SCHEDULED_RENTAL for on_search_schedule_rental"
+        );
+      }
+    } else if (action_id === "search_trip") {
+      if (intent.category?.descriptor?.code !== "ON_DEMAND_TRIP") {
+        testResults.failed.push(
+          "Intent category descriptor code should be ON_DEMAND_TRIP for on_search_trip"
+        );
+      }
+    }
     testResults.passed.push("Intent category descriptor code is present");
   }
 
@@ -109,6 +133,376 @@ function validateTags(message: any, testResults: TestResult): void {
     if (bppTerms) {
       testResults.passed.push("BPP_TERMS tag is present");
     }
+  }
+}
+
+function validateFulfillmentStops(
+  message: any,
+  testResults: TestResult,
+  action_id?: string,
+  flowId?:string
+): void {
+  const fulfillment = message?.intent?.fulfillment;
+  if (!fulfillment) {
+    testResults.failed.push("Fulfillment is missing in intent");
+    return;
+  }
+
+  const stops = fulfillment.stops;
+  if (!stops || !Array.isArray(stops)) {
+    testResults.failed.push("Fulfillment stops array is missing or invalid");
+    return;
+  }
+
+  if (
+    action_id !== "search_rental" &&
+    action_id !== "on_search_rental" &&
+    flowId !== "Schedule_Rental" &&
+    stops.length < 2
+  ) {
+    testResults.failed.push(
+      "Fulfillment stops must have at least START and END stops"
+    );
+    return;
+  }
+
+  // TRV10 supports intermediate stops in search intent
+  const validTypes = ["START", "INTERMEDIATE_STOP", "END"];
+  let hasStart = false;
+  let hasEnd = false;
+  let lastStopId: string | undefined = undefined;
+  let idsAreUnique = true;
+  const seenIds = new Set<string>();
+
+  stops.forEach((stop: any, index: number) => {
+    // Validate unique stop id if present
+    if (stop.id) {
+      if (seenIds.has(stop.id)) {
+        idsAreUnique = false;
+        testResults.failed.push(`Stop ${index} id '${stop.id}' is duplicated`);
+      } else {
+        seenIds.add(stop.id);
+      }
+    }
+
+    // Validate stop type
+    if (!stop.type) {
+      testResults.failed.push(`Stop ${index} type is missing`);
+    } else if (!validTypes.includes(stop.type)) {
+      testResults.failed.push(
+        `Stop ${index} type must be START, INTERMEDIATE_STOP or END, got ${stop.type}`
+      );
+    } else {
+      if (stop.type === "START") hasStart = true;
+      if (stop.type === "END") hasEnd = true;
+      testResults.passed.push(`Stop ${index} has valid type: ${stop.type}`);
+
+      // Parent linkage validation for multi-stop chains:
+      // - START should not have parent_stop_id
+      // - INTERMEDIATE_STOP and END should have parent_stop_id equal to previous stop's id when ids are present
+      if (stop.type === "START") {
+        if (stop.parent_stop_id) {
+          testResults.failed.push(
+            `Stop ${index} is START but has parent_stop_id '${stop.parent_stop_id}'`
+          );
+        }
+      } else {
+        if (
+          stop.parent_stop_id &&
+          lastStopId &&
+          stop.parent_stop_id !== lastStopId
+        ) {
+          testResults.failed.push(
+            `Stop ${index} parent_stop_id '${stop.parent_stop_id}' does not match previous stop id '${lastStopId}'`
+          );
+        }
+      }
+    }
+
+    // Validate location GPS
+    if (!stop.location) {
+      testResults.failed.push(`Stop ${index} location is missing`);
+    } else if (!stop.location.gps && !stop.location.circle.gps) {
+      testResults.failed.push(`Stop ${index} location GPS is missing`);
+    } else {
+      // Validate GPS format (lat,lng)
+      const gpsPattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+      if (gpsPattern.test(stop.location.gps || !stop.location.circle.gps)) {
+        testResults.passed.push(`Stop ${index} has valid GPS coordinates`);
+      } else {
+        testResults.failed.push(
+          `Stop ${index} GPS format is invalid. Expected format: lat,lng`
+        );
+      }
+    }
+
+    // Track last stop id for chaining checks
+    if (stop.id) {
+      lastStopId = stop.id;
+    } else {
+      // If no explicit id provided, we cannot validate chaining via parent_stop_id reliably
+      lastStopId = undefined;
+    }
+  });
+
+  // if (!hasStart) {
+  //   testResults.failed.push(
+  //     "Fulfillment stops must include at least one START stop"
+  //   );
+  // }
+  // if (action_id !== "search_rental" && action_id !== "on_search_rental" && action_id !== "on_select_rental" && !hasEnd) {
+  //   testResults.failed.push(
+  //     "Fulfillment stops must include at least one END stop"
+  //   );
+  // }
+  if (hasStart && hasEnd) {
+    testResults.passed.push(
+      "Fulfillment stops include both START and END stops"
+    );
+  }
+  if (idsAreUnique) {
+    testResults.passed.push("Fulfillment stop ids are unique");
+  }
+}
+
+function validateFulfillmentStopsInCatalog(
+  message: any,
+  testResults: TestResult,
+  action_id?: string,
+  flowId?:string
+): void {
+  const catalog = message?.catalog;
+  if (!catalog) {
+    testResults.failed.push("Catalog is missing in on_search response");
+    return;
+  }
+
+  const providers = catalog.providers;
+  if (!providers || !Array.isArray(providers) || providers.length === 0) {
+    testResults.failed.push("Catalog providers array is missing or empty");
+    return;
+  }
+
+  let allProvidersValid = true;
+  const validTypes = ["START", "INTERMEDIATE_STOP", "END"];
+
+  providers.forEach((provider: any, providerIndex: number) => {
+    const fulfillments = provider?.fulfillments;
+    if (
+      !fulfillments ||
+      !Array.isArray(fulfillments) ||
+      fulfillments.length === 0
+    ) {
+      testResults.failed.push(
+        `Provider ${providerIndex} fulfillments array is missing or empty`
+      );
+      allProvidersValid = false;
+      return;
+    }
+
+    fulfillments.forEach((fulfillment: any, fulfillmentIndex: number) => {
+      const stops = fulfillment?.stops;
+      if (!stops || !Array.isArray(stops)) {
+        testResults.failed.push(
+          `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}: stops array is missing or invalid`
+        );
+        allProvidersValid = false;
+        return;
+      }
+
+      if (action_id !== "on_search_rental" && action_id !== "on_search_schedule_rental" && stops.length < 2) {
+        testResults.failed.push(
+          `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}: must have at least START and END stops`
+        );
+        allProvidersValid = false;
+        return;
+      }
+
+      let hasStart = false;
+      let hasEnd = false;
+
+      stops.forEach((stop: any, stopIndex: number) => {
+        const stopLabel = `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}, Stop ${stopIndex}`;
+
+        // Validate stop type
+        if (!stop.type) {
+          testResults.failed.push(`${stopLabel}: type is missing`);
+          allProvidersValid = false;
+        } else if (!validTypes.includes(stop.type)) {
+          testResults.failed.push(
+            `${stopLabel}: type must be START or END, got ${stop.type}`
+          );
+          allProvidersValid = false;
+        } else {
+          if (stop.type === "START") hasStart = true;
+          if (stop.type === "END") hasEnd = true;
+          testResults.passed.push(`${stopLabel}: has valid type ${stop.type}`);
+        }
+
+        // Validate location GPS
+        if (!stop.location) {
+          testResults.failed.push(`${stopLabel}: location is missing`);
+          allProvidersValid = false;
+        } else if (!stop.location.gps && !stop.location.circle?.gps) {
+          testResults.failed.push(`${stopLabel}: location GPS is missing`);
+          allProvidersValid = false;
+        } else {
+          // Validate GPS format (lat,lng)
+          const gpsPattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+          if (gpsPattern.test(stop.location.gps || stop.location.circle.gps)) {
+            testResults.passed.push(`${stopLabel}: has valid GPS coordinates`);
+          } else {
+            testResults.failed.push(
+              `${stopLabel}: GPS format is invalid. Expected format: lat,lng`
+            );
+            allProvidersValid = false;
+          }
+        }
+      });
+
+      if (!hasStart) {
+        testResults.failed.push(
+          `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}: must include at least one START stop`
+        );
+        allProvidersValid = false;
+      }
+      if (action_id !== "on_search_rental" && !hasEnd && action_id !== "on_search_schedule_rental") {
+        testResults.failed.push(
+          `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}: must include at least one END stop`
+        );
+        allProvidersValid = false;
+      }
+      if (hasStart && hasEnd) {
+        testResults.passed.push(
+          `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}: includes both START and END stops`
+        );
+      }
+    });
+  });
+
+  if (allProvidersValid && providers.length > 0) {
+    testResults.passed.push(
+      "All providers have valid fulfillment stops with START and END"
+    );
+  }
+}
+
+function validateFulfillmentStopsInOrder(
+  message: any,
+  testResults: TestResult,
+  action_id?: string,
+  flowId?: string
+): void {
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in response");
+    return;
+  }
+  if (action_id === "update_quote") {
+    return;
+  }
+
+  const fulfillments = order.fulfillments;
+  if (
+    !fulfillments ||
+    !Array.isArray(fulfillments) ||
+    fulfillments.length === 0
+  ) {
+    testResults.failed.push("Order fulfillments array is missing or empty");
+    return;
+  }
+
+  let allFulfillmentsValid = true;
+  const validTypes = ["START", "INTERMEDIATE_STOP", "END"];
+
+  fulfillments.forEach((fulfillment: any, fulfillmentIndex: number) => {
+    const stops = fulfillment?.stops;
+    if (!stops || !Array.isArray(stops)) {
+      testResults.failed.push(
+        `Fulfillment ${fulfillmentIndex}: stops array is missing or invalid`
+      );
+      allFulfillmentsValid = false;
+      return;
+    }
+
+    if (stops.length < 1) {
+      testResults.failed.push(
+        `Fulfillment ${fulfillmentIndex}: must have at least START and END stops`
+      );
+      allFulfillmentsValid = false;
+      return;
+    }
+
+    let hasStart = false;
+    let hasEnd = false;
+
+    stops.forEach((stop: any, stopIndex: number) => {
+      const stopLabel = `Fulfillment ${fulfillmentIndex}, Stop ${stopIndex}`;
+
+      // Validate stop type
+      if (!stop.type) {
+        testResults.failed.push(`${stopLabel}: type is missing`);
+        allFulfillmentsValid = false;
+      } else if (!validTypes.includes(stop.type)) {
+        testResults.failed.push(
+          `${stopLabel}: type must be START or END, got ${stop.type}`
+        );
+        allFulfillmentsValid = false;
+      } else {
+        if (stop.type === "START") hasStart = true;
+        if (stop.type === "END") hasEnd = true;
+        testResults.passed.push(`${stopLabel}: has valid type ${stop.type}`);
+      }
+
+      // Validate location GPS
+      if (flowId !== "OnDemand_Rental" && action_id !== "init" && action_id !== "on_update") {
+        if (!stop.location) {
+          testResults.failed.push(`${stopLabel}: location is missing`);
+          allFulfillmentsValid = false;
+        } else if (!stop.location.gps && !stop.location.circle.gps) {
+          testResults.failed.push(`${stopLabel}: location GPS is missing`);
+          allFulfillmentsValid = false;
+        } else {
+          // Validate GPS format (lat,lng)
+          const gpsPattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+          if (
+            gpsPattern.test(
+              stop.location.gps.trim() || stop.location.circle.gps.trim()
+            )
+          ) {
+            testResults.passed.push(`${stopLabel}: has valid GPS coordinates`);
+          } else {
+            testResults.failed.push(
+              `${stopLabel}: GPS format is invalid. Expected format: lat,lng`
+            );
+            allFulfillmentsValid = false;
+          }
+        }
+        if (!hasStart) {
+          testResults.failed.push(
+            `Fulfillment ${fulfillmentIndex}: must include at least one START stop`
+          );
+          allFulfillmentsValid = false;
+        }
+        if (!hasEnd && flowId !== "Schedule_Rental" && action_id !== "on_update" && flowId !== "Schedule_Trip" && flowId !== "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present") {
+          testResults.failed.push(
+            `Fulfillment ${fulfillmentIndex}: must include at least one END stop`
+          );
+          allFulfillmentsValid = false;
+        }
+        if (hasStart && hasEnd) {
+          testResults.passed.push(
+            `Fulfillment ${fulfillmentIndex}: includes both START and END stops`
+          );
+        }
+      }
+    });
+  });
+
+  if (allFulfillmentsValid && fulfillments.length > 0) {
+    testResults.passed.push(
+      "All fulfillments have valid stops with START and END"
+    );
   }
 }
 
@@ -157,7 +551,35 @@ function validateProviders(message: any, testResults: TestResult): void {
   }
 }
 
-function validateProvider(message: any, testResults: TestResult, action_id: string): void {
+function validateProvidersTRV10(message: any, testResults: TestResult): void {
+  const providers = message?.catalog?.providers || message?.order?.provider;
+  if (Array.isArray(providers)) {
+    providers.forEach((provider, index) => {
+      if (!provider.id) {
+        testResults.failed.push(`Provider ${index} ID is missing`);
+      } else {
+        testResults.passed.push(`Provider ${index} ID is present`);
+      }
+
+      // For TRV10, descriptor name is optional
+      if (provider.descriptor?.name) {
+        testResults.passed.push(`Provider ${index} descriptor name is present`);
+      }
+    });
+  } else if (providers) {
+    if (!providers.id) {
+      testResults.failed.push("Provider ID is missing");
+    } else {
+      testResults.passed.push("Provider ID is present");
+    }
+  }
+}
+
+function validateProvider(
+  message: any,
+  testResults: TestResult,
+  action_id: string
+): void {
   const provider = message?.order?.provider;
   if (!provider) {
     testResults.failed.push("Provider is missing in order");
@@ -170,7 +592,13 @@ function validateProvider(message: any, testResults: TestResult, action_id: stri
     testResults.passed.push("Provider ID is present");
   }
 
-  if (action_id !== "select" && action_id !== "init" && action_id !== "confirm" && action_id !== "confirm_card_balance_faliure" && action_id !== "confirm_card_balance_success") {
+  if (
+    action_id !== "select" &&
+    action_id !== "init" &&
+    action_id !== "confirm" &&
+    action_id !== "confirm_card_balance_faliure" &&
+    action_id !== "confirm_card_balance_success"
+  ) {
     if (!provider.descriptor?.name) {
       testResults.failed.push("Provider descriptor name is missing");
     } else {
@@ -179,7 +607,34 @@ function validateProvider(message: any, testResults: TestResult, action_id: stri
   }
 }
 
-function validateItems(message: any, testResults: TestResult, action_id?: string): void {
+function validateProviderTRV10(
+  message: any,
+  testResults: TestResult,
+  action_id: string
+): void {
+  const provider = message?.order?.provider;
+  if (!provider) {
+    testResults.failed.push("Provider is missing in order");
+    return;
+  }
+
+  if (!provider.id) {
+    testResults.failed.push("Provider ID is missing");
+  } else {
+    testResults.passed.push("Provider ID is present");
+  }
+
+  // For TRV10, descriptor name is optional for all actions
+  if (provider.descriptor?.name) {
+    testResults.passed.push("Provider descriptor name is present");
+  }
+}
+
+function validateItems(
+  message: any,
+  testResults: TestResult,
+  action_id?: string
+): void {
   const items =
     message?.catalog?.providers?.[0]?.items || message?.order?.items;
   if (!items || !Array.isArray(items)) {
@@ -194,7 +649,14 @@ function validateItems(message: any, testResults: TestResult, action_id?: string
       testResults.passed.push(`Item ${index} ID is present`);
     }
 
-    if (action_id !== "select" && action_id !== "init" && action_id !== "confirm" && action_id !== "confirm_card_balance_faliure" && action_id !== "confirm_card_balance_success") {
+    if (
+      action_id !== "select" &&
+      action_id !== "select_rental" &&
+      action_id !== "init" &&
+      action_id !== "confirm" &&
+      action_id !== "confirm_card_balance_faliure" &&
+      action_id !== "confirm_card_balance_success"
+    ) {
       if (!item.descriptor?.name) {
         testResults.failed.push(`Item ${index} descriptor name is missing`);
       } else {
@@ -202,7 +664,7 @@ function validateItems(message: any, testResults: TestResult, action_id?: string
       }
     }
 
-    if (!item.price?.value) {
+    if (action_id !== "select_rental" && !item.price?.value) {
       testResults.failed.push(`Item ${index} price value is missing`);
     } else {
       testResults.passed.push(`Item ${index} price value is present`);
@@ -210,16 +672,78 @@ function validateItems(message: any, testResults: TestResult, action_id?: string
   });
 }
 
-function validateFulfillments(message: any, testResults: TestResult): void {
+function validateItemsTRV10(
+  message: any,
+  testResults: TestResult,
+  action_id?: string
+): void {
+  const items =
+    message?.catalog?.providers?.[0]?.items || message?.order?.items;
+  if (!items || !Array.isArray(items)) {
+    testResults.failed.push("Items array is missing or invalid");
+    return;
+  }
+
+  items.forEach((item, index) => {
+    if (!item.id) {
+      testResults.failed.push(`Item ${index} ID is missing`);
+    } else {
+      testResults.passed.push(`Item ${index} ID is present`);
+    }
+
+    if (
+      action_id !== "select" &&
+      action_id !== "select_rental" &&
+      action_id !== "select_preorder_bid" &&
+      action_id !== "init" &&
+      action_id !== "confirm" &&
+      action_id !== "confirm_card_balance_faliure" &&
+      action_id !== "confirm_card_balance_success"
+    ) {
+      if (!item.descriptor?.name) {
+        testResults.failed.push(`Item ${index} descriptor name is missing`);
+      } else {
+        testResults.passed.push(`Item ${index} descriptor name is present`);
+      }
+    }
+
+    // For TRV10, price.value is optional in select, init, and confirm actions
+    if (
+      action_id === "select" ||
+      action_id === "init" ||
+      action_id === "confirm" ||
+      action_id !== "select_rental"
+    ) {
+      if (item.price?.value) {
+        testResults.passed.push(`Item ${index} price value is present`);
+      }
+    } else {
+      if (action_id !== "select_rental" && !item.price?.value) {
+        testResults.failed.push(`Item ${index} price value is missing`);
+      } else {
+        testResults.passed.push(`Item ${index} price value is present`);
+      }
+    }
+  });
+}
+
+function validateFulfillments(
+  message: any,
+  testResults: TestResult,
+  action_id?: string
+): void {
   const fulfillments =
     message?.catalog?.providers?.[0]?.fulfillments ||
     message?.order?.fulfillments;
-  if (!fulfillments || !Array.isArray(fulfillments)) {
+  if (
+    action_id !== "update_quote" &&
+    (!fulfillments || !Array.isArray(fulfillments))
+  ) {
     testResults.failed.push("Fulfillments array is missing or invalid");
     return;
   }
 
-  fulfillments.forEach((fulfillment, index) => {
+  fulfillments?.forEach((fulfillment: any, index: any) => {
     if (!fulfillment.id) {
       testResults.failed.push(`Fulfillment ${index} ID is missing`);
     } else {
@@ -234,8 +758,53 @@ function validateFulfillments(message: any, testResults: TestResult): void {
   });
 }
 
+function validateFulfillmentsTRV10(
+  message: any,
+  testResults: TestResult,
+  action_id?: string
+): void {
+  const fulfillments =
+    message?.catalog?.providers?.[0]?.fulfillments ||
+    message?.order?.fulfillments;
+  if (
+    action_id !== "update_quote" &&
+    (!fulfillments || !Array.isArray(fulfillments))
+  ) {
+    testResults.failed.push("Fulfillments array is missing or invalid");
+    return;
+  }
+
+  fulfillments?.forEach((fulfillment: any, index: any) => {
+    if (!fulfillment.id) {
+      testResults.failed.push(`Fulfillment ${index} ID is missing`);
+    } else {
+      testResults.passed.push(`Fulfillment ${index} ID is present`);
+    }
+
+    // For TRV10, fulfillment type is optional in select and init actions
+    if (
+      action_id === "select" ||
+      action_id === "select_rental" ||
+      action_id === "init" ||
+      action_id === "update" ||
+      action_id === "select_preorder_bid"
+    ) {
+      if (fulfillment.type) {
+        testResults.passed.push(`Fulfillment ${index} type is present`);
+      }
+    } else {
+      if (!fulfillment.type) {
+        testResults.failed.push(`Fulfillment ${index} type is missing`);
+      } else {
+        testResults.passed.push(`Fulfillment ${index} type is present`);
+      }
+    }
+  });
+}
+
 function validatePayments(message: any, testResults: TestResult): void {
-  const payments = message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
+  const payments =
+    message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
   if (!payments || !Array.isArray(payments)) {
     testResults.failed.push("Payments array is missing or invalid");
     return;
@@ -255,6 +824,38 @@ function validatePayments(message: any, testResults: TestResult): void {
       testResults.failed.push(`Payment ${index} type has invalid value`);
     } else if (payment.type) {
       testResults.passed.push(`Payment ${index} type has valid value`);
+    }
+  });
+}
+
+function validatePaymentsTRV10(message: any, testResults: TestResult): void {
+  const payments =
+    message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
+  if (!payments || !Array.isArray(payments)) {
+    testResults.failed.push("Payments array is missing or invalid");
+    return;
+  }
+
+  payments.forEach((payment, index) => {
+    if (!payment.collected_by) {
+      testResults.failed.push(`Payment ${index} collected_by is missing`);
+    } else {
+      testResults.passed.push(`Payment ${index} collected_by is present`);
+    }
+
+    // For TRV10, payment type can be PRE_ORDER, ON_ORDER, POST_FULFILLMENT, or ON-FULFILLMENT
+    if (payment.type) {
+      const validTypes = [
+        "PRE_ORDER",
+        "ON_ORDER",
+        "POST_FULFILLMENT",
+        "ON-FULFILLMENT",
+      ];
+      if (validTypes.includes(payment.type)) {
+        testResults.passed.push(`Payment ${index} type has valid value`);
+      } else {
+        testResults.failed.push(`Payment ${index} type has invalid value`);
+      }
     }
   });
 }
@@ -293,6 +894,25 @@ function validateQuote(message: any, testResults: TestResult): void {
   }
 }
 
+function validateQuoteTRV10(message: any, testResults: TestResult): void {
+  const quote = message?.order?.quote;
+  if (!quote) {
+    testResults.failed.push("Quote is missing in order");
+    return;
+  }
+
+  // For TRV10, quote.id is optional
+  if (quote.id) {
+    testResults.passed.push("Quote ID is present");
+  }
+
+  if (!quote.price?.value) {
+    testResults.failed.push("Quote price value is missing");
+  } else {
+    testResults.passed.push("Quote price value is present");
+  }
+}
+
 function validateBilling(message: any, testResults: TestResult): void {
   const billing = message?.order?.billing;
   if (!billing) {
@@ -307,15 +927,395 @@ function validateBilling(message: any, testResults: TestResult): void {
   }
 }
 
-function validateOrderStatus(message: any, testResults: TestResult): void {
+function validateBillingTRV10(message: any, testResults: TestResult): void {
+  const billing = message?.order?.billing;
+  // For TRV10, billing is optional
+  if (billing) {
+    if (billing.name) {
+      testResults.passed.push("Billing name is present");
+    }
+  }
+}
+
+function validateOrderStatus(
+  message: any,
+  testResults: TestResult,
+  action_id: string
+): void {
   const order = message?.order;
   if (order?.status) {
-    const validStatuses = ["ACTIVE", "COMPLETE", "CANCELLED", "INACTIVE"];
+    const validStatuses = [
+      "ACTIVE",
+      "COMPLETE",
+      "CANCELLED",
+      "INACTIVE",
+      "SOFT_CANCEL",
+      "CONFIRM_CANCEL",
+      "SOFT_UPDATE",
+      "UPDATED",
+    ];
     if (validStatuses.includes(order.status)) {
+      if (action_id === "on_status_solicited") {
+        if (order.status !== "COMPLETE") {
+          testResults.failed.push(
+            "Order status should be COMPLETE for on_status_solicited"
+          );
+        } else {
+          testResults.passed.push(
+            "Order status is COMPLETE for on_status_solicited"
+          );
+        }
+      }
       testResults.passed.push("Order status has valid value");
     } else {
       testResults.failed.push("Order status has invalid value");
     }
+  }
+}
+
+export function validateCancel(
+  message: any,
+  testResults: TestResult,
+  action_id: string
+): void {
+  // Validate order_id
+  if (!message?.order_id) {
+    testResults.failed.push("Order ID is missing in cancel message");
+  } else {
+    testResults.passed.push("Order ID is present in cancel message");
+  }
+
+  // Validate cancellation_reason_id
+  if (!message?.cancellation_reason_id) {
+    testResults.failed.push("Cancellation reason ID is missing");
+  } else {
+    const validReasonCodes = [
+      "000",
+      "001",
+      "002",
+      "003",
+      "004",
+      "005",
+      "011",
+      "012",
+      "013",
+      "014",
+    ];
+    if (validReasonCodes.includes(message.cancellation_reason_id)) {
+      testResults.passed.push("Cancellation reason ID has valid value");
+    } else {
+      testResults.failed.push("Cancellation reason ID has invalid value");
+    }
+  }
+
+  // Validate descriptor
+  const descriptor = message?.descriptor;
+  if (!descriptor) {
+    testResults.failed.push("Cancellation descriptor is missing");
+  } else {
+    if (!descriptor.code) {
+      testResults.failed.push("Cancellation descriptor code is missing");
+    } else {
+      // For cancel action, code should be SOFT_CANCEL
+      // For cancel_hard action, code should be CONFIRM_CANCEL
+      if (action_id === "cancel") {
+        if (descriptor.code === "SOFT_CANCEL") {
+          testResults.passed.push(
+            "Cancellation descriptor code is SOFT_CANCEL for cancel action"
+          );
+        } else {
+          testResults.failed.push(
+            `Cancellation descriptor code should be SOFT_CANCEL for cancel action, got ${descriptor.code}`
+          );
+        }
+      } else if (action_id === "cancel_hard") {
+        if (descriptor.code === "CONFIRM_CANCEL") {
+          testResults.passed.push(
+            "Cancellation descriptor code is CONFIRM_CANCEL for cancel_hard action"
+          );
+        } else {
+          testResults.failed.push(
+            `Cancellation descriptor code should be CONFIRM_CANCEL for cancel_hard action, got ${descriptor.code}`
+          );
+        }
+      } else {
+        // For other action_ids, just validate it's one of the valid codes
+        const validCodes = ["SOFT_CANCEL", "CONFIRM_CANCEL"];
+        if (validCodes.includes(descriptor.code)) {
+          testResults.passed.push(
+            "Cancellation descriptor code has valid value"
+          );
+        } else {
+          testResults.failed.push(
+            "Cancellation descriptor code has invalid value"
+          );
+        }
+      }
+    }
+
+    if (descriptor.name) {
+      testResults.passed.push("Cancellation descriptor name is present");
+    }
+  }
+}
+
+function validateCancellation(
+  message: any,
+  testResults: TestResult,
+  action_id?: string
+): void {
+  const order = message?.order;
+  if (!order) {
+    return;
+  }
+
+  // Validate order status based on action_id
+  if (action_id === "on_cancel_ride_cancel") {
+    // For on_cancel_ride_cancel, status should be SOFT_CANCEL
+    if (order.status !== "SOFT_CANCEL") {
+      testResults.failed.push(
+        "Order status should be SOFT_CANCEL in on_cancel_ride_cancel"
+      );
+    } else {
+      testResults.passed.push(
+        "Order status is SOFT_CANCEL in on_cancel_ride_cancel"
+      );
+    }
+  } else if (action_id === "on_cancel_hard") {
+    // For on_cancel_hard, status should be CANCELLED
+    if (order.status !== "CANCELLED") {
+      testResults.failed.push(
+        "Order status should be CANCELLED in on_cancel_hard"
+      );
+    } else {
+      testResults.passed.push("Order status is CANCELLED in on_cancel_hard");
+    }
+  } else if (action_id === "on_cancel") {
+    if (order.status !== "SOFT_CANCEL") {
+      testResults.failed.push(
+        "Order status should be SOFT_CANCEL in on_cancel"
+      );
+    } else {
+      testResults.passed.push("Order status is SOFT_CANCEL in on_cancel");
+    }
+  } else {
+    // For default on_cancel, status should be CANCELLED
+    if (order.status !== "CANCELLED") {
+      testResults.failed.push("Order status should be CANCELLED in on_cancel");
+    } else {
+      testResults.passed.push("Order status is CANCELLED in on_cancel");
+    }
+  }
+
+  // Validate cancellation object
+  const cancellation = order.cancellation;
+  if (!cancellation) {
+    testResults.failed.push("Cancellation information is missing in order");
+    return;
+  }
+
+  // Validate cancelled_by
+  if (!cancellation.cancelled_by) {
+    testResults.failed.push("Cancellation cancelled_by is missing");
+  } else {
+    const validCancelledBy = ["CONSUMER", "PROVIDER"];
+    if (validCancelledBy.includes(cancellation.cancelled_by)) {
+      testResults.passed.push("Cancellation cancelled_by has valid value");
+    } else {
+      testResults.failed.push("Cancellation cancelled_by has invalid value");
+    }
+  }
+
+  // Validate cancellation reason
+  const reason = cancellation.reason;
+  if (!reason) {
+    testResults.failed.push("Cancellation reason is missing");
+  } else {
+    if (!reason.descriptor?.code) {
+      testResults.failed.push("Cancellation reason descriptor code is missing");
+    } else {
+      const validReasonCodes = [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "011",
+        "012",
+        "013",
+        "014",
+      ];
+      if (validReasonCodes.includes(reason.descriptor.code)) {
+        testResults.passed.push("Cancellation reason code has valid value");
+      } else {
+        testResults.failed.push("Cancellation reason code has invalid value");
+      }
+    }
+  }
+}
+
+export function validateTrackOrderId(
+  message: any,
+  testResults: TestResult
+): void {
+  const orderId = message?.order_id;
+  if (!orderId) {
+    testResults.failed.push("Order ID is missing in track message");
+  } else {
+    testResults.passed.push("Order ID is present in track message");
+  }
+}
+
+export function validateStatusOrderId(
+  message: any,
+  testResults: TestResult
+): void {
+  const orderId = message?.order_id;
+  if (!orderId) {
+    testResults.failed.push("Order ID is missing in status message");
+  } else {
+    testResults.passed.push("Order ID is present in status message");
+  }
+}
+
+export function validateErrorResponse(
+  jsonRequest: any,
+  testResults: TestResult,
+  action_id: string
+): void {
+  const error = jsonRequest?.error;
+  const message = jsonRequest?.message;
+
+  // For error response scenarios, validate error object
+  if (action_id === "on_confirm_driver_not_found") {
+    if (!error) {
+      testResults.failed.push(
+        "Error object is missing in on_confirm_driver_not_found response"
+      );
+      return;
+    }
+
+    // Validate error code
+    if (!error.code) {
+      testResults.failed.push("Error code is missing");
+    } else {
+      // For driver not found, expected error code is 90203
+      if (error.code === "90203") {
+        testResults.passed.push(
+          "Error code is correct for driver not found scenario"
+        );
+      } else {
+        testResults.passed.push(`Error code is present: ${error.code}`);
+      }
+    }
+
+    // Validate error message
+    if (!error.message) {
+      testResults.failed.push("Error message is missing");
+    } else {
+      testResults.passed.push(`Error message is present: ${error.message}`);
+    }
+
+    // Validate that message field should not be present in error response
+    if (message) {
+      testResults.failed.push(
+        "Message field should not be present in error response"
+      );
+    } else {
+      testResults.passed.push(
+        "Message field is correctly absent in error response"
+      );
+    }
+  }
+}
+
+export function validateTracking(
+  message: any,
+  context: any,
+  testResults: TestResult
+): void {
+  const tracking = message?.tracking;
+  if (!tracking) {
+    testResults.failed.push("Tracking information is missing");
+    return;
+  }
+
+  // Validate tracking status
+  if (tracking.status) {
+    const validStatuses = ["active", "inactive"];
+    if (validStatuses.includes(tracking.status.toLowerCase())) {
+      testResults.passed.push("Tracking status has valid value");
+    } else {
+      testResults.failed.push("Tracking status has invalid value");
+    }
+  }
+
+  // Validate tracking location
+  const location = tracking.location;
+  if (location) {
+    if (!location.gps) {
+      testResults.failed.push("Tracking location GPS is missing");
+    } else {
+      // Validate GPS format (latitude, longitude)
+      const gpsPattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+      if (gpsPattern.test(location.gps)) {
+        testResults.passed.push("Tracking location GPS has valid format");
+      } else {
+        testResults.failed.push("Tracking location GPS has invalid format");
+      }
+    }
+
+    // Validate timestamps
+    const contextTimestamp = context?.timestamp
+      ? new Date(context.timestamp)
+      : null;
+    const updatedAt = location.updated_at
+      ? new Date(location.updated_at)
+      : null;
+    const locationTimestamp = location.time?.timestamp
+      ? new Date(location.time.timestamp)
+      : null;
+
+    if (updatedAt && contextTimestamp) {
+      if (updatedAt <= contextTimestamp) {
+        testResults.passed.push(
+          "Tracking location updated_at is not future dated w.r.t context timestamp"
+        );
+      } else {
+        testResults.failed.push(
+          "Tracking location updated_at is future dated w.r.t context timestamp"
+        );
+      }
+    }
+
+    // Validate location.time.timestamp if present
+    if (locationTimestamp && contextTimestamp) {
+      if (locationTimestamp <= contextTimestamp) {
+        testResults.passed.push(
+          "Tracking location timestamp is not future dated w.r.t context timestamp"
+        );
+      } else {
+        testResults.failed.push(
+          "Tracking location timestamp is future dated w.r.t context timestamp"
+        );
+      }
+    }
+
+    // Validate relationship between location timestamp and updated_at if both are present
+    if (locationTimestamp && updatedAt) {
+      if (locationTimestamp <= updatedAt) {
+        testResults.passed.push(
+          "Tracking location timestamp is not future dated w.r.t updated_at"
+        );
+      } else {
+        testResults.failed.push(
+          "Tracking location timestamp is future dated w.r.t updated_at"
+        );
+      }
+    }
+  } else {
+    testResults.failed.push("Tracking location is missing");
   }
 }
 
@@ -384,18 +1384,30 @@ export function createSearchValidator(...config: string[]) {
             validateCODFlow(flowId, message, testResults);
             break;
           case log11Validators.sla_metrics.validate_sla_metrics:
-            validateSlaMetricsSearch(sessionID,transactionId,flowId,message,testResults,action)
+            validateSlaMetricsSearch(
+              sessionID,
+              transactionId,
+              flowId,
+              message,
+              testResults,
+              action
+            );
             break;
 
           // Financial services validations
           case fis11Validators.intent.validate_intent:
-            validateIntent(message, testResults);
+            validateIntent(message, testResults, action_id);
             break;
           case fis11Validators.payment.validate_payment_collected_by:
             validatePaymentCollectedBy(message, testResults);
             break;
           case fis11Validators.tags.validate_tags:
             validateTags(message, testResults);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.fulfillment_stops.validate_fulfillment_stops:
+            validateFulfillmentStops(message, testResults, action_id,flowId);
             break;
           default:
             break;
@@ -404,6 +1416,113 @@ export function createSearchValidator(...config: string[]) {
     }
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
+    return testResults;
+  };
+}
+
+/**
+ * TRV10-specific: validate update request envelope
+ */
+export function validateUpdateRequestTRV10(
+  message: any,
+  testResults: TestResult,
+  action_id: string
+): void {
+  const updateTarget = message?.update_target;
+  if (!updateTarget) {
+    testResults.failed.push("update_target is missing");
+  } else if (
+    action_id === "update_quote" &&
+    updateTarget !== "order.quote.breakup"
+  ) {
+    testResults.failed.push(
+      `update_target must be 'order.quote.breakup', got '${updateTarget}'`
+    );
+  } else if (action_id === "update" && updateTarget !== "order.fulfillments") {
+    testResults.failed.push(
+      `update_target must be 'order.fulfillments', got '${updateTarget}'`
+    );
+  } else {
+    testResults.passed.push("update_target is valid");
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in update");
+    return;
+  }
+
+  if (!order.id) {
+    testResults.failed.push("Order id is missing in update");
+  } else {
+    testResults.passed.push("Order id is present in update");
+  }
+
+  // Accept SOFT_UPDATE as a valid transient status for update flows
+  if (order.status) {
+    if (order.status === "SOFT_UPDATE") {
+      testResults.passed.push("Order status is SOFT_UPDATE for update request");
+    } else {
+      testResults.passed.push(`Order status is present: ${order.status}`);
+    }
+  }
+}
+
+/**
+ * Creates an update validation function with configurable validations
+ */
+export function createUpdateValidator(...config: string[]) {
+  return async function checkUpdate(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
+
+    const transactionId = context?.transaction_id;
+
+    // Validate transaction ID exists for this flow
+    await validateTransactionId(sessionID, flowId, transactionId, testResults);
+    if (transactionId) {
+      try {
+        await updateApiMap(sessionID, transactionId, action);
+      } catch (error: any) {
+        testResults.failed.push(`API map update failed: ${error.message}`);
+      }
+    }
+
+    // Always validate update envelope first
+    validateUpdateRequestTRV10(message, testResults, action_id);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          // Financial services validations (reused)
+          case trv10Validators.fulfillments_trv10.validate_fulfillments_trv10:
+            validateFulfillmentsTRV10(message, testResults, action_id);
+            break;
+          // TRV10 validations
+          case trv10Validators.fulfillment_stops_order
+            .validate_fulfillment_stops_order:
+            validateFulfillmentStopsInOrder(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+
+    // Add default message if no validations ran
+    addDefaultValidationMessage(testResults, action);
+
     return testResults;
   };
 }
@@ -452,15 +1571,30 @@ export function createOnSearchValidator(...config: string[]) {
             break;
 
           case log11Validators.tax_type_rcm.validate_np_tax_type_rcm:
-            validateNpTaxType(flowId,message,testResults,action);
-            break;
-          
-          case log11Validators.codified_static_terms.validate_codified_static_terms:
-            validateCodifiedStaticTerms(action_id,message,sessionID,transactionId,testResults,action);
+            validateNpTaxType(flowId, message, testResults, action);
             break;
 
-          case log11Validators.public_special_capabilities.validate_public_special_capabilities:
-            validatePublicSpecialCapabilities(flowId,message,sessionID,transactionId,testResults)
+          case log11Validators.codified_static_terms
+            .validate_codified_static_terms:
+            validateCodifiedStaticTerms(
+              action_id,
+              message,
+              sessionID,
+              transactionId,
+              testResults,
+              action
+            );
+            break;
+
+          case log11Validators.public_special_capabilities
+            .validate_public_special_capabilities:
+            validatePublicSpecialCapabilities(
+              flowId,
+              message,
+              sessionID,
+              transactionId,
+              testResults
+            );
 
           // Financial services validations
           case fis11Validators.catalog.validate_catalog:
@@ -469,14 +1603,23 @@ export function createOnSearchValidator(...config: string[]) {
           case fis11Validators.providers.validate_providers:
             validateProviders(message, testResults);
             break;
+          case trv10Validators.providers_trv10.validate_providers_trv10:
+            validateProvidersTRV10(message, testResults);
+            break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
-            validateFulfillments(message, testResults);
+            validateFulfillments(message, testResults, action_id);
             break;
           case fis11Validators.payments.validate_payments:
             validatePayments(message, testResults);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.fulfillment_stops_catalog
+            .validate_fulfillment_stops_catalog:
+            validateFulfillmentStopsInCatalog(message, testResults, action_id);
             break;
           default:
             break;
@@ -538,13 +1681,21 @@ export function createSelectValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults,action_id);
+            validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.items_trv10.validate_items_trv10:
+            validateItemsTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.fulfillments_trv10.validate_fulfillments_trv10:
+            validateFulfillmentsTRV10(message, testResults, action_id);
             break;
 
           default:
@@ -608,11 +1759,32 @@ export function createOnSelectValidator(...config: string[]) {
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id);
             break;
+
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.providers_trv10.validate_providers_trv10:
+            validateProvidersTRV10(message, testResults);
+            break;
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.quote_trv10.validate_quote_trv10:
+            validateQuoteTRV10(message, testResults);
+            break;
+          case trv10Validators.fulfillment_stops_order
+            .validate_fulfillment_stops_order:
+            validateFulfillmentStopsInOrder(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
             break;
 
           default:
@@ -690,6 +1862,32 @@ export function createInitValidator(...config: string[]) {
             validateBilling(message, testResults);
             break;
 
+          // TRV10 validations
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.items_trv10.validate_items_trv10:
+            validateItemsTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.fulfillments_trv10.validate_fulfillments_trv10:
+            validateFulfillmentsTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.payments_trv10.validate_payments_trv10:
+            validatePaymentsTRV10(message, testResults);
+            break;
+          case trv10Validators.billing_trv10.validate_billing_trv10:
+            validateBillingTRV10(message, testResults);
+            break;
+          case trv10Validators.fulfillment_stops_order
+            .validate_fulfillment_stops_order:
+            validateFulfillmentStopsInOrder(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
+            break;
+
           default:
             break;
         }
@@ -746,15 +1944,35 @@ export function createConfirmValidator(...config: string[]) {
             break;
 
           case log11Validators.sla_metrics.validate_sla_metrics:
-            validateSlaMetricsConfirm(sessionID,transactionId,action_id,message,testResults,action)
+            validateSlaMetricsConfirm(
+              sessionID,
+              transactionId,
+              action_id,
+              message,
+              testResults,
+              action
+            );
             break;
 
-          case log11Validators.exchange_customer_contact_details.validate_customer_contact_details:
-            validateCustomerContactDetails(action_id,message,sessionID,transactionId,testResults)
+          case log11Validators.exchange_customer_contact_details
+            .validate_customer_contact_details:
+            validateCustomerContactDetails(
+              action_id,
+              message,
+              sessionID,
+              transactionId,
+              testResults
+            );
             break;
 
           case log11Validators.seller_creds.validate_seller_creds:
-            validateSellerCreds(flowId,message,sessionID,transactionId,testResults)
+            validateSellerCreds(
+              flowId,
+              message,
+              sessionID,
+              transactionId,
+              testResults
+            );
             break;
 
           // Financial services validations
@@ -777,15 +1995,25 @@ export function createConfirmValidator(...config: string[]) {
             validateBilling(message, testResults);
             break;
 
+          // TRV10 validations
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.items_trv10.validate_items_trv10:
+            validateItemsTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.payments_trv10.validate_payments_trv10:
+            validatePaymentsTRV10(message, testResults);
+            break;
+          case trv10Validators.billing_trv10.validate_billing_trv10:
+            validateBillingTRV10(message, testResults);
+            break;
+
           default:
             break;
         }
       }
     }
-
-    console.log("testResults in confirm",JSON.stringify(testResults));
-    
-
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
     return testResults;
@@ -854,6 +2082,29 @@ export function createOnInitValidator(...config: string[]) {
             validateBilling(message, testResults);
             break;
 
+          // TRV10 validations
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.quote_trv10.validate_quote_trv10:
+            validateQuoteTRV10(message, testResults);
+            break;
+          case trv10Validators.payments_trv10.validate_payments_trv10:
+            validatePaymentsTRV10(message, testResults);
+            break;
+          case trv10Validators.billing_trv10.validate_billing_trv10:
+            validateBillingTRV10(message, testResults);
+            break;
+          case trv10Validators.fulfillment_stops_order
+            .validate_fulfillment_stops_order:
+            validateFulfillmentStopsInOrder(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
+            break;
+
           default:
             break;
         }
@@ -904,21 +2155,43 @@ export function createOnConfirmValidator(...config: string[]) {
           case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
-          
+
           case log11Validators.sla_metrics.validate_sla_metrics:
-            validateSlaMetricsConfirm(sessionID,transactionId,action_id,message,testResults,action)
+            validateSlaMetricsConfirm(
+              sessionID,
+              transactionId,
+              action_id,
+              message,
+              testResults,
+              action
+            );
             break;
 
           case log11Validators.tax_type_rcm.validate_np_tax_type_rcm:
-            validateNpTaxType(flowId,message,testResults,action);
+            validateNpTaxType(flowId, message, testResults, action);
             break;
 
-          case log11Validators.codified_static_terms.validate_codified_static_terms:
-            validateCodifiedStaticTerms(flowId,message,sessionID,transactionId,testResults,action);
+          case log11Validators.codified_static_terms
+            .validate_codified_static_terms:
+            validateCodifiedStaticTerms(
+              flowId,
+              message,
+              sessionID,
+              transactionId,
+              testResults,
+              action
+            );
             break;
 
-          case log11Validators.exchange_customer_contact_details.validate_customer_contact_details:
-            validateCustomerContactDetails(action_id,message,sessionID,transactionId,testResults)
+          case log11Validators.exchange_customer_contact_details
+            .validate_customer_contact_details:
+            validateCustomerContactDetails(
+              action_id,
+              message,
+              sessionID,
+              transactionId,
+              testResults
+            );
             break;
 
           // Financial services validations
@@ -944,7 +2217,224 @@ export function createOnConfirmValidator(...config: string[]) {
             validateBilling(message, testResults);
             break;
           case fis11Validators.order_status.validate_order_status:
-            validateOrderStatus(message, testResults);
+            validateOrderStatus(message, testResults, action_id);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.quote_trv10.validate_quote_trv10:
+            validateQuoteTRV10(message, testResults);
+            break;
+          case trv10Validators.payments_trv10.validate_payments_trv10:
+            validatePaymentsTRV10(message, testResults);
+            break;
+          case trv10Validators.billing_trv10.validate_billing_trv10:
+            validateBillingTRV10(message, testResults);
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+
+    // Add default message if no validations ran
+    addDefaultValidationMessage(testResults, action);
+
+    return testResults;
+  };
+}
+
+/**
+ * Creates an on_status validation function with configurable validations
+ */
+export function createOnStatusValidator(...config: string[]) {
+  return async function checkOnStatus(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
+    const transactionId = context?.transaction_id;
+
+    // Validate transaction ID exists for this flow
+    await validateTransactionId(sessionID, flowId, transactionId, testResults);
+    if (transactionId) {
+      try {
+        await updateApiMap(sessionID, transactionId, action);
+      } catch (error: any) {
+        testResults.failed.push(`API map update failed: ${error.message}`);
+      }
+    }
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          // Logistics validations
+          case log11Validators.lsp.validate_lsp:
+            validateLSPFeatures(flowId, message, testResults);
+            break;
+          case log11Validators.tat.validate_tat:
+            validateTAT(message, testResults);
+            break;
+          case log11Validators.shipment_types.validate_shipment_types:
+            validateShipmentTypesWrapper(message, testResults);
+            break;
+
+          // Financial services validations
+          case fis11Validators.order.validate_order:
+            validateOrder(message, testResults);
+            break;
+          case fis11Validators.quote.validate_quote:
+            validateQuote(message, testResults);
+            break;
+          case fis11Validators.provider.validate_provider:
+            validateProvider(message, testResults, action_id);
+            break;
+          case fis11Validators.items.validate_items:
+            validateItems(message, testResults, action_id);
+            break;
+          case fis11Validators.fulfillments.validate_fulfillments:
+            validateFulfillments(message, testResults);
+            break;
+          case fis11Validators.payments.validate_payments:
+            validatePayments(message, testResults);
+            break;
+          case fis11Validators.billing.validate_billing:
+            validateBilling(message, testResults);
+            break;
+          case fis11Validators.order_status.validate_order_status:
+            validateOrderStatus(message, testResults, action_id);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.quote_trv10.validate_quote_trv10:
+            validateQuoteTRV10(message, testResults);
+            break;
+          case trv10Validators.payments_trv10.validate_payments_trv10:
+            validatePaymentsTRV10(message, testResults);
+            break;
+          case trv10Validators.billing_trv10.validate_billing_trv10:
+            validateBillingTRV10(message, testResults);
+            break;
+          case trv10Validators.fulfillment_stops_order
+            .validate_fulfillment_stops_order:
+            validateFulfillmentStopsInOrder(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+
+    // Add default message if no validations ran
+    addDefaultValidationMessage(testResults, action);
+
+    return testResults;
+  };
+}
+
+/**
+ * Creates an on_cancel validation function with configurable validations
+ */
+export function createOnCancelValidator(...config: string[]) {
+  return async function checkOnCancel(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, context, message } =
+      createBaseValidationSetup(element);
+    const transactionId = context?.transaction_id;
+
+    // Validate transaction ID exists for this flow
+    await validateTransactionId(sessionID, flowId, transactionId, testResults);
+    if (transactionId) {
+      try {
+        await updateApiMap(sessionID, transactionId, action);
+      } catch (error: any) {
+        testResults.failed.push(`API map update failed: ${error.message}`);
+      }
+    }
+
+    // Always validate cancellation for on_cancel
+    validateCancellation(message, testResults, action_id);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          // Logistics validations
+          case log11Validators.lsp.validate_lsp:
+            validateLSPFeatures(flowId, message, testResults);
+            break;
+          case log11Validators.tat.validate_tat:
+            validateTAT(message, testResults);
+            break;
+          case log11Validators.shipment_types.validate_shipment_types:
+            validateShipmentTypesWrapper(message, testResults);
+            break;
+
+          // Financial services validations
+          case fis11Validators.order.validate_order:
+            validateOrder(message, testResults);
+            break;
+          case fis11Validators.quote.validate_quote:
+            validateQuote(message, testResults);
+            break;
+          case fis11Validators.provider.validate_provider:
+            validateProvider(message, testResults, action_id);
+            break;
+          case fis11Validators.items.validate_items:
+            validateItems(message, testResults, action_id);
+            break;
+          case fis11Validators.fulfillments.validate_fulfillments:
+            validateFulfillments(message, testResults);
+            break;
+          case fis11Validators.payments.validate_payments:
+            validatePayments(message, testResults);
+            break;
+          case fis11Validators.billing.validate_billing:
+            validateBilling(message, testResults);
+            break;
+          case fis11Validators.order_status.validate_order_status:
+            validateOrderStatus(message, testResults, action_id);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.quote_trv10.validate_quote_trv10:
+            validateQuoteTRV10(message, testResults);
+            break;
+          case trv10Validators.payments_trv10.validate_payments_trv10:
+            validatePaymentsTRV10(message, testResults);
+            break;
+          case trv10Validators.billing_trv10.validate_billing_trv10:
+            validateBillingTRV10(message, testResults);
+            break;
+          case trv10Validators.fulfillment_stops_order
+            .validate_fulfillment_stops_order:
+            validateFulfillmentStopsInOrder(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
             break;
 
           default:
@@ -995,11 +2485,11 @@ export function createOnUpdateValidator(...config: string[]) {
             validateShipmentTypesWrapper(message, testResults);
             break;
           case log11Validators.awb_shipping_label.validate_awb_shipping_label:
-            validateP2H2PRequirements(context,message,testResults,action)
-            
+            validateP2H2PRequirements(context, message, testResults, action);
+
           case log11Validators.e_pod.validate_e_pod:
-               validateEpodProofs(flowId,message,testResults)
-               break;
+            validateEpodProofs(flowId, message, testResults);
+            break;
 
           // Financial services validations
           case fis11Validators.order.validate_order:
@@ -1024,7 +2514,25 @@ export function createOnUpdateValidator(...config: string[]) {
             validateBilling(message, testResults);
             break;
           case fis11Validators.order_status.validate_order_status:
-            validateOrderStatus(message, testResults);
+            validateOrderStatus(message, testResults, action_id);
+            break;
+
+          // TRV10 validations
+          case trv10Validators.provider_trv10.validate_provider_trv10:
+            validateProviderTRV10(message, testResults, action_id);
+            break;
+          case trv10Validators.quote_trv10.validate_quote_trv10:
+            validateQuoteTRV10(message, testResults);
+            break;
+          case trv10Validators.payments_trv10.validate_payments_trv10:
+            validatePaymentsTRV10(message, testResults);
+            break;
+          case trv10Validators.billing_trv10.validate_billing_trv10:
+            validateBillingTRV10(message, testResults);
+            break;
+          case trv10Validators.fulfillment_stops_order
+            .validate_fulfillment_stops_order:
+            validateFulfillmentStopsInOrder(message, testResults, action_id,flowId)
             break;
 
           default:
@@ -1039,4 +2547,3 @@ export function createOnUpdateValidator(...config: string[]) {
     return testResults;
   };
 }
-

@@ -47,6 +47,84 @@ export const validatorConstant = {
           },
         },
       },
+      trv: {
+        trv10: {
+          v210: {
+            intent: {
+              validate_intent: "validateIntent",
+            },
+            payment: {
+              validate_payment_collected_by: "validatePaymentCollectedBy",
+            },
+            tags: {
+              validate_tags: "validateTags",
+            },
+            fulfillment_stops: {
+              validate_fulfillment_stops: "validateFulfillmentStops",
+            },
+            fulfillment_stops_catalog: {
+              validate_fulfillment_stops_catalog: "validateFulfillmentStopsInCatalog",
+            },
+            fulfillment_stops_order: {
+              validate_fulfillment_stops_order: "validateFulfillmentStopsInOrder",
+            },
+            catalog: {
+              validate_catalog: "validateCatalog",
+            },
+            providers: {
+              validate_providers: "validateProviders",
+            },
+            providers_trv10: {
+              validate_providers_trv10: "validateProvidersTRV10",
+            },
+            items: {
+              validate_items: "validateItems",
+            },
+            items_trv10: {
+              validate_items_trv10: "validateItemsTRV10",
+            },
+            fulfillments: {
+              validate_fulfillments: "validateFulfillments",
+            },
+            fulfillments_trv10: {
+              validate_fulfillments_trv10: "validateFulfillmentsTRV10",
+            },
+            payments: {
+              validate_payments: "validatePayments",
+            },
+            order: {
+              validate_order: "validateOrder",
+            },
+            provider: {
+              validate_provider: "validateProvider",
+            },
+            provider_trv10: {
+              validate_provider_trv10: "validateProviderTRV10",
+            },
+            quote: {
+              validate_quote: "validateQuote",
+            },
+            quote_trv10: {
+              validate_quote_trv10: "validateQuoteTRV10",
+            },
+            billing: {
+              validate_billing: "validateBilling",
+            },
+            billing_trv10: {
+              validate_billing_trv10: "validateBillingTRV10",
+            },
+            payments_trv10: {
+              validate_payments_trv10: "validatePaymentsTRV10",
+            },
+            order_status: {
+              validate_order_status: "validateOrderStatus",
+            },
+            update_request_trv10: {
+              validate_update_request_trv10: "validateUpdateRequestTRV10",
+            },
+          },
+        },
+      },
       log: {
         v125: {
           holidays: {
