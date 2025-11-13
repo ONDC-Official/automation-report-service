@@ -10,12 +10,6 @@ const dynamicValidator = (
   sessionID: string,
   flowId: string
 ) => {
-  logger.info("Entering dynamicValidator function.", {
-    modulePathWithFunc,
-    element,
-    sessionID,
-    flowId,
-  });
   // Splitting the modulePathWithFunc string into module path and function name
   const [modulePath, functionName] = modulePathWithFunc.split("#");
 
@@ -28,18 +22,10 @@ const dynamicValidator = (
 
     // If the function exists and is valid, invoke it with the element and action
     if (typeof validatorFunc === "function") {
-      logger.info("Exiting dynamicValidator function.", {
-        modulePath,
-        functionName,
-        element,
-      });
       return validatorFunc(element, sessionID, flowId);
     } else {
       // Throw an error if the function is not found within the module
-      logger.error(`Validator function '${functionName}' not found in '${modulePath}'`, {
-        modulePath,
-        functionName,
-      });
+     
       throw new Error(
         `Validator function '${functionName}' not found in '${modulePath}'`
       );
@@ -66,7 +52,6 @@ export const checkPayload = async (
 ): Promise<object> => {
   logger.info("Entering checkPayload function.", {
     domain,
-    element,
     sessionId,
     flowId,
   });
@@ -82,12 +67,6 @@ export const checkPayload = async (
 
   // Get the module path and function name based on the version, or fall back to the default configuration
   const modulePathWithFunc = domainConfig?.validationModules;
-  logger.info("Exiting checkPayload function. Calling dynamicValidator.", {
-    modulePathWithFunc,
-    element,
-    sessionId,
-    flowId,
-  });
   // Call the dynamicValidator to load and execute the validation function for the given domain, element, and action
   return dynamicValidator(
     modulePathWithFunc,

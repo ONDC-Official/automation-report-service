@@ -4,9 +4,6 @@ import logger from "@ondc/automation-logger";
 export function generateReportHTML(
   flowReports: { flowId: string; results: Result }[]
 ): string {
-  logger.info("Entering generateReportHTML function. Generating HTML report...",
-    {meta: { flowReports },
-  });
   const reportRows = flowReports
     .map(({ flowId, results }) => {
       if (!results.success) {
@@ -63,9 +60,7 @@ export function generateReportHTML(
         `;
     })
     .join("");
-  logger.info("Exiting generateReportHTML function. Generated HTML report.",
-    {meta: { reportRows },
-  });
+ 
   return `
       <!DOCTYPE html>
       <html>
@@ -148,16 +143,10 @@ export function generateReportHTML(
 }
 
 function formatReportItems(report: Record<string, any>): string {
-    logger.info('Entering formatReportItems function. Formatting report items...',
-    {meta: { report },
-  });
   if (!report || typeof report !== "object")
   {
     return "N/A";
   } 
-  logger.info('Exiting formatReportItems function. Formatted report items.',
-  {meta: { report },
-  });
   return Object.entries(report)
     .map(([key, value]) => {
       if (typeof value === "object" && !Array.isArray(value)) {

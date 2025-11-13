@@ -262,7 +262,6 @@ domains:
             - on_track
             - on_status
             - on_status
-
           RTO_FLOW:
             - search
             - on_search
@@ -278,7 +277,6 @@ domains:
             - on_status
             - on_cancel
             - on_status
-
           CASH_ON_DELIVERY_FLOW:
             - search
             - on_search
@@ -346,6 +344,348 @@ domains:
           - FEATURE_DISCOVERY
         validationModules: "../validations/ONDC:LOG10/validator#validate"
 
+  ONDC:TRV10:
+    versions:
+      "2.1.0":
+        flows:
+          OnDemand_Assign_driver_on_onconfirm:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          OnDemand_Assign_driver_post_on_ confirm:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_status
+            - status
+            - on_status
+
+          OnDemand_Purple_Tags_Assign_driver_on_onconfirm:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          OnDemand_Assign_driver_post_onconfirmSelfPickup:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_status
+            - status
+            - on_status
+
+          OnDemand_Ride_cancellation_by_driver:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_cancel
+
+          OnDemand_Ride_cancellation_by_rider:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - on_status
+            - cancel
+            - on_cancel
+            - cancel
+            - on_cancel
+
+          OnDemand_Ride_Technical_Cancellation_Flow:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - on_status
+            - cancel
+            - on_cancel
+            - cancel
+            - on_cancel
+
+          Driver_not_found_on_onconfirm:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
+          Driver_not_found_post_onconfirm:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_cancel
+
+          OnDemand_Ride_with_multiple_stops:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          OnDemand_Update_Stop:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - update
+            - on_update
+            - update
+            - on_update
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          OnDemand_Pre_Order_Bid:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          OnDemand_Post_Order_Tip:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+            - update
+            - on_update
+
+          OnDemand_Rental:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          Schedule_Rental:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          Schedule_Trip:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+
+          No_Acceptance_SoftCancel:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - on_status
+            - cancel
+            - on_cancel
+            - on_status
+
+          No_Acceptance_SoftUpdate:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - update
+            - on_update
+            - on_status
+
+        optional_flows:
+          - OnDemand_Ride_cancellation_by_driver
+          - OnDemand_Ride_cancellation_by_rider
+          - OnDemand_Ride_Technical_Cancellation_Flow
+          - Driver_not_found_on_onconfirm
+          - Driver_not_found_post_onconfirm
+          - OnDemand_Ride_with_multiple_stops
+          - OnDemand_Update_Stop
+          - OnDemand_Pre_Order_Bid
+          - OnDemand_Post_Order_Tip
+          - OnDemand_Rental
+          - Schedule_Rental
+          - Schedule_Trip
+          - OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present
+          - No_Acceptance_SoftCancel
+          - No_Acceptance_SoftUpdate
+
+        validationModules: "../validations/ONDC:TRV10/validator#validate"
   ONDC:LOG11:
     versions:
       "1.2.5":

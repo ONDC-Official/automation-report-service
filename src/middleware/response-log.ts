@@ -6,16 +6,6 @@ export default (req: Request, res: Response, next: NextFunction) => {
     const originalSend = res.send;
     res.json = function (data: any) {
         const transaction_id = req.body?.context?.transaction_id;
-        logger.info(`Response Log`, {
-            message: `Response Log`,
-            transaction_id,
-            meta: {
-                method: req.method,
-                url: req.url,
-                statusCode: res.statusCode,
-                body: data,
-            },
-        });
 
         // Call the original res.json with the data
         return originalJson.call(this, data);
@@ -29,7 +19,6 @@ export default (req: Request, res: Response, next: NextFunction) => {
                 method: req.method,
                 url: req.url,
                 statusCode: res.statusCode,
-                body: data,
             },
         });
 

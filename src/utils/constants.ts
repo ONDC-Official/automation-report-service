@@ -31,6 +31,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:LOG10",
   "ONDC:LOG11",
   "ONDC:FIS11",
+  "ONDC:TRV10",
 ];
 
 export const DOMAINS = {
@@ -38,6 +39,7 @@ export const DOMAINS = {
   LOG10:"ONDC:LOG10",
   LOG11:"ONDC:LOG11",
   FIS11:"ONDC:FIS11",
+  TRV10:"ONDC:TRV10",
 };
 
 export const FLOW_MAPPINGS: Record<string, string> = {
