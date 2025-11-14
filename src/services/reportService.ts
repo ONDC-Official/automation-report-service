@@ -5,7 +5,7 @@ import { utilityReport } from "./utilityService";
 import { generateCustomHTMLReport } from "../templates/generateReport";
 import { CacheService } from "./cacheService";
 import logger from "@ondc/automation-logger";
-import { ENABLED_DOMAINS } from "../utils/constants";
+import { ENABLED_DOMAINS, typeMapping } from "../utils/constants";
 import axios from "axios";
 import { generateTestsFromPayloads } from "../utils/payloadUtils";
 
@@ -17,8 +17,6 @@ export class ReportService {
     try {
       // Fetch session details first
       const sessionDetails = await fetchSessionDetails(sessionId);
-      console.log("sessionID", sessionId)
-      console.log("Getting sessionData", sessionDetails)
       if (!sessionDetails) {
         throw new Error(`Session details not found for session: ${sessionId}`);
       }
@@ -55,7 +53,7 @@ export class ReportService {
       this.annotatePayloadsWithActionId(payloads, payloadIdToActionId);
 
       const flows = sortPayloadsByCreatedAt(payloads);
-      
+
       // Check if domain is not in enabled domains - use Pramaan report
       if (!ENABLED_DOMAINS.includes(sessionDetails.domain)) {
         return await this.checkPramaanReport(sessionDetails, sessionId);
@@ -78,10 +76,15 @@ export class ReportService {
    * @param sessionDetails - Session details object containing sessionId, domain, version, etc.
    * @returns Pramaan response data or error object
    */
-  private async checkPramaanReport(sessionDetails: any, sessionId: string): Promise<any> {
+  private async checkPramaanReport(
+    sessionDetails: any,
+    sessionId: string
+  ): Promise<any> {
     const testId = `PW_${sessionId}`;
     const { tests, subscriber_id } = await generateTestsFromPayloads(
-      sessionDetails,
+      sessionDetails.domain,
+      sessionDetails.version,
+      sessionDetails.usecaseId,
       sessionId
     );
 
@@ -90,21 +93,20 @@ export class ReportService {
     );
 
     // Build request body for Pramaan
+    const mappedType = typeMapping[sessionDetails.usecaseId];
     const body = {
       id: subscriber_id,
       version: sessionDetails.version,
       domain: sessionDetails.domain || undefined, // Handle case when domain is not specified
       environment: process.env.PRAMAAN_ENVIRONMENT || "Preprod",
-      type: "BUS",
+      type: mappedType,
       tests,
       test_id: testId,
     };
 
     const pramaanUrl = process.env.PRAMAAN_URL;
     if (!pramaanUrl) {
-      throw new Error(
-        "PRAMAAN_URL is not defined in environment variables"
-      );
+      throw new Error("PRAMAAN_URL is not defined in environment variables");
     }
 
     logger.info(`Sending sync request to Pramaan at ${pramaanUrl}`);
@@ -113,9 +115,7 @@ export class ReportService {
     });
 
     logger.info(
-      `Received response from Pramaan: ${JSON.stringify(
-        pramaanResponse.data
-      )}`
+      `Received response from Pramaan: ${JSON.stringify(pramaanResponse.data)}`
     );
 
     // Extract ack status safely
@@ -135,9 +135,7 @@ export class ReportService {
     }
 
     // Unexpected structure
-    logger.error(
-      `Unexpected Pramaan response format for testId: ${testId}`
-    );
+    logger.error(`Unexpected Pramaan response format for testId: ${testId}`);
     return {
       error: "Unexpected response format from Pramaan",
       response: pramaanResponse.data,
