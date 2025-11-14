@@ -1,35 +1,24 @@
 import axios from "axios";
 import { FLOW_ID_MAP } from "./constants";
-
+import logger from "@ondc/automation-logger";
 export interface TestItem {
   flow_id: string;
   transaction_id: string;
 }
 
-export function getNetworkParticipantId(sessionData: any): string | undefined {
-  return "12345"
-  if (!sessionData?.payloads?.length) return undefined;
-  for (const payload of sessionData.payloads) {
-    if (sessionData.npType === "BPP") {
-      if (payload.bppId && payload.bppId.trim() !== "") {
-        return payload.bppId;
-      }
-    } else if (sessionData.npType === "BAP") {
-      if (payload.bapId && payload.bapId.trim() !== "") {
-        return payload.bapId;
-      }
-    }
-  }
-  // If none found
-  return undefined;
-}
 
-export async function generateTestsFromPayloads(sessionData: any, sessionId: string): Promise<{
+export async function generateTestsFromPayloads(domain: string,version: string,usecaseId: string, sessionId: string): Promise<{
   tests: TestItem[];
   subscriber_id: string;
 }> {
-  const flowMap: Record<string, TestItem & { timestamp: string }> = {};
+  if (!FLOW_ID_MAP[domain] || 
+    !FLOW_ID_MAP[domain][version] || 
+    !FLOW_ID_MAP[domain][version][usecaseId]) {
+  throw new Error( "Cannot generate pramaan flows for this configuration")
+}
 
+const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
+  const flowMap: Record<string, TestItem & { timestamp: string }> = {};
   const response = await axios.get(
     `${process.env.DATA_BASE_URL}/api/sessions/payload/${sessionId}`,
     {
@@ -40,7 +29,6 @@ export async function generateTestsFromPayloads(sessionData: any, sessionId: str
   );
 
   const payloads = response.data;
-  console.log("I am here in this function")
   if (!payloads.length) {
     return { tests: [], subscriber_id: "" };
   }
@@ -60,18 +48,25 @@ export async function generateTestsFromPayloads(sessionData: any, sessionId: str
       }
     }
 
-    const flowId = FLOW_ID_MAP[payload.flowId] || payload.flowId;
+    const mappedFlowId = flowMappings[payload.flowId];
+    logger.info("Mapped Flow ID is", {mappedFlowId});
+    if (!mappedFlowId) {
+      throw new Error(`No flowId mapping found for ${payload.flowId} under ${domain} → ${version} → ${usecaseId}`);
+    }
     const transactionId = payload.transactionId;
     const timestamp = payload.jsonRequest?.context?.timestamp;
 
     if (!timestamp) continue;
 
-    if (!flowMap[flowId]) {
-      flowMap[flowId] = { flow_id: flowId, transaction_id: transactionId, timestamp };
-    } else if (flowMap[flowId].transaction_id !== transactionId) {
-      if (new Date(timestamp) > new Date(flowMap[flowId].timestamp)) {
-        flowMap[flowId] = { flow_id: flowId, transaction_id: transactionId, timestamp };
-      }
+    if (
+      !flowMap[mappedFlowId] ||
+      new Date(timestamp) > new Date(flowMap[mappedFlowId].timestamp)
+    ) {
+      flowMap[mappedFlowId] = {
+        flow_id: mappedFlowId,
+        transaction_id: transactionId,
+        timestamp,
+      };
     }
   }
 

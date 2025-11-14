@@ -201,6 +201,192 @@ export const statesAfterPickup = [
   "Order-delivered"
 ];
 
-export const FLOW_ID_MAP: Record<string, string> = {
-  STATION_CODE_FLOW_ORDER: "MBL_8",
+export const FLOW_ID_MAP: Record<
+  string,
+  Record<
+    string,
+    Record<
+      string,
+      Record<string, string>
+    >
+  >
+> = {
+  "ONDC:TRV11": {
+    "2.0.1": {
+      "Bus": {
+        "IntraCity_Purchase_Journey_FlowCode_Based": "MBL_8",
+        "IntraCity_User_Cancellation_Flow": "MBL_11",
+        "IntraCity_Technical_Cancellation_Flow": "MBL_12"
+      }
+    }
+  },
+  "ONDC:TRV13": {
+    "2.0.0": {
+      "Hotel-Booking": {
+        "Hotel Booking TTL": "ACM_2"
+      },
+    },
+  },
+  "ONDC:TRV14": {
+    "2.0.0": {
+      "unreserved-entry-pass": {
+        "purchase_journey_with_form": "EP_1",
+        "purchase_journey_without_form": "EP_2",
+        "technical_cancellation": "EP_6",
+        "User Cancellation (Full)": "EP_8"
+      },
+    },
+  },
+  "ONDC:TRV12": {
+    "2.0.0": {
+      "Intercity": {
+        "Intercity(Bus)_Cancel_Flow": "ITC_3",
+        "Intercity(Bus)_Seller_Cancellation": "ITC_4"
+      },
+    },
+  },
+  "ONDC:RET10": {
+    "1.2.5": {
+      "GROCERY": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Cancellation_Flow": "RET_3",
+        "RTO_And_Part_Cancellation_Flow": "RET_4b",
+        "Return_Flow": "RET_5",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET11": {
+    "1.2.5": {
+      "F&B": {
+        "FULL_CATALOG": "RET_9",
+        "INCREMENTAL_CATALOG": "RET_9_INC_PUSH",
+        "ORDER_FLOW": "RET_1",
+        "RTO_PLUS_PART_CANCELLATION": "RET_4b",
+        "RETURN_FLOW": "RET_5",
+        "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
+        "DELIVERY_FLOW_WITH_IGM_1": "IGM_1",
+        "DELIVERY_FLOW_WITH_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET12": {
+    "1.2.5": {
+      "FASHION": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Return_Flow": "RET_5",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET13": {
+    "1.2.5": {
+      "BPC": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET14": {
+    "1.2.5": {
+      "ELECTRONICS": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET15": {
+    "1.2.5": {
+      "APPLIANCES": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET16": {
+    "1.2.5": {
+      "HOME&KITCHEN": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET18": {
+    "1.2.5": {
+      "HEALTH&WELLNESS": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:LOG10": {
+    "1.2.5": {
+      "ride-Logistics (P2P)": {
+        "STATIC_OTP_RTO_DELIVERY": "LOG_ENH_00A",
+        "CASH_ON_DELIVERY_FLOW": "LOG_ENH_008",
+        "SURGE_FEE_FLOW": "LOG_ENH_017",
+      },
+    },
+  },
+  "ONDC:LOG11": {
+    "1.2.5": {
+      "ride-Logistics (P2P)": {
+        "STATIC_OTP_RTO_DELIVERY": "LOG_ENH_00A",
+        "CASH_ON_DELIVERY_FLOW": "LOG_ENH_008",
+        "SURGE_FEE_FLOW": "LOG_ENH_017",
+        "ORDER_FLOW_BASE_LINE": "LOG11_TECH_1"
+      },
+    },
+  }
+};
+
+export const typeMapping: Record<string, string> = {
+  "Bus": "BUS",
+  "Metro": "METRO",
+  "ride-Logistics (P2P)": "LOG",
+  "gift-card": "GIFTCARD",
+  "GROCERY": "RETAIL",
+  "F&B": "RETAIL",
+  "FASHION": "RETAIL",
+  "BPC": "RETAIL",
+  "ELECTRONICS": "RETAIL",
+  "APPLIANCES": "RETAIL",
+  "HOME&KITCHEN": "RETAIL",
+  "HEALTH&WELLNESS": "RETAIL",
+  "Airline": "AIRLINE",
+  "Intercity": "INTERCITY",
+  "unreserved-entry-pass": "ENTRY_PASS",
+  "Hotel-Booking": "ACCOMMODATION"
 };
