@@ -1,6 +1,6 @@
 import axios from "axios";
 import { FLOW_ID_MAP } from "./constants";
-
+import logger from "@ondc/automation-logger";
 export interface TestItem {
   flow_id: string;
   transaction_id: string;
@@ -11,9 +11,14 @@ export async function generateTestsFromPayloads(domain: string,version: string,u
   tests: TestItem[];
   subscriber_id: string;
 }> {
-  const flowMappings = FLOW_ID_MAP[domain][version][usecaseId]
-  const flowMap: Record<string, TestItem & { timestamp: string }> = {};
+  if (!FLOW_ID_MAP[domain] || 
+    !FLOW_ID_MAP[domain][version] || 
+    !FLOW_ID_MAP[domain][version][usecaseId]) {
+  throw new Error( "Cannot generate pramaan flows for this configuration")
+}
 
+const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
+  const flowMap: Record<string, TestItem & { timestamp: string }> = {};
   const response = await axios.get(
     `${process.env.DATA_BASE_URL}/api/sessions/payload/${sessionId}`,
     {
@@ -44,6 +49,7 @@ export async function generateTestsFromPayloads(domain: string,version: string,u
     }
 
     const mappedFlowId = flowMappings[payload.flowId];
+    logger.info("Mapped Flow ID is", {mappedFlowId});
     if (!mappedFlowId) {
       throw new Error(`No flowId mapping found for ${payload.flowId} under ${domain} → ${version} → ${usecaseId}`);
     }
