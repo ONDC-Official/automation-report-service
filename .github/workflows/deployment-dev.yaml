@@ -63,6 +63,8 @@ jobs:
           echo "LOKI_HOST=${{ vars.LOKI_HOST }}" >> \$REPO_DIR/.env
           echo "PRAMAAN_ENVIRONMENT=${{ vars.PRAMAAN_ENVIRONMENT }}" >> \$REPO_DIR/.env
           echo "PRAMAAN_URL=${{ vars.PRAMAAN_URL }}" >> \$REPO_DIR/.env
+          echo "AUTOMATION_BACKEND=${{ vars.AUTOMATION_BACKEND }}" >> \$REPO_DIR/.env
+
           
           EOF
 
