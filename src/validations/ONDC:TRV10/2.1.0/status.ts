@@ -6,7 +6,7 @@ export default async function status(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId?: string
 ): Promise<TestResult> {
   const testResults: TestResult = {
     response: {},

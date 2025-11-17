@@ -1,9 +1,10 @@
 import { ValidationAction } from "../../types/actions";
 import { TestResult, Payload } from "../../types/payload";
 import { DOMAINS } from "../../utils/constants";
+import { getRuntimeExtension } from "../../utils/getRuntimeExtension";
 import { getFileName } from "./validationFactory";
 
-import logger from "@ondc/automation-logger"
+import logger from "@ondc/automation-logger";
 type CheckJsonResponseFn = (jsonResponse: any, testResults: TestResult) => void;
 
 type VersionResolver = (element: Payload) => string | undefined;
@@ -27,31 +28,55 @@ export function createDomainValidator(
     let testResults: TestResult = { response: {}, passed: [], failed: [] };
 
     try {
-      const { jsonResponse, action_id,action } = element;
+      const { jsonResponse, action_id, action } = element;
       if (jsonResponse) {
         checkJsonResponse(jsonResponse, testResults);
       }
 
       try {
         const domain = element?.jsonRequest?.context?.domain;
-        const fileName = domain && domain.startsWith(DOMAINS.FIS11)
-          ? `${action_id}.ts`
-          : getFileName(action);        
-        
+
+        const ext = getRuntimeExtension();
+
+        let baseName =
+          domain && domain.startsWith(DOMAINS.FIS11)
+            ? action_id
+            : getFileName(action);
+            console.log("file name=>>>>>>>>>>>>", baseName)
+        const fileName = baseName;
+
         if (!fileName || !version) {
-          testResults.failed.push(`Incorrect version or unsupported action: ${action_id}`);
+          testResults.failed.push(
+            `Incorrect version or unsupported action: ${action_id}`
+          );
           return testResults;
         }
 
-        const mod: any = await import(`../${element.jsonRequest.context.domain}/${version}/${fileName}`);
-        const exportedFnName = Object.keys(mod).find((k) => typeof (mod as any)[k] === "function");
-        const testFunction: Function | undefined = exportedFnName ? (mod as any)[exportedFnName] : undefined;
+        const mod: any = await import(
+          `../${element.jsonRequest.context.domain}/${version}/${fileName}`
+        );
+
+        const exportedFnName = Object.keys(mod).find(
+          (k) => typeof (mod as any)[k] === "function"
+        );
+
+        const testFunction: Function | undefined = exportedFnName
+          ? (mod as any)[exportedFnName]
+          : undefined;
+
         if (!testFunction) {
-          testResults.failed.push(`No matching test function found for ${action_id}.`);
+          testResults.failed.push(
+            `No matching test function found for ${action_id}.`
+          );
           return testResults;
         }
 
-        const testResult: TestResult = await testFunction(element, sessionID, flowId, action_id);
+        const testResult: TestResult = await testFunction(
+          element,
+          sessionID,
+          flowId,
+          action_id
+        );
         testResults.passed.push(...(testResult.passed || []));
         testResults.failed.push(...(testResult.failed || []));
         if (testResult.response) {
@@ -59,15 +84,19 @@ export function createDomainValidator(
         }
       } catch (err: any) {
         testResults.failed.push(`Incorrect version for ${action_id}`);
-        logger.error(`Error importing version-specific tests: ${err?.stack || err}`);
+        logger.error(
+          `Error importing version-specific tests: ${err?.stack || err}`
+        );
       }
 
       return testResults;
     } catch (error: any) {
       logger.error(`Error during validation: ${error?.message || error}`);
-      return { response: {}, passed: [], failed: [`Error during ${element.action_id} test execution`] };
+      return {
+        response: {},
+        passed: [],
+        failed: [`Error during ${element.action_id} test execution`],
+      };
     }
   };
 }
-
-
