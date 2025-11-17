@@ -13,7 +13,7 @@ export class ReportService {
   async generate(
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>
-  ): Promise<string> {
+  ): Promise<any> {
     try {
       // Fetch session details first
       const sessionDetails = await fetchSessionDetails(sessionId);

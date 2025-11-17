@@ -280,5 +280,5 @@ export function generateCustomHTMLReport(data: Report) {
       </body>
       </html>
     `;
-  return htmlContent;
+  return { html: htmlContent};
 }
