@@ -15,14 +15,12 @@ export async function generateReportController(
       apiResponse.badRequest(res,MESSAGES.responses.missingSessionId);
       return;
     }
-
     logger.info(`${MESSAGES.report.enteringController} ${sessionId}`);
     const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
     const htmlReport = await new ReportService().generate(
       sessionId,
       flowIdToPayloadIdsMap
     );
-    console.log("Request Completed")
     apiResponse.successHTML(res, htmlReport);
     logger.info(MESSAGES.report.reportSent, {
       meta: {
