@@ -42,8 +42,9 @@ export function createDomainValidator(
           domain && domain.startsWith(DOMAINS.FIS11)
             ? action_id
             : getFileName(action);
-            console.log("file name=>>>>>>>>>>>>", baseName)
-        const fileName = baseName;
+
+        const fileName = `${baseName}.${ext}`;
+        console.log("file name=>>>>>>>>>>>>", fileName)
 
         if (!fileName || !version) {
           testResults.failed.push(
