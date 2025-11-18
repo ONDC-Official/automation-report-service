@@ -585,20 +585,25 @@ function validateFulfillmentStopsInOrder(
     });
 
     // ---------------------- FINAL STOP VALIDATIONS (after loop) ----------------------
+    const endStopExemptFlows = [
+      "Schedule_Rental",
+      "Schedule_Trip",
+      "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present",
+      "No_Acceptance_SoftUpdate"
+    ];
 
-    if (!hasStart) {
+    const starttopExemptFlows = [
+      "No_Acceptance_SoftUpdate"
+    ];
+
+    if (!hasStart && !starttopExemptFlows.includes(flowId || "") && action_id !== "update") {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one START stop`
       );
       allFulfillmentsValid = false;
     }
 
-    const endStopExemptFlows = [
-      "Schedule_Rental",
-      "Schedule_Trip",
-      "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present"
-    ];
-
+   
     if (!hasEnd && !endStopExemptFlows.includes(flowId || "") && action_id !== "on_update") {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one END stop`
