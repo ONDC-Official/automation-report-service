@@ -593,10 +593,16 @@ function validateFulfillmentStopsInOrder(
     ];
 
     const starttopExemptFlows = [
-      "No_Acceptance_SoftUpdate"
+      "No_Acceptance_SoftUpdate",
+      "OnDemand_Update_Stop"
     ];
 
-    if (!hasStart && !starttopExemptFlows.includes(flowId || "") && action_id !== "update") {
+    const startActionIds = [
+      "update",
+      "on_update"
+    ]
+
+    if (!hasStart && !starttopExemptFlows.includes(flowId || "") && !startActionIds.includes(action_id || "")) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one START stop`
       );
@@ -907,6 +913,7 @@ function validateFulfillmentsTRV10(
       action_id === "select_rental" ||
       action_id === "init" ||
       action_id === "update" ||
+      action_id === "update_hard" ||
       action_id === "select_preorder_bid"
     ) {
       if (fulfillment.type) {
