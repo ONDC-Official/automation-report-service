@@ -585,20 +585,31 @@ function validateFulfillmentStopsInOrder(
     });
 
     // ---------------------- FINAL STOP VALIDATIONS (after loop) ----------------------
+    const endStopExemptFlows = [
+      "Schedule_Rental",
+      "Schedule_Trip",
+      "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present",
+      "No_Acceptance_SoftUpdate"
+    ];
 
-    if (!hasStart) {
+    const starttopExemptFlows = [
+      "No_Acceptance_SoftUpdate",
+      "OnDemand_Update_Stop"
+    ];
+
+    const startActionIds = [
+      "update",
+      "on_update"
+    ]
+
+    if (!hasStart && !starttopExemptFlows.includes(flowId || "") && !startActionIds.includes(action_id || "")) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one START stop`
       );
       allFulfillmentsValid = false;
     }
 
-    const endStopExemptFlows = [
-      "Schedule_Rental",
-      "Schedule_Trip",
-      "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present"
-    ];
-
+   
     if (!hasEnd && !endStopExemptFlows.includes(flowId || "") && action_id !== "on_update") {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one END stop`
@@ -902,6 +913,7 @@ function validateFulfillmentsTRV10(
       action_id === "select_rental" ||
       action_id === "init" ||
       action_id === "update" ||
+      action_id === "update_hard" ||
       action_id === "select_preorder_bid"
     ) {
       if (fulfillment.type) {
