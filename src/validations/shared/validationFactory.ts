@@ -387,27 +387,143 @@ function validateFulfillmentStopsInCatalog(
   }
 }
 
+// function validateFulfillmentStopsInOrder(
+//   message: any,
+//   testResults: TestResult,
+//   action_id?: string,
+//   flowId?: string
+// ): void {
+//   const order = message?.order;
+//   if (!order) {
+//     testResults.failed.push("Order is missing in response");
+//     return;
+//   }
+//   if (action_id === "update_quote") {
+//     return;
+//   }
+
+//   const fulfillments = order.fulfillments;
+//   if (
+//     !fulfillments ||
+//     !Array.isArray(fulfillments) ||
+//     fulfillments.length === 0
+//   ) {
+//     testResults.failed.push("Order fulfillments array is missing or empty");
+//     return;
+//   }
+
+//   let allFulfillmentsValid = true;
+//   const validTypes = ["START", "INTERMEDIATE_STOP", "END"];
+
+//   fulfillments.forEach((fulfillment: any, fulfillmentIndex: number) => {
+//     const stops = fulfillment?.stops;
+//     if (!stops || !Array.isArray(stops)) {
+//       testResults.failed.push(
+//         `Fulfillment ${fulfillmentIndex}: stops array is missing or invalid`
+//       );
+//       allFulfillmentsValid = false;
+//       return;
+//     }
+
+//     if (stops.length < 1) {
+//       testResults.failed.push(
+//         `Fulfillment ${fulfillmentIndex}: must have at least START and END stops`
+//       );
+//       allFulfillmentsValid = false;
+//       return;
+//     }
+
+//     let hasStart = false;
+//     let hasEnd = false;
+
+//     stops.forEach((stop: any, stopIndex: number) => {
+//       const stopLabel = `Fulfillment ${fulfillmentIndex}, Stop ${stopIndex}`;
+
+//       // Validate stop type
+//       if (!stop.type) {
+//         testResults.failed.push(`${stopLabel}: type is missing`);
+//         allFulfillmentsValid = false;
+//       } else if (!validTypes.includes(stop.type)) {
+//         testResults.failed.push(
+//           `${stopLabel}: type must be START or END, got ${stop.type}`
+//         );
+//         allFulfillmentsValid = false;
+//       } else {
+//         if (stop.type === "START") hasStart = true;
+//         if (stop.type === "END") hasEnd = true;
+//         testResults.passed.push(`${stopLabel}: has valid type ${stop.type}`);
+//       }
+
+//       // Validate location GPS
+//       if (flowId !== "OnDemand_Rental" && action_id !== "init" && action_id !== "on_update") {
+//         if (!stop.location) {
+//           testResults.failed.push(`${stopLabel}: location is missing`);
+//           allFulfillmentsValid = false;
+//         } else if (!stop.location.gps && !stop.location.circle.gps) {
+//           testResults.failed.push(`${stopLabel}: location GPS is missing`);
+//           allFulfillmentsValid = false;
+//         } else {
+//           // Validate GPS format (lat,lng)
+//           const gpsPattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+//           if (
+//             gpsPattern.test(
+//               stop.location.gps.trim() || stop.location.circle.gps.trim()
+//             )
+//           ) {
+//             testResults.passed.push(`${stopLabel}: has valid GPS coordinates`);
+//           } else {
+//             testResults.failed.push(
+//               `${stopLabel}: GPS format is invalid. Expected format: lat,lng`
+//             );
+//             allFulfillmentsValid = false;
+//           }
+//         }
+//         if (!hasStart) {
+//           testResults.failed.push(
+//             `Fulfillment ${fulfillmentIndex}: must include at least one START stop`
+//           );
+//           allFulfillmentsValid = false;
+//         }
+//         if (!hasEnd && flowId !== "Schedule_Rental" && action_id !== "on_update" && flowId !== "Schedule_Trip" && flowId !== "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present") {
+//           testResults.failed.push(
+//             `Fulfillment ${fulfillmentIndex}: must include at least one END stop`
+//           );
+//           allFulfillmentsValid = false;
+//         }
+//         if (hasStart && hasEnd) {
+//           testResults.passed.push(
+//             `Fulfillment ${fulfillmentIndex}: includes both START and END stops`
+//           );
+//         }
+//       }
+//     });
+//   });
+
+//   if (allFulfillmentsValid && fulfillments.length > 0) {
+//     testResults.passed.push(
+//       "All fulfillments have valid stops with START and END"
+//     );
+//   }
+// }
+
 function validateFulfillmentStopsInOrder(
   message: any,
   testResults: TestResult,
   action_id?: string,
   flowId?: string
 ): void {
+
   const order = message?.order;
   if (!order) {
     testResults.failed.push("Order is missing in response");
     return;
   }
-  if (action_id === "update_quote") {
-    return;
-  }
+
+  // Skip validation for update_quote as per business rule
+  if (action_id === "update_quote") return;
 
   const fulfillments = order.fulfillments;
-  if (
-    !fulfillments ||
-    !Array.isArray(fulfillments) ||
-    fulfillments.length === 0
-  ) {
+  if (!Array.isArray(fulfillments) || fulfillments.length === 0) {
     testResults.failed.push("Order fulfillments array is missing or empty");
     return;
   }
@@ -415,20 +531,11 @@ function validateFulfillmentStopsInOrder(
   let allFulfillmentsValid = true;
   const validTypes = ["START", "INTERMEDIATE_STOP", "END"];
 
-  fulfillments.forEach((fulfillment: any, fulfillmentIndex: number) => {
+  fulfillments.forEach((fulfillment: any, fIndex: number) => {
     const stops = fulfillment?.stops;
-    if (!stops || !Array.isArray(stops)) {
-      testResults.failed.push(
-        `Fulfillment ${fulfillmentIndex}: stops array is missing or invalid`
-      );
-      allFulfillmentsValid = false;
-      return;
-    }
 
-    if (stops.length < 1) {
-      testResults.failed.push(
-        `Fulfillment ${fulfillmentIndex}: must have at least START and END stops`
-      );
+    if (!Array.isArray(stops) || stops.length === 0) {
+      testResults.failed.push(`Fulfillment ${fIndex}: stops array is missing or empty`);
       allFulfillmentsValid = false;
       return;
     }
@@ -436,75 +543,83 @@ function validateFulfillmentStopsInOrder(
     let hasStart = false;
     let hasEnd = false;
 
-    stops.forEach((stop: any, stopIndex: number) => {
-      const stopLabel = `Fulfillment ${fulfillmentIndex}, Stop ${stopIndex}`;
+    stops.forEach((stop: any, sIndex: number) => {
+      const label = `Fulfillment ${fIndex}, Stop ${sIndex}`;
 
-      // Validate stop type
-      if (!stop.type) {
-        testResults.failed.push(`${stopLabel}: type is missing`);
-        allFulfillmentsValid = false;
-      } else if (!validTypes.includes(stop.type)) {
-        testResults.failed.push(
-          `${stopLabel}: type must be START or END, got ${stop.type}`
-        );
+      // ---------------------- Validate Stop Type ------------------------
+      if (!stop.type || !validTypes.includes(stop.type)) {
+        testResults.failed.push(`${label}: invalid or missing stop type`);
         allFulfillmentsValid = false;
       } else {
+        testResults.passed.push(`${label}: valid type ${stop.type}`);
+
         if (stop.type === "START") hasStart = true;
         if (stop.type === "END") hasEnd = true;
-        testResults.passed.push(`${stopLabel}: has valid type ${stop.type}`);
       }
 
-      // Validate location GPS
-      if (flowId !== "OnDemand_Rental" && action_id !== "init" && action_id !== "on_update") {
-        if (!stop.location) {
-          testResults.failed.push(`${stopLabel}: location is missing`);
-          allFulfillmentsValid = false;
-        } else if (!stop.location.gps && !stop.location.circle.gps) {
-          testResults.failed.push(`${stopLabel}: location GPS is missing`);
-          allFulfillmentsValid = false;
-        } else {
-          // Validate GPS format (lat,lng)
-          const gpsPattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
-          if (
-            gpsPattern.test(
-              stop.location.gps.trim() || stop.location.circle.gps.trim()
-            )
-          ) {
-            testResults.passed.push(`${stopLabel}: has valid GPS coordinates`);
-          } else {
-            testResults.failed.push(
-              `${stopLabel}: GPS format is invalid. Expected format: lat,lng`
-            );
-            allFulfillmentsValid = false;
-          }
-        }
-        if (!hasStart) {
-          testResults.failed.push(
-            `Fulfillment ${fulfillmentIndex}: must include at least one START stop`
-          );
-          allFulfillmentsValid = false;
-        }
-        if (!hasEnd && flowId !== "Schedule_Rental" && action_id !== "on_update" && flowId !== "Schedule_Trip" && flowId !== "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present") {
-          testResults.failed.push(
-            `Fulfillment ${fulfillmentIndex}: must include at least one END stop`
-          );
-          allFulfillmentsValid = false;
-        }
-        if (hasStart && hasEnd) {
-          testResults.passed.push(
-            `Fulfillment ${fulfillmentIndex}: includes both START and END stops`
-          );
-        }
+      // ---------------------- GPS validation exceptions ------------------
+      const skipGPSValidation =
+        flowId === "OnDemand_Rental" ||
+        action_id === "init" ||
+        action_id === "on_update";
+
+      if (skipGPSValidation) return;
+
+      // ---------------------- Validate Location --------------------------
+      const gps = stop.location?.gps || stop.location?.circle?.gps;
+
+      if (!gps) {
+        testResults.failed.push(`${label}: location GPS is missing`);
+        allFulfillmentsValid = false;
+        return;
+      }
+
+      const gpsPattern = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
+
+      if (!gpsPattern.test(gps.trim())) {
+        testResults.failed.push(`${label}: invalid GPS format (expected lat,lng)`);
+        allFulfillmentsValid = false;
+      } else {
+        testResults.passed.push(`${label}: valid GPS format`);
       }
     });
+
+    // ---------------------- FINAL STOP VALIDATIONS (after loop) ----------------------
+
+    if (!hasStart) {
+      testResults.failed.push(
+        `Fulfillment ${fIndex}: must include at least one START stop`
+      );
+      allFulfillmentsValid = false;
+    }
+
+    const endStopExemptFlows = [
+      "Schedule_Rental",
+      "Schedule_Trip",
+      "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present"
+    ];
+
+    if (!hasEnd && !endStopExemptFlows.includes(flowId || "") && action_id !== "on_update") {
+      testResults.failed.push(
+        `Fulfillment ${fIndex}: must include at least one END stop`
+      );
+      allFulfillmentsValid = false;
+    }
+
+    if (hasStart && hasEnd) {
+      testResults.passed.push(
+        `Fulfillment ${fIndex}: includes both START and END stops`
+      );
+    }
   });
 
-  if (allFulfillmentsValid && fulfillments.length > 0) {
+  if (allFulfillmentsValid) {
     testResults.passed.push(
       "All fulfillments have valid stops with START and END"
     );
   }
 }
+
 
 function validateCatalog(message: any, testResults: TestResult): void {
   const catalog = message?.catalog;
