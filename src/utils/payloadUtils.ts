@@ -6,18 +6,24 @@ export interface TestItem {
   transaction_id: string;
 }
 
-
-export async function generateTestsFromPayloads(domain: string,version: string,usecaseId: string, sessionId: string): Promise<{
+export async function generateTestsFromPayloads(
+  domain: string,
+  version: string,
+  usecaseId: string,
+  sessionId: string
+): Promise<{
   tests: TestItem[];
   subscriber_id: string;
 }> {
-  if (!FLOW_ID_MAP[domain] || 
-    !FLOW_ID_MAP[domain][version] || 
-    !FLOW_ID_MAP[domain][version][usecaseId]) {
-  throw new Error( "Cannot generate pramaan flows for this configuration")
-}
+  if (
+    !FLOW_ID_MAP[domain] ||
+    !FLOW_ID_MAP[domain][version] ||
+    !FLOW_ID_MAP[domain][version][usecaseId]
+  ) {
+    throw new Error("Cannot generate pramaan flows for this configuration");
+  }
 
-const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
+  const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
   const flowMap: Record<string, TestItem & { timestamp: string }> = {};
   const response = await axios.get(
     `${process.env.DATA_BASE_URL}/api/sessions/payload/${sessionId}`,
@@ -41,17 +47,19 @@ const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
     const payload = entry.payload;
 
     if (!subscriber_id) {
-      if (npType === 'BPP' && payload.bppId) {
+      if (npType === "BPP" && payload.bppId) {
         subscriber_id = payload.bppId;
-      } else if (npType === 'BAP' && payload.bapId) {
+      } else if (npType === "BAP" && payload.bapId) {
         subscriber_id = payload.bapId;
       }
     }
 
     const mappedFlowId = flowMappings[payload.flowId];
-    logger.info("Mapped Flow ID is", {mappedFlowId});
+    logger.info("Mapped Flow ID is", { flowId: mappedFlowId });
     if (!mappedFlowId) {
-      throw new Error(`No flowId mapping found for ${payload.flowId} under ${domain} → ${version} → ${usecaseId}`);
+      throw new Error(
+        `No flowId mapping found for ${payload.flowId} under ${domain} → ${version} → ${usecaseId}`
+      );
     }
     const transactionId = payload.transactionId;
     const timestamp = payload.jsonRequest?.context?.timestamp;
@@ -77,8 +85,6 @@ const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
 
   return { tests, subscriber_id };
 }
-
-
 
 export function mapPayloadsToLogFormat(payloads: any): any[] {
   // Normalize to array
