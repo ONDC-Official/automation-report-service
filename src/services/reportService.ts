@@ -29,7 +29,10 @@ export class ReportService {
 
       const requestedFlows = Object.keys(flowIdToPayloadIdsMap);
       const flowMap: Record<string, string> = sessionDetails?.flowMap ?? {};
-      const reportableFlowMap = this.filterReportableFlows(flowMap, sessionDetails.flowConfigs || []);
+      const reportableFlowMap = this.filterReportableFlows(
+        flowMap,
+        sessionDetails.flowConfigs || []
+      );
 
       const currentStates = await this.fetchCurrentStates(
         sessionId,
@@ -62,7 +65,11 @@ export class ReportService {
       const result = await validationModule(flows, sessionId);
       return generateCustomHTMLReport(result);
     } catch (error) {
-      logger.error(`Error generating report for session ${sessionId}:`, error);
+      logger.error(
+        `Error generating report for session ${sessionId}:`,
+        {},
+        error
+      );
       throw new Error(
         `Failed to generate report: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -226,21 +233,21 @@ export class ReportService {
     });
   }
   filterReportableFlows(
-  flowMap: Record<string, string>,
-  flowConfigs: any[]
-): Record<string, string> {
-  const result: Record<string, string> = {};
+    flowMap: Record<string, string>,
+    flowConfigs: any[]
+  ): Record<string, string> {
+    const result: Record<string, string> = {};
 
-  for (const key of Object.keys(flowMap)) {
-    const flow = flowConfigs.find(f => f.id === key);
+    for (const key of Object.keys(flowMap)) {
+      const flow = flowConfigs.find((f) => f.id === key);
 
-    if (!flow) continue; // no matching flow
+      if (!flow) continue; // no matching flow
 
-    if (Array.isArray(flow.tags) && flow.tags.includes("REPORTABLE")) {
-      result[key] = flowMap[key]; // keep only reportable ones
+      if (Array.isArray(flow.tags) && flow.tags.includes("REPORTABLE")) {
+        result[key] = flowMap[key]; // keep only reportable ones
+      }
     }
-  }
 
-  return result;
-}
+    return result;
+  }
 }
