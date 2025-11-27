@@ -56,8 +56,12 @@ export function validateQuote(
     return typeof raw === "string" ? raw.toLowerCase() : "";
   };
   const getBreakupPriceValue = (b: QuoteBreakupItem): string | undefined => {
+    if (b.title === 'NET_DISBURSED_AMOUNT') {
+      return '0';
+    }
     return b.price?.value ?? b.item?.price?.value;
   };
+  
 
   if (config.validateDecimalPlaces) {
     try {
