@@ -31,6 +31,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:LOG10",
   "ONDC:LOG11",
   "ONDC:FIS11",
+  "ONDC:FIS12",
   "ONDC:TRV10",
 ];
 
@@ -39,6 +40,7 @@ export const DOMAINS = {
   LOG10:"ONDC:LOG10",
   LOG11:"ONDC:LOG11",
   FIS11:"ONDC:FIS11",
+  FIS12:"ONDC:FIS12",
   TRV10:"ONDC:TRV10",
 };
 

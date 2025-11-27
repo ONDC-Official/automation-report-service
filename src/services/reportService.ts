@@ -164,7 +164,6 @@ export class ReportService {
               `${process.env.AUTOMATION_BACKEND}/flow/current-state`,
               {
                 params: { transaction_id: txnId, session_id: sessionId },
-                timeout: 10000, // 10 second timeout
               }
             );
             return [flowName, data] as const;

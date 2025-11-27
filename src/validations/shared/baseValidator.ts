@@ -44,7 +44,6 @@ export function createDomainValidator(
             : getFileName(action);
 
         const fileName = `${baseName}.${ext}`;
-        console.log("file name=>>>>>>>>>>>>", fileName)
 
         if (!fileName || !version) {
           testResults.failed.push(

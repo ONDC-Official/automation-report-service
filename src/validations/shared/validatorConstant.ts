@@ -46,6 +46,19 @@ export const validatorConstant = {
             },
           },
         },
+        fis12: {
+          v202: {
+            fulfillments: {
+              validate_fulfillments: "validateFulfillmentsFIS12",
+            },
+            items: {
+              validate_items: "validateItemsFIS12",
+            },
+            payments: {
+              validate_payments: "validatePaymentsFIS12",
+            }
+          },
+        },
       },
       trv: {
         trv10: {

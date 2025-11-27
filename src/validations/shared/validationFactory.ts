@@ -26,6 +26,7 @@ import {
 import { validatorConstant } from "./validatorConstant";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
+const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 
@@ -140,7 +141,7 @@ function validateFulfillmentStops(
   message: any,
   testResults: TestResult,
   action_id?: string,
-  flowId?:string
+  flowId?: string
 ): void {
   const fulfillment = message?.intent?.fulfillment;
   if (!fulfillment) {
@@ -269,7 +270,7 @@ function validateFulfillmentStopsInCatalog(
   message: any,
   testResults: TestResult,
   action_id?: string,
-  flowId?:string
+  flowId?: string
 ): void {
   const catalog = message?.catalog;
   if (!catalog) {
@@ -310,7 +311,11 @@ function validateFulfillmentStopsInCatalog(
         return;
       }
 
-      if (action_id !== "on_search_rental" && action_id !== "on_search_schedule_rental" && stops.length < 2) {
+      if (
+        action_id !== "on_search_rental" &&
+        action_id !== "on_search_schedule_rental" &&
+        stops.length < 2
+      ) {
         testResults.failed.push(
           `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}: must have at least START and END stops`
         );
@@ -366,7 +371,11 @@ function validateFulfillmentStopsInCatalog(
         );
         allProvidersValid = false;
       }
-      if (action_id !== "on_search_rental" && !hasEnd && action_id !== "on_search_schedule_rental") {
+      if (
+        action_id !== "on_search_rental" &&
+        !hasEnd &&
+        action_id !== "on_search_schedule_rental"
+      ) {
         testResults.failed.push(
           `Provider ${providerIndex}, Fulfillment ${fulfillmentIndex}: must include at least one END stop`
         );
@@ -512,7 +521,6 @@ function validateFulfillmentStopsInOrder(
   action_id?: string,
   flowId?: string
 ): void {
-
   const order = message?.order;
   if (!order) {
     testResults.failed.push("Order is missing in response");
@@ -535,7 +543,9 @@ function validateFulfillmentStopsInOrder(
     const stops = fulfillment?.stops;
 
     if (!Array.isArray(stops) || stops.length === 0) {
-      testResults.failed.push(`Fulfillment ${fIndex}: stops array is missing or empty`);
+      testResults.failed.push(
+        `Fulfillment ${fIndex}: stops array is missing or empty`
+      );
       allFulfillmentsValid = false;
       return;
     }
@@ -577,7 +587,9 @@ function validateFulfillmentStopsInOrder(
       const gpsPattern = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
 
       if (!gpsPattern.test(gps.trim())) {
-        testResults.failed.push(`${label}: invalid GPS format (expected lat,lng)`);
+        testResults.failed.push(
+          `${label}: invalid GPS format (expected lat,lng)`
+        );
         allFulfillmentsValid = false;
       } else {
         testResults.passed.push(`${label}: valid GPS format`);
@@ -589,28 +601,32 @@ function validateFulfillmentStopsInOrder(
       "Schedule_Rental",
       "Schedule_Trip",
       "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present",
-      "No_Acceptance_SoftUpdate"
+      "No_Acceptance_SoftUpdate",
     ];
 
     const starttopExemptFlows = [
       "No_Acceptance_SoftUpdate",
-      "OnDemand_Update_Stop"
+      "OnDemand_Update_Stop",
     ];
 
-    const startActionIds = [
-      "update",
-      "on_update"
-    ]
+    const startActionIds = ["update", "on_update"];
 
-    if (!hasStart && !starttopExemptFlows.includes(flowId || "") && !startActionIds.includes(action_id || "")) {
+    if (
+      !hasStart &&
+      !starttopExemptFlows.includes(flowId || "") &&
+      !startActionIds.includes(action_id || "")
+    ) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one START stop`
       );
       allFulfillmentsValid = false;
     }
 
-   
-    if (!hasEnd && !endStopExemptFlows.includes(flowId || "") && action_id !== "on_update") {
+    if (
+      !hasEnd &&
+      !endStopExemptFlows.includes(flowId || "") &&
+      action_id !== "on_update"
+    ) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one END stop`
       );
@@ -630,7 +646,6 @@ function validateFulfillmentStopsInOrder(
     );
   }
 }
-
 
 function validateCatalog(message: any, testResults: TestResult): void {
   const catalog = message?.catalog;
@@ -719,6 +734,7 @@ function validateProvider(
   }
 
   if (
+    action_id !== "select_2" &&
     action_id !== "select" &&
     action_id !== "init" &&
     action_id !== "confirm" &&
@@ -759,7 +775,8 @@ function validateProviderTRV10(
 function validateItems(
   message: any,
   testResults: TestResult,
-  action_id?: string
+  action_id?: string,
+  flowId?: string
 ): void {
   const items =
     message?.catalog?.providers?.[0]?.items || message?.order?.items;
@@ -775,25 +792,49 @@ function validateItems(
       testResults.passed.push(`Item ${index} ID is present`);
     }
 
-    if (
-      action_id !== "select" &&
-      action_id !== "select_rental" &&
-      action_id !== "init" &&
-      action_id !== "confirm" &&
-      action_id !== "confirm_card_balance_faliure" &&
-      action_id !== "confirm_card_balance_success"
-    ) {
-      if (!item.descriptor?.name) {
-        testResults.failed.push(`Item ${index} descriptor name is missing`);
+    if (flowId !== "Gold_Loan_Without_Account_Aggregator" && flowId !== "Gold_Loan_With_Account_Aggregator") {
+      if (
+        action_id !== "select" &&
+        action_id !== "select_rental" &&
+        action_id !== "init" &&
+        action_id !== "confirm" &&
+        action_id !== "confirm_card_balance_faliure" &&
+        action_id !== "confirm_card_balance_success"
+      ) {
+        if (!item.descriptor?.name) {
+          testResults.failed.push(`Item ${index} descriptor name is missing`);
+        } else {
+          testResults.passed.push(`Item ${index} descriptor name is present`);
+        }
+      }
+
+      if (action_id !== "select_rental" && !item.price?.value) {
+        testResults.failed.push(`Item ${index} price value is missing`);
       } else {
-        testResults.passed.push(`Item ${index} descriptor name is present`);
+        testResults.passed.push(`Item ${index} price value is present`);
       }
     }
+  });
+}
 
-    if (action_id !== "select_rental" && !item.price?.value) {
-      testResults.failed.push(`Item ${index} price value is missing`);
+function validateItemsFIS12(
+  message: any,
+  testResults: TestResult,
+  action_id?: string,
+  flowId?: string
+): void {
+  const items =
+    message?.catalog?.providers?.[0]?.items || message?.order?.items;
+  if (!items || !Array.isArray(items)) {
+    testResults.failed.push("Items array is missing or invalid");
+    return;
+  }
+
+  items.forEach((item, index) => {
+    if (!item.id) {
+      testResults.failed.push(`Item ${index} ID is missing`);
     } else {
-      testResults.passed.push(`Item ${index} price value is present`);
+      testResults.passed.push(`Item ${index} ID is present`);
     }
   });
 }
@@ -925,6 +966,107 @@ function validateFulfillmentsTRV10(
       } else {
         testResults.passed.push(`Fulfillment ${index} type is present`);
       }
+    }
+  });
+}
+
+function validateFulfillmentsFIS12(
+  message: any,
+  testResults: TestResult
+): void {
+  const fulfillments =
+  message?.catalog?.providers?.[0]?.fulfillments ||
+  message?.order?.fulfillments;
+  if (!fulfillments || !Array.isArray(fulfillments)) {
+    testResults.failed.push("Fulfillments array is missing or invalid");
+    return;
+  }
+
+  fulfillments.forEach((fulfillment: any, index: number) => {
+    // Validate type
+    if (!fulfillment.type) {
+      testResults.failed.push(`Fulfillment ${index} type is missing`);
+    } else {
+      testResults.passed.push(
+        `Fulfillment ${index} has type: ${fulfillment.type}`
+      );
+    }
+
+    // Validate customer info
+    if (!fulfillment.customer) {
+      testResults.failed.push(`Fulfillment ${index} customer info is missing`);
+    } else {
+      const { person, contact } = fulfillment.customer;
+      if (!person?.name)
+        testResults.failed.push(
+          `Fulfillment ${index} customer name is missing`
+        );
+      if (!contact?.phone && !contact?.email)
+        testResults.failed.push(
+          `Fulfillment ${index} customer contact is missing`
+        );
+    }
+
+    // Validate state descriptor
+    if (!fulfillment.state?.descriptor?.code) {
+      testResults.failed.push(
+        `Fulfillment ${index} state descriptor code is missing`
+      );
+    } else {
+      testResults.passed.push(
+        `Fulfillment ${index} state code: ${fulfillment.state.descriptor.code}`
+      );
+    }
+  });
+}
+
+function validatePaymentsFIS12(message: any, testResults: TestResult): void {
+  const payments =
+  message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
+  if (!payments || !Array.isArray(payments)) {
+    testResults.failed.push("Payments array is missing or invalid");
+    return;
+  }
+
+  payments.forEach((payment: any, index: number) => {
+    // Validate basic payment info
+    if (!payment.id) testResults.failed.push(`Payment ${index} id is missing`);
+    if (!payment.type)
+      testResults.failed.push(`Payment ${index} type is missing`);
+    if (!payment.status)
+      testResults.failed.push(`Payment ${index} status is missing`);
+
+    testResults.passed.push(
+      `Payment ${index} has id: ${payment.id}, type: ${payment.type}, status: ${payment.status}`
+    );
+
+    // Validate POST_FULFILLMENT payments
+    if (payment.type === "POST_FULFILLMENT") {
+      if (!payment.params?.amount || !payment.params?.currency) {
+        testResults.failed.push(
+          `Payment ${index} POST_FULFILLMENT params are invalid`
+        );
+      } else {
+        testResults.passed.push(
+          `Payment ${index} POST_FULFILLMENT amount: ${payment.params.amount} ${payment.params.currency}`
+        );
+      }
+
+      if (!payment.time?.range?.start || !payment.time?.range?.end) {
+        testResults.failed.push(
+          `Payment ${index} POST_FULFILLMENT time range is invalid`
+        );
+      }
+    }
+
+    // Validate tags if present
+    if (payment.tags && Array.isArray(payment.tags)) {
+      payment.tags.forEach((tag: any, tIndex: number) => {
+        if (!tag.descriptor?.code)
+          testResults.failed.push(
+            `Payment ${index} tag ${tIndex} code is missing`
+          );
+      });
     }
   });
 }
@@ -1299,10 +1441,27 @@ export function validateStatusOrderId(
   testResults: TestResult
 ): void {
   const orderId = message?.order_id;
+  const  refId = message?.ref_id
   if (!orderId) {
     testResults.failed.push("Order ID is missing in status message");
-  } else {
-    testResults.passed.push("Order ID is present in status message");
+  }else if(!refId){
+    testResults.failed.push("Ref ID is missing in status message");
+  }
+  else {
+    testResults.passed.push("Order/Ref ID is present in status message");
+  }
+}
+
+export function validateStatusRefId(
+  message: any,
+  testResults: TestResult
+): void {
+  const  refId = message?.ref_id
+  if(!refId){
+    testResults.failed.push("Ref ID is missing in status message");
+  }
+  else {
+    testResults.passed.push("Ref ID is present in status message");
   }
 }
 
@@ -1449,14 +1608,10 @@ export function validateTracking(
 export function getFileName(action: string): string {
   if (action.includes("_")) {
     // Example: ON_SEARCH → OnSearch.ts
-    return (
-      action
-        .split("_") // ["ON", "SEARCH"]
-        .map(
-          (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
-        )
-        .join("")
-    );
+    return action
+      .split("_") // ["ON", "SEARCH"]
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join("");
   } else {
     // Example: SEARCH → search.ts
     return action.toLowerCase();
@@ -1534,7 +1689,7 @@ export function createSearchValidator(...config: string[]) {
 
           // TRV10 validations
           case trv10Validators.fulfillment_stops.validate_fulfillment_stops:
-            validateFulfillmentStops(message, testResults, action_id,flowId);
+            validateFulfillmentStops(message, testResults, action_id, flowId);
             break;
           default:
             break;
@@ -1555,25 +1710,27 @@ export function validateUpdateRequestTRV10(
   testResults: TestResult,
   action_id: string
 ): void {
-  const updateTarget = message?.update_target;
+  const { update_target: updateTarget, order } = message ?? {};
+
+  // Validation rules for update_target based on action_id
+  const validUpdateTargets = [
+    "order.quote.breakup",
+    "order.fulfillments",
+    "payments"
+  ];
+
   if (!updateTarget) {
     testResults.failed.push("update_target is missing");
-  } else if (
-    action_id === "update_quote" &&
-    updateTarget !== "order.quote.breakup"
+  } else if (!validUpdateTargets.includes(updateTarget)
   ) {
     testResults.failed.push(
-      `update_target must be 'order.quote.breakup', got '${updateTarget}'`
-    );
-  } else if (action_id === "update" && updateTarget !== "order.fulfillments") {
-    testResults.failed.push(
-      `update_target must be 'order.fulfillments', got '${updateTarget}'`
+      `update_target must be '${validUpdateTargets}', got '${updateTarget}'`
     );
   } else {
     testResults.passed.push("update_target is valid");
   }
 
-  const order = message?.order;
+  // Order checks
   if (!order) {
     testResults.failed.push("Order is missing in update");
     return;
@@ -1585,15 +1742,16 @@ export function validateUpdateRequestTRV10(
     testResults.passed.push("Order id is present in update");
   }
 
-  // Accept SOFT_UPDATE as a valid transient status for update flows
+  // Order status check — allow SOFT_UPDATE
   if (order.status) {
-    if (order.status === "SOFT_UPDATE") {
-      testResults.passed.push("Order status is SOFT_UPDATE for update request");
-    } else {
-      testResults.passed.push(`Order status is present: ${order.status}`);
-    }
+    const statusMessage =
+      order.status === "SOFT_UPDATE"
+        ? "Order status is SOFT_UPDATE for update request"
+        : `Order status is present: ${order.status}`;
+    testResults.passed.push(statusMessage);
   }
 }
+
 
 /**
  * Creates an update validation function with configurable validations
@@ -1734,7 +1892,7 @@ export function createOnSearchValidator(...config: string[]) {
             validateProvidersTRV10(message, testResults);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults, action_id);
@@ -1811,7 +1969,7 @@ export function createSelectValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -1888,7 +2046,7 @@ export function createOnSelectValidator(...config: string[]) {
             break;
 
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -1977,7 +2135,7 @@ export function createInitValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2110,7 +2268,7 @@ export function createConfirmValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2197,7 +2355,7 @@ export function createOnInitValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2272,6 +2430,12 @@ export function createOnConfirmValidator(...config: string[]) {
     for (const validation of config) {
       if (validation) {
         switch (validation) {
+          case fis12Validators.fulfillments.validate_fulfillments:
+            validateFulfillmentsFIS12(message, testResults);
+            break;
+          case fis12Validators.payments.validate_payments:
+            validatePaymentsFIS12(message, testResults);
+            break;
           // Logistics validations
           case log11Validators.lsp.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
@@ -2282,7 +2446,6 @@ export function createOnConfirmValidator(...config: string[]) {
           case log11Validators.shipment_types.validate_shipment_types:
             validateShipmentTypesWrapper(message, testResults);
             break;
-
           case log11Validators.sla_metrics.validate_sla_metrics:
             validateSlaMetricsConfirm(
               sessionID,
@@ -2332,7 +2495,7 @@ export function createOnConfirmValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2346,6 +2509,8 @@ export function createOnConfirmValidator(...config: string[]) {
           case fis11Validators.order_status.validate_order_status:
             validateOrderStatus(message, testResults, action_id);
             break;
+
+          
 
           // TRV10 validations
           case trv10Validators.provider_trv10.validate_provider_trv10:
@@ -2423,7 +2588,7 @@ export function createOnStatusValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2526,7 +2691,7 @@ export function createOnCancelValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2629,7 +2794,7 @@ export function createOnUpdateValidator(...config: string[]) {
             validateProvider(message, testResults, action_id);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id);
+            validateItems(message, testResults, action_id, flowId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2659,7 +2824,12 @@ export function createOnUpdateValidator(...config: string[]) {
             break;
           case trv10Validators.fulfillment_stops_order
             .validate_fulfillment_stops_order:
-            validateFulfillmentStopsInOrder(message, testResults, action_id,flowId)
+            validateFulfillmentStopsInOrder(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
             break;
 
           default:

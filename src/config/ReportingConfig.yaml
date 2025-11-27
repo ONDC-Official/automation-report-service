@@ -834,3 +834,100 @@ domains:
           - Metro Card Balance - Failure
         validationModules: "../validations/ONDC:FIS11/validator#validate"
 
+  ONDC:FIS12:
+    versions:
+      "2.0.2":
+        flows:
+          Gold_Loan_With_Account_Aggregator:
+            - search
+            - on_search
+            - HTML_FORM
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - HTML_FORM
+            - on_status
+            - status
+            - on_status
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            
+          Gold_Loan_Without_Account_Aggregator:
+            - search
+            - on_search
+            - HTML_FORM
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - HTML_FORM
+            - on_status
+            - status
+            - on_status
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
+          Gold_Loan_Foreclosure:
+            - search
+            - on_search
+            - HTML_FORM
+            - select
+            - on_select
+            - HTML_FORM
+            - on_status
+            - status
+            - on_status
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_update
+
+          Gold_Loan_Missed_EMI:
+            - search
+            - on_search
+            - HTML_FORM
+            - select
+            - on_select
+            - HTML_FORM
+            - on_status
+            - status
+            - on_status
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_update
+
+          Gold_Loan_Pre_Part_Payment:
+            - search
+            - on_search
+            - HTML_FORM
+            - select
+            - on_select
+            - HTML_FORM
+            - on_status
+            - status
+            - on_status
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_update
+        optional_flows:
+          - Gold_Loan_Pre_Part_Payment
+        validationModules: "../validations/ONDC:FIS12/validator#validate"
+
