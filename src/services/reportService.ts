@@ -30,7 +30,6 @@ export class ReportService {
       const requestedFlows = Object.keys(flowIdToPayloadIdsMap);
       const flowMap: Record<string, string> = sessionDetails?.flowMap ?? {};
 
-      // Fetch current states
       const currentStates = await this.fetchCurrentStates(
         sessionId,
         requestedFlows,
@@ -62,7 +61,11 @@ export class ReportService {
       const result = await validationModule(flows, sessionId);
       return generateCustomHTMLReport(result);
     } catch (error) {
-      logger.error(`Error generating report for session ${sessionId}:`, error);
+      logger.error(
+        `Error generating report for session ${sessionId}:`,
+        {},
+        error
+      );
       throw new Error(
         `Failed to generate report: ${
           error instanceof Error ? error.message : "Unknown error"
