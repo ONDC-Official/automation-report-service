@@ -1441,11 +1441,8 @@ export function validateStatusOrderId(
   testResults: TestResult
 ): void {
   const orderId = message?.order_id;
-  const  refId = message?.ref_id
   if (!orderId) {
     testResults.failed.push("Order ID is missing in status message");
-  }else if(!refId){
-    testResults.failed.push("Ref ID is missing in status message");
   }
   else {
     testResults.passed.push("Order/Ref ID is present in status message");
