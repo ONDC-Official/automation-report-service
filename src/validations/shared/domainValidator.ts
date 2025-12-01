@@ -310,26 +310,30 @@ export const DomainValidators = {
   fis12OnSearch: createOnSearchValidator(
     fis11Validators.catalog.validate_catalog,
     fis11Validators.providers.validate_providers,
-    fis12Validators.items.validate_items,
-    fis11Validators.payments.validate_payments
+    fis12Validators.items.validate_onsearch_items,
+    fis11Validators.payments.validate_payments,
+    fis12Validators.catalog.providers.categories,
+    fis12Validators.items.validate_xinput
   ),
 
   fis12Select: createSelectValidator(
     fis11Validators.order.validate_order,
     fis11Validators.provider.validate_provider,
-    fis12Validators.items.validate_items,
+    fis11Validators.items.validate_items,
+    fis12Validators.items.select_validate_xinput
   ),
 
   fis12OnSelect: createOnSelectValidator(
     trv10Validators.order.validate_order,
     trv10Validators.quote_trv10.validate_quote_trv10,
     trv10Validators.provider_trv10.validate_provider_trv10,
-    fis12Validators.items.validate_items
+    fis11Validators.items.validate_items,
+    fis12Validators.items.validate_xinput
   ),
   fis12Init: createInitValidator(
     fis11Validators.order.validate_order,
     fis11Validators.provider.validate_provider,
-    fis12Validators.items.validate_items,
+    fis11Validators.items.validate_items,
     fis12Validators.payments.validate_payments,
   ),
 
@@ -337,7 +341,7 @@ export const DomainValidators = {
     fis11Validators.order.validate_order,
     fis11Validators.quote.validate_quote,
     fis11Validators.provider.validate_provider,
-    fis12Validators.items.validate_items,
+    fis11Validators.items.validate_items,
     fis12Validators.fulfillments.validate_fulfillments,
     fis12Validators.payments.validate_payments,
   ),
@@ -353,7 +357,7 @@ export const DomainValidators = {
     fis11Validators.order.validate_order,
     fis11Validators.quote.validate_quote,
     fis11Validators.provider.validate_provider,
-    fis12Validators.items.validate_items,
+    fis11Validators.items.validate_items,
     fis12Validators.fulfillments.validate_fulfillments,
     fis12Validators.payments.validate_payments,
     fis11Validators.order_status.validate_order_status
@@ -380,5 +384,4 @@ export const DomainValidators = {
     fis12Validators.fulfillments.validate_fulfillments,
     fis12Validators.payments.validate_payments,
   ),
-
 };

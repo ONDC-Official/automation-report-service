@@ -24,6 +24,11 @@ import {
   validateShipmentTypes,
 } from "./onSearchValidations";
 import { validatorConstant } from "./validatorConstant";
+import {
+  GOLD_LOAN_FLOWS,
+  PAYMENT_COLLECTED_BY,
+  PERSONAL_LOAN_FLOWS,
+} from "../../utils/constants";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
@@ -69,7 +74,8 @@ function validateShipmentTypesWrapper(
 function validateIntent(
   message: any,
   testResults: TestResult,
-  action_id?: string
+  action_id?: string,
+  flow_id?: string
 ): void {
   const intent = message?.intent;
   if (!intent) {
@@ -98,14 +104,43 @@ function validateIntent(
           "Intent category descriptor code should be ON_DEMAND_TRIP for on_search_trip"
         );
       }
+    } else if (flow_id && GOLD_LOAN_FLOWS.includes(flow_id)) {
+      if (intent.category?.descriptor?.code !== "GOLD_LOAN") {
+        testResults.failed.push(
+          `Intent category descriptor code should be GOLD_LOAN for ${flow_id}`
+        );
+      } else {
+        testResults.passed.push(
+          `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
+        );
+      }
+    } else if (flow_id && PERSONAL_LOAN_FLOWS.includes(flow_id)) {
+      if (intent.category?.descriptor?.code !== "PERSONAL_LOAN") {
+        testResults.failed.push(
+          `Intent category descriptor code should be GOLD_LOAN for ${flow_id}`
+        );
+      } else {
+        testResults.passed.push(
+          `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
+        );
+      }
+    } else {
+      testResults.passed.push(
+        `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
+      );
     }
-    testResults.passed.push("Intent category descriptor code is present");
   }
 
   if (!intent.payment?.collected_by) {
     testResults.failed.push("Payment collected_by is missing in intent");
+  } else if (!PAYMENT_COLLECTED_BY.includes(intent.payment?.collected_by)) {
+    testResults.passed.push(
+      `Invalid payment collected_by found in intent,collected by should be one of these ${PAYMENT_COLLECTED_BY}`
+    );
   } else {
-    testResults.passed.push("Payment collected_by is present in intent");
+    testResults.passed.push(
+      `Payment collected_by ${intent.payment?.collected_by} is present in intent`
+    );
   }
 }
 
@@ -115,7 +150,9 @@ function validatePaymentCollectedBy(
 ): void {
   const payment = message?.intent?.payment;
   if (payment?.collected_by && ["BAP", "BPP"].includes(payment.collected_by)) {
-    testResults.passed.push("Payment collected_by has valid value");
+    testResults.passed.push(
+      `Payment collected_by has valid value ${payment.collected_by}`
+    );
   } else {
     testResults.failed.push("Payment collected_by should be BAP or BPP");
   }
@@ -792,7 +829,10 @@ function validateItems(
       testResults.passed.push(`Item ${index} ID is present`);
     }
 
-    if (flowId !== "Gold_Loan_Without_Account_Aggregator" && flowId !== "Gold_Loan_With_Account_Aggregator") {
+    if (
+      flowId !== "Gold_Loan_Without_Account_Aggregator" &&
+      flowId !== "Gold_Loan_With_Account_Aggregator"
+    ) {
       if (
         action_id !== "select" &&
         action_id !== "select_rental" &&
@@ -813,28 +853,6 @@ function validateItems(
       } else {
         testResults.passed.push(`Item ${index} price value is present`);
       }
-    }
-  });
-}
-
-function validateItemsFIS12(
-  message: any,
-  testResults: TestResult,
-  action_id?: string,
-  flowId?: string
-): void {
-  const items =
-    message?.catalog?.providers?.[0]?.items || message?.order?.items;
-  if (!items || !Array.isArray(items)) {
-    testResults.failed.push("Items array is missing or invalid");
-    return;
-  }
-
-  items.forEach((item, index) => {
-    if (!item.id) {
-      testResults.failed.push(`Item ${index} ID is missing`);
-    } else {
-      testResults.passed.push(`Item ${index} ID is present`);
     }
   });
 }
@@ -975,8 +993,8 @@ function validateFulfillmentsFIS12(
   testResults: TestResult
 ): void {
   const fulfillments =
-  message?.catalog?.providers?.[0]?.fulfillments ||
-  message?.order?.fulfillments;
+    message?.catalog?.providers?.[0]?.fulfillments ||
+    message?.order?.fulfillments;
   if (!fulfillments || !Array.isArray(fulfillments)) {
     testResults.failed.push("Fulfillments array is missing or invalid");
     return;
@@ -1022,7 +1040,7 @@ function validateFulfillmentsFIS12(
 
 function validatePaymentsFIS12(message: any, testResults: TestResult): void {
   const payments =
-  message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
+    message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
   if (!payments || !Array.isArray(payments)) {
     testResults.failed.push("Payments array is missing or invalid");
     return;
@@ -1071,6 +1089,221 @@ function validatePaymentsFIS12(message: any, testResults: TestResult): void {
   });
 }
 
+function validateCategoriesFIS12(message: any, testResults: TestResult): void {
+  const categories: any[] = message.catalog.providers[0].categories;
+  if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    testResults.failed.push("Categories array is missing or empty");
+    return;
+  }
+
+  const validCategoryMap: Record<string, string> = {
+    GOLD_LOAN: "Gold Loan",
+    BUREAU_LOAN: "Bureau Loan",
+    AA_LOAN: "Account Aggregator Loan",
+    PERSONAL_LOAN: "Personal Loan",
+    AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
+  };
+
+  categories.forEach((cat) => {
+    const code = cat?.descriptor?.code;
+    const name = cat?.descriptor?.name;
+
+    if (!code || !name) {
+      testResults.failed.push("Category descriptor code or name is missing");
+      return;
+    }
+
+    if (!validCategoryMap[code]) {
+      testResults.failed.push(`Invalid category code: ${code}`);
+      return;
+    }
+
+    if (validCategoryMap[code] !== name) {
+      testResults.failed.push(
+        `Category name mismatch for code ${code}. Expected ${validCategoryMap[code]} but found ${name}`
+      );
+      return;
+    }
+
+    testResults.passed.push(`Valid category: ${code} - ${name}`);
+  });
+}
+
+function validateOnSearchItemsFIS12(
+  message: any,
+  testResults: TestResult
+): void {
+  const items = message.catalog.providers[0].items;
+  const categories = message.catalog.providers[0].categories;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    testResults.failed.push("Items array is missing or empty");
+    return;
+  }
+
+  const validCategoryIds = new Set(categories.map((c: any) => c.id));
+
+  items.forEach((item) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing");
+      return;
+    }
+
+    if (!item.descriptor?.code || !item.descriptor?.name) {
+      testResults.failed.push(`Item descriptor missing in item: ${item.id}`);
+      return;
+    }
+
+    // Validate category_ids array
+    if (!item.category_ids || item.category_ids.length === 0) {
+      testResults.failed.push(`Item ${item.id} has no category_ids`);
+      return;
+    }
+
+    item.category_ids.forEach((catId: string) => {
+      if (!validCategoryIds.has(catId)) {
+        testResults.failed.push(
+          `Item ${item.id} refers to invalid category id: ${catId}`
+        );
+      }
+    });
+
+    testResults.passed.push(`Valid item structure: ${item.id}`);
+  });
+}
+
+function validateXinputFIS12(message: any, testResults: TestResult): void {
+  const items = message?.catalog?.providers?.[0]?.items?.length
+    ? message.catalog.providers[0].items
+    : message?.order?.items || [];
+
+  const allowedHeadings = [
+    "KYC",
+    "KYC_OFFLINE",
+    "JOURNEY_OFFLINE",
+    "SET_LOAN_AMOUNT",
+    "PERSONAL_INFORMATION",
+  ];
+
+  items.forEach((item: any) => {
+    if (!item.xinput) {
+      testResults.failed.push(`Item ${item.id}: xinput is missing`);
+      return;
+    }
+
+    const head = item.xinput.head;
+    if (!head) {
+      testResults.failed.push(`Item ${item.id}: xinput.head is missing`);
+      return;
+    }
+
+    if (
+      !head.headings ||
+      !Array.isArray(head.headings) ||
+      head.headings.length === 0
+    ) {
+      testResults.failed.push(
+        `Item ${item.id}: xinput.head.headings is missing or empty`
+      );
+      return;
+    }
+
+    head.headings.forEach((h: string) => {
+      if (!allowedHeadings.includes(h)) {
+        testResults.failed.push(
+          `Item ${
+            item.id
+          }: Invalid xinput heading "${h}". Allowed: ${allowedHeadings.join(
+            ", "
+          )}`
+        );
+      } else {
+        testResults.passed.push(`Item ${item.id}: Valid xinput heading "${h}"`);
+      }
+    });
+
+    // Optional extra xinput validations
+    if (!item.xinput.form) {
+      testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
+    } else if (
+      !item.xinput.form.id ||
+      !item.xinput.form.mime_type ||
+      !item.xinput.form.url
+    ) {
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form fields are incomplete`
+      );
+    }
+
+    if (typeof item.xinput.required !== "boolean") {
+      testResults.failed.push(
+        `Item ${item.id}: xinput.required must be boolean`
+      );
+    }
+  });
+}
+
+function validateXInputStatusFIS12(
+  message: any,
+  testResults: TestResult
+): void {
+  const items: any = message.order.items;
+  const allowedStatuses = [
+    "PENDING",
+    "APPROVED",
+    "REJECTED",
+    "EXPIRED",
+    "SUCCESS",
+  ];
+
+  items.forEach((item: any) => {
+    if (!item.xinput) {
+      testResults.failed.push(`Item ${item.id}: xinput is missing`);
+      return;
+    }
+
+    const formResponse = item.xinput.form_response;
+    if (!formResponse) {
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response is missing`
+      );
+      return;
+    }
+
+    const { status, submission_id } = formResponse;
+
+    // Validate status
+    if (!status) {
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.status is missing`
+      );
+    } else if (!allowedStatuses.includes(status)) {
+      testResults.failed.push(
+        `Item ${
+          item.id
+        }: Invalid xinput.form_response.status "${status}". Allowed: ${allowedStatuses.join(
+          ", "
+        )}`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: Valid xinput.form_response.status "${status}"`
+      );
+    }
+
+    // Validate submission_id
+    if (!submission_id) {
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is missing`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is present`
+      );
+    }
+  });
+}
+
 function validatePayments(message: any, testResults: TestResult): void {
   const payments =
     message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
@@ -1082,8 +1315,17 @@ function validatePayments(message: any, testResults: TestResult): void {
   payments.forEach((payment, index) => {
     if (!payment.collected_by) {
       testResults.failed.push(`Payment ${index} collected_by is missing`);
+    } else if (
+      payment?.collected_by &&
+      ["BAP", "BPP"].includes(payment.collected_by)
+    ) {
+      testResults.passed.push(
+        `Payment collected_by has valid value ${payment.collected_by}`
+      );
     } else {
-      testResults.passed.push(`Payment ${index} collected_by is present`);
+      testResults.passed.push(
+        `Payment ${index} collected_by should be one of BAP or BPP`
+      );
     }
 
     if (
@@ -1443,8 +1685,7 @@ export function validateStatusOrderId(
   const orderId = message?.order_id;
   if (!orderId) {
     testResults.failed.push("Order ID is missing in status message");
-  }
-  else {
+  } else {
     testResults.passed.push("Order/Ref ID is present in status message");
   }
 }
@@ -1453,11 +1694,10 @@ export function validateStatusRefId(
   message: any,
   testResults: TestResult
 ): void {
-  const  refId = message?.ref_id
-  if(!refId){
+  const refId = message?.ref_id;
+  if (!refId) {
     testResults.failed.push("Ref ID is missing in status message");
-  }
-  else {
+  } else {
     testResults.passed.push("Ref ID is present in status message");
   }
 }
@@ -1625,6 +1865,7 @@ export function createSearchValidator(...config: string[]) {
     flowId: string,
     action_id: string
   ): Promise<TestResult> {
+    console.log("elementelement=>>>>>>>>>>>", element);
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
 
@@ -1634,9 +1875,6 @@ export function createSearchValidator(...config: string[]) {
       try {
         await updateApiMap(sessionID, transactionId, action);
         await addTransactionId(sessionID, flowId, transactionId);
-        testResults.passed.push(
-          `Transaction ID '${transactionId}' stored successfully`
-        );
       } catch (error: any) {
         testResults.failed.push(
           `Transaction ID storage failed: ${error.message}`
@@ -1675,7 +1913,7 @@ export function createSearchValidator(...config: string[]) {
 
           // Financial services validations
           case fis11Validators.intent.validate_intent:
-            validateIntent(message, testResults, action_id);
+            validateIntent(message, testResults, action_id, flowId);
             break;
           case fis11Validators.payment.validate_payment_collected_by:
             validatePaymentCollectedBy(message, testResults);
@@ -1713,13 +1951,12 @@ export function validateUpdateRequestTRV10(
   const validUpdateTargets = [
     "order.quote.breakup",
     "order.fulfillments",
-    "payments"
+    "payments",
   ];
 
   if (!updateTarget) {
     testResults.failed.push("update_target is missing");
-  } else if (!validUpdateTargets.includes(updateTarget)
-  ) {
+  } else if (!validUpdateTargets.includes(updateTarget)) {
     testResults.failed.push(
       `update_target must be '${validUpdateTargets}', got '${updateTarget}'`
     );
@@ -1748,7 +1985,6 @@ export function validateUpdateRequestTRV10(
     testResults.passed.push(statusMessage);
   }
 }
-
 
 /**
  * Creates an update validation function with configurable validations
@@ -1903,6 +2139,18 @@ export function createOnSearchValidator(...config: string[]) {
             .validate_fulfillment_stops_catalog:
             validateFulfillmentStopsInCatalog(message, testResults, action_id);
             break;
+
+          //FIS12
+          case fis12Validators.catalog.providers.categories:
+            validateCategoriesFIS12(message, testResults);
+            break;
+          case fis12Validators.items.validate_onsearch_items:
+            validateOnSearchItemsFIS12(message, testResults);
+            break;
+          case fis12Validators.items.validate_xinput:
+            validateXinputFIS12(message, testResults);
+            break;
+
           default:
             break;
         }
@@ -1980,6 +2228,9 @@ export function createSelectValidator(...config: string[]) {
             validateFulfillmentsTRV10(message, testResults, action_id);
             break;
 
+          case fis12Validators.items.select_validate_xinput:
+            validateXInputStatusFIS12(message, testResults);
+            break;
           default:
             break;
         }
@@ -2067,6 +2318,10 @@ export function createOnSelectValidator(...config: string[]) {
               action_id,
               flowId
             );
+            break;
+
+          case fis12Validators.items.validate_xinput:
+            validateXinputFIS12(message, testResults);
             break;
 
           default:
@@ -2433,6 +2688,10 @@ export function createOnConfirmValidator(...config: string[]) {
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
             break;
+          case fis12Validators.catalog.providers.categories:
+            validateCategoriesFIS12(message, testResults);
+            break;
+
           // Logistics validations
           case log11Validators.lsp.validate_lsp:
             validateLSPFeatures(flowId, message, testResults);
@@ -2506,8 +2765,6 @@ export function createOnConfirmValidator(...config: string[]) {
           case fis11Validators.order_status.validate_order_status:
             validateOrderStatus(message, testResults, action_id);
             break;
-
-          
 
           // TRV10 validations
           case trv10Validators.provider_trv10.validate_provider_trv10:
