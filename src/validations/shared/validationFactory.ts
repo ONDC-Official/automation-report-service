@@ -24,6 +24,7 @@ import {
   validateShipmentTypes,
 } from "./onSearchValidations";
 import { validatorConstant } from "./validatorConstant";
+import logger from "@ondc/automation-logger";
 import {
   GOLD_LOAN_FLOWS,
   PAYMENT_COLLECTED_BY,
@@ -828,14 +829,15 @@ function validateItems(
     } else {
       testResults.passed.push(`Item ${index} ID is present`);
     }
-
     if (
       flowId !== "Gold_Loan_Without_Account_Aggregator" &&
-      flowId !== "Gold_Loan_With_Account_Aggregator"
+      flowId !== "Gold_Loan_With_Account_Aggregator" && 
+      flowId !== "Gold_Loan_Foreclosure" && flowId !== "Gold_Loan_Pre_Part_Payment" && flowId !== "Gold_Loan_Missed_EMI"
     ) {
       if (
         action_id !== "select" &&
         action_id !== "select_rental" &&
+        action_id !== "select_adjust_loan_amount" &&
         action_id !== "init" &&
         action_id !== "confirm" &&
         action_id !== "confirm_card_balance_faliure" &&
@@ -848,10 +850,20 @@ function validateItems(
         }
       }
 
-      if (action_id !== "select_rental" && !item.price?.value) {
+      if (
+        action_id !== "select_rental" &&
+        action_id !== "select_adjust_loan_amount" &&
+        !item.price?.value
+      ) {
         testResults.failed.push(`Item ${index} price value is missing`);
       } else {
-        testResults.passed.push(`Item ${index} price value is present`);
+        if (item.price?.value) {
+          testResults.passed.push(`Item ${index} price value is present`);
+        } else if (action_id === "select_adjust_loan_amount") {
+          testResults.passed.push(
+            `Item ${index} price value is optional for select_adjust_loan_amount action`
+          );
+        }
       }
     }
   });
@@ -1010,6 +1022,8 @@ function validateFulfillmentsFIS12(
       );
     }
 
+    if (fulfillment.type !== "LOAN") {
+    
     // Validate customer info
     if (!fulfillment.customer) {
       testResults.failed.push(`Fulfillment ${index} customer info is missing`);
@@ -1035,6 +1049,7 @@ function validateFulfillmentsFIS12(
         `Fulfillment ${index} state code: ${fulfillment.state.descriptor.code}`
       );
     }
+  }
   });
 }
 
@@ -1089,6 +1104,301 @@ function validatePaymentsFIS12(message: any, testResults: TestResult): void {
   });
 }
 
+function validateDocumentsFIS12(message: any, testResults: TestResult): void {
+  const documents = message?.order?.documents;
+  
+  // Always add a message to indicate validation ran
+  if (!documents || !Array.isArray(documents) || documents.length === 0) {
+    // Documents are optional in some flows, so log as info rather than fail
+    testResults.passed.push("Documents validation: Documents array is optional (not present in order)");
+    return;
+  }
+  
+  // Documents are present - validate them
+  testResults.passed.push(`Documents validation: Found ${documents.length} document(s) to validate`);
+
+  // Expected document types for FIS12 Gold Loan
+  const expectedDocumentTypes = [
+    "LOAN_AGREEMENT",
+    "LOAN_CANCELLATION",
+  ];
+
+  const foundDocumentTypes: string[] = [];
+
+  documents.forEach((doc: any, index: number) => {
+    // Validate required fields
+    if (!doc.descriptor) {
+      testResults.failed.push(`Document ${index}: descriptor is missing`);
+      return;
+    }
+
+    const code = doc.descriptor.code;
+    if (!code) {
+      testResults.failed.push(`Document ${index}: descriptor.code is missing`);
+      return;
+    }
+
+    foundDocumentTypes.push(code);
+
+    // Validate mime_type
+    if (!doc.mime_type) {
+      testResults.failed.push(`Document ${index} (${code}): mime_type is missing`);
+    } else {
+      // Validate mime_type format (should be like "application/pdf", "text/html", etc.)
+      const validMimeTypes = ["application/pdf", "text/html", "application/json"];
+      if (!validMimeTypes.includes(doc.mime_type) && !doc.mime_type.includes("/")) {
+        testResults.failed.push(
+          `Document ${index} (${code}): Invalid mime_type format "${doc.mime_type}"`
+        );
+      } else {
+        testResults.passed.push(
+          `Document ${index} (${code}): Valid mime_type "${doc.mime_type}"`
+        );
+      }
+    }
+
+    // Validate URL
+    if (!doc.url) {
+      testResults.failed.push(`Document ${index} (${code}): url is missing`);
+    } else {
+      // Validate URL format (should be http/https)
+      const urlPattern = /^https?:\/\/.+/i;
+      if (!urlPattern.test(doc.url)) {
+        testResults.failed.push(
+          `Document ${index} (${code}): Invalid URL format "${doc.url}". Must be http:// or https://`
+        );
+      } else {
+        testResults.passed.push(`Document ${index} (${code}): Valid URL "${doc.url}"`);
+      }
+    }
+
+    // Validate descriptor fields
+    if (!doc.descriptor.name) {
+      testResults.failed.push(`Document ${index} (${code}): descriptor.name is missing`);
+    } else {
+      testResults.passed.push(
+        `Document ${index} (${code}): descriptor.name is present: "${doc.descriptor.name}"`
+      );
+    }
+
+    // Optional fields validation
+    if (doc.descriptor.short_desc) {
+      testResults.passed.push(
+        `Document ${index} (${code}): descriptor.short_desc is present`
+      );
+    }
+    if (doc.descriptor.long_desc) {
+      testResults.passed.push(
+        `Document ${index} (${code}): descriptor.long_desc is present`
+      );
+    }
+  });
+
+  // Check for expected document types (at least LOAN_AGREEMENT should be present)
+  if (!foundDocumentTypes.includes("LOAN_AGREEMENT")) {
+    testResults.failed.push(
+      "Required document type 'LOAN_AGREEMENT' is missing"
+    );
+  } else {
+    testResults.passed.push("Required document type 'LOAN_AGREEMENT' is present");
+  }
+
+  // Check for LOAN_CANCELLATION (optional but recommended)
+  if (foundDocumentTypes.includes("LOAN_CANCELLATION")) {
+    testResults.passed.push("Document type 'LOAN_CANCELLATION' is present");
+  } else {
+    testResults.passed.push(
+      "Document type 'LOAN_CANCELLATION' is optional (not present)"
+    );
+  }
+
+  // Summary
+  testResults.passed.push(
+    `Found ${documents.length} document(s) with types: ${foundDocumentTypes.join(", ")}`
+  );
+}
+
+function validateFulfillmentStateOnUpdateFIS12(
+  message: any,
+  testResults: TestResult,
+  action_id: string,
+  flowId: string
+): void {
+  // Only validate for Gold Loan Foreclosure flow
+  if (flowId !== "Gold_Loan_Foreclosure") {
+    return;
+  }
+
+  const fulfillments = message?.order?.fulfillments;
+  if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
+    testResults.failed.push(
+      "Fulfillments array is missing or empty in order for fulfillment state validation"
+    );
+    return;
+  }
+
+  // Expected state codes based on action_id
+  let expectedState: string | null = null;
+  if (action_id === "on_update") {
+    expectedState = "DISBURSED";
+  } else if (action_id === "on_update_unsolicited") {
+    expectedState = "COMPLETE";
+  }
+
+  if (!expectedState) {
+    testResults.passed.push(
+      `Fulfillment state validation skipped (action_id: ${action_id}, only validates 'on_update' and 'on_update_unsolicited')`
+    );
+    return;
+  }
+
+  fulfillments.forEach((fulfillment: any, index: number) => {
+    const stateCode = fulfillment?.state?.descriptor?.code;
+
+    if (!stateCode) {
+      testResults.failed.push(
+        `Fulfillment ${index}: state.descriptor.code is missing (expected: ${expectedState} for action ${action_id})`
+      );
+      return;
+    }
+
+    if (stateCode !== expectedState) {
+      testResults.failed.push(
+        `Fulfillment ${index}: Invalid state code "${stateCode}". Expected "${expectedState}" for action "${action_id}" in Gold_Loan_Foreclosure flow`
+      );
+    } else {
+      testResults.passed.push(
+        `Fulfillment ${index}: Valid state code "${stateCode}" for action "${action_id}" in Gold_Loan_Foreclosure flow`
+      );
+    }
+  });
+}
+
+function validateUpdatePaymentsFIS12(
+  message: any,
+  testResults: TestResult
+): void {
+  const { update_target: updateTarget, order } = message ?? {};
+
+  // Only validate if update_target is "payments"
+  if (updateTarget !== "payments") {
+    testResults.passed.push(
+      `Update target is "${updateTarget}", skipping payment-specific validation`
+    );
+    return;
+  }
+
+  if (!order) {
+    testResults.failed.push("Order is missing in update request");
+    return;
+  }
+
+  const payments = order.payments;
+  if (!payments || !Array.isArray(payments) || payments.length === 0) {
+    testResults.failed.push(
+      "Payments array is missing or empty in update request"
+    );
+    return;
+  }
+
+  testResults.passed.push(
+    `Found ${payments.length} payment(s) in update request`
+  );
+
+  payments.forEach((payment: any, index: number) => {
+    // Validate time.label for foreclosure
+    if (payment.time) {
+      if (!payment.time.label) {
+        testResults.failed.push(
+          `Payment ${index}: time.label is missing`
+        );
+      } else {
+        const validLabels = ["FORECLOSURE","MISSED_EMI_PAYMENT", "INSTALLMENT", "PRE_PART_PAYMENT"];
+        if (!validLabels.includes(payment.time.label)) {
+          testResults.failed.push(
+            `Payment ${index}: Invalid time.label "${payment.time.label}". Expected one of: ${validLabels.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(
+            `Payment ${index}: Valid time.label "${payment.time.label}"`
+          );
+        }
+
+        // For FORECLOSURE, validate time.range if present
+        if (payment.time.label === "FORECLOSURE") {
+          if (payment.time.range) {
+            if (!payment.time.range.start || !payment.time.range.end) {
+              testResults.failed.push(
+                `Payment ${index} (FORECLOSURE): time.range.start or time.range.end is missing`
+              );
+            } else {
+              testResults.passed.push(
+                `Payment ${index} (FORECLOSURE): time.range is valid`
+              );
+            }
+          } else {
+            testResults.passed.push(
+              `Payment ${index} (FORECLOSURE): time.range is optional (not present)`
+            );
+          }
+        }
+      }
+    } else {
+      testResults.passed.push(
+        `Payment ${index}: time field is optional (not present)`
+      );
+    }
+
+    // Validate payment params if present (for foreclosure amount)
+    if (payment.params) {
+      if (payment.params.amount && payment.params.currency) {
+        testResults.passed.push(
+          `Payment ${index}: params.amount (${payment.params.amount}) and params.currency (${payment.params.currency}) are present`
+        );
+      } else {
+        if (!payment.params.amount) {
+          testResults.failed.push(
+            `Payment ${index}: params.amount is missing when params is present`
+          );
+        }
+        if (!payment.params.currency) {
+          testResults.failed.push(
+            `Payment ${index}: params.currency is missing when params is present`
+          );
+        }
+      }
+    }
+
+    // Validate payment status if present
+    if (payment.status) {
+      const validStatuses = ["NOT-PAID", "PAID", "PENDING"];
+      if (!validStatuses.includes(payment.status)) {
+        testResults.failed.push(
+          `Payment ${index}: Invalid status "${payment.status}". Expected one of: ${validStatuses.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(
+          `Payment ${index}: Valid status "${payment.status}"`
+        );
+      }
+    }
+
+    // Validate payment type if present
+    if (payment.type) {
+      const validTypes = ["ON_ORDER", "POST_FULFILLMENT"];
+      if (!validTypes.includes(payment.type)) {
+        testResults.failed.push(
+          `Payment ${index}: Invalid type "${payment.type}". Expected one of: ${validTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(
+          `Payment ${index}: Valid type "${payment.type}"`
+        );
+      }
+    }
+  });
+}
+
 function validateCategoriesFIS12(message: any, testResults: TestResult): void {
   const categories: any[] = message.catalog.providers[0].categories;
   if (!categories || !Array.isArray(categories) || categories.length === 0) {
@@ -1126,6 +1436,145 @@ function validateCategoriesFIS12(message: any, testResults: TestResult): void {
     }
 
     testResults.passed.push(`Valid category: ${code} - ${name}`);
+  });
+}
+
+/**
+ * FIS12 Gold Loan - validate LOAN_INFO tags on on_init/on_status
+ * Ensures mandatory loan info attributes are present and well-formed.
+ */
+function validateGoldLoanOnInitFIS12(
+  message: any,
+  testResults: TestResult
+): void {
+  const items = message?.order?.items;
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    testResults.failed.push("order.items array is missing or empty");
+    return;
+  }
+
+  const requiredLoanInfoCodes = [
+    "INTEREST_RATE",
+    "TERM",
+    "INTEREST_RATE_TYPE",
+    "LTV_RATIO",
+    "ANNUAL_PERCENTAGE_RATE",
+    "REPAYMENT_FREQUENCY",
+    "NUMBER_OF_INSTALLMENTS_OF_REPAYMENT",
+    "INSTALLMENT_AMOUNT",
+    "TNC_LINK",
+    "COOL_OFF_PERIOD",
+    "KFS_LINK",
+  ];
+
+  const optionalLoanInfoCodes = [
+    "APPLICATION_FEE",
+    "FORECLOSURE_FEE",
+    "INTEREST_RATE_CONVERSION_CHARGE",
+    "DELAY_PENALTY_FEE",
+    "OTHER_PENALTY_FEE",
+  ];
+
+  items.forEach((item: any, index: number) => {
+    // Only validate items that look like Gold Loan products
+    const isGoldLoan =
+      item?.descriptor?.code === "LOAN" &&
+      typeof item?.descriptor?.name === "string" &&
+      item.descriptor.name.toLowerCase().includes("gold loan");
+
+    if (!isGoldLoan) {
+      return;
+    }
+
+    const loanInfoTag = (item.tags || []).find(
+      (t: any) => t?.descriptor?.code === "LOAN_INFO"
+    );
+
+    if (!loanInfoTag) {
+      testResults.failed.push(
+        `Item ${item.id || index}: LOAN_INFO tag is missing for Gold Loan item`
+      );
+      return;
+    }
+
+    const list = Array.isArray(loanInfoTag.list) ? loanInfoTag.list : [];
+    const codeMap = new Map<string, any>();
+    list.forEach((entry: any) => {
+      const code = entry?.descriptor?.code;
+      if (code) codeMap.set(code, entry);
+    });
+
+    // Check mandatory codes
+    requiredLoanInfoCodes.forEach((code) => {
+      if (!codeMap.has(code)) {
+        testResults.failed.push(
+          `Item ${item.id}: LOAN_INFO.${code} is missing (mandatory)`
+        );
+      } else {
+        const value = codeMap.get(code)?.value;
+        if (value === undefined || value === null || value === "") {
+          testResults.failed.push(
+            `Item ${item.id}: LOAN_INFO.${code} value is empty (mandatory)`
+          );
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: LOAN_INFO.${code} is present with value "${value}"`
+          );
+        }
+      }
+    });
+
+    // Basic format checks for a few important fields
+    const percentFields = ["INTEREST_RATE", "LTV_RATIO", "ANNUAL_PERCENTAGE_RATE"];
+    percentFields.forEach((code) => {
+      const entry = codeMap.get(code);
+      if (entry?.value && typeof entry.value === "string") {
+        if (!entry.value.trim().endsWith("%")) {
+          testResults.failed.push(
+            `Item ${item.id}: LOAN_INFO.${code} should be a percentage string (e.g. "12%"), found "${entry.value}"`
+          );
+        }
+      }
+    });
+
+    const coolOff = codeMap.get("COOL_OFF_PERIOD")?.value;
+    if (coolOff && typeof coolOff === "string") {
+      if (!coolOff.startsWith("P")) {
+        testResults.failed.push(
+          `Item ${item.id}: LOAN_INFO.COOL_OFF_PERIOD should be ISO 8601 duration (e.g. "PT30D"), found "${coolOff}"`
+        );
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: LOAN_INFO.COOL_OFF_PERIOD is present with value "${coolOff}"`
+        );
+      }
+    }
+
+    const urlFields = ["TNC_LINK", "KFS_LINK"];
+    urlFields.forEach((code) => {
+      const entry = codeMap.get(code);
+      if (entry?.value && typeof entry.value === "string") {
+        if (!/^https?:\/\//i.test(entry.value.trim())) {
+          testResults.failed.push(
+            `Item ${item.id}: LOAN_INFO.${code} should be a valid URL, found "${entry.value}"`
+          );
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: LOAN_INFO.${code} URL looks valid`
+          );
+        }
+      }
+    });
+
+    // Optional codes: just acknowledge if present
+    optionalLoanInfoCodes.forEach((code) => {
+      if (codeMap.has(code)) {
+        const value = codeMap.get(code)?.value;
+        testResults.passed.push(
+          `Item ${item.id}: LOAN_INFO.${code} is present with value "${value}"`
+        );
+      }
+    });
   });
 }
 
@@ -1172,7 +1621,12 @@ function validateOnSearchItemsFIS12(
   });
 }
 
-function validateXinputFIS12(message: any, testResults: TestResult): void {
+async function validateXinputFIS12(
+  message: any,
+  testResults: TestResult,
+  sessionID?: string,
+  transactionId?: string
+): Promise<void> {
   const items = message?.catalog?.providers?.[0]?.items?.length
     ? message.catalog.providers[0].items
     : message?.order?.items || [];
@@ -1184,6 +1638,8 @@ function validateXinputFIS12(message: any, testResults: TestResult): void {
     "SET_LOAN_AMOUNT",
     "PERSONAL_INFORMATION",
   ];
+
+  const formUrls: string[] = [];
 
   items.forEach((item: any) => {
     if (!item.xinput) {
@@ -1233,6 +1689,14 @@ function validateXinputFIS12(message: any, testResults: TestResult): void {
       testResults.failed.push(
         `Item ${item.id}: xinput.form fields are incomplete`
       );
+    } else {
+      // Save form URL to Redis for HTML_FORM validation
+      if (item.xinput.form.url && sessionID && transactionId) {
+        formUrls.push(item.xinput.form.url);
+        testResults.passed.push(
+          `Item ${item.id}: Form URL found and will be saved for HTML_FORM validation`
+        );
+      }
     }
 
     if (typeof item.xinput.required !== "boolean") {
@@ -1241,6 +1705,17 @@ function validateXinputFIS12(message: any, testResults: TestResult): void {
       );
     }
   });
+
+  // Save form URLs to Redis if we have session and transaction info
+  if (formUrls.length > 0 && sessionID && transactionId) {
+    try {
+      const { saveData } = await import("../../utils/redisUtils");
+      await saveData(sessionID, transactionId, "formUrls", { urls: formUrls });
+      logger.info(`Saved ${formUrls.length} form URL(s) to Redis for HTML_FORM validation`);
+    } catch (error: any) {
+      logger.error("Error saving form URLs to Redis", error);
+    }
+  }
 }
 
 function validateXInputStatusFIS12(
@@ -2032,6 +2507,11 @@ export function createUpdateValidator(...config: string[]) {
             );
             break;
 
+          // FIS12 validations
+          case fis12Validators.update.validate_update_payments:
+            validateUpdatePaymentsFIS12(message, testResults);
+            break;
+
           default:
             break;
         }
@@ -2148,7 +2628,7 @@ export function createOnSearchValidator(...config: string[]) {
             validateOnSearchItemsFIS12(message, testResults);
             break;
           case fis12Validators.items.validate_xinput:
-            validateXinputFIS12(message, testResults);
+            await validateXinputFIS12(message, testResults, sessionID, transactionId);
             break;
 
           default:
@@ -2215,6 +2695,15 @@ export function createSelectValidator(...config: string[]) {
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
+            break;
+          /**
+           * FIS12-specific validations
+           * Note: DomainValidators.fis12OnStatus already wires
+           * fis12Validators.fulfillments.validate_fulfillments into the
+           * on_status flow. Without this case, that config entry is a no-op.
+           */
+          case fis12Validators.fulfillments.validate_fulfillments:
+            validateFulfillmentsFIS12(message, testResults);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -2321,7 +2810,7 @@ export function createOnSelectValidator(...config: string[]) {
             break;
 
           case fis12Validators.items.validate_xinput:
-            validateXinputFIS12(message, testResults);
+            await validateXinputFIS12(message, testResults, sessionID, transactionId);
             break;
 
           default:
@@ -2397,6 +2886,17 @@ export function createInitValidator(...config: string[]) {
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
+            break;
+
+          // FIS12 Gold Loan-specific validations
+          case fis12Validators.items.loan_info_oninit:
+            validateGoldLoanOnInitFIS12(message, testResults);
+            break;
+
+          // FIS12 validations
+          case fis12Validators.items.select_validate_xinput:
+            // Validate xinput.form_response status & submission_id for FIS12 flows
+            validateXInputStatusFIS12(message, testResults);
             break;
 
           // TRV10 validations
@@ -2642,6 +3142,14 @@ export function createOnInitValidator(...config: string[]) {
             );
             break;
 
+          // FIS12 validations
+          case fis12Validators.fulfillments.validate_fulfillments:
+            validateFulfillmentsFIS12(message, testResults);
+            break;
+          case fis12Validators.documents.validate_documents:
+            validateDocumentsFIS12(message, testResults);
+            break;
+
           default:
             break;
         }
@@ -2690,6 +3198,9 @@ export function createOnConfirmValidator(...config: string[]) {
             break;
           case fis12Validators.catalog.providers.categories:
             validateCategoriesFIS12(message, testResults);
+            break;
+          case fis12Validators.documents.validate_documents:
+            validateDocumentsFIS12(message, testResults);
             break;
 
           // Logistics validations
@@ -2878,6 +3389,20 @@ export function createOnStatusValidator(...config: string[]) {
               action_id,
               flowId
             );
+            break;
+
+          // FIS12 validations
+          case fis12Validators.fulfillments.validate_fulfillments:
+            validateFulfillmentsFIS12(message, testResults);
+            break;
+          case fis12Validators.payments.validate_payments:
+            validatePaymentsFIS12(message, testResults);
+            break;
+          case fis12Validators.documents.validate_documents:
+            validateDocumentsFIS12(message, testResults);
+            break;
+          case fis12Validators.update.validate_fulfillment_state:
+            validateFulfillmentStateOnUpdateFIS12(message, testResults, action_id, flowId);
             break;
 
           default:
