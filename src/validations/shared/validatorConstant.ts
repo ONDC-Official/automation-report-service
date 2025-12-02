@@ -53,9 +53,25 @@ export const validatorConstant = {
             },
             items: {
               validate_items: "validateItemsFIS12",
+              validate_onsearch_items :"validateOnSearchItemsFIS12",
+              validate_xinput: "validateXinputFIS12",
+              select_validate_xinput:"validateXInputStatusFIS12",
+              loan_info_oninit: "validateGoldLoanOnInitFIS12"
             },
             payments: {
               validate_payments: "validatePaymentsFIS12",
+            },
+            catalog:{
+              providers:{
+                categories: "validateCategoriesFIS12"
+              }
+            },
+            documents: {
+              validate_documents: "validateDocumentsFIS12"
+            },
+            update: {
+              validate_update_payments: "validateUpdatePaymentsFIS12",
+              validate_fulfillment_state: "validateFulfillmentStateOnUpdateFIS12"
             }
           },
         },

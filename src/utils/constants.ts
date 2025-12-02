@@ -22,6 +22,28 @@ export const MANDATORY_FLOWS: String[] = [
   "TECHNICAL_CANCELLATION_FLOW",
 ];
 
+export const GOLD_LOAN_FLOWS = ["Gold_Loan_With_Account_Aggregator","Gold_Loan_Without_Account_Aggregator","Gold_Loan_Foreclosure,Gold_Loan_Missed_EMI","Gold_Loan_Pre_Part_Payment"]
+export const PAYMENT_COLLECTED_BY = ['BPP', 'BAP']
+export const PERSONAL_LOAN_FLOWS = [
+  "Personal_Loan_With_AA_And_Monitoring_Consent",
+  "Personal_Loan_Without_AA_And_Monitoring_Consent",
+  "Personal_Loan_Without_Acount_Monitoring",
+  "Personal_Loan_Offline",
+  "Personal_Loan_Offline_And_Online",
+  "Personal_Loan_Foreclosure",
+  "Personal_Loan_Missed_EMI",
+  "Personal_Loan_Pre_Part_Payment",
+  "Personal_Loan_Multiple_Offers"
+]
+
+export const validCategoryMap: Record<string, string> = {
+  GOLD_LOAN: "Gold Loan",
+  BUREAU_LOAN: "Bureau Loan",
+  AA_LOAN: "Account Aggregator Loan",
+  PERSONAL_LOAN: "Personal Loan",
+  AA_PERSONAL_LOAN: "Account Aggregator Personal Loan"
+};
+
 export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
