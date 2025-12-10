@@ -238,7 +238,7 @@ export const FLOW_ID_MAP: Record<
   "ONDC:TRV11": {
     "2.0.1": {
       "Bus": {
-        "IntraCity_Purchase_Journey_Flow_Code_Based": "MBL_8",
+        "IntraCity_Purchase_Journey_FlowCode_Based": "MBL_8",
         "IntraCity_User_Cancellation_Flow": "MBL_11",
         "IntraCity_Technical_Cancellation_Flow": "MBL_12",
         "IntraCity_Monthly_Passes_Flow_Code_Based": "MBL_10",
