@@ -91,7 +91,7 @@ export class ReportService {
     );
 
     logger.info(
-      `[ReportService] Checking Pramaan report for sessionId: ${sessionDetails.sessionId},usecase ${sessionDetails.usecaseId},generated testId: ${testId}`
+      `[ReportService] Checking Pramaan report for sessionId: ${sessionDetails.sessionId},usecaseId: ${sessionDetails.usecaseId}, generated testId: ${testId}`
     );
 
     // Build request body for Pramaan
@@ -111,7 +111,7 @@ export class ReportService {
       throw new Error("PRAMAAN_URL is not defined in environment variables");
     }
 
-    logger.info(`Sending sync request to Pramaan at ${pramaanUrl}`);
+    logger.info(`Sending sync request to Pramaan at ${pramaanUrl},body: ${JSON.stringify(body)}`);
     const pramaanResponse = await axios.post(pramaanUrl, body, {
       headers: { "Content-Type": "application/json" },
     });
