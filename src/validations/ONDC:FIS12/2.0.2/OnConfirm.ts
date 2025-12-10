@@ -8,12 +8,13 @@ export default async function on_confirm(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
   // For error response scenarios (like on_confirm_driver_not_found), validate error first
 
   // For normal on_confirm, use domain validator
-  const result = await DomainValidators.fis12OnConfirm(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.fis12OnConfirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const message = element?.jsonRequest?.message;
