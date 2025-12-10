@@ -8,9 +8,10 @@ export default async function on_init(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis12OnInit(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.fis12OnInit(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const message = element?.jsonRequest?.message;

@@ -7,10 +7,11 @@ export default async function init(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
   // Fixed: Pass correct number of arguments to fis11Init (added missing 4th argument: "init")
-  const result = await DomainValidators.fis11Init(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.fis11Init(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;

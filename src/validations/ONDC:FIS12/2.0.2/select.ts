@@ -7,9 +7,11 @@ export default async function select(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis12Select(element, sessionID, flowId, actionId);
+  // Log all received parameters to debug 
+  const result = await DomainValidators.fis12Select(element, sessionID, flowId, actionId, usecaseId);
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {

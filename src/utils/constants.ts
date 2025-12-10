@@ -395,8 +395,27 @@ export const FLOW_ID_MAP: Record<
         "ORDER_FLOW_BASE_LINE": "LOG11_TECH_1"
       },
     },
+  },
+  "ONDC:FIS13": {
+    "2.0.0": {
+      "transit-insurance": {
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
+        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "FIS_13_2",
+        "Purchase_Journey_Transit_Insurance": "FIS_13_3"
+      },
+      "accidental-insurance": {
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
+        "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "FIS_13_2",
+        "Purchase_Journey_Accidental_Insurance": "FIS_13_3"
+      },
+      "hospicash-insurance": {
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
+        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "FIS_13_2",
+        "Purchase_Journey_Hospicash_Insurance": "FIS_13_3"
+      }
+    }
   }
-};
+}
 
 export const typeMapping: Record<string, string> = {
   "Bus": "BUS",

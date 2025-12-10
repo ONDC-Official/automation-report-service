@@ -7,9 +7,10 @@ export default async function select(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.trv10Select(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.trv10Select(element, sessionID, flowId, actionId, usecaseId);
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {

@@ -21,7 +21,9 @@ export function createDomainValidator(
   return async function validate(
     element: Payload,
     sessionID: string,
-    flowId: string
+    flowId: string,
+    actionId: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const version = resolveVersion(element);
 
@@ -71,12 +73,11 @@ export function createDomainValidator(
           return testResults;
         }
 
-        const testResult: TestResult = await testFunction(
-          element,
-          sessionID,
-          flowId,
-          action_id
-        );
+        // Support both old and new function signatures (with optional usecaseId)
+        // Pass usecaseId if the function accepts it (function.length >= 5 means it has 5+ parameters)
+        const testResult: TestResult = testFunction.length >= 5
+          ? await testFunction(element, sessionID, flowId, action_id, usecaseId)
+          : await testFunction(element, sessionID, flowId, action_id);
         testResults.passed.push(...(testResult.passed || []));
         testResults.failed.push(...(testResult.failed || []));
         if (testResult.response) {

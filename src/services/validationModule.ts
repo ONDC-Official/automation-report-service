@@ -245,8 +245,10 @@ async function processPayloads(
   sessionID: string,
   flowId: string,
   domainConfig: DomainConfig,
-  requiredSequence?: string[]
+  requiredSequence?: string[],
+  usecaseId?: string
 ): Promise<Record<string, string>> {
+  console.log("processPayloads - received usecaseId:", usecaseId);
   const messages: Record<string, string> = {};
   const actionCounters = { ...INITIAL_ACTION_COUNTERS };
   let payloadIndex = 0; // Track actual payloads
@@ -310,12 +312,14 @@ async function processPayloads(
       const domain = element?.jsonRequest?.context?.domain;
 
       try {
+        console.log("checkPayload - calling checkPayload", {usecaseId });
         const result = await checkPayload(
           domain,
           element,
           sessionID,
           flowId,
-          domainConfig
+          domainConfig,
+          usecaseId
         );
 
         messages[`${action}_${actionCounters[action]}`] = JSON.stringify(result);
@@ -345,7 +349,8 @@ async function processPayloads(
           element,
           sessionID,
           flowId,
-          domainConfig
+          domainConfig,
+          usecaseId
         );
 
         messages[`${action}_${actionCounters[action]}`] = JSON.stringify(result);
@@ -372,8 +377,14 @@ export async function validationModule(
 
   // Get session details and domain configuration
   const sessionDetails = await getSessionDetails(sessionID);
+  console.log("validationModule - sessionDetails:", JSON.stringify(sessionDetails, null, 2));
+  // Use optional chaining for usecaseId to avoid property access error
   const domainConfig: DomainConfig = sessionDetails
-    ? loadConfig(sessionDetails.domain, sessionDetails.version)
+    ? loadConfig(
+        sessionDetails.domain,
+        sessionDetails.version,
+        (sessionDetails as any).usecaseId // fallback to 'any' for backwards compatibility
+      )
     : { flows: {} };
 
   // Check mandatory flows
@@ -402,12 +413,17 @@ export async function validationModule(
     logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });
 
     // Step 2: Process payloads (HTML_FORM validations are now handled inline)
+    // Try multiple possible keys for usecaseId
+    const usecaseId = (sessionDetails as any)?.usecaseId 
+      || (sessionDetails as any)?.usecase_id 
+      || (sessionDetails as any)?.useCaseId;
     const messages = await processPayloads(
       payloads,
       sessionID,
       flowId,
       domainConfig,
-      requiredSequence
+      requiredSequence,
+      usecaseId
     );
 
     logger.info(MESSAGES.validations.payloadProcessingDone(flowId), { flowId });

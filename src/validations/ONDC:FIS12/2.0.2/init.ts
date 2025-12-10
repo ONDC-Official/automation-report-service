@@ -7,9 +7,10 @@ export default async function init(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis12Init(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.fis12Init(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;

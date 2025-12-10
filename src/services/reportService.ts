@@ -1,7 +1,6 @@
 import { fetchPayloads, fetchSessionDetails } from "./dbService";
 import { sortPayloadsByCreatedAt } from "../utils/groupUtils";
 import { validationModule } from "./validationModule";
-import { utilityReport } from "./utilityService";
 import { generateCustomHTMLReport } from "../templates/generateReport";
 import { CacheService } from "./cacheService";
 import logger from "@ondc/automation-logger";
@@ -92,7 +91,7 @@ export class ReportService {
     );
 
     logger.info(
-      `[ReportService] Checking Pramaan report for sessionId: ${sessionDetails.sessionId}, generated testId: ${testId}`
+      `[ReportService] Checking Pramaan report for sessionId: ${sessionDetails.sessionId},usecase ${sessionDetails.usecaseId},generated testId: ${testId}`
     );
 
     // Build request body for Pramaan

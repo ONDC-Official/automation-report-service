@@ -118,7 +118,7 @@ function validateIntent(
     } else if (flow_id && PERSONAL_LOAN_FLOWS.includes(flow_id)) {
       if (intent.category?.descriptor?.code !== "PERSONAL_LOAN") {
         testResults.failed.push(
-          `Intent category descriptor code should be GOLD_LOAN for ${flow_id}`
+          `Intent category descriptor code should be PERSONAL_LOAN for ${flow_id}`
         );
       } else {
         testResults.passed.push(
@@ -757,7 +757,8 @@ function validateProvidersTRV10(message: any, testResults: TestResult): void {
 function validateProvider(
   message: any,
   testResults: TestResult,
-  action_id: string
+  action_id: string,
+  usecaseId?: string
 ): void {
   const provider = message?.order?.provider;
   if (!provider) {
@@ -770,8 +771,9 @@ function validateProvider(
   } else {
     testResults.passed.push("Provider ID is present");
   }
-
   if (
+    usecaseId !== "GOLD LOAN" &&
+    usecaseId !== "PERSONAL LOAN" &&
     action_id !== "select_2" &&
     action_id !== "select" &&
     action_id !== "init" &&
@@ -814,7 +816,8 @@ function validateItems(
   message: any,
   testResults: TestResult,
   action_id?: string,
-  flowId?: string
+  flowId?: string,
+  usecaseId?: string
 ): void {
   const items =
     message?.catalog?.providers?.[0]?.items || message?.order?.items;
@@ -830,9 +833,8 @@ function validateItems(
       testResults.passed.push(`Item ${index} ID is present`);
     }
     if (
-      flowId !== "Gold_Loan_Without_Account_Aggregator" &&
-      flowId !== "Gold_Loan_With_Account_Aggregator" && 
-      flowId !== "Gold_Loan_Foreclosure" && flowId !== "Gold_Loan_Pre_Part_Payment" && flowId !== "Gold_Loan_Missed_EMI"
+      usecaseId !== "GOLD LOAN" &&
+      usecaseId !== "PERSONAL LOAN" 
     ) {
       if (
         action_id !== "select" &&
@@ -1591,6 +1593,14 @@ function validateOnSearchItemsFIS12(
   }
 
   const validCategoryIds = new Set(categories.map((c: any) => c.id));
+  
+  // Create a map of category codes by category id
+  const categoryCodeMap = new Map<string, string>();
+  categories.forEach((cat: any) => {
+    if (cat?.id && cat?.descriptor?.code) {
+      categoryCodeMap.set(cat.id, cat.descriptor.code);
+    }
+  });
 
   items.forEach((item) => {
     if (!item.id) {
@@ -1603,19 +1613,124 @@ function validateOnSearchItemsFIS12(
       return;
     }
 
+    // Validate descriptor code - accept both "LOAN" and "PERSONAL_LOAN" or "GOLD_LOAN"
+    const validDescriptorCodes = ["LOAN", "PERSONAL_LOAN", "GOLD_LOAN"];
+    if (!validDescriptorCodes.includes(item.descriptor.code)) {
+      testResults.failed.push(
+        `Item ${item.id}: descriptor.code should be one of ["LOAN", "PERSONAL_LOAN", "GOLD_LOAN"], but found "${item.descriptor.code}"`
+      );
+    } else {
+      testResults.passed.push(`Item ${item.id}: Valid descriptor.code "${item.descriptor.code}"`);
+    }
+
     // Validate category_ids array
     if (!item.category_ids || item.category_ids.length === 0) {
       testResults.failed.push(`Item ${item.id} has no category_ids`);
       return;
     }
 
+    // Check if item has GOLD_LOAN or PERSONAL_LOAN category
+    let hasGoldLoanCategory = false;
+    let hasPersonalLoanCategory = false;
+    let hasBureauLoanCategory = false;
+    let hasAALoanCategory = false;
+    let hasAAPersonalLoanCategory = false;
+
     item.category_ids.forEach((catId: string) => {
       if (!validCategoryIds.has(catId)) {
         testResults.failed.push(
           `Item ${item.id} refers to invalid category id: ${catId}`
         );
+      } else {
+        const categoryCode = categoryCodeMap.get(catId);
+        if (categoryCode === "GOLD_LOAN") {
+          hasGoldLoanCategory = true;
+        } else if (categoryCode === "PERSONAL_LOAN") {
+          hasPersonalLoanCategory = true;
+        } else if (categoryCode === "BUREAU_LOAN") {
+          hasBureauLoanCategory = true;
+        } else if (categoryCode === "AA_LOAN") {
+          hasAALoanCategory = true;
+        } else if (categoryCode === "AA_PERSONAL_LOAN") {
+          hasAAPersonalLoanCategory = true;
+        }
       }
     });
+
+    // Validate item name matches category type
+    const itemName = item.descriptor?.name?.toLowerCase() || "";
+    if (hasGoldLoanCategory) {
+      if (!itemName.includes("gold loan") && !itemName.includes("gold")) {
+        testResults.failed.push(
+          `Item ${item.id}: Has GOLD_LOAN category but descriptor.name "${item.descriptor.name}" doesn't match Gold Loan pattern`
+        );
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: Valid Gold Loan item with matching descriptor.name`
+        );
+      }
+    } else if (hasPersonalLoanCategory) {
+      if (!itemName.includes("personal loan") && !itemName.includes("personal")) {
+        testResults.failed.push(
+          `Item ${item.id}: Has PERSONAL_LOAN category but descriptor.name "${item.descriptor.name}" doesn't match Personal Loan pattern`
+        );
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: Valid Personal Loan item with matching descriptor.name`
+        );
+      }
+      
+      // Validate AA_PERSONAL_LOAN items
+      if (hasAAPersonalLoanCategory) {
+        // Items with AA_PERSONAL_LOAN must also have PERSONAL_LOAN category (already validated above)
+        testResults.passed.push(
+          `Item ${item.id}: Valid AA Personal Loan item with both PERSONAL_LOAN and AA_PERSONAL_LOAN categories`
+        );
+        
+        // Items with AA_PERSONAL_LOAN should indicate "with AA" in the name
+        if (!itemName.includes("with aa") && !itemName.includes("with account aggregator")) {
+          testResults.failed.push(
+            `Item ${item.id}: Has AA_PERSONAL_LOAN category but descriptor.name "${item.descriptor.name}" should indicate "with AA" or "with Account Aggregator"`
+          );
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: Valid AA Personal Loan item with appropriate name indicating AA`
+          );
+        }
+      }
+    }
+
+    // Validate category combinations
+    if (hasGoldLoanCategory && hasPersonalLoanCategory) {
+      testResults.failed.push(
+        `Item ${item.id}: Cannot have both GOLD_LOAN and PERSONAL_LOAN categories`
+      );
+    }
+
+    if (hasGoldLoanCategory && hasAAPersonalLoanCategory) {
+      testResults.failed.push(
+        `Item ${item.id}: Cannot have both GOLD_LOAN and AA_PERSONAL_LOAN categories`
+      );
+    }
+
+    if (hasPersonalLoanCategory && hasAALoanCategory) {
+      testResults.failed.push(
+        `Item ${item.id}: PERSONAL_LOAN should use AA_PERSONAL_LOAN, not AA_LOAN`
+      );
+    }
+
+    if (hasGoldLoanCategory && hasAAPersonalLoanCategory) {
+      testResults.failed.push(
+        `Item ${item.id}: GOLD_LOAN should use AA_LOAN, not AA_PERSONAL_LOAN`
+      );
+    }
+
+    // Validate AA_PERSONAL_LOAN requires PERSONAL_LOAN category
+    if (hasAAPersonalLoanCategory && !hasPersonalLoanCategory) {
+      testResults.failed.push(
+        `Item ${item.id}: Has AA_PERSONAL_LOAN category but missing PERSONAL_LOAN category. AA_PERSONAL_LOAN items must also have PERSONAL_LOAN category.`
+      );
+    }
 
     testResults.passed.push(`Valid item structure: ${item.id}`);
   });
@@ -1631,17 +1746,43 @@ async function validateXinputFIS12(
     ? message.catalog.providers[0].items
     : message?.order?.items || [];
 
+  const categories = message?.catalog?.providers?.[0]?.categories || [];
+  
+  // Create a map of category codes by category id
+  const categoryCodeMap = new Map<string, string>();
+  categories.forEach((cat: any) => {
+    if (cat?.id && cat?.descriptor?.code) {
+      categoryCodeMap.set(cat.id, cat.descriptor.code);
+    }
+  });
+
   const allowedHeadings = [
     "KYC",
     "KYC_OFFLINE",
     "JOURNEY_OFFLINE",
     "SET_LOAN_AMOUNT",
     "PERSONAL_INFORMATION",
+    "Personal Information"
   ];
 
   const formUrls: string[] = [];
 
   items.forEach((item: any) => {
+    // Check if item is GOLD_LOAN or PERSONAL_LOAN
+    let isGoldLoan = false;
+    let isPersonalLoan = false;
+    
+    if (item.category_ids && Array.isArray(item.category_ids)) {
+      item.category_ids.forEach((catId: string) => {
+        const categoryCode = categoryCodeMap.get(catId);
+        if (categoryCode === "GOLD_LOAN") {
+          isGoldLoan = true;
+        } else if (categoryCode === "PERSONAL_LOAN") {
+          isPersonalLoan = true;
+        }
+      });
+    }
+
     if (!item.xinput) {
       testResults.failed.push(`Item ${item.id}: xinput is missing`);
       return;
@@ -1690,6 +1831,29 @@ async function validateXinputFIS12(
         `Item ${item.id}: xinput.form fields are incomplete`
       );
     } else {
+      // For GOLD_LOAN and PERSONAL_LOAN items, validate required and mime_type
+      if (isGoldLoan || isPersonalLoan) {
+        if (item.xinput.required !== true) {
+          testResults.failed.push(
+            `Item ${item.id}: xinput.required must be true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items`
+          );
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: xinput.required is true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
+          );
+        }
+
+        if (item.xinput.form.mime_type !== "text/html") {
+          testResults.failed.push(
+            `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items, but found "${item.xinput.form.mime_type}"`
+          );
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: xinput.form.mime_type is "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
+          );
+        }
+      }
+
       // Save form URL to Redis for HTML_FORM validation
       if (item.xinput.form.url && sessionID && transactionId) {
         formUrls.push(item.xinput.form.url);
@@ -1720,7 +1884,8 @@ async function validateXinputFIS12(
 
 function validateXInputStatusFIS12(
   message: any,
-  testResults: TestResult
+  testResults: TestResult,
+  usecaseId?: string
 ): void {
   const items: any = message.order.items;
   const allowedStatuses = [
@@ -1735,6 +1900,19 @@ function validateXInputStatusFIS12(
     if (!item.xinput) {
       testResults.failed.push(`Item ${item.id}: xinput is missing`);
       return;
+    }
+
+    // Validate xinput.form exists and has required fields
+    if (!item.xinput.form) {
+      testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
+    } else {
+      if (!item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+        );
+      }
     }
 
     const formResponse = item.xinput.form_response;
@@ -1773,7 +1951,111 @@ function validateXInputStatusFIS12(
       );
     } else {
       testResults.passed.push(
-        `Item ${item.id}: xinput.form_response.submission_id is present`
+        `Item ${item.id}: xinput.form_response.submission_id is present: "${submission_id}"`
+      );
+    }
+
+    // Validate form.id matches form_response (if both exist)
+    if (item.xinput.form?.id && formResponse.submission_id) {
+      // Check if submission_id starts with form.id (common pattern: F01_SUBMISSION_ID)
+      const formId = item.xinput.form.id;
+      if (submission_id.startsWith(formId)) {
+        testResults.passed.push(
+          `Item ${item.id}: form_response.submission_id "${submission_id}" matches form.id "${formId}" pattern`
+        );
+      } else {
+        // This is a warning, not an error, as the pattern may vary
+        testResults.passed.push(
+          `Item ${item.id}: form_response.submission_id "${submission_id}" (form.id: "${formId}")`
+        );
+      }
+    }
+
+    // Usecase-specific validations
+    if (usecaseId) {
+      const normalizedUsecaseId = usecaseId.toUpperCase().trim();
+      
+      // PERSONAL LOAN specific validations
+      if (normalizedUsecaseId === "PERSONAL LOAN" || normalizedUsecaseId === "PERSONAL_LOAN") {
+        // Validate form.id for Personal Loan flows
+        if (item.xinput.form?.id) {
+          const formId = item.xinput.form.id;
+          // Personal Loan Information Form should have form.id "F01"
+          if (formId === "F01") {
+            testResults.passed.push(
+              `Item ${item.id}: Valid form.id "F01" for Personal Loan Information Form`
+            );
+          } else {
+            testResults.failed.push(
+              `Item ${item.id}: Expected form.id "F01" for Personal Loan, but found "${formId}"`
+            );
+          }
+        }
+
+        // Validate form_response status for Personal Loan select actions
+        if (formResponse.status) {
+          // For select actions after form submission, status should be "SUCCESS"
+          if (formResponse.status === "SUCCESS") {
+            testResults.passed.push(
+              `Item ${item.id}: Valid form_response.status "SUCCESS" for Personal Loan select action`
+            );
+          } else {
+            testResults.failed.push(
+              `Item ${item.id}: Expected form_response.status "SUCCESS" for Personal Loan select action, but found "${formResponse.status}"`
+            );
+          }
+        }
+
+        // Validate submission_id format for Personal Loan
+        if (formResponse.submission_id) {
+          // Submission ID should start with form.id (F01_SUBMISSION_ID pattern)
+          const formId = item.xinput.form?.id;
+          if (formId && formResponse.submission_id.startsWith(formId)) {
+            testResults.passed.push(
+              `Item ${item.id}: Valid submission_id format for Personal Loan: "${formResponse.submission_id}"`
+            );
+          } else if (formId) {
+            testResults.failed.push(
+              `Item ${item.id}: submission_id "${formResponse.submission_id}" should start with form.id "${formId}" for Personal Loan`
+            );
+          }
+        }
+      }
+      
+      // GOLD LOAN specific validations
+      else if (normalizedUsecaseId === "GOLD LOAN" || normalizedUsecaseId === "GOLD_LOAN") {
+        // Validate form.id for Gold Loan flows
+        if (item.xinput.form?.id) {
+          const formId = item.xinput.form.id;
+          // Gold Loan forms may have different form IDs (e.g., "F01", "F02", etc.)
+          if (formId && formId.startsWith("F")) {
+            testResults.passed.push(
+              `Item ${item.id}: Valid form.id "${formId}" for Gold Loan`
+            );
+          } else {
+            testResults.failed.push(
+              `Item ${item.id}: Invalid form.id "${formId}" for Gold Loan. Expected format starting with "F"`
+            );
+          }
+        }
+
+        // Validate form_response status for Gold Loan select actions
+        if (formResponse.status) {
+          if (formResponse.status === "SUCCESS") {
+            testResults.passed.push(
+              `Item ${item.id}: Valid form_response.status "SUCCESS" for Gold Loan select action`
+            );
+          } else {
+            testResults.failed.push(
+              `Item ${item.id}: Expected form_response.status "SUCCESS" for Gold Loan select action, but found "${formResponse.status}"`
+            );
+          }
+        }
+      }
+      
+      // Log usecase validation
+      testResults.passed.push(
+        `Item ${item.id}: Validated with usecaseId "${usecaseId}"`
       );
     }
   });
@@ -2340,7 +2622,6 @@ export function createSearchValidator(...config: string[]) {
     flowId: string,
     action_id: string
   ): Promise<TestResult> {
-    console.log("elementelement=>>>>>>>>>>>", element);
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
 
@@ -2533,7 +2814,7 @@ export function createOnSearchValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -2652,8 +2933,10 @@ export function createSelectValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
+    logger.info(`Inside ${action_id || 'select'} validations`, { usecaseId });
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
 
@@ -2691,10 +2974,10 @@ export function createSelectValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id,usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           /**
            * FIS12-specific validations
@@ -2718,7 +3001,7 @@ export function createSelectValidator(...config: string[]) {
             break;
 
           case fis12Validators.items.select_validate_xinput:
-            validateXInputStatusFIS12(message, testResults);
+            validateXInputStatusFIS12(message, testResults, usecaseId);
             break;
           default:
             break;
@@ -2740,7 +3023,8 @@ export function createOnSelectValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -2779,7 +3063,7 @@ export function createOnSelectValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
 
           case fis11Validators.items.validate_items:
@@ -2834,7 +3118,8 @@ export function createInitValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -2873,7 +3158,7 @@ export function createInitValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
@@ -2946,7 +3231,8 @@ export function createConfirmValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -3017,7 +3303,7 @@ export function createConfirmValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
@@ -3065,7 +3351,8 @@ export function createOnInitValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -3081,6 +3368,8 @@ export function createOnInitValidator(...config: string[]) {
         testResults.failed.push(`API map update failed: ${error.message}`);
       }
     }
+
+    logger.info(`Inside on_init validations`, { usecaseId });
 
     for (const validation of config) {
       if (validation) {
@@ -3104,7 +3393,7 @@ export function createOnInitValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
@@ -3171,7 +3460,8 @@ export function createOnConfirmValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -3259,7 +3549,7 @@ export function createOnConfirmValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
@@ -3312,7 +3602,8 @@ export function createOnStatusValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -3350,7 +3641,7 @@ export function createOnStatusValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
@@ -3426,7 +3717,8 @@ export function createOnCancelValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -3467,7 +3759,7 @@ export function createOnCancelValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
@@ -3526,7 +3818,8 @@ export function createOnUpdateValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string
+    action_id: string,
+    usecaseId?: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -3570,7 +3863,7 @@ export function createOnUpdateValidator(...config: string[]) {
             validateQuote(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId);
