@@ -399,9 +399,9 @@ export const FLOW_ID_MAP: Record<
   "ONDC:FIS13": {
     "2.0.0": {
       "transit-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
-        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "FIS_13_2",
-        "Purchase_Journey_Transit_Insurance": "FIS_13_3"
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_20",
+        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_20",
+        "Purchase_Journey_Transit_Insurance": "INS_20"
       },
       "accidental-insurance": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
@@ -409,9 +409,9 @@ export const FLOW_ID_MAP: Record<
         "Purchase_Journey_Accidental_Insurance": "FIS_13_3"
       },
       "hospicash-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
-        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "FIS_13_2",
-        "Purchase_Journey_Hospicash_Insurance": "FIS_13_3"
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_21",
+        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_21",
+        "Purchase_Journey_Hospicash_Insurance": "INS_21"
       }
     }
   }
@@ -433,5 +433,8 @@ export const typeMapping: Record<string, string> = {
   "Airline": "AIRLINE",
   "Intercity": "INTERCITY",
   "unreserved-entry-pass": "ENTRY_PASS",
-  "Hotel-Booking": "ACCOMMODATION"
+  "Hotel-Booking": "ACCOMMODATION",
+  "transit-insurance": "SACHET_INSURANCE",
+  "accidental-insurance": "SACHET_INSURANCE",
+  "hospicash-insurance": "SACHET_INSURANCE",
 };

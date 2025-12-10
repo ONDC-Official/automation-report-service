@@ -9,6 +9,7 @@ export async function generateReportController(
   res: Response
 ): Promise<void> {
   try {
+    console.log("bodyyyyyyy", req.body);
     const sessionId = req.query.sessionId as string;
     if (!sessionId) {
       logger.error(MESSAGES.responses.missingSessionId);
