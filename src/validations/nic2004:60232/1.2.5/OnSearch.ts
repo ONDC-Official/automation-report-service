@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
+import logger from "@ondc/automation-logger";
 
 export async function checkOnSearch(
   element: Payload,
@@ -42,7 +42,6 @@ export async function checkOnSearch(
     date: string | Date,
     duration: string
   ): string {
-    console.log("duratioN", duration);
     const durationRegex = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?/;
     const match = duration.match(durationRegex);
 

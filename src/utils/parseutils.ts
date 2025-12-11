@@ -2,6 +2,7 @@ import { Payload } from "../types/payload";
 import { ParsedPayload } from "../types/parsedPayload";
 import { RedisService } from "ondc-automation-cache-lib";
 import { FLOW_MAPPINGS } from "./constants";
+import logger from "@ondc/automation-logger";
 
 export async function parseFlows(
   flows: {
@@ -9,6 +10,9 @@ export async function parseFlows(
   },
   sessionID: string
 ): Promise<{ [flowId: string]: ParsedPayload }> {
+  logger.info("Entering parseFlows function. Parsing flows...",
+    {meta: { sessionID, flows },
+  });
   const parsedFlows: { [flowId: string]: ParsedPayload } = {};
 
   let sessionDetails: any = await RedisService.getKey(
@@ -32,7 +36,12 @@ export async function parseFlows(
         version
       );
     } catch (error) {
-      console.error(`Error parsing flow ${flowId}:`, error);
+      logger.error(`Error parsing flow ${flowId}`,
+        {error,
+        meta: {
+          flowId,
+        }},
+      );
       // Optionally handle invalid flows by adding an empty or error state.
       parsedFlows[flowId] = {
         domain: domain,
@@ -42,7 +51,7 @@ export async function parseFlows(
       };
     }
   }
-
+ 
   return parsedFlows;
 }
 
@@ -52,6 +61,9 @@ function parsePayloads(
   domain: string,
   version: string
 ): ParsedPayload {
+  logger.info("Entering parsePayloads function. Parsing payloads...",
+    {meta: { flowId, domain, version },
+  });
   const parsedPayload: ParsedPayload = {
     domain: domain,
     version: version,
@@ -64,9 +76,13 @@ function parsePayloads(
     (groups, payload) => {
       const action = payload.action?.toLowerCase();
       if (!action) {
-        console.warn(
-          `Missing action in payload for flow ID ${flowId}`,
-          payload
+        //   `Missing action in payload for flow ID ${flowId}`,
+        //   payload
+        // );
+        logger.info(`Missing action in payload for flow ID ${flowId}`,
+          {meta: {
+            flowId
+                    }},
         );
         return groups;
       }
@@ -84,7 +100,11 @@ function parsePayloads(
   allPayloads.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
-
+      logger.info("Sorted payloads by action and createdAt timestamp",
+    {meta: {
+      flowId
+    }},
+  );
   // Counters for numbered actions (search, on_search, cancel, on_cancel)
   const actionCounters: { [key: string]: number } = {
     search: 0,
@@ -101,7 +121,11 @@ function parsePayloads(
   allPayloads.forEach((payload) => {
     const action = payload.action?.toLowerCase();
     if (!action) {
-      console.warn(`Missing action in payload for flow ID ${flowId}`, payload);
+      logger.info(`Missing action in payload for flow ID ${flowId}`,
+        {meta: {
+          flowId
+        }},
+      );
       return;
     }
 
@@ -169,6 +193,9 @@ function parsePayloads(
       parsedPayload.payload[key] = {};
     }
   });
-
+  logger.info("Exiting parsePayloads function. Parsed payloads.",
+    {meta: { flowId },
+  });
+  
   return parsedPayload;
 }
