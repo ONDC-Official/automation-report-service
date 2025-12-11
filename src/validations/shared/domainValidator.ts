@@ -325,7 +325,7 @@ export const DomainValidators = {
 
   fis12OnSelect: createOnSelectValidator(
     trv10Validators.order.validate_order,
-    trv10Validators.quote_trv10.validate_quote_trv10,
+    fis11Validators.quote.validate_quote,
     trv10Validators.provider_trv10.validate_provider_trv10,
     fis11Validators.items.validate_items,
     fis12Validators.items.validate_xinput
