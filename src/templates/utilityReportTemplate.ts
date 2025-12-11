@@ -1,6 +1,6 @@
 import { Result } from "../types/result";
 import { ApiResponse } from "../types/utilityResponse";
-
+import logger from "@ondc/automation-logger";
 export function generateReportHTML(
   flowReports: { flowId: string; results: Result }[]
 ): string {
@@ -60,7 +60,7 @@ export function generateReportHTML(
         `;
     })
     .join("");
-
+ 
   return `
       <!DOCTYPE html>
       <html>
@@ -143,8 +143,10 @@ export function generateReportHTML(
 }
 
 function formatReportItems(report: Record<string, any>): string {
-  if (!report || typeof report !== "object") return "N/A";
-
+  if (!report || typeof report !== "object")
+  {
+    return "N/A";
+  } 
   return Object.entries(report)
     .map(([key, value]) => {
       if (typeof value === "object" && !Array.isArray(value)) {

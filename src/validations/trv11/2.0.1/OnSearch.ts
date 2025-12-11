@@ -1,5 +1,5 @@
 import { TestResult, Payload } from "../../../types/payload";
-import { logger } from "../../../utils/logger";
+import logger from "@ondc/automation-logger";
 import {
   getTransactionIds,
   saveData,
@@ -66,7 +66,7 @@ export async function checkOnSearch(
         await saveData(sessionID, transactionId, "onSearchItemArr", {
           value: items,
         });
-      } catch (error) {
+      } catch (error:any) {
         logger.error(error);
       }
 

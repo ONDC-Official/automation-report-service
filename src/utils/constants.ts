@@ -22,15 +22,49 @@ export const MANDATORY_FLOWS: String[] = [
   "TECHNICAL_CANCELLATION_FLOW",
 ];
 
+export const GOLD_LOAN_FLOWS = ["Gold_Loan_With_Account_Aggregator","Gold_Loan_Without_Account_Aggregator","Gold_Loan_Foreclosure,Gold_Loan_Missed_EMI","Gold_Loan_Pre_Part_Payment"]
+export const PAYMENT_COLLECTED_BY = ['BPP', 'BAP']
+export const PERSONAL_LOAN_FLOWS = [
+  "Personal_Loan_With_AA_And_Monitoring_Consent",
+  "Personal_Loan_Without_AA_And_Monitoring_Consent",
+  "Personal_Loan_Without_Acount_Monitoring",
+  "Personal_Loan_Offline",
+  "Personal_Loan_Offline_And_Online",
+  "Personal_Loan_Foreclosure",
+  "Personal_Loan_Missed_EMI",
+  "Personal_Loan_Pre_Part_Payment",
+  "Personal_Loan_Multiple_Offers"
+]
+
+export const validCategoryMap: Record<string, string> = {
+  GOLD_LOAN: "Gold Loan",
+  BUREAU_LOAN: "Bureau Loan",
+  AA_LOAN: "Account Aggregator Loan",
+  PERSONAL_LOAN: "Personal Loan",
+  AA_PERSONAL_LOAN: "Account Aggregator Personal Loan"
+};
+
 export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
+
 export const ENABLED_DOMAINS: String[] = [
-  "ONDC:TRV11",
   "nic2004:60232",
   "ONDC:LOG10",
   "ONDC:LOG11",
+  "ONDC:FIS11",
+  "ONDC:FIS12",
+  "ONDC:TRV10",
 ];
+
+export const DOMAINS = {
+  NIC:"nic2004:60232",
+  LOG10:"ONDC:LOG10",
+  LOG11:"ONDC:LOG11",
+  FIS11:"ONDC:FIS11",
+  FIS12:"ONDC:FIS12",
+  TRV10:"ONDC:TRV10",
+};
 
 export const FLOW_MAPPINGS: Record<string, string> = {
   //METRO
@@ -190,3 +224,217 @@ export const statesAfterPickup = [
   "Delivery-rescheduled",
   "Order-delivered"
 ];
+
+export const FLOW_ID_MAP: Record<
+  string,
+  Record<
+    string,
+    Record<
+      string,
+      Record<string, string>
+    >
+  >
+> = {
+  "ONDC:TRV11": {
+    "2.0.1": {
+      "Bus": {
+        "IntraCity_Purchase_Journey_Flow_Code_Based": "MBL_8",
+        "IntraCity_User_Cancellation_Flow": "MBL_11",
+        "IntraCity_Technical_Cancellation_Flow": "MBL_12",
+        "IntraCity_Monthly_Passes_Flow_Code_Based": "MBL_10",
+        "IntraCity_Merchant_Side_Cancellation": "MBL_13"
+      }
+    }
+  },
+  "ONDC:TRV13": {
+    "2.0.0": {
+      "Hotel-Booking": {
+        "Hotel Booking TTL": "ACM_2"
+      },
+    },
+  },
+  "ONDC:TRV14": {
+    "2.0.0": {
+      "unreserved-entry-pass": {
+        "purchase_journey_with_form": "EP_1",
+        "purchase_journey_without_form": "EP_2",
+        "technical_cancellation": "EP_6",
+        "User Cancellation (Full)": "EP_8"
+      },
+    },
+  },
+  "ONDC:TRV12": {
+    "2.0.0": {
+      "Intercity": {
+        "Intercity(Bus)_Cancel_Flow": "ITC_3",
+        "Intercity(Bus)_Seller_Cancellation": "ITC_4"
+      },
+    },
+  },
+  "ONDC:RET10": {
+    "1.2.5": {
+      "GROCERY": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Cancellation_Flow": "RET_3",
+        "RTO_And_Part_Cancellation_Flow": "RET_4b",
+        "Return_Flow": "RET_5",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET11": {
+    "1.2.5": {
+      "F&B": {
+        "FULL_CATALOG": "RET_9",
+        "INCREMENTAL_CATALOG": "RET_9_INC_PUSH",
+        "ORDER_FLOW": "RET_1",
+        "RTO_PLUS_PART_CANCELLATION": "RET_4b",
+        "RETURN_FLOW": "RET_5",
+        "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
+        "DELIVERY_FLOW_WITH_IGM_1": "IGM_1",
+        "DELIVERY_FLOW_WITH_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET12": {
+    "1.2.5": {
+      "FASHION": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Return_Flow": "RET_5",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET13": {
+    "1.2.5": {
+      "BPC": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET14": {
+    "1.2.5": {
+      "ELECTRONICS": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET15": {
+    "1.2.5": {
+      "APPLIANCES": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET16": {
+    "1.2.5": {
+      "HOME&KITCHEN": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:RET18": {
+    "1.2.5": {
+      "HEALTH&WELLNESS": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Buyer_Cancellation_Flow": "RET_3",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Delivery_Flow_With_IGM_1": "IGM_1",
+        "Delivery_Flow_With_IGM_2": "IGM_2",
+      },
+    },
+  },
+  "ONDC:LOG10": {
+    "1.2.5": {
+      "ride-Logistics (P2P)": {
+        "STATIC_OTP_RTO_DELIVERY": "LOG_ENH_00A",
+        "CASH_ON_DELIVERY_FLOW": "LOG_ENH_008",
+        "SURGE_FEE_FLOW": "LOG_ENH_017",
+      },
+    },
+  },
+  "ONDC:LOG11": {
+    "1.2.5": {
+      "ride-Logistics (P2P)": {
+        "STATIC_OTP_RTO_DELIVERY": "LOG_ENH_00A",
+        "CASH_ON_DELIVERY_FLOW": "LOG_ENH_008",
+        "SURGE_FEE_FLOW": "LOG_ENH_017",
+        "ORDER_FLOW_BASE_LINE": "LOG11_TECH_1"
+      },
+    },
+  },
+  "ONDC:FIS13": {
+    "2.0.0": {
+      "transit-insurance": {
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_20",
+        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_20",
+        "Purchase_Journey_Transit_Insurance": "INS_20"
+      },
+      "accidental-insurance": {
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
+        "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "FIS_13_2",
+        "Purchase_Journey_Accidental_Insurance": "FIS_13_3"
+      },
+      "hospicash-insurance": {
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_21",
+        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_21",
+        "Purchase_Journey_Hospicash_Insurance": "INS_21"
+      }
+    }
+  }
+}
+
+export const typeMapping: Record<string, string> = {
+  "Bus": "BUS",
+  "Metro": "METRO",
+  "ride-Logistics (P2P)": "LOG",
+  "gift-card": "GIFTCARD",
+  "GROCERY": "RETAIL",
+  "F&B": "RETAIL",
+  "FASHION": "RETAIL",
+  "BPC": "RETAIL",
+  "ELECTRONICS": "RETAIL",
+  "APPLIANCES": "RETAIL",
+  "HOME&KITCHEN": "RETAIL",
+  "HEALTH&WELLNESS": "RETAIL",
+  "Airline": "AIRLINE",
+  "Intercity": "INTERCITY",
+  "unreserved-entry-pass": "ENTRY_PASS",
+  "Hotel-Booking": "ACCOMMODATION",
+  "transit-insurance": "SACHET_INSURANCE",
+  "accidental-insurance": "SACHET_INSURANCE",
+  "hospicash-insurance": "SACHET_INSURANCE",
+};

@@ -1,6 +1,5 @@
 import { RedisService } from "ondc-automation-cache-lib";
-import { logger } from "./logger";
-
+import logger from "@ondc/automation-logger";
 // Function to save data under sessionId and transactionId
 
 /**
@@ -10,6 +9,70 @@ import { logger } from "./logger";
  * @param {string} key - The key to add.
  * @param {string} value - The value to add.
  */
+
+export const saveFlowData = async (
+  sessionId: string,
+  flowId: string,
+  transactionId: string,
+  key: string,
+  value: Record<string, any> // Accept JSON object
+): Promise<void> => {
+  try {
+    // Create a unique key in the format sessionId:transactionId:key
+    const redisKey =
+      key === "on_search" || key === "search"
+        ? `${sessionId}:${transactionId}:${key}`
+        : `${sessionId}:${flowId}:${transactionId}:${key}`;
+
+    // Serialize the JSON object to a string
+    const serializedValue = JSON.stringify(value);
+
+    // Save the serialized value with optional TTL
+    await RedisService.setKey(redisKey, serializedValue, 3600);
+  } catch (error) {
+    logger.error("Error saving data",
+      {error,
+      meta: { sessionId, flowId, transactionId, key }
+    });
+  }
+};
+
+// Function to fetch data for a specific key under sessionId and transactionId
+export const fetchFlowData = async (
+  sessionId: string,
+  flowId: string,
+  transactionId: string,
+  key: string
+): Promise<Record<string, any> | null> => {
+  try {
+    const redisKey =
+      key === "on_search" || key === "search"
+        ? `${sessionId}:${transactionId}:${key}`
+        : `${sessionId}:${flowId}:${transactionId}:${key}`;
+
+
+    // Fetch the serialized value
+    const serializedValue = await RedisService.getKey(redisKey);
+
+    if (!serializedValue) {
+      logger.error(`No data found for key: ${redisKey}`,
+        {meta: { sessionId, flowId, transactionId, key }
+      });
+      return null;
+    }
+    // Deserialize the JSON object
+    const value = JSON.parse(serializedValue);
+
+    return value;
+  } catch (error) {
+    logger.error("Error fetching data",
+      {error,
+      meta: { sessionId, flowId, transactionId, key }
+    });
+    return null;
+  }
+};
+
 export const saveData = async (
   sessionId: string,
   transactionId: string,
@@ -26,7 +89,10 @@ export const saveData = async (
     // Save the serialized value with optional TTL
     await RedisService.setKey(redisKey, serializedValue, 3600);
   } catch (error) {
-    logger.error("Error saving data:", error);
+    logger.error("Error saving data",
+      {error,
+      meta: { sessionId, transactionId, key }
+    });
   }
 };
 
@@ -43,7 +109,9 @@ export const fetchData = async (
     const serializedValue = await RedisService.getKey(redisKey);
 
     if (!serializedValue) {
-      logger.error(`No data found for key: ${redisKey}`);
+        logger.error(`No data found for key: ${redisKey}`,
+        {meta: { sessionId, transactionId, key }
+      });
       return null;
     }
     // Deserialize the JSON object
@@ -51,7 +119,10 @@ export const fetchData = async (
 
     return value;
   } catch (error) {
-    logger.error("Error fetching data:", error);
+    logger.error("Error fetching data",
+      {error,
+      meta: { sessionId, transactionId, key }
+    });
     return null;
   }
 };
@@ -109,7 +180,10 @@ export const addTransactionId = async (
       JSON.stringify(sessionData)
     );
   } catch (error) {
-    logger.error(error);
+    logger.error("Error adding transaction ID",
+      {error,
+      meta: { sessionId, flowId, transactionId }
+    });
   }
 };
 
@@ -129,7 +203,9 @@ export const getTransactionIds = async (
   );
 
   if (!sessionTransactionData) {
-    logger.error(`No transaction data found for session "${sessionId}".`);
+    logger.error(`No transaction data found for session "${sessionId}".`,
+      {meta: { sessionId, flowId }
+    });
     return [];
   }
 
@@ -142,9 +218,9 @@ export const getTransactionIds = async (
   const transactions = sessionData[flowId];
 
   if (!transactions) {
-    logger.error(
-      `No transactions found for flow "${flowId}" in session "${sessionId}".`
-    );
+      logger.error(`No transactions found for flow "${flowId}" in session "${sessionId}".`,
+      {meta: { sessionId, flowId }
+    });
     return [];
   }
 
@@ -173,6 +249,9 @@ export async function updateApiMap(
     // Save the updated apiMap
     await saveData(sessionID, transactionId, "apiMap", { value: apiMap });
   } catch (error: any) {
-    logger.error(`${error.message}`);
+    logger.error("Error updating API map",
+     { error,
+      meta: { sessionID, transactionId, action }
+    });
   }
 }

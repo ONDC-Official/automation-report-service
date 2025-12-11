@@ -1,6 +1,6 @@
 import { writeFileSync } from "fs";
 import { FlowValidationResult, ParsedMessage, Report } from "../types/payload";
-
+import logger from "@ondc/automation-logger";
 // Generate the HTML report
 export function generateCustomHTMLReport(data: Report) {
   const htmlContent = `
@@ -280,6 +280,5 @@ export function generateCustomHTMLReport(data: Report) {
       </body>
       </html>
     `;
-
-  return htmlContent;
+  return { html: htmlContent};
 }
