@@ -248,7 +248,6 @@ async function processPayloads(
   requiredSequence?: string[],
   usecaseId?: string
 ): Promise<Record<string, string>> {
-  console.log("processPayloads - received usecaseId:", usecaseId);
   const messages: Record<string, string> = {};
   const actionCounters = { ...INITIAL_ACTION_COUNTERS };
   let payloadIndex = 0; // Track actual payloads
@@ -312,7 +311,6 @@ async function processPayloads(
       const domain = element?.jsonRequest?.context?.domain;
 
       try {
-        console.log("checkPayload - calling checkPayload", {usecaseId });
         const result = await checkPayload(
           domain,
           element,
@@ -377,7 +375,6 @@ export async function validationModule(
 
   // Get session details and domain configuration
   const sessionDetails = await getSessionDetails(sessionID);
-  console.log("validationModule - sessionDetails:", JSON.stringify(sessionDetails, null, 2));
   // Use optional chaining for usecaseId to avoid property access error
   const domainConfig: DomainConfig = sessionDetails
     ? loadConfig(
