@@ -989,9 +989,10 @@ domains:
                 - HTML_FORM
                 - confirm
                 - on_confirm
-                - on_update
-                - update
-                - on_update
+                # - on_update
+                # - update
+                # - on_update
+                - on_status
                 - status
                 - on_status
 
@@ -1018,9 +1019,10 @@ domains:
                 - HTML_FORM
                 - confirm
                 - on_confirm
-                - on_update
-                - update
-                - on_update
+                # - on_update
+                # - update
+                # - on_update
+                - on_status
                 - status
                 - on_status
 
@@ -1036,6 +1038,9 @@ domains:
                 - select
                 - on_select
                 - HTML_FORM
+                - on_status
+                - status
+                - on_status
                 - init
                 - on_init
                 - confirm
@@ -1055,6 +1060,9 @@ domains:
                 - select
                 - on_select
                 - HTML_FORM
+                - on_status
+                - status
+                - on_status
                 - init
                 - on_init
                 - HTML_FORM
@@ -1086,9 +1094,9 @@ domains:
                 - HTML_FORM
                 - confirm
                 - on_confirm
-                - on_status
-                - status
-                - on_status
+                # - on_status
+                # - status
+                # - on_status
                 - update
                 - on_update
                 - on_update
@@ -1116,9 +1124,9 @@ domains:
                 - HTML_FORM
                 - confirm
                 - on_confirm
-                - on_status
-                - status
-                - on_status
+                # - on_status
+                # - status
+                # - on_status
                 - update
                 - on_update
                 - on_update
@@ -1146,7 +1154,7 @@ domains:
                 - HTML_FORM
                 - confirm
                 - on_confirm
-                - on_status
+                # - on_status
                 - update
                 - on_update
                 - on_update

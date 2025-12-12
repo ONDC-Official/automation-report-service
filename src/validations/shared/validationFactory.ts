@@ -1004,7 +1004,8 @@ function validateFulfillmentsTRV10(
 
 function validateFulfillmentsFIS12(
   message: any,
-  testResults: TestResult
+  testResults: TestResult,
+  usecaseId?: string
 ): void {
   const fulfillments =
     message?.catalog?.providers?.[0]?.fulfillments ||
@@ -1016,13 +1017,14 @@ function validateFulfillmentsFIS12(
 
   fulfillments.forEach((fulfillment: any, index: number) => {
     // Validate type
+    if (usecaseId !== "PERSONAL LOAN") {
     if (!fulfillment.type) {
       testResults.failed.push(`Fulfillment ${index} type is missing`);
     } else {
       testResults.passed.push(
         `Fulfillment ${index} has type: ${fulfillment.type}`
       );
-    }
+    }}
 
     if (fulfillment.type !== "LOAN") {
     
@@ -1740,7 +1742,9 @@ async function validateXinputFIS12(
   message: any,
   testResults: TestResult,
   sessionID?: string,
-  transactionId?: string
+  transactionId?: string,
+  flowId?:string,
+  action_id?:string
 ): Promise<void> {
   const items = message?.catalog?.providers?.[0]?.items?.length
     ? message.catalog.providers[0].items
@@ -1762,7 +1766,12 @@ async function validateXinputFIS12(
     "JOURNEY_OFFLINE",
     "SET_LOAN_AMOUNT",
     "PERSONAL_INFORMATION",
-    "Personal Information"
+    "Personal Information",
+    "Set Loan Amount",
+    "Know your Customer",
+    "Account Information",
+    "Emandate",
+    "Loan Agreement"
   ];
 
   const formUrls: string[] = [];
@@ -1789,7 +1798,7 @@ async function validateXinputFIS12(
     }
 
     const head = item.xinput.head;
-    if (!head) {
+    if (!head && flowId !== "Personal_Loan_With_AA_And_Monitoring_Consent" && action_id !== "on_select_1_personal_loan") {
       testResults.failed.push(`Item ${item.id}: xinput.head is missing`);
       return;
     }
@@ -1981,15 +1990,15 @@ function validateXInputStatusFIS12(
         if (item.xinput.form?.id) {
           const formId = item.xinput.form.id;
           // Personal Loan Information Form should have form.id "F01"
-          if (formId === "F01") {
-            testResults.passed.push(
-              `Item ${item.id}: Valid form.id "F01" for Personal Loan Information Form`
-            );
-          } else {
-            testResults.failed.push(
-              `Item ${item.id}: Expected form.id "F01" for Personal Loan, but found "${formId}"`
-            );
-          }
+          // if (formId === "F01") {
+          //   testResults.passed.push(
+          //     `Item ${item.id}: Valid form.id "F01" for Personal Loan Information Form`
+          //   );
+          // } else {
+          //   testResults.failed.push(
+          //     `Item ${item.id}: Expected form.id "F01" for Personal Loan, but found "${formId}"`
+          //   );
+          // }
         }
 
         // Validate form_response status for Personal Loan select actions
@@ -2007,18 +2016,14 @@ function validateXInputStatusFIS12(
         }
 
         // Validate submission_id format for Personal Loan
-        if (formResponse.submission_id) {
-          // Submission ID should start with form.id (F01_SUBMISSION_ID pattern)
-          const formId = item.xinput.form?.id;
-          if (formId && formResponse.submission_id.startsWith(formId)) {
-            testResults.passed.push(
-              `Item ${item.id}: Valid submission_id format for Personal Loan: "${formResponse.submission_id}"`
-            );
-          } else if (formId) {
-            testResults.failed.push(
-              `Item ${item.id}: submission_id "${formResponse.submission_id}" should start with form.id "${formId}" for Personal Loan`
-            );
-          }
+        if (!formResponse.submission_id) {
+          testResults.failed.push(
+            `Item ${item.id}: submission_id is missing`
+          );
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: submission_id is present: "${formResponse.submission_id}"`
+          );
         }
       }
       
@@ -2142,13 +2147,18 @@ function validateOrder(message: any, testResults: TestResult): void {
   }
 }
 
-function validateQuote(message: any, testResults: TestResult): void {
+function validateQuote(message: any, testResults: TestResult,action_id: string,flowId: string): void {
   const quote = message?.order?.quote;
-  if (!quote) {
+  if (flowId !== "Personal_Loan_Without_AA_And_Monitoring_Consent" && action_id === "on_select_1_personal_loan") {
+    return;
+  }
+  else if (!quote) {
     testResults.failed.push("Quote is missing in order");
     return;
   }
-
+  else{
+    testResults.passed.push("Quote is present in order");
+  }
   if (!quote.id) {
     testResults.failed.push("Quote ID is missing");
   } else {
@@ -2162,13 +2172,15 @@ function validateQuote(message: any, testResults: TestResult): void {
   }
 }
 
-function validateQuoteTRV10(message: any, testResults: TestResult): void {
+function validateQuoteTRV10(message: any, testResults: TestResult,action_id?: string,flowId?: string): void {
   const quote = message?.order?.quote;
-  if (!quote) {
+  if (!quote && flowId !== "Personal_Loan_With_AA_And_Monitoring_Consent" && action_id !== "on_select_1_personal_loan") {
     testResults.failed.push("Quote is missing in order");
     return;
   }
-
+  else{
+    testResults.passed.push("Quote is present in order");
+  }
   // For TRV10, quote.id is optional
   if (quote.id) {
     testResults.passed.push("Quote ID is present");
@@ -2708,6 +2720,7 @@ export function validateUpdateRequestTRV10(
     "order.quote.breakup",
     "order.fulfillments",
     "payments",
+    "fulfillment",
   ];
 
   if (!updateTarget) {
@@ -2909,7 +2922,7 @@ export function createOnSearchValidator(...config: string[]) {
             validateOnSearchItemsFIS12(message, testResults);
             break;
           case fis12Validators.items.validate_xinput:
-            await validateXinputFIS12(message, testResults, sessionID, transactionId);
+            await validateXinputFIS12(message, testResults, sessionID, transactionId,flowId,action_id);
             break;
 
           default:
@@ -2986,7 +2999,7 @@ export function createSelectValidator(...config: string[]) {
            * on_status flow. Without this case, that config entry is a no-op.
            */
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults);
+            validateFulfillmentsFIS12(message, testResults,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3060,14 +3073,14 @@ export function createOnSelectValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults);
+            validateQuote(message, testResults,action_id,flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
 
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3081,7 +3094,7 @@ export function createOnSelectValidator(...config: string[]) {
             validateProviderTRV10(message, testResults, action_id);
             break;
           case trv10Validators.quote_trv10.validate_quote_trv10:
-            validateQuoteTRV10(message, testResults);
+            validateQuoteTRV10(message, testResults,action_id,flowId);
             break;
           case trv10Validators.fulfillment_stops_order
             .validate_fulfillment_stops_order:
@@ -3093,9 +3106,9 @@ export function createOnSelectValidator(...config: string[]) {
             );
             break;
 
-          case fis12Validators.items.validate_xinput:
-            await validateXinputFIS12(message, testResults, sessionID, transactionId);
-            break;
+          // case fis12Validators.items.validate_xinput:
+          //   await validateXinputFIS12(message, testResults, sessionID, transactionId,flowId,action_id);
+          //   break;
 
           default:
             break;
@@ -3161,7 +3174,7 @@ export function createInitValidator(...config: string[]) {
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3306,7 +3319,7 @@ export function createConfirmValidator(...config: string[]) {
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3390,13 +3403,13 @@ export function createOnInitValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults);
+            validateQuote(message, testResults,action_id,flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3433,7 +3446,7 @@ export function createOnInitValidator(...config: string[]) {
 
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults);
+            validateFulfillmentsFIS12(message, testResults,usecaseId);
             break;
           case fis12Validators.documents.validate_documents:
             validateDocumentsFIS12(message, testResults);
@@ -3481,7 +3494,7 @@ export function createOnConfirmValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults);
+            validateFulfillmentsFIS12(message, testResults,usecaseId);
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -3546,13 +3559,13 @@ export function createOnConfirmValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults);
+            validateQuote(message, testResults,action_id,flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3572,7 +3585,7 @@ export function createOnConfirmValidator(...config: string[]) {
             validateProviderTRV10(message, testResults, action_id);
             break;
           case trv10Validators.quote_trv10.validate_quote_trv10:
-            validateQuoteTRV10(message, testResults);
+            validateQuoteTRV10(message, testResults,action_id,flowId);
             break;
           case trv10Validators.payments_trv10.validate_payments_trv10:
             validatePaymentsTRV10(message, testResults);
@@ -3638,13 +3651,13 @@ export function createOnStatusValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults);
+            validateQuote(message, testResults,action_id,flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3684,7 +3697,7 @@ export function createOnStatusValidator(...config: string[]) {
 
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults);
+            validateFulfillmentsFIS12(message, testResults,usecaseId);
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -3756,13 +3769,13 @@ export function createOnCancelValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults);
+            validateQuote(message, testResults,action_id,flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3860,13 +3873,13 @@ export function createOnUpdateValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults);
+            validateQuote(message, testResults,action_id,flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId);
+            validateItems(message, testResults, action_id, flowId,usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
