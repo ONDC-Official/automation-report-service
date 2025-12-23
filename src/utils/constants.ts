@@ -265,11 +265,12 @@ export const FLOW_ID_MAP: Record<
       "unreserved-entry-pass": {
         "purchase_journey_with_form": "EP_1",
         "purchase_journey_without_form": "EP_2",
+          "purchase_journey_with_form_Multiple_Tickets":"EP_3",
+        "purchase_journey_without_form_Multiple_Tickets":"EP_4",
+        "technical_cancellation_with_form":"EP_5",
         "technical_cancellation": "EP_6",
-        "User Cancellation (Full)": "EP_8",
-        "purchase_journey_with_form_Multiple_Tickets":"EP_3",
-        "purchase_journey_without_form_Multiple_Tickets":"EP_4"
-
+        "User_Cancellation_FULL_With_Form":"EP_7",
+        "User Cancellation (Full)": "EP_8"
       },
     },
   },
