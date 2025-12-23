@@ -249,7 +249,14 @@ export const FLOW_ID_MAP: Record<
   "ONDC:TRV13": {
     "2.0.0": {
       "Hotel-Booking": {
-        "Hotel Booking TTL": "ACM_2"
+        "Order to Confirm to Fulfillment (City Based)": "ACM_1",
+        "Hotel Booking TTL": "ACM_2",
+        "Order to Confirm to Fulfillment (Time range Based)": "ACM_3",
+        "Order to Confirm to Fulfillment (Provider Specific)": "ACM_4",
+        "Order to Confirm to Fulfillment (Part Payment)": "ACM_5",
+        "Buyer side full cancellation": "ACM_6",
+        "Merchant side full cancellation": "ACM_7",
+        "Order to Confirm to Fulfillment (Updates in Booking)": "ACM_8",
       },
     },
   },
@@ -258,7 +265,11 @@ export const FLOW_ID_MAP: Record<
       "unreserved-entry-pass": {
         "purchase_journey_with_form": "EP_1",
         "purchase_journey_without_form": "EP_2",
+          "purchase_journey_with_form_Multiple_Tickets":"EP_3",
+        "purchase_journey_without_form_Multiple_Tickets":"EP_4",
+        "technical_cancellation_with_form":"EP_5",
         "technical_cancellation": "EP_6",
+        "User_Cancellation_FULL_With_Form":"EP_7",
         "User Cancellation (Full)": "EP_8"
       },
     },
