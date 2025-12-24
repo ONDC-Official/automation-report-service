@@ -265,7 +265,7 @@ export const FLOW_ID_MAP: Record<
       "unreserved-entry-pass": {
         "purchase_journey_with_form": "EP_1",
         "purchase_journey_without_form": "EP_2",
-          "purchase_journey_with_form_Multiple_Tickets":"EP_3",
+        "purchase_journey_with_form_Multiple_Tickets":"EP_3",
         "purchase_journey_without_form_Multiple_Tickets":"EP_4",
         "technical_cancellation_with_form":"EP_5",
         "technical_cancellation": "EP_6",
@@ -277,8 +277,16 @@ export const FLOW_ID_MAP: Record<
   "ONDC:TRV12": {
     "2.0.0": {
       "Intercity": {
-        "Intercity(Bus)_Cancel_Flow": "ITC_3",
+        "Intercity(Bus)_Station_Code_Based_Flow": "ITC_1",
+        "Intercity(Bus)_Station_Code_Based_Flow_Multiple_Tickets": "ITC_2",
+        "Intercity(Bus)_Cancel_Flow(Buyer)": "ITC_3",
         "Intercity(Bus)_Seller_Cancellation": "ITC_4"
+      },
+      "Airline": {
+        "Purchase Journey(Code Based Flow)": "AIR_1",
+        "Purchase Journey(Multiple Tickets)": "AIR_2",
+        "Cancellation by Buyer": "AIR_3",
+        "Cancellation by Seller": "AIR_4"
       },
     },
   },
