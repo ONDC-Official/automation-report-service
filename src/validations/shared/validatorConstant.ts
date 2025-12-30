@@ -66,6 +66,42 @@ export const validatorConstant = {
                 categories: "validateCategoriesFIS12"
               }
             },
+            tags: {
+              validate_purchase_finance_bap_terms: "validatePurchaseFinanceBapTerms"
+            },
+            search: {
+              validate_purchase_finance_search: "validatePurchaseFinanceSearch"
+            },
+            onsearch: {
+              validate_purchase_finance_onsearch: "validatePurchaseFinanceOnSearch"
+            },
+            select: {
+              validate_purchase_finance_select: "validatePurchaseFinanceSelect"
+            },
+            onselect: {
+              validate_purchase_finance_onselect: "validatePurchaseFinanceOnSelect"
+            },
+            init: {
+              validate_purchase_finance_init: "validatePurchaseFinanceInit"
+            },
+            oninit: {
+              validate_purchase_finance_oninit: "validatePurchaseFinanceOnInit"
+            },
+            confirm: {
+              validate_purchase_finance_confirm: "validatePurchaseFinanceConfirm"
+            },
+            onconfirm: {
+              validate_purchase_finance_onconfirm: "validatePurchaseFinanceOnConfirm"
+            },
+            onupdate: {
+              validate_purchase_finance_onupdate: "validatePurchaseFinanceOnUpdate"
+            },
+            onstatus: {
+              validate_purchase_finance_onstatus: "validatePurchaseFinanceOnStatus"
+            },
+            oncancel: {
+              validate_purchase_finance_oncancel: "validatePurchaseFinanceOnCancel"
+            },
             documents: {
               validate_documents: "validateDocumentsFIS12"
             },

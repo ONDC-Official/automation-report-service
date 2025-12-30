@@ -36,6 +36,23 @@ export const PERSONAL_LOAN_FLOWS = [
   "Personal_Loan_Multiple_Offers"
 ]
 
+export const PURCHASE_FINANCE_FLOWS = [
+  "Purchase_Finance_Without_AA",
+  "Purchase_Finance_Single_Redirection_Without_AA",
+  "Purchase_Finance_Without_AA_Multiple_Offer",
+  "Purchase_Finance_Without_AA_Loan_Foreclosure",
+  "Purchase_Finance_Without_AA_Missed_EMI_Payment",
+  "Purchase_Finance_Without_AA_Pre_Part_Payment",
+  "Purchase_Finance_Without_AA_Cancellation",
+  "Purchase_Finance_With_AA",
+  "Purchase_Finance_Single_Redirection_With_AA",
+  "Purchase_Finance_With_AA_Multiple_Offer",
+  "Purchase_Finance_With_AA_Loan_Foreclosure",
+  "Purchase_Finance_With_AA_Missed_EMI_Payment",
+  "Purchase_Finance_With_AA_Pre_Part_Payment",
+  "Purchase_Finance_With_AA_Cancellation"
+]
+
 export const validCategoryMap: Record<string, string> = {
   GOLD_LOAN: "Gold Loan",
   BUREAU_LOAN: "Bureau Loan",

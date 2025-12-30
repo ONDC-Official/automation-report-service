@@ -29,6 +29,7 @@ import {
   GOLD_LOAN_FLOWS,
   PAYMENT_COLLECTED_BY,
   PERSONAL_LOAN_FLOWS,
+  PURCHASE_FINANCE_FLOWS,
 } from "../../utils/constants";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
@@ -125,6 +126,49 @@ function validateIntent(
           `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
         );
       }
+    } else if (flow_id && PURCHASE_FINANCE_FLOWS.includes(flow_id)) {
+      if (intent.category?.descriptor?.code !== "PURCHASE_FINANCE") {
+        testResults.failed.push(
+          `Intent category descriptor code should be PURCHASE_FINANCE for ${flow_id}`
+        );
+      } else {
+        testResults.passed.push(
+          `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
+        );
+      }
+
+      // Purchase Finance specific search validations
+      const hasProvider = !!intent.provider;
+      const hasItems = hasProvider && !!intent.provider.items && Array.isArray(intent.provider.items) && intent.provider.items.length > 0;
+
+      if (!hasProvider && !hasItems) {
+        // Search1: Initial search - only validate BAP_TERMS (already done by validateTags)
+        testResults.passed.push("Search1: Initial search validated (provider and items not required)");
+      } else {
+        // Search2/3/4: Must have provider, items, and xinput
+        if (!hasProvider) {
+          testResults.failed.push("Provider is missing in search request (required for search2/3/4)");
+        } else {
+          if (!intent.provider.id) {
+            testResults.failed.push("Provider id is missing in search request");
+          } else {
+            testResults.passed.push(`Provider id is present: ${intent.provider.id}`);
+          }
+        }
+
+        if (!hasItems) {
+          testResults.failed.push("Items are missing in provider (required for search2/3/4)");
+        } else {
+          // Validate each item has xinput
+          intent.provider.items.forEach((item: any, index: number) => {
+            if (!item.xinput) {
+              testResults.failed.push(`Item ${index}: xinput is missing (required for search2/3/4)`);
+            } else {
+              testResults.passed.push(`Item ${index}: xinput is present`);
+            }
+          });
+        }
+      }
     } else {
       testResults.passed.push(
         `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
@@ -159,7 +203,7 @@ function validatePaymentCollectedBy(
   }
 }
 
-function validateTags(message: any, testResults: TestResult): void {
+function validateTags(message: any, testResults: TestResult, flowId?: string): void {
   const tags =
     message?.intent?.tags || message?.order?.tags || message?.catalog?.tags;
   if (tags && Array.isArray(tags)) {
@@ -173,6 +217,2110 @@ function validateTags(message: any, testResults: TestResult): void {
       testResults.passed.push("BPP_TERMS tag is present");
     }
   }
+
+  // Purchase Finance specific BAP_TERMS validation
+  if (flowId && PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    const paymentTags = message?.intent?.payment?.tags || message?.intent?.tags;
+    if (!paymentTags || !Array.isArray(paymentTags)) {
+      testResults.failed.push("Payment tags are missing in search request for purchase finance");
+      return;
+    }
+
+    const bapTerms = paymentTags.find((tag) => tag.descriptor?.code === "BAP_TERMS");
+    if (!bapTerms) {
+      testResults.failed.push("BAP_TERMS tag is missing in payment tags for purchase finance");
+      return;
+    }
+
+    if (!bapTerms.list || !Array.isArray(bapTerms.list)) {
+      testResults.failed.push("BAP_TERMS list is missing or invalid");
+      return;
+    }
+
+    // Helper function to get value by code
+    const getValue = (code: string): string | undefined => {
+      const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+      return item?.value;
+    };
+
+    // Validate BUYER_FINDER_FEES_TYPE
+    const buyerFinderFeesType = getValue("BUYER_FINDER_FEES_TYPE");
+    if (!buyerFinderFeesType) {
+      testResults.failed.push("BUYER_FINDER_FEES_TYPE is missing in BAP_TERMS");
+    } else if (buyerFinderFeesType !== "percent-annualized") {
+      testResults.failed.push(
+        `BUYER_FINDER_FEES_TYPE should be "percent-annualized", found: ${buyerFinderFeesType}`
+      );
+    } else {
+      testResults.passed.push(`BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`);
+    }
+
+    // Validate BUYER_FINDER_FEES_PERCENTAGE
+    const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+    if (!buyerFinderFeesPercentage) {
+      testResults.failed.push("BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS");
+    } else {
+      const percentage = parseFloat(buyerFinderFeesPercentage);
+      if (isNaN(percentage) || percentage < 0) {
+        testResults.failed.push(
+          `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+        );
+      } else {
+        testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+      }
+    }
+
+    // Validate DELAY_INTEREST
+    const delayInterest = getValue("DELAY_INTEREST");
+    if (!delayInterest) {
+      testResults.failed.push("DELAY_INTEREST is missing in BAP_TERMS");
+    } else {
+      const interest = parseFloat(delayInterest);
+      if (isNaN(interest) || interest < 0) {
+        testResults.failed.push(
+          `DELAY_INTEREST should be a valid positive number, found: ${delayInterest}`
+        );
+      } else {
+        testResults.passed.push(`DELAY_INTEREST is valid: ${delayInterest}`);
+      }
+    }
+
+    // Validate STATIC_TERMS
+    const staticTerms = getValue("STATIC_TERMS");
+    if (!staticTerms) {
+      testResults.failed.push("STATIC_TERMS is missing in BAP_TERMS");
+    } else {
+      try {
+        const url = new URL(staticTerms);
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+          testResults.failed.push(`STATIC_TERMS should be a valid HTTP/HTTPS URL, found: ${staticTerms}`);
+        } else {
+          testResults.passed.push(`STATIC_TERMS is a valid URL: ${staticTerms}`);
+        }
+      } catch (error) {
+        testResults.failed.push(`STATIC_TERMS should be a valid URL, found: ${staticTerms}`);
+      }
+    }
+
+    // Validate OFFLINE_CONTRACT
+    const offlineContract = getValue("OFFLINE_CONTRACT");
+    if (!offlineContract) {
+      testResults.failed.push("OFFLINE_CONTRACT is missing in BAP_TERMS");
+    } else if (offlineContract !== "true" && offlineContract !== "false") {
+      testResults.failed.push(
+        `OFFLINE_CONTRACT should be "true" or "false", found: ${offlineContract}`
+      );
+    } else {
+      testResults.passed.push(`OFFLINE_CONTRACT is valid: ${offlineContract}`);
+    }
+  }
+}
+
+function validatePurchaseFinanceBapTerms(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const tags = message?.intent?.payment?.tags || message?.intent?.tags;
+  if (!tags || !Array.isArray(tags)) {
+    testResults.failed.push("Payment tags are missing in search request for purchase finance");
+    return;
+  }
+
+  const bapTerms = tags.find((tag) => tag.descriptor?.code === "BAP_TERMS");
+  if (!bapTerms) {
+    testResults.failed.push("BAP_TERMS tag is missing in payment tags for purchase finance");
+    return;
+  }
+
+  if (!bapTerms.list || !Array.isArray(bapTerms.list)) {
+    testResults.failed.push("BAP_TERMS list is missing or invalid");
+    return;
+  }
+
+  // Helper function to get value by code
+  const getValue = (code: string): string | undefined => {
+    const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+    return item?.value;
+  };
+
+  // Validate BUYER_FINDER_FEES_TYPE
+  const buyerFinderFeesType = getValue("BUYER_FINDER_FEES_TYPE");
+  if (!buyerFinderFeesType) {
+    testResults.failed.push("BUYER_FINDER_FEES_TYPE is missing in BAP_TERMS");
+  } else if (buyerFinderFeesType !== "percent-annualized") {
+    testResults.failed.push(
+      `BUYER_FINDER_FEES_TYPE should be "percent-annualized", found: ${buyerFinderFeesType}`
+    );
+  } else {
+    testResults.passed.push(`BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`);
+  }
+
+  // Validate BUYER_FINDER_FEES_PERCENTAGE
+  const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+  if (!buyerFinderFeesPercentage) {
+    testResults.failed.push("BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS");
+  } else {
+    const percentage = parseFloat(buyerFinderFeesPercentage);
+    if (isNaN(percentage) || percentage < 0) {
+      testResults.failed.push(
+        `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+      );
+    } else {
+      testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+    }
+  }
+
+  // Validate DELAY_INTEREST
+  const delayInterest = getValue("DELAY_INTEREST");
+  if (!delayInterest) {
+    testResults.failed.push("DELAY_INTEREST is missing in BAP_TERMS");
+  } else {
+    const interest = parseFloat(delayInterest);
+    if (isNaN(interest) || interest < 0) {
+      testResults.failed.push(
+        `DELAY_INTEREST should be a valid positive number, found: ${delayInterest}`
+      );
+    } else {
+      testResults.passed.push(`DELAY_INTEREST is valid: ${delayInterest}`);
+    }
+  }
+
+  // Validate STATIC_TERMS
+  const staticTerms = getValue("STATIC_TERMS");
+  if (!staticTerms) {
+    testResults.failed.push("STATIC_TERMS is missing in BAP_TERMS");
+  } else {
+    try {
+      const url = new URL(staticTerms);
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        testResults.failed.push(`STATIC_TERMS should be a valid HTTP/HTTPS URL, found: ${staticTerms}`);
+      } else {
+        testResults.passed.push(`STATIC_TERMS is a valid URL: ${staticTerms}`);
+      }
+    } catch (error) {
+      testResults.failed.push(`STATIC_TERMS should be a valid URL, found: ${staticTerms}`);
+    }
+  }
+
+  // Validate OFFLINE_CONTRACT
+  const offlineContract = getValue("OFFLINE_CONTRACT");
+  if (!offlineContract) {
+    testResults.failed.push("OFFLINE_CONTRACT is missing in BAP_TERMS");
+  } else if (offlineContract !== "true" && offlineContract !== "false") {
+    testResults.failed.push(
+      `OFFLINE_CONTRACT should be "true" or "false", found: ${offlineContract}`
+    );
+  } else {
+    testResults.passed.push(`OFFLINE_CONTRACT is valid: ${offlineContract}`);
+  }
+}
+
+function validatePurchaseFinanceSearch(
+  message: any,
+  context: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const intent = message?.intent;
+  if (!intent) {
+    testResults.failed.push("Intent is missing in search request");
+    return;
+  }
+
+  // Check if this is search1 (no provider/items) or search2/3/4 (has provider/items)
+  const hasProvider = !!intent.provider;
+  const hasItems = hasProvider && !!intent.provider.items && Array.isArray(intent.provider.items) && intent.provider.items.length > 0;
+
+  if (!hasProvider && !hasItems) {
+    // Search1: Initial search - only validate BAP_TERMS (already done by validatePurchaseFinanceBapTerms)
+    // No additional validations needed for search1
+    testResults.passed.push("Search1: Initial search validated (provider and items not required)");
+    return;
+  }
+
+  // Search2/3/4: Must have provider, items, and xinput
+  // Validate provider
+  if (!hasProvider) {
+    testResults.failed.push("Provider is missing in search request (required for search2/3/4)");
+    return;
+  }
+
+  if (!intent.provider.id) {
+    testResults.failed.push("Provider id is missing in search request");
+  } else {
+    testResults.passed.push(`Provider id is present: ${intent.provider.id}`);
+  }
+
+  // Validate items
+  if (!hasItems) {
+    testResults.failed.push("Items are missing in provider (required for search2/3/4)");
+    return;
+  }
+
+  // Validate context has bpp_id and bpp_uri for search2/3/4
+  if (!context.bpp_id) {
+    testResults.failed.push("bpp_id is missing in context (required for search2/3/4)");
+  } else {
+    testResults.passed.push(`bpp_id is present in context: ${context.bpp_id}`);
+  }
+
+  if (!context.bpp_uri) {
+    testResults.failed.push("bpp_uri is missing in context (required for search2/3/4)");
+  } else {
+    testResults.passed.push(`bpp_uri is present in context: ${context.bpp_uri}`);
+  }
+
+  // Validate each item has xinput
+  intent.provider.items.forEach((item: any, index: number) => {
+    if (!item.id) {
+      testResults.failed.push(`Item ${index}: id is missing`);
+      return;
+    }
+
+    if (!item.xinput) {
+      testResults.failed.push(`Item ${item.id}: xinput is missing (required for search2/3/4)`);
+      return;
+    }
+
+    // Validate xinput.form
+    if (!item.xinput.form) {
+      testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
+    } else {
+      if (!item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      }
+    }
+
+    // Validate xinput.form_response
+    if (!item.xinput.form_response) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response is missing`);
+      return;
+    }
+
+    const formResponse = item.xinput.form_response;
+    const allowedStatuses = ["SUCCESS", "APPROVED"];
+    
+    if (!formResponse.status) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+    } else if (!allowedStatuses.includes(formResponse.status)) {
+      testResults.failed.push(
+        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: Valid xinput.form_response.status "${formResponse.status}"`
+      );
+    }
+
+    if (!formResponse.submission_id) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
+      );
+    }
+  });
+}
+
+function validatePurchaseFinanceOnSelect(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in on_select response");
+    return;
+  }
+
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in on_select response");
+      return;
+    }
+
+    if (!item.xinput) {
+      testResults.failed.push(`Item ${item.id}: xinput is missing in on_select response`);
+      return;
+    }
+
+    // Check if this is on_select3 (has form_response, no head/form details) or on_select1/2 (has head and form)
+    const hasFormResponse = item.xinput.form_response;
+    const hasHead = item.xinput.head;
+    const hasForm = item.xinput.form;
+
+    if (hasFormResponse) {
+      // on_select3: Has form_response - validate it
+      const formResponse = item.xinput.form_response;
+      const allowedStatuses = ["SUCCESS", "APPROVED"];
+      
+      if (!formResponse.status) {
+        testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+      } else if (!allowedStatuses.includes(formResponse.status)) {
+        testResults.failed.push(
+          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: Valid xinput.form_response.status "${formResponse.status}"`
+        );
+      }
+
+      if (!formResponse.submission_id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
+        );
+      }
+
+      // Validate form.id is present
+      if (!item.xinput.form || !item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing (required for on_select3)`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      }
+    } else if (hasHead && hasForm) {
+      // on_select1/2: Has xinput.head and xinput.form - validate them
+      // Validate xinput.form
+      if (!item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      }
+
+      if (!item.xinput.form.url) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.url is missing`);
+      } else {
+        try {
+          const url = new URL(item.xinput.form.url);
+          if (url.protocol !== "http:" && url.protocol !== "https:") {
+            testResults.failed.push(`Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`);
+          } else {
+            testResults.passed.push(`Item ${item.id}: xinput.form.url is a valid URL`);
+          }
+        } catch (error) {
+          testResults.failed.push(`Item ${item.id}: xinput.form.url is not a valid URL`);
+        }
+      }
+
+      const validMimeTypes = ["text/html", "application/html"];
+      if (!item.xinput.form.mime_type) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.mime_type is missing`);
+      } else if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
+        testResults.failed.push(
+          `Item ${item.id}: Invalid xinput.form.mime_type "${item.xinput.form.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.mime_type is valid: "${item.xinput.form.mime_type}"`);
+      }
+
+      // Validate xinput.head
+      if (!item.xinput.head.descriptor || !item.xinput.head.descriptor.name) {
+        testResults.failed.push(`Item ${item.id}: xinput.head.descriptor.name is missing`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`);
+      }
+
+      if (!item.xinput.head.index) {
+        testResults.failed.push(`Item ${item.id}: xinput.head.index is missing`);
+      } else {
+        const index = item.xinput.head.index;
+        if (typeof index.min !== "number" || typeof index.cur !== "number" || typeof index.max !== "number") {
+          testResults.failed.push(`Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`);
+        } else {
+          if (index.cur < index.min || index.cur > index.max) {
+            testResults.failed.push(
+              `Item ${item.id}: xinput.head.index.cur (${index.cur}) should be between min (${index.min}) and max (${index.max})`
+            );
+          } else {
+            testResults.passed.push(
+              `Item ${item.id}: xinput.head.index is valid (cur: ${index.cur}, min: ${index.min}, max: ${index.max})`
+            );
+          }
+        }
+      }
+
+      if (!item.xinput.head.headings || !Array.isArray(item.xinput.head.headings) || item.xinput.head.headings.length === 0) {
+        testResults.failed.push(`Item ${item.id}: xinput.head.headings is missing or empty`);
+      } else {
+        const allowedHeadings = [
+          "SET_DOWN_PAYMENT",
+          "KYC",
+          "EMANDATE",
+          "ESIGN",
+          "MERCHANT_AND_PRDOUCT_DEATILS",
+          "PERSONAL_INFORMATION"
+        ];
+        item.xinput.head.headings.forEach((heading: string) => {
+          if (!allowedHeadings.includes(heading)) {
+            testResults.failed.push(
+              `Item ${item.id}: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(", ")}`
+            );
+          } else {
+            testResults.passed.push(`Item ${item.id}: Valid heading "${heading}"`);
+          }
+        });
+      }
+
+      if (item.xinput.required !== true && item.xinput.required !== false) {
+        testResults.failed.push(`Item ${item.id}: xinput.required should be a boolean`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.required is present: ${item.xinput.required}`);
+      }
+
+      // Validate CHECKLISTS tag if present
+      if (item.tags && Array.isArray(item.tags)) {
+        const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
+        if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+          const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
+          checklistsTag.list.forEach((checklistItem: any) => {
+            const code = checklistItem.descriptor?.code;
+            const value = checklistItem.value;
+            if (code && value) {
+              if (!allowedChecklistStatuses.includes(value)) {
+                testResults.failed.push(
+                  `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                );
+              } else {
+                testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+              }
+            }
+          });
+        }
+      }
+    } else {
+      testResults.failed.push(`Item ${item.id}: xinput must have either (head and form) or form_response`);
+    }
+  });
+}
+
+function validatePurchaseFinanceSelect(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in select request");
+    return;
+  }
+
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in select request");
+      return;
+    }
+
+    // Check if this is select1 (no xinput) or select2/3 (has xinput with form_response)
+    if (!item.xinput) {
+      // select1: Basic select - no xinput required
+      testResults.passed.push(`Item ${item.id}: Basic select validated (xinput not required for select1)`);
+      return;
+    }
+
+    // select2/3: Must have xinput with form and form_response
+    if (!item.xinput.form) {
+      testResults.failed.push(`Item ${item.id}: xinput.form is missing (required for select2/3)`);
+      return;
+    }
+
+    if (!item.xinput.form.id) {
+      testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+    } else {
+      testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+    }
+
+    if (!item.xinput.form_response) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response is missing (required for select2/3)`);
+      return;
+    }
+
+    const formResponse = item.xinput.form_response;
+    const allowedStatuses = ["SUCCESS", "APPROVED"];
+    
+    if (!formResponse.status) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+    } else if (!allowedStatuses.includes(formResponse.status)) {
+      testResults.failed.push(
+        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: Valid xinput.form_response.status "${formResponse.status}"`
+      );
+    }
+
+    if (!formResponse.submission_id) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
+      );
+    }
+  });
+}
+
+function validatePurchaseFinanceInit(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in init request");
+    return;
+  }
+
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  // Validate payments
+  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+    testResults.failed.push("Payments array is missing or empty in order");
+    return;
+  }
+
+  // Validate BAP_TERMS in payments
+  order.payments.forEach((payment: any, paymentIndex: number) => {
+    if (!payment.tags || !Array.isArray(payment.tags)) {
+      testResults.failed.push(`Payment ${paymentIndex}: tags array is missing`);
+      return;
+    }
+
+    const bapTerms = payment.tags.find((tag: any) => tag.descriptor?.code === "BAP_TERMS");
+    if (!bapTerms) {
+      testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS tag is missing`);
+      return;
+    }
+
+    if (!bapTerms.list || !Array.isArray(bapTerms.list)) {
+      testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS list is missing or invalid`);
+      return;
+    }
+
+    // Helper function to get value by code
+    const getValue = (code: string): string | undefined => {
+      const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+      return item?.value;
+    };
+
+    // Validate required BAP_TERMS fields for init
+    const requiredFields = [
+      "BUYER_FINDER_FEES_TYPE",
+      "BUYER_FINDER_FEES_PERCENTAGE",
+      "SETTLEMENT_AMOUNT",
+      "SETTLEMENT_TYPE",
+      "DELAY_INTEREST",
+      "STATIC_TERMS",
+      "OFFLINE_CONTRACT"
+    ];
+
+    requiredFields.forEach((fieldCode) => {
+      const value = getValue(fieldCode);
+      if (!value) {
+        testResults.failed.push(`Payment ${paymentIndex}: ${fieldCode} is missing in BAP_TERMS`);
+      } else {
+        testResults.passed.push(`Payment ${paymentIndex}: ${fieldCode} is present: ${value}`);
+      }
+    });
+
+    // Validate SETTLEMENT_TYPE
+    const settlementType = getValue("SETTLEMENT_TYPE");
+    if (settlementType && !["neft", "rtgs", "upi", "imps"].includes(settlementType.toLowerCase())) {
+      testResults.failed.push(
+        `Payment ${paymentIndex}: Invalid SETTLEMENT_TYPE "${settlementType}". Should be one of: neft, rtgs, upi, imps`
+      );
+    }
+
+    // Validate payment types
+    const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
+    if (!payment.type) {
+      testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
+    } else if (!validPaymentTypes.includes(payment.type)) {
+      testResults.failed.push(
+        `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+    }
+
+    // Validate PRE_ORDER payment has params
+    if (payment.type === "PRE_ORDER") {
+      if (!payment.params) {
+        testResults.failed.push(`Payment ${paymentIndex}: params is missing for PRE_ORDER payment`);
+      } else {
+        if (!payment.params.amount) {
+          testResults.failed.push(`Payment ${paymentIndex}: params.amount is missing for PRE_ORDER payment`);
+        } else {
+          testResults.passed.push(`Payment ${paymentIndex}: params.amount is present: ${payment.params.amount}`);
+        }
+        if (!payment.params.currency) {
+          testResults.failed.push(`Payment ${paymentIndex}: params.currency is missing for PRE_ORDER payment`);
+        } else {
+          testResults.passed.push(`Payment ${paymentIndex}: params.currency is present: ${payment.params.currency}`);
+        }
+        if (payment.status === "PAID" && !payment.params.transaction_id) {
+          testResults.failed.push(`Payment ${paymentIndex}: params.transaction_id is missing for PAID PRE_ORDER payment`);
+        } else if (payment.params.transaction_id) {
+          testResults.passed.push(`Payment ${paymentIndex}: params.transaction_id is present: ${payment.params.transaction_id}`);
+        }
+      }
+    }
+  });
+
+  // Validate items
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in init request");
+      return;
+    }
+
+    // Check if this is init1 (no xinput) or init2/3 (has xinput with form_response)
+    if (!item.xinput) {
+      // init1: Basic init - no xinput required
+      testResults.passed.push(`Item ${item.id}: Basic init validated (xinput not required for init1)`);
+      return;
+    }
+
+    // init2/3: Must have xinput with form and form_response
+    if (!item.xinput.form) {
+      testResults.failed.push(`Item ${item.id}: xinput.form is missing (required for init2/3)`);
+      return;
+    }
+
+    if (!item.xinput.form.id) {
+      testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+    } else {
+      testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+    }
+
+    if (!item.xinput.form_response) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response is missing (required for init2/3)`);
+      return;
+    }
+
+    const formResponse = item.xinput.form_response;
+    const allowedStatuses = ["SUCCESS", "APPROVED"];
+    
+    if (!formResponse.status) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+    } else if (!allowedStatuses.includes(formResponse.status)) {
+      testResults.failed.push(
+        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: Valid xinput.form_response.status "${formResponse.status}"`
+      );
+    }
+
+    if (!formResponse.submission_id) {
+      testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
+      );
+    }
+  });
+}
+
+function validatePurchaseFinanceOnInit(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in on_init response");
+    return;
+  }
+
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in on_init response");
+      return;
+    }
+
+    if (!item.xinput) {
+      testResults.failed.push(`Item ${item.id}: xinput is missing in on_init response`);
+      return;
+    }
+
+    // Check if this is on_init3 (has form_response, no head/form details) or on_init1/2 (has head and form)
+    const hasFormResponse = item.xinput.form_response;
+    const hasHead = item.xinput.head;
+    const hasForm = item.xinput.form;
+
+    if (hasFormResponse) {
+      // on_init3: Has form_response - validate it
+      const formResponse = item.xinput.form_response;
+      const allowedStatuses = ["SUCCESS", "APPROVED"];
+      
+      if (!formResponse.status) {
+        testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+      } else if (!allowedStatuses.includes(formResponse.status)) {
+        testResults.failed.push(
+          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: Valid xinput.form_response.status "${formResponse.status}"`
+        );
+      }
+
+      if (!formResponse.submission_id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
+        );
+      }
+
+      // Validate form.id is present
+      if (!item.xinput.form || !item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing (required for on_init3)`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      }
+
+      // Validate CHECKLISTS tag if present
+      if (item.tags && Array.isArray(item.tags)) {
+        const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
+        if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+          const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
+          checklistsTag.list.forEach((checklistItem: any) => {
+            const code = checklistItem.descriptor?.code;
+            const value = checklistItem.value;
+            if (code && value) {
+              if (!allowedChecklistStatuses.includes(value)) {
+                testResults.failed.push(
+                  `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                );
+              } else {
+                testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+              }
+            }
+          });
+        }
+      }
+    } else if (hasHead && hasForm) {
+      // on_init1/2: Has xinput.head and xinput.form - validate them
+      // Validate xinput.form
+      if (!item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      }
+
+      if (!item.xinput.form.url) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.url is missing`);
+      } else {
+        try {
+          const url = new URL(item.xinput.form.url);
+          if (url.protocol !== "http:" && url.protocol !== "https:") {
+            testResults.failed.push(`Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`);
+          } else {
+            testResults.passed.push(`Item ${item.id}: xinput.form.url is a valid URL`);
+          }
+        } catch (error) {
+          testResults.failed.push(`Item ${item.id}: xinput.form.url is not a valid URL`);
+        }
+      }
+
+      const validMimeTypes = ["text/html", "application/html"];
+      if (!item.xinput.form.mime_type) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.mime_type is missing`);
+      } else if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
+        testResults.failed.push(
+          `Item ${item.id}: Invalid xinput.form.mime_type "${item.xinput.form.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.mime_type is valid: "${item.xinput.form.mime_type}"`);
+      }
+
+      // Validate xinput.head
+      if (!item.xinput.head.descriptor || !item.xinput.head.descriptor.name) {
+        testResults.failed.push(`Item ${item.id}: xinput.head.descriptor.name is missing`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`);
+      }
+
+      if (!item.xinput.head.index) {
+        testResults.failed.push(`Item ${item.id}: xinput.head.index is missing`);
+      } else {
+        const index = item.xinput.head.index;
+        if (typeof index.min !== "number" || typeof index.cur !== "number" || typeof index.max !== "number") {
+          testResults.failed.push(`Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`);
+        } else {
+          if (index.cur < index.min || index.cur > index.max) {
+            testResults.failed.push(
+              `Item ${item.id}: xinput.head.index.cur (${index.cur}) should be between min (${index.min}) and max (${index.max})`
+            );
+          } else {
+            testResults.passed.push(
+              `Item ${item.id}: xinput.head.index is valid (cur: ${index.cur}, min: ${index.min}, max: ${index.max})`
+            );
+          }
+        }
+      }
+
+      if (!item.xinput.head.headings || !Array.isArray(item.xinput.head.headings) || item.xinput.head.headings.length === 0) {
+        testResults.failed.push(`Item ${item.id}: xinput.head.headings is missing or empty`);
+      } else {
+        const allowedHeadings = [
+          "SET_DOWN_PAYMENT",
+          "KYC",
+          "EMANDATE",
+          "ESIGN",
+          "MERCHANT_AND_PRDOUCT_DEATILS",
+          "PERSONAL_INFORMATION"
+        ];
+        item.xinput.head.headings.forEach((heading: string) => {
+          if (!allowedHeadings.includes(heading)) {
+            testResults.failed.push(
+              `Item ${item.id}: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(", ")}`
+            );
+          } else {
+            testResults.passed.push(`Item ${item.id}: Valid heading "${heading}"`);
+          }
+        });
+      }
+
+      if (item.xinput.required !== true && item.xinput.required !== false) {
+        testResults.failed.push(`Item ${item.id}: xinput.required should be a boolean`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.required is present: ${item.xinput.required}`);
+      }
+
+      // Validate CHECKLISTS tag if present
+      if (item.tags && Array.isArray(item.tags)) {
+        const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
+        if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+          const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
+          checklistsTag.list.forEach((checklistItem: any) => {
+            const code = checklistItem.descriptor?.code;
+            const value = checklistItem.value;
+            if (code && value) {
+              if (!allowedChecklistStatuses.includes(value)) {
+                testResults.failed.push(
+                  `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                );
+              } else {
+                testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+              }
+            }
+          });
+        }
+      }
+    } else {
+      testResults.failed.push(`Item ${item.id}: xinput must have either (head and form) or form_response`);
+    }
+  });
+
+  // Validate fulfillments
+  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+    testResults.failed.push("Fulfillments array is missing or empty in order");
+  } else {
+    order.fulfillments.forEach((fulfillment: any, index: number) => {
+      if (!fulfillment.id) {
+        testResults.failed.push(`Fulfillment ${index}: id is missing`);
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+      }
+
+      if (!fulfillment.type) {
+        testResults.failed.push(`Fulfillment ${index}: type is missing`);
+      } else if (fulfillment.type !== "LOAN") {
+        testResults.failed.push(`Fulfillment ${index}: type should be "LOAN" for purchase finance`);
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+      }
+
+      if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
+        testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is present: ${fulfillment.state.descriptor.code}`);
+      }
+    });
+  }
+
+  // Validate payments
+  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+    testResults.failed.push("Payments array is missing or empty in order");
+  } else {
+    order.payments.forEach((payment: any, paymentIndex: number) => {
+      const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
+      if (!payment.type) {
+        testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
+      } else if (!validPaymentTypes.includes(payment.type)) {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+      }
+
+      // Validate POST_FULFILLMENT payments have BREAKUP tag
+      if (payment.type === "POST_FULFILLMENT") {
+        if (!payment.tags || !Array.isArray(payment.tags)) {
+          testResults.failed.push(`Payment ${paymentIndex}: tags array is missing for POST_FULFILLMENT payment`);
+        } else {
+          const breakupTag = payment.tags.find((tag: any) => tag.descriptor?.code === "BREAKUP");
+          if (!breakupTag) {
+            testResults.failed.push(`Payment ${paymentIndex}: BREAKUP tag is missing for POST_FULFILLMENT payment`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: BREAKUP tag is present`);
+          }
+
+          if (!payment.time || !payment.time.label) {
+            testResults.failed.push(`Payment ${paymentIndex}: time.label is missing for POST_FULFILLMENT payment`);
+          } else if (payment.time.label !== "INSTALLMENT") {
+            testResults.failed.push(`Payment ${paymentIndex}: time.label should be "INSTALLMENT" for POST_FULFILLMENT payment`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`);
+          }
+        }
+      }
+    });
+  }
+
+  // Validate quote
+  if (!order.quote) {
+    testResults.failed.push("Quote is missing in on_init response");
+  } else {
+    if (!order.quote.id) {
+      testResults.failed.push("Quote id is missing");
+    } else {
+      testResults.passed.push(`Quote id is present: ${order.quote.id}`);
+    }
+
+    if (!order.quote.price || !order.quote.price.value || !order.quote.price.currency) {
+      testResults.failed.push("Quote price.value or price.currency is missing");
+    } else {
+      testResults.passed.push(`Quote price is present: ${order.quote.price.value} ${order.quote.price.currency}`);
+    }
+
+    if (!order.quote.breakup || !Array.isArray(order.quote.breakup) || order.quote.breakup.length === 0) {
+      testResults.failed.push("Quote breakup array is missing or empty");
+    } else {
+      testResults.passed.push(`Quote breakup array has ${order.quote.breakup.length} items`);
+    }
+  }
+}
+
+function validatePurchaseFinanceConfirm(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in confirm request");
+    return;
+  }
+
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  // Validate payments
+  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+    testResults.failed.push("Payments array is missing or empty in order");
+    return;
+  }
+
+  // Validate BAP_TERMS and BPP_TERMS in payments
+  order.payments.forEach((payment: any, paymentIndex: number) => {
+    if (!payment.tags || !Array.isArray(payment.tags)) {
+      testResults.failed.push(`Payment ${paymentIndex}: tags array is missing`);
+      return;
+    }
+
+    // Validate BAP_TERMS tag
+    const bapTerms = payment.tags.find((tag: any) => tag.descriptor?.code === "BAP_TERMS");
+    if (bapTerms) {
+      if (!bapTerms.list || !Array.isArray(bapTerms.list)) {
+        testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS list is missing or invalid`);
+      } else {
+        // Helper function to get value by code
+        const getValue = (code: string): string | undefined => {
+          const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+          return item?.value;
+        };
+
+        // Validate required BAP_TERMS fields
+        const requiredFields = [
+          "BUYER_FINDER_FEES_TYPE",
+          "BUYER_FINDER_FEES_PERCENTAGE",
+          "SETTLEMENT_AMOUNT",
+          "SETTLEMENT_TYPE",
+          "DELAY_INTEREST",
+          "STATIC_TERMS",
+          "OFFLINE_CONTRACT"
+        ];
+
+        requiredFields.forEach((fieldCode) => {
+          const value = getValue(fieldCode);
+          if (!value) {
+            testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS.${fieldCode} is missing`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: BAP_TERMS.${fieldCode} is present: ${value}`);
+          }
+        });
+      }
+    }
+
+    // Validate BPP_TERMS tag
+    const bppTerms = payment.tags.find((tag: any) => tag.descriptor?.code === "BPP_TERMS");
+    if (bppTerms) {
+      if (!bppTerms.list || !Array.isArray(bppTerms.list)) {
+        testResults.failed.push(`Payment ${paymentIndex}: BPP_TERMS list is missing or invalid`);
+      } else {
+        // Helper function to get value by code
+        const getValue = (code: string): string | undefined => {
+          const item = bppTerms.list.find((item: any) => item.descriptor?.code === code);
+          return item?.value;
+        };
+
+        // Validate required BPP_TERMS fields
+        const requiredFields = [
+          "BUYER_FINDER_FEES_TYPE",
+          "BUYER_FINDER_FEES_PERCENTAGE",
+          "SETTLEMENT_WINDOW",
+          "SETTLEMENT_BASIS",
+          "MANDATORY_ARBITRATION",
+          "COURT_JURISDICTION",
+          "STATIC_TERMS",
+          "SETTLEMENT_AMOUNT",
+          "OFFLINE_CONTRACT"
+        ];
+
+        requiredFields.forEach((fieldCode) => {
+          const value = getValue(fieldCode);
+          if (!value) {
+            testResults.failed.push(`Payment ${paymentIndex}: BPP_TERMS.${fieldCode} is missing`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: BPP_TERMS.${fieldCode} is present: ${value}`);
+          }
+        });
+      }
+    }
+
+    // Validate payment types
+    const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
+    if (!payment.type) {
+      testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
+    } else if (!validPaymentTypes.includes(payment.type)) {
+      testResults.failed.push(
+        `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+    }
+
+    // Validate PRE_ORDER payment has params
+    if (payment.type === "PRE_ORDER") {
+      if (!payment.params) {
+        testResults.failed.push(`Payment ${paymentIndex}: params is missing for PRE_ORDER payment`);
+      } else {
+        if (!payment.params.amount) {
+          testResults.failed.push(`Payment ${paymentIndex}: params.amount is missing for PRE_ORDER payment`);
+        } else {
+          testResults.passed.push(`Payment ${paymentIndex}: params.amount is present: ${payment.params.amount}`);
+        }
+        if (!payment.params.currency) {
+          testResults.failed.push(`Payment ${paymentIndex}: params.currency is missing for PRE_ORDER payment`);
+        } else {
+          testResults.passed.push(`Payment ${paymentIndex}: params.currency is present: ${payment.params.currency}`);
+        }
+        if (payment.status === "PAID" && !payment.params.transaction_id) {
+          testResults.failed.push(`Payment ${paymentIndex}: params.transaction_id is missing for PAID PRE_ORDER payment`);
+        } else if (payment.params.transaction_id) {
+          testResults.passed.push(`Payment ${paymentIndex}: params.transaction_id is present: ${payment.params.transaction_id}`);
+        }
+      }
+    }
+  });
+
+  // Validate items
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in confirm request");
+    } else {
+      testResults.passed.push(`Item id is present: ${item.id}`);
+    }
+  });
+}
+
+function validatePurchaseFinanceOnCancel(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in on_cancel response");
+    return;
+  }
+
+  // Validate order.id and order.status
+  if (!order.id) {
+    testResults.failed.push("Order id is missing in on_cancel response");
+  } else {
+    testResults.passed.push(`Order id is present: ${order.id}`);
+  }
+
+  if (!order.status) {
+    testResults.failed.push("Order status is missing in on_cancel response");
+  } else {
+    const validStatuses = ["SOFT_CANCEL", "CANCELLED"];
+    if (!validStatuses.includes(order.status)) {
+      testResults.failed.push(
+        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(`Order status is valid: ${order.status}`);
+    }
+  }
+
+  // Validate items
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in on_cancel response");
+      return;
+    }
+
+    // Validate CHECKLISTS tag if present
+    if (item.tags && Array.isArray(item.tags)) {
+      const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
+      if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+        const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
+        checklistsTag.list.forEach((checklistItem: any) => {
+          const code = checklistItem.descriptor?.code;
+          const value = checklistItem.value;
+          if (code && value) {
+            if (!allowedChecklistStatuses.includes(value)) {
+              testResults.failed.push(
+                `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+              );
+            } else {
+              testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+            }
+          }
+        });
+      }
+    }
+  });
+
+  // Validate fulfillments
+  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+    testResults.failed.push("Fulfillments array is missing or empty in order");
+  } else {
+    order.fulfillments.forEach((fulfillment: any, index: number) => {
+      if (!fulfillment.id) {
+        testResults.failed.push(`Fulfillment ${index}: id is missing`);
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+      }
+
+      if (!fulfillment.type) {
+        testResults.failed.push(`Fulfillment ${index}: type is missing`);
+      } else {
+        const validTypes = ["LOAN", "BASE_ORDER"];
+        if (!validTypes.includes(fulfillment.type)) {
+          testResults.failed.push(
+            `Fulfillment ${index}: Invalid type "${fulfillment.type}". Allowed: ${validTypes.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+        }
+      }
+
+      if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
+        testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+      } else {
+        const stateCode = fulfillment.state.descriptor.code;
+        const validStates = ["DISBURSED", "DELIVERED", "SANCTIONED", "PLACED", "INITIATED", "COMPLETE"];
+        if (!validStates.includes(stateCode)) {
+          testResults.failed.push(
+            `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`);
+        }
+
+        // Validate REFERENCE_NUMBER tag when state is DISBURSED
+        if (stateCode === "DISBURSED" && fulfillment.type === "LOAN") {
+          if (!fulfillment.tags || !Array.isArray(fulfillment.tags)) {
+            testResults.failed.push(`Fulfillment ${index}: tags array is missing (required for DISBURSED LOAN fulfillment)`);
+          } else {
+            const infoTag = fulfillment.tags.find((tag: any) => tag.descriptor?.code === "INFO");
+            if (!infoTag) {
+              testResults.failed.push(`Fulfillment ${index}: INFO tag is missing (required for DISBURSED LOAN fulfillment)`);
+            } else {
+              if (!infoTag.list || !Array.isArray(infoTag.list)) {
+                testResults.failed.push(`Fulfillment ${index}: INFO tag list is missing or invalid`);
+              } else {
+                const referenceNumber = infoTag.list.find((item: any) => item.descriptor?.code === "REFERENCE_NUMBER");
+                if (!referenceNumber || !referenceNumber.value) {
+                  testResults.failed.push(`Fulfillment ${index}: REFERENCE_NUMBER is missing in INFO tag (required for DISBURSED LOAN fulfillment)`);
+                } else {
+                  testResults.passed.push(`Fulfillment ${index}: REFERENCE_NUMBER is present: ${referenceNumber.value}`);
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Validate payments
+  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+    testResults.failed.push("Payments array is missing or empty in order");
+  } else {
+    order.payments.forEach((payment: any, paymentIndex: number) => {
+      const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
+      if (!payment.type) {
+        testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
+      } else if (!validPaymentTypes.includes(payment.type)) {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+      }
+
+      // Validate POST_FULFILLMENT payments for cancellation refunds
+      if (payment.type === "POST_FULFILLMENT") {
+        if (!payment.params || !payment.params.amount || !payment.params.currency) {
+          testResults.failed.push(`Payment ${paymentIndex}: params.amount or params.currency is missing for POST_FULFILLMENT payment`);
+        } else {
+          testResults.passed.push(`Payment ${paymentIndex}: params.amount and params.currency are present`);
+        }
+
+        // Validate bank_account_number and bank_code for cancellation refunds
+        if (payment.params.bank_account_number) {
+          testResults.passed.push(`Payment ${paymentIndex}: bank_account_number is present: ${payment.params.bank_account_number}`);
+        }
+        if (payment.params.bank_code) {
+          testResults.passed.push(`Payment ${paymentIndex}: bank_code is present: ${payment.params.bank_code}`);
+        }
+
+        // Validate BREAKUP tag if present (for installment payments)
+        if (payment.tags && Array.isArray(payment.tags)) {
+          const breakupTag = payment.tags.find((tag: any) => tag.descriptor?.code === "BREAKUP");
+          if (breakupTag) {
+            testResults.passed.push(`Payment ${paymentIndex}: BREAKUP tag is present`);
+          }
+        }
+
+        // Validate time.label if present (for installment payments)
+        if (payment.time && payment.time.label) {
+          if (payment.time.label === "INSTALLMENT") {
+            testResults.passed.push(`Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: time.label is present: ${payment.time.label}`);
+          }
+        }
+      }
+    });
+  }
+
+  // Validate documents
+  if (!order.documents || !Array.isArray(order.documents) || order.documents.length === 0) {
+    testResults.failed.push("Documents array is missing or empty in on_cancel response");
+  } else {
+    order.documents.forEach((document: any, index: number) => {
+      if (!document.descriptor || !document.descriptor.code) {
+        testResults.failed.push(`Document ${index}: descriptor.code is missing`);
+      } else {
+        const validCodes = ["LOAN_AGREEMENT", "LOAN_CANCELLATION"];
+        if (!validCodes.includes(document.descriptor.code)) {
+          testResults.failed.push(
+            `Document ${index}: Invalid descriptor.code "${document.descriptor.code}". Allowed: ${validCodes.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Document ${index}: descriptor.code is valid: ${document.descriptor.code}`);
+        }
+      }
+
+      if (!document.url) {
+        testResults.failed.push(`Document ${index}: url is missing`);
+      } else {
+        try {
+          const url = new URL(document.url);
+          if (url.protocol !== "http:" && url.protocol !== "https:") {
+            testResults.failed.push(`Document ${index}: url should be a valid HTTP/HTTPS URL`);
+          } else {
+            testResults.passed.push(`Document ${index}: url is a valid URL`);
+          }
+        } catch (error) {
+          testResults.failed.push(`Document ${index}: url is not a valid URL`);
+        }
+      }
+
+      if (!document.mime_type) {
+        testResults.failed.push(`Document ${index}: mime_type is missing`);
+      } else {
+        const validMimeTypes = ["application/pdf", "application/json"];
+        if (!validMimeTypes.includes(document.mime_type)) {
+          testResults.failed.push(
+            `Document ${index}: Invalid mime_type "${document.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Document ${index}: mime_type is valid: ${document.mime_type}`);
+        }
+      }
+    });
+  }
+
+  // Validate timestamps
+  if (!order.created_at) {
+    testResults.failed.push("Order created_at timestamp is missing in on_cancel response");
+  } else {
+    testResults.passed.push(`Order created_at timestamp is present: ${order.created_at}`);
+  }
+
+  if (!order.updated_at) {
+    testResults.failed.push("Order updated_at timestamp is missing in on_cancel response");
+  } else {
+    testResults.passed.push(`Order updated_at timestamp is present: ${order.updated_at}`);
+  }
+}
+
+function validatePurchaseFinanceOnStatus(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in on_status response");
+    return;
+  }
+
+  // Validate items
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in on_status response");
+      return;
+    }
+
+    // Validate xinput.form_response if present
+    if (item.xinput && item.xinput.form_response) {
+      const formResponse = item.xinput.form_response;
+      const allowedStatuses = ["SUCCESS", "APPROVED"];
+      
+      if (!formResponse.status) {
+        testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+      } else if (!allowedStatuses.includes(formResponse.status)) {
+        testResults.failed.push(
+          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: Valid xinput.form_response.status "${formResponse.status}"`
+        );
+      }
+
+      if (!formResponse.submission_id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+      } else {
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
+        );
+      }
+
+      // Validate form.id is present
+      if (!item.xinput.form || !item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      }
+    }
+
+    // Validate CHECKLISTS tag if present
+    if (item.tags && Array.isArray(item.tags)) {
+      const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
+      if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+        const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
+        checklistsTag.list.forEach((checklistItem: any) => {
+          const code = checklistItem.descriptor?.code;
+          const value = checklistItem.value;
+          if (code && value) {
+            if (!allowedChecklistStatuses.includes(value)) {
+              testResults.failed.push(
+                `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+              );
+            } else {
+              testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+            }
+          }
+        });
+      }
+    }
+  });
+
+  // Validate quote
+  if (!order.quote) {
+    testResults.failed.push("Quote is missing in on_status response");
+  } else {
+    if (!order.quote.id) {
+      testResults.failed.push("Quote id is missing");
+    } else {
+      testResults.passed.push(`Quote id is present: ${order.quote.id}`);
+    }
+
+    if (!order.quote.price || !order.quote.price.value || !order.quote.price.currency) {
+      testResults.failed.push("Quote price.value or price.currency is missing");
+    } else {
+      testResults.passed.push(`Quote price is present: ${order.quote.price.value} ${order.quote.price.currency}`);
+    }
+
+    if (!order.quote.breakup || !Array.isArray(order.quote.breakup) || order.quote.breakup.length === 0) {
+      testResults.failed.push("Quote breakup array is missing or empty");
+    } else {
+      testResults.passed.push(`Quote breakup array has ${order.quote.breakup.length} items`);
+    }
+  }
+}
+
+function validatePurchaseFinanceOnUpdate(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in on_update response");
+    return;
+  }
+
+  // Validate order.id and order.status
+  if (!order.id) {
+    testResults.failed.push("Order id is missing in on_update response");
+  } else {
+    testResults.passed.push(`Order id is present: ${order.id}`);
+  }
+
+  if (!order.status) {
+    testResults.failed.push("Order status is missing in on_update response");
+  } else {
+    const validStatuses = ["ACTIVE", "COMPLETE"];
+    if (!validStatuses.includes(order.status)) {
+      testResults.failed.push(
+        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(`Order status is valid: ${order.status}`);
+    }
+  }
+
+  // Validate fulfillments
+  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+    testResults.failed.push("Fulfillments array is missing or empty in order");
+    return;
+  }
+
+  order.fulfillments.forEach((fulfillment: any, index: number) => {
+    if (!fulfillment.id) {
+      testResults.failed.push(`Fulfillment ${index}: id is missing`);
+    } else {
+      testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+    }
+
+    if (!fulfillment.type) {
+      testResults.failed.push(`Fulfillment ${index}: type is missing`);
+    } else {
+      const validTypes = ["LOAN", "BASE_ORDER"];
+      if (!validTypes.includes(fulfillment.type)) {
+        testResults.failed.push(
+          `Fulfillment ${index}: Invalid type "${fulfillment.type}". Allowed: ${validTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+      }
+    }
+
+    if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
+      testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+    } else {
+      const stateCode = fulfillment.state.descriptor.code;
+      const validStates = ["SANCTIONED", "DISBURSED", "DELIVERED", "PLACED", "INITIATED", "COMPLETE"];
+      if (!validStates.includes(stateCode)) {
+        testResults.failed.push(
+          `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`);
+      }
+
+      // Validate REFERENCE_NUMBER tag when state is DISBURSED
+      if (stateCode === "DISBURSED" && fulfillment.type === "LOAN") {
+        if (!fulfillment.tags || !Array.isArray(fulfillment.tags)) {
+          testResults.failed.push(`Fulfillment ${index}: tags array is missing (required for DISBURSED LOAN fulfillment)`);
+        } else {
+          const infoTag = fulfillment.tags.find((tag: any) => tag.descriptor?.code === "INFO");
+          if (!infoTag) {
+            testResults.failed.push(`Fulfillment ${index}: INFO tag is missing (required for DISBURSED LOAN fulfillment)`);
+          } else {
+            if (!infoTag.list || !Array.isArray(infoTag.list)) {
+              testResults.failed.push(`Fulfillment ${index}: INFO tag list is missing or invalid`);
+            } else {
+              const referenceNumber = infoTag.list.find((item: any) => item.descriptor?.code === "REFERENCE_NUMBER");
+              if (!referenceNumber || !referenceNumber.value) {
+                testResults.failed.push(`Fulfillment ${index}: REFERENCE_NUMBER is missing in INFO tag (required for DISBURSED LOAN fulfillment)`);
+              } else {
+                testResults.passed.push(`Fulfillment ${index}: REFERENCE_NUMBER is present: ${referenceNumber.value}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Validate customer creds if present (for BASE_ORDER fulfillments)
+    if (fulfillment.type === "BASE_ORDER" && fulfillment.customer?.person?.creds) {
+      const creds = fulfillment.customer.person.creds;
+      if (!Array.isArray(creds) || creds.length === 0) {
+        testResults.failed.push(`Fulfillment ${index}: customer.person.creds should be a non-empty array`);
+      } else {
+        creds.forEach((cred: any, credIndex: number) => {
+          if (!cred.type) {
+            testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].type is missing`);
+          } else {
+            testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].type is present: ${cred.type}`);
+          }
+          if (!cred.id) {
+            testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].id is missing`);
+          } else {
+            testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].id is present: ${cred.id}`);
+          }
+        });
+      }
+    }
+  });
+
+  // Validate updated_at timestamp
+  if (!order.updated_at) {
+    testResults.failed.push("Order updated_at timestamp is missing in on_update response");
+  } else {
+    testResults.passed.push(`Order updated_at timestamp is present: ${order.updated_at}`);
+  }
+}
+
+function validatePurchaseFinanceOnConfirm(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in on_confirm response");
+    return;
+  }
+
+  // Validate order.id and order.status
+  if (!order.id) {
+    testResults.failed.push("Order id is missing in on_confirm response");
+  } else {
+    testResults.passed.push(`Order id is present: ${order.id}`);
+  }
+
+  if (!order.status) {
+    testResults.failed.push("Order status is missing in on_confirm response");
+  } else {
+    const validStatuses = ["ACTIVE", "COMPLETE"];
+    if (!validStatuses.includes(order.status)) {
+      testResults.failed.push(
+        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(", ")}`
+      );
+    } else {
+      testResults.passed.push(`Order status is valid: ${order.status}`);
+    }
+  }
+
+  // Validate items
+  if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    testResults.failed.push("Items array is missing or empty in order");
+    return;
+  }
+
+  order.items.forEach((item: any) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing in on_confirm response");
+      return;
+    }
+
+    // Validate CHECKLISTS tag if present
+    if (item.tags && Array.isArray(item.tags)) {
+      const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
+      if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+        const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
+        checklistsTag.list.forEach((checklistItem: any) => {
+          const code = checklistItem.descriptor?.code;
+          const value = checklistItem.value;
+          if (code && value) {
+            if (!allowedChecklistStatuses.includes(value)) {
+              testResults.failed.push(
+                `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+              );
+            } else {
+              testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+            }
+          }
+        });
+      }
+    }
+  });
+
+  // Validate fulfillments
+  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+    testResults.failed.push("Fulfillments array is missing or empty in order");
+  } else {
+    order.fulfillments.forEach((fulfillment: any, index: number) => {
+      if (!fulfillment.id) {
+        testResults.failed.push(`Fulfillment ${index}: id is missing`);
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+      }
+
+      if (!fulfillment.type) {
+        testResults.failed.push(`Fulfillment ${index}: type is missing`);
+      } else {
+        const validTypes = ["LOAN", "BASE_ORDER"];
+        if (!validTypes.includes(fulfillment.type)) {
+          testResults.failed.push(
+            `Fulfillment ${index}: Invalid type "${fulfillment.type}". Allowed: ${validTypes.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+        }
+      }
+
+      if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
+        testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+      } else {
+        const stateCode = fulfillment.state.descriptor.code;
+        const validStates = ["SANCTIONED", "PLACED", "INITIATED", "DISBURSED"];
+        if (!validStates.includes(stateCode)) {
+          testResults.failed.push(
+            `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`);
+        }
+      }
+    });
+  }
+
+  // Validate payments
+  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+    testResults.failed.push("Payments array is missing or empty in order");
+  } else {
+    order.payments.forEach((payment: any, paymentIndex: number) => {
+      const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
+      if (!payment.type) {
+        testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
+      } else if (!validPaymentTypes.includes(payment.type)) {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+      }
+
+      // Validate POST_FULFILLMENT payments have BREAKUP tag
+      if (payment.type === "POST_FULFILLMENT") {
+        if (!payment.tags || !Array.isArray(payment.tags)) {
+          testResults.failed.push(`Payment ${paymentIndex}: tags array is missing for POST_FULFILLMENT payment`);
+        } else {
+          const breakupTag = payment.tags.find((tag: any) => tag.descriptor?.code === "BREAKUP");
+          if (!breakupTag) {
+            testResults.failed.push(`Payment ${paymentIndex}: BREAKUP tag is missing for POST_FULFILLMENT payment`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: BREAKUP tag is present`);
+          }
+
+          if (!payment.time || !payment.time.label) {
+            testResults.failed.push(`Payment ${paymentIndex}: time.label is missing for POST_FULFILLMENT payment`);
+          } else if (payment.time.label !== "INSTALLMENT") {
+            testResults.failed.push(`Payment ${paymentIndex}: time.label should be "INSTALLMENT" for POST_FULFILLMENT payment`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`);
+          }
+
+          if (!payment.params || !payment.params.amount || !payment.params.currency) {
+            testResults.failed.push(`Payment ${paymentIndex}: params.amount or params.currency is missing for POST_FULFILLMENT payment`);
+          } else {
+            testResults.passed.push(`Payment ${paymentIndex}: params.amount and params.currency are present`);
+          }
+        }
+      }
+    });
+  }
+
+  // Validate documents
+  if (!order.documents || !Array.isArray(order.documents) || order.documents.length === 0) {
+    testResults.failed.push("Documents array is missing or empty in on_confirm response");
+  } else {
+    order.documents.forEach((document: any, index: number) => {
+      if (!document.descriptor || !document.descriptor.code) {
+        testResults.failed.push(`Document ${index}: descriptor.code is missing`);
+      } else {
+        const validCodes = ["LOAN_AGREEMENT"];
+        if (!validCodes.includes(document.descriptor.code)) {
+          testResults.failed.push(
+            `Document ${index}: Invalid descriptor.code "${document.descriptor.code}". Allowed: ${validCodes.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Document ${index}: descriptor.code is valid: ${document.descriptor.code}`);
+        }
+      }
+
+      if (!document.url) {
+        testResults.failed.push(`Document ${index}: url is missing`);
+      } else {
+        try {
+          const url = new URL(document.url);
+          if (url.protocol !== "http:" && url.protocol !== "https:") {
+            testResults.failed.push(`Document ${index}: url should be a valid HTTP/HTTPS URL`);
+          } else {
+            testResults.passed.push(`Document ${index}: url is a valid URL`);
+          }
+        } catch (error) {
+          testResults.failed.push(`Document ${index}: url is not a valid URL`);
+        }
+      }
+
+      if (!document.mime_type) {
+        testResults.failed.push(`Document ${index}: mime_type is missing`);
+      } else {
+        const validMimeTypes = ["application/pdf", "application/json"];
+        if (!validMimeTypes.includes(document.mime_type)) {
+          testResults.failed.push(
+            `Document ${index}: Invalid mime_type "${document.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(`Document ${index}: mime_type is valid: ${document.mime_type}`);
+        }
+      }
+    });
+  }
+
+  // Validate timestamps
+  if (!order.created_at) {
+    testResults.failed.push("Order created_at timestamp is missing in on_confirm response");
+  } else {
+    testResults.passed.push(`Order created_at timestamp is present: ${order.created_at}`);
+  }
+
+  if (!order.updated_at) {
+    testResults.failed.push("Order updated_at timestamp is missing in on_confirm response");
+  } else {
+    testResults.passed.push(`Order updated_at timestamp is present: ${order.updated_at}`);
+  }
+}
+
+function validatePurchaseFinanceOnSearch(
+  message: any,
+  testResults: TestResult,
+  flowId?: string,
+  sessionID?: string,
+  transactionId?: string,
+  action_id?: string
+): void {
+  // Only validate for purchase finance flows
+  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    return;
+  }
+
+  const catalog = message?.catalog;
+  if (!catalog) {
+    testResults.failed.push("Catalog is missing in on_search response");
+    return;
+  }
+
+  const providers = catalog.providers;
+  if (!providers || !Array.isArray(providers) || providers.length === 0) {
+    testResults.failed.push("Providers array is missing or empty in catalog");
+    return;
+  }
+
+  providers.forEach((provider: any, providerIndex: number) => {
+    if (!provider.items || !Array.isArray(provider.items) || provider.items.length === 0) {
+      testResults.failed.push(`Provider ${providerIndex}: Items array is missing or empty`);
+      return;
+    }
+
+    provider.items.forEach((item: any) => {
+      if (!item.id) {
+        testResults.failed.push(`Item in provider ${providerIndex}: id is missing`);
+        return;
+      }
+
+      // Check if this is on_search3 (with AA - has CONSENT_INFO tag, no xinput)
+      const hasConsentInfo = item.tags && Array.isArray(item.tags) && 
+        item.tags.some((tag: any) => tag.descriptor?.code === "CONSENT_INFO");
+      
+      // Check if this is on_search4 (has form_response and child items)
+      const hasFormResponse = item.xinput?.form_response;
+      const hasChildItems = provider.items.some((i: any) => i.parent_item_id === item.id);
+
+      // Validate that item has either xinput or CONSENT_INFO tag
+      if (!item.xinput && !hasConsentInfo) {
+        testResults.failed.push(`Item ${item.id}: Must have either xinput or CONSENT_INFO tag for purchase finance`);
+        return;
+      }
+
+      if (hasConsentInfo && !item.xinput) {
+        // on_search3: With AA - validate CONSENT_INFO tag
+        const consentInfoTag = item.tags.find((tag: any) => tag.descriptor?.code === "CONSENT_INFO");
+        if (!consentInfoTag || !consentInfoTag.list || !Array.isArray(consentInfoTag.list)) {
+          testResults.failed.push(`Item ${item.id}: CONSENT_INFO tag list is missing or invalid`);
+          return;
+        }
+
+        const consentHandler = consentInfoTag.list.find(
+          (listItem: any) => listItem.descriptor?.code === "CONSENT_HANDLER"
+        );
+        if (!consentHandler || !consentHandler.value) {
+          testResults.failed.push(`Item ${item.id}: CONSENT_HANDLER is missing in CONSENT_INFO tag`);
+        } else {
+          testResults.passed.push(`Item ${item.id}: CONSENT_HANDLER is present: ${consentHandler.value}`);
+        }
+      } else if (hasFormResponse) {
+        // on_search4: Has form_response - validate it
+        const formResponse = item.xinput.form_response;
+        const allowedStatuses = ["SUCCESS", "APPROVED"];
+        
+        if (!formResponse.status) {
+          testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+        } else if (!allowedStatuses.includes(formResponse.status)) {
+          testResults.failed.push(
+            `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+          );
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: Valid xinput.form_response.status "${formResponse.status}"`
+          );
+        }
+
+        if (!formResponse.submission_id) {
+          testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+        } else {
+          testResults.passed.push(
+            `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
+          );
+        }
+
+        // Validate child items if present
+        if (hasChildItems) {
+          const childItems = provider.items.filter((i: any) => i.parent_item_id === item.id);
+          childItems.forEach((childItem: any) => {
+            if (!childItem.id) {
+              testResults.failed.push(`Child item of ${item.id}: id is missing`);
+            } else {
+              testResults.passed.push(`Child item ${childItem.id} is present with parent_item_id: ${item.id}`);
+            }
+
+            if (!childItem.price) {
+              testResults.failed.push(`Child item ${childItem.id}: price is missing`);
+            } else {
+              if (!childItem.price.value) {
+                testResults.failed.push(`Child item ${childItem.id}: price.value is missing`);
+              } else {
+                testResults.passed.push(`Child item ${childItem.id}: price.value is present: ${childItem.price.value}`);
+              }
+              if (!childItem.price.currency) {
+                testResults.failed.push(`Child item ${childItem.id}: price.currency is missing`);
+              } else {
+                testResults.passed.push(`Child item ${childItem.id}: price.currency is present: ${childItem.price.currency}`);
+              }
+            }
+          });
+        }
+      } else if (item.xinput) {
+        // on_search1/2: Has xinput.form and xinput.head - validate them
+        if (!item.xinput.form) {
+          testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
+        } else {
+          if (!item.xinput.form.id) {
+            testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+          } else {
+            testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+          }
+
+          if (!item.xinput.form.url) {
+            testResults.failed.push(`Item ${item.id}: xinput.form.url is missing`);
+          } else {
+            try {
+              const url = new URL(item.xinput.form.url);
+              if (url.protocol !== "http:" && url.protocol !== "https:") {
+                testResults.failed.push(`Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`);
+              } else {
+                testResults.passed.push(`Item ${item.id}: xinput.form.url is a valid URL`);
+              }
+            } catch (error) {
+              testResults.failed.push(`Item ${item.id}: xinput.form.url is not a valid URL`);
+            }
+          }
+
+          if (item.xinput.form.mime_type !== "text/html") {
+            testResults.failed.push(`Item ${item.id}: xinput.form.mime_type should be "text/html"`);
+          } else {
+            testResults.passed.push(`Item ${item.id}: xinput.form.mime_type is valid`);
+          }
+        }
+
+        // Validate xinput.head
+        if (!item.xinput.head) {
+          testResults.failed.push(`Item ${item.id}: xinput.head is missing`);
+        } else {
+          if (!item.xinput.head.descriptor || !item.xinput.head.descriptor.name) {
+            testResults.failed.push(`Item ${item.id}: xinput.head.descriptor.name is missing`);
+          } else {
+            testResults.passed.push(`Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`);
+          }
+
+          if (!item.xinput.head.index) {
+            testResults.failed.push(`Item ${item.id}: xinput.head.index is missing`);
+          } else {
+            const index = item.xinput.head.index;
+            if (typeof index.min !== "number" || typeof index.cur !== "number" || typeof index.max !== "number") {
+              testResults.failed.push(`Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`);
+            } else {
+              if (index.cur < index.min || index.cur > index.max) {
+                testResults.failed.push(
+                  `Item ${item.id}: xinput.head.index.cur (${index.cur}) should be between min (${index.min}) and max (${index.max})`
+                );
+              } else {
+                testResults.passed.push(
+                  `Item ${item.id}: xinput.head.index is valid (cur: ${index.cur}, min: ${index.min}, max: ${index.max})`
+                );
+              }
+            }
+          }
+
+          if (!item.xinput.head.headings || !Array.isArray(item.xinput.head.headings) || item.xinput.head.headings.length === 0) {
+            testResults.failed.push(`Item ${item.id}: xinput.head.headings is missing or empty`);
+          } else {
+            const allowedHeadings = [
+              "MERCHANT_AND_PRDOUCT_DEATILS",
+              "PERSONAL_INFORMATION",
+              "KYC",
+              "KYC_OFFLINE",
+              "JOURNEY_OFFLINE",
+              "SET_LOAN_AMOUNT"
+            ];
+            item.xinput.head.headings.forEach((heading: string) => {
+              if (!allowedHeadings.includes(heading)) {
+                testResults.failed.push(
+                  `Item ${item.id}: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(", ")}`
+                );
+              } else {
+                testResults.passed.push(`Item ${item.id}: Valid heading "${heading}"`);
+              }
+            });
+          }
+        }
+
+        if (item.xinput.required !== true && item.xinput.required !== false) {
+          testResults.failed.push(`Item ${item.id}: xinput.required should be a boolean`);
+        } else {
+          testResults.passed.push(`Item ${item.id}: xinput.required is present: ${item.xinput.required}`);
+        }
+      }
+    });
+  });
 }
 
 function validateFulfillmentStops(
@@ -774,6 +2922,7 @@ function validateProvider(
   if (
     usecaseId !== "GOLD LOAN" &&
     usecaseId !== "PERSONAL LOAN" &&
+    usecaseId !== "PURCHASE FINANCE" &&
     action_id !== "select_2" &&
     action_id !== "select" &&
     action_id !== "init" &&
@@ -834,7 +2983,8 @@ function validateItems(
     }
     if (
       usecaseId !== "GOLD LOAN" &&
-      usecaseId !== "PERSONAL LOAN" 
+      usecaseId !== "PERSONAL LOAN" &&
+      usecaseId !== "PURCHASE FINANCE"
     ) {
       if (
         action_id !== "select" &&
@@ -1005,13 +3155,23 @@ function validateFulfillmentsTRV10(
 function validateFulfillmentsFIS12(
   message: any,
   testResults: TestResult,
-  usecaseId?: string
+  usecaseId?: string,
+  action_id?: string
 ): void {
   const fulfillments =
     message?.catalog?.providers?.[0]?.fulfillments ||
     message?.order?.fulfillments;
+  
+  // Skip fulfillments validation for on_status_unsolicited and on_status_purchase_finance 
+  // when usecaseId is PURCHASE FINANCE
+  const normalizedUsecaseId = usecaseId?.toUpperCase().trim();
+  const shouldSkipValidation = 
+    ((action_id === "on_status_unsolicited" || action_id === "on_status_purchase_finance") && (normalizedUsecaseId === "PURCHASE FINANCE" || normalizedUsecaseId === "PURCHASE_FINANCE"));
+  
   if (!fulfillments || !Array.isArray(fulfillments)) {
-    testResults.failed.push("Fulfillments array is missing or invalid");
+    if (!shouldSkipValidation) {
+      testResults.failed.push("Fulfillments array is missing or invalid");
+    }
     return;
   }
 
@@ -1228,54 +3388,116 @@ function validateFulfillmentStateOnUpdateFIS12(
   action_id: string,
   flowId: string
 ): void {
-  // Only validate for Gold Loan Foreclosure flow
-  if (flowId !== "Gold_Loan_Foreclosure") {
-    return;
-  }
-
-  const fulfillments = message?.order?.fulfillments;
-  if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
-    testResults.failed.push(
-      "Fulfillments array is missing or empty in order for fulfillment state validation"
-    );
-    return;
-  }
-
-  // Expected state codes based on action_id
-  let expectedState: string | null = null;
-  if (action_id === "on_update") {
-    expectedState = "DISBURSED";
-  } else if (action_id === "on_update_unsolicited") {
-    expectedState = "COMPLETE";
-  }
-
-  if (!expectedState) {
-    testResults.passed.push(
-      `Fulfillment state validation skipped (action_id: ${action_id}, only validates 'on_update' and 'on_update_unsolicited')`
-    );
-    return;
-  }
-
-  fulfillments.forEach((fulfillment: any, index: number) => {
-    const stateCode = fulfillment?.state?.descriptor?.code;
-
-    if (!stateCode) {
+  // Validate for Gold Loan Foreclosure flow
+  if (flowId === "Gold_Loan_Foreclosure") {
+    const fulfillments = message?.order?.fulfillments;
+    if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
       testResults.failed.push(
-        `Fulfillment ${index}: state.descriptor.code is missing (expected: ${expectedState} for action ${action_id})`
+        "Fulfillments array is missing or empty in order for fulfillment state validation"
       );
       return;
     }
 
-    if (stateCode !== expectedState) {
-      testResults.failed.push(
-        `Fulfillment ${index}: Invalid state code "${stateCode}". Expected "${expectedState}" for action "${action_id}" in Gold_Loan_Foreclosure flow`
-      );
-    } else {
-      testResults.passed.push(
-        `Fulfillment ${index}: Valid state code "${stateCode}" for action "${action_id}" in Gold_Loan_Foreclosure flow`
-      );
+    // Expected state codes based on action_id
+    let expectedState: string | null = null;
+    if (action_id === "on_update") {
+      expectedState = "DISBURSED";
+    } else if (action_id === "on_update_unsolicited") {
+      expectedState = "COMPLETE";
     }
-  });
+
+    if (!expectedState) {
+      testResults.passed.push(
+        `Fulfillment state validation skipped (action_id: ${action_id}, only validates 'on_update' and 'on_update_unsolicited')`
+      );
+      return;
+    }
+
+    fulfillments.forEach((fulfillment: any, index: number) => {
+      const stateCode = fulfillment?.state?.descriptor?.code;
+
+      if (!stateCode) {
+        testResults.failed.push(
+          `Fulfillment ${index}: state.descriptor.code is missing (expected: ${expectedState} for action ${action_id})`
+        );
+        return;
+      }
+
+      if (stateCode !== expectedState) {
+        testResults.failed.push(
+          `Fulfillment ${index}: Invalid state code "${stateCode}". Expected "${expectedState}" for action "${action_id}" in Gold_Loan_Foreclosure flow`
+        );
+      } else {
+        testResults.passed.push(
+          `Fulfillment ${index}: Valid state code "${stateCode}" for action "${action_id}" in Gold_Loan_Foreclosure flow`
+        );
+      }
+    });
+    return;
+  }
+
+  // Validate for Purchase Finance flows
+  if (PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+    const fulfillments = message?.order?.fulfillments;
+    if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
+      testResults.failed.push(
+        "Fulfillments array is missing or empty in order for fulfillment state validation"
+      );
+      return;
+    }
+
+    // Valid state codes for purchase finance update
+    const validStates = ["DELIVERED", "DISBURSED", "SANCTIONED", "PLACED", "INITIATED", "COMPLETE"];
+
+    fulfillments.forEach((fulfillment: any, index: number) => {
+      if (!fulfillment.id) {
+        testResults.failed.push(`Fulfillment ${index}: id is missing`);
+      } else {
+        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+      }
+
+      const stateCode = fulfillment?.state?.descriptor?.code;
+
+      if (!stateCode) {
+        testResults.failed.push(
+          `Fulfillment ${index}: state.descriptor.code is missing`
+        );
+        return;
+      }
+
+      if (!validStates.includes(stateCode)) {
+        testResults.failed.push(
+          `Fulfillment ${index}: Invalid state code "${stateCode}". Allowed: ${validStates.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(
+          `Fulfillment ${index}: Valid state code "${stateCode}"`
+        );
+      }
+
+      // Validate customer creds if present
+      if (fulfillment.customer?.person?.creds) {
+        const creds = fulfillment.customer.person.creds;
+        if (!Array.isArray(creds) || creds.length === 0) {
+          testResults.failed.push(`Fulfillment ${index}: customer.person.creds should be a non-empty array`);
+        } else {
+          creds.forEach((cred: any, credIndex: number) => {
+            if (!cred.type) {
+              testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].type is missing`);
+            } else {
+              testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].type is present: ${cred.type}`);
+            }
+            if (!cred.id) {
+              testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].id is missing`);
+            } else {
+              testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].id is present: ${cred.id}`);
+            }
+          });
+        }
+      }
+    });
+    return;
+  }
 }
 
 function validateUpdatePaymentsFIS12(
@@ -1416,6 +3638,9 @@ function validateCategoriesFIS12(message: any, testResults: TestResult): void {
     AA_LOAN: "Account Aggregator Loan",
     PERSONAL_LOAN: "Personal Loan",
     AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
+    PURCHASE_FINANCE: "Purchase Finance",
+    AGRI_PURCHASE_FINANCE: "Agri Purchase Finance",
+    ELECTRONICS_PURCHASE_FINANCE: "Electronics Purchase Finance",
   };
 
   categories.forEach((cat) => {
@@ -1760,6 +3985,9 @@ async function validateXinputFIS12(
     }
   });
 
+  // Check if this is a purchase finance flow
+  const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+  
   const allowedHeadings = [
     "KYC",
     "KYC_OFFLINE",
@@ -1773,6 +4001,11 @@ async function validateXinputFIS12(
     "Emandate",
     "Loan Agreement"
   ];
+  
+  // Add purchase finance specific headings
+  if (isPurchaseFinanceFlow) {
+    allowedHeadings.push("MERCHANT_AND_PRDOUCT_DEATILS");
+  }
 
   const formUrls: string[] = [];
 
@@ -1797,85 +4030,135 @@ async function validateXinputFIS12(
       return;
     }
 
-    const head = item.xinput.head;
-    if (!head && flowId !== "Personal_Loan_With_AA_And_Monitoring_Consent" && action_id !== "on_select_1_personal_loan") {
-      testResults.failed.push(`Item ${item.id}: xinput.head is missing`);
-      return;
-    }
+    // Detect format: Format 1 has form_response, Format 2 has head
+    const hasFormResponse = !!item.xinput.form_response;
+    const hasHead = !!item.xinput.head;
 
-    if (
-      !head.headings ||
-      !Array.isArray(head.headings) ||
-      head.headings.length === 0
-    ) {
-      testResults.failed.push(
-        `Item ${item.id}: xinput.head.headings is missing or empty`
-      );
-      return;
-    }
+    if (hasFormResponse) {
+      // Format 1: form + form_response
+      if (!item.xinput.form) {
+        testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
+      } else if (!item.xinput.form.id) {
+        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+      } else {
+        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: ${item.xinput.form.id}`);
+      }
 
-    head.headings.forEach((h: string) => {
-      if (!allowedHeadings.includes(h)) {
+      if (!item.xinput.form_response) {
+        testResults.failed.push(`Item ${item.id}: xinput.form_response is missing`);
+      } else {
+        if (!item.xinput.form_response.status) {
+          testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+        } else {
+          const validStatuses = ["SUCCESS", "PENDING", "FAILED"];
+          if (!validStatuses.includes(item.xinput.form_response.status)) {
+            testResults.failed.push(
+              `Item ${item.id}: Invalid xinput.form_response.status "${item.xinput.form_response.status}". Allowed: ${validStatuses.join(", ")}`
+            );
+          } else {
+            testResults.passed.push(`Item ${item.id}: Valid xinput.form_response.status: ${item.xinput.form_response.status}`);
+          }
+        }
+
+        if (!item.xinput.form_response.submission_id) {
+          testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+        } else {
+          testResults.passed.push(`Item ${item.id}: xinput.form_response.submission_id is present: ${item.xinput.form_response.submission_id}`);
+        }
+      }
+    } else if (hasHead) {
+      // Format 2: head + form + required
+      const head = item.xinput.head;
+      
+      if (
+        !head.headings ||
+        !Array.isArray(head.headings) ||
+        head.headings.length === 0
+      ) {
         testResults.failed.push(
-          `Item ${
-            item.id
-          }: Invalid xinput heading "${h}". Allowed: ${allowedHeadings.join(
-            ", "
-          )}`
+          `Item ${item.id}: xinput.head.headings is missing or empty`
         );
       } else {
-        testResults.passed.push(`Item ${item.id}: Valid xinput heading "${h}"`);
-      }
-    });
-
-    // Optional extra xinput validations
-    if (!item.xinput.form) {
-      testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
-    } else if (
-      !item.xinput.form.id ||
-      !item.xinput.form.mime_type ||
-      !item.xinput.form.url
-    ) {
-      testResults.failed.push(
-        `Item ${item.id}: xinput.form fields are incomplete`
-      );
-    } else {
-      // For GOLD_LOAN and PERSONAL_LOAN items, validate required and mime_type
-      if (isGoldLoan || isPersonalLoan) {
-        if (item.xinput.required !== true) {
-          testResults.failed.push(
-            `Item ${item.id}: xinput.required must be true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items`
-          );
-        } else {
-          testResults.passed.push(
-            `Item ${item.id}: xinput.required is true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
-          );
-        }
-
-        if (item.xinput.form.mime_type !== "text/html") {
-          testResults.failed.push(
-            `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items, but found "${item.xinput.form.mime_type}"`
-          );
-        } else {
-          testResults.passed.push(
-            `Item ${item.id}: xinput.form.mime_type is "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
-          );
-        }
+        head.headings.forEach((h: string) => {
+          if (!allowedHeadings.includes(h)) {
+            testResults.failed.push(
+              `Item ${
+                item.id
+              }: Invalid xinput heading "${h}". Allowed: ${allowedHeadings.join(
+                ", "
+              )}`
+            );
+          } else {
+            testResults.passed.push(`Item ${item.id}: Valid xinput heading "${h}"`);
+          }
+        });
       }
 
-      // Save form URL to Redis for HTML_FORM validation
-      if (item.xinput.form.url && sessionID && transactionId) {
-        formUrls.push(item.xinput.form.url);
-        testResults.passed.push(
-          `Item ${item.id}: Form URL found and will be saved for HTML_FORM validation`
+      // Validate form structure
+      if (!item.xinput.form) {
+        testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
+      } else if (
+        !item.xinput.form.id ||
+        !item.xinput.form.mime_type ||
+        !item.xinput.form.url
+      ) {
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form fields are incomplete`
+        );
+      } else {
+        // For GOLD_LOAN and PERSONAL_LOAN items, validate required and mime_type
+        if (isGoldLoan || isPersonalLoan) {
+          if (item.xinput.required !== true) {
+            testResults.failed.push(
+              `Item ${item.id}: xinput.required must be true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items`
+            );
+          } else {
+            testResults.passed.push(
+              `Item ${item.id}: xinput.required is true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
+            );
+          }
+
+          if (item.xinput.form.mime_type !== "text/html") {
+            testResults.failed.push(
+              `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items, but found "${item.xinput.form.mime_type}"`
+            );
+          } else {
+            testResults.passed.push(
+              `Item ${item.id}: xinput.form.mime_type is "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
+            );
+          }
+        }
+
+        // Save form URL to Redis for HTML_FORM validation
+        if (item.xinput.form.url && sessionID && transactionId) {
+          formUrls.push(item.xinput.form.url);
+          testResults.passed.push(
+            `Item ${item.id}: Form URL found and will be saved for HTML_FORM validation`
+          );
+        }
+      }
+
+      if (typeof item.xinput.required !== "boolean") {
+        testResults.failed.push(
+          `Item ${item.id}: xinput.required must be boolean`
         );
       }
-    }
-
-    if (typeof item.xinput.required !== "boolean") {
-      testResults.failed.push(
-        `Item ${item.id}: xinput.required must be boolean`
-      );
+    } else {
+      // Neither format detected - check if it's an exception case
+      if (flowId === "Personal_Loan_With_AA_And_Monitoring_Consent" || action_id === "on_select_1_personal_loan") {
+        // These flows may not require head, but still need form
+        if (!item.xinput.form) {
+          testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
+        } else if (!item.xinput.form.id) {
+          testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+        } else {
+          testResults.passed.push(`Item ${item.id}: xinput.form.id is present: ${item.xinput.form.id}`);
+        }
+      } else {
+        testResults.failed.push(
+          `Item ${item.id}: xinput must have either form_response (Format 1) or head (Format 2)`
+        );
+      }
     }
   });
 
@@ -1894,7 +4177,9 @@ async function validateXinputFIS12(
 function validateXInputStatusFIS12(
   message: any,
   testResults: TestResult,
-  usecaseId?: string
+  usecaseId?: string,
+  action_id?: string,
+  flowId?: string
 ): void {
   const items: any = message.order.items;
   const allowedStatuses = [
@@ -1905,10 +4190,24 @@ function validateXInputStatusFIS12(
     "SUCCESS",
   ];
 
+  // Check if this is a purchase finance flow and if xinput is required
+  // For purchase finance: select_purchase_finance (select1) does NOT require xinput
+  //                      select1_purchase_finance (select2) DOES require xinput
+  const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+  const isSelect1PurchaseFinance = action_id === "select_purchase_finance";
+  const isInitPurchaseFinance = action_id === "init1_purchase_finance";
+  const xinputRequired = !(isPurchaseFinanceFlow && isSelect1PurchaseFinance) || !(isPurchaseFinanceFlow && isInitPurchaseFinance);
+
   items.forEach((item: any) => {
     if (!item.xinput) {
-      testResults.failed.push(`Item ${item.id}: xinput is missing`);
-      return;
+      if (xinputRequired) {
+        testResults.failed.push(`Item ${item.id}: xinput is missing`);
+        return;
+      } else {
+        // xinput is not required for select_purchase_finance (select1)
+        testResults.passed.push(`Item ${item.id}: xinput is not required for ${action_id}`);
+        return;
+      }
     }
 
     // Validate xinput.form exists and has required fields
@@ -2256,7 +4555,8 @@ function validateOrderStatus(
 export function validateCancel(
   message: any,
   testResults: TestResult,
-  action_id: string
+  action_id: string,
+  flowId?: string
 ): void {
   // Validate order_id
   if (!message?.order_id) {
@@ -2296,16 +4596,23 @@ export function validateCancel(
     if (!descriptor.code) {
       testResults.failed.push("Cancellation descriptor code is missing");
     } else {
-      // For cancel action, code should be SOFT_CANCEL
+      // For purchase finance flows, allow both SOFT_CANCEL and CONFIRM_CANCEL for cancel action
+      const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+      
+      // For cancel action, code should be SOFT_CANCEL (or CONFIRM_CANCEL for purchase finance)
       // For cancel_hard action, code should be CONFIRM_CANCEL
       if (action_id === "cancel") {
         if (descriptor.code === "SOFT_CANCEL") {
           testResults.passed.push(
             "Cancellation descriptor code is SOFT_CANCEL for cancel action"
           );
+        } else if (isPurchaseFinanceFlow && descriptor.code === "CONFIRM_CANCEL") {
+          testResults.passed.push(
+            "Cancellation descriptor code is CONFIRM_CANCEL for cancel action (allowed for purchase finance flows)"
+          );
         } else {
           testResults.failed.push(
-            `Cancellation descriptor code should be SOFT_CANCEL for cancel action, got ${descriptor.code}`
+            `Cancellation descriptor code should be SOFT_CANCEL${isPurchaseFinanceFlow ? " or CONFIRM_CANCEL" : ""} for cancel action, got ${descriptor.code}`
           );
         }
       } else if (action_id === "cancel_hard") {
@@ -2342,12 +4649,16 @@ export function validateCancel(
 function validateCancellation(
   message: any,
   testResults: TestResult,
-  action_id?: string
+  action_id?: string,
+  flowId?: string
 ): void {
   const order = message?.order;
   if (!order) {
     return;
   }
+
+  // Check if this is a purchase finance flow
+  const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
 
   // Validate order status based on action_id
   if (action_id === "on_cancel_ride_cancel") {
@@ -2371,12 +4682,26 @@ function validateCancellation(
       testResults.passed.push("Order status is CANCELLED in on_cancel_hard");
     }
   } else if (action_id === "on_cancel") {
-    if (order.status !== "SOFT_CANCEL") {
-      testResults.failed.push(
-        "Order status should be SOFT_CANCEL in on_cancel"
-      );
+    // For purchase finance flows, allow both SOFT_CANCEL and CANCELLED
+    if (isPurchaseFinanceFlow) {
+      if (order.status === "SOFT_CANCEL" || order.status === "CANCELLED") {
+        testResults.passed.push(
+          `Order status is valid for purchase finance on_cancel: ${order.status}`
+        );
+      } else {
+        testResults.failed.push(
+          `Order status should be SOFT_CANCEL or CANCELLED for purchase finance on_cancel, got ${order.status}`
+        );
+      }
     } else {
-      testResults.passed.push("Order status is SOFT_CANCEL in on_cancel");
+      // For non-purchase finance flows, status should be SOFT_CANCEL
+      if (order.status !== "SOFT_CANCEL") {
+        testResults.failed.push(
+          "Order status should be SOFT_CANCEL in on_cancel"
+        );
+      } else {
+        testResults.passed.push("Order status is SOFT_CANCEL in on_cancel");
+      }
     }
   } else {
     // For default on_cancel, status should be CANCELLED
@@ -2687,7 +5012,7 @@ export function createSearchValidator(...config: string[]) {
             validatePaymentCollectedBy(message, testResults);
             break;
           case fis11Validators.tags.validate_tags:
-            validateTags(message, testResults);
+            validateTags(message, testResults, flowId);
             break;
 
           // TRV10 validations
@@ -2721,6 +5046,7 @@ export function validateUpdateRequestTRV10(
     "order.fulfillments",
     "payments",
     "fulfillment",
+    "fulfillments",
   ];
 
   if (!updateTarget) {
@@ -2804,6 +5130,9 @@ export function createUpdateValidator(...config: string[]) {
           // FIS12 validations
           case fis12Validators.update.validate_update_payments:
             validateUpdatePaymentsFIS12(message, testResults);
+            break;
+          case fis12Validators.update.validate_fulfillment_state:
+            validateFulfillmentStateOnUpdateFIS12(message, testResults, action_id, flowId);
             break;
 
           default:
@@ -2924,7 +5253,6 @@ export function createOnSearchValidator(...config: string[]) {
           case fis12Validators.items.validate_xinput:
             await validateXinputFIS12(message, testResults, sessionID, transactionId,flowId,action_id);
             break;
-
           default:
             break;
         }
@@ -2999,7 +5327,7 @@ export function createSelectValidator(...config: string[]) {
            * on_status flow. Without this case, that config entry is a no-op.
            */
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults,usecaseId);
+            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -3014,7 +5342,7 @@ export function createSelectValidator(...config: string[]) {
             break;
 
           case fis12Validators.items.select_validate_xinput:
-            validateXInputStatusFIS12(message, testResults, usecaseId);
+            validateXInputStatusFIS12(message, testResults, usecaseId, action_id, flowId);
             break;
           default:
             break;
@@ -3109,7 +5437,6 @@ export function createOnSelectValidator(...config: string[]) {
           // case fis12Validators.items.validate_xinput:
           //   await validateXinputFIS12(message, testResults, sessionID, transactionId,flowId,action_id);
           //   break;
-
           default:
             break;
         }
@@ -3194,9 +5521,8 @@ export function createInitValidator(...config: string[]) {
           // FIS12 validations
           case fis12Validators.items.select_validate_xinput:
             // Validate xinput.form_response status & submission_id for FIS12 flows
-            validateXInputStatusFIS12(message, testResults);
+            validateXInputStatusFIS12(message, testResults, undefined, action_id, flowId);
             break;
-
           // TRV10 validations
           case trv10Validators.provider_trv10.validate_provider_trv10:
             validateProviderTRV10(message, testResults, action_id);
@@ -3446,7 +5772,17 @@ export function createOnInitValidator(...config: string[]) {
 
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults,usecaseId);
+            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            break;
+          case fis12Validators.documents.validate_documents:
+            validateDocumentsFIS12(message, testResults);
+            break;
+          // FIS12 validations
+          case fis12Validators.fulfillments.validate_fulfillments:
+            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            break;
+          case fis12Validators.payments.validate_payments:
+            validatePaymentsFIS12(message, testResults);
             break;
           case fis12Validators.documents.validate_documents:
             validateDocumentsFIS12(message, testResults);
@@ -3494,7 +5830,7 @@ export function createOnConfirmValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults,usecaseId);
+            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -3594,6 +5930,16 @@ export function createOnConfirmValidator(...config: string[]) {
             validateBillingTRV10(message, testResults);
             break;
 
+          // FIS12 validations
+          case fis12Validators.fulfillments.validate_fulfillments:
+            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            break;
+          case fis12Validators.payments.validate_payments:
+            validatePaymentsFIS12(message, testResults);
+            break;
+          case fis12Validators.documents.validate_documents:
+            validateDocumentsFIS12(message, testResults);
+            break;
           default:
             break;
         }
@@ -3697,7 +6043,7 @@ export function createOnStatusValidator(...config: string[]) {
 
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults,usecaseId);
+            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -3748,7 +6094,7 @@ export function createOnCancelValidator(...config: string[]) {
     }
 
     // Always validate cancellation for on_cancel
-    validateCancellation(message, testResults, action_id);
+    validateCancellation(message, testResults, action_id, flowId);
 
     for (const validation of config) {
       if (validation) {
