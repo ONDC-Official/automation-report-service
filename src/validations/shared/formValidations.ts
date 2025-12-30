@@ -364,16 +364,23 @@ export async function validateHTMLForm(
           `Form ${i + 1} (${formName}): Successfully fetched HTML from form service`
         );
 
-        // Step 4: Parse HTML to extract required fields
+        // Step 4: Parse HTML to extract required fields and all fields
         const requiredFields = extractRequiredFields(htmlContent);
+        const allFields = extractAllFields(htmlContent);
         
-        if (requiredFields.length === 0) {
+        // Check if form has any fields at all
+        if (allFields.length === 0) {
           testResults.failed.push(
-            `Form ${i + 1} (${formName}): No required fields found in HTML form`
+            `Form ${i + 1} (${formName}): No form fields found in HTML form`
+          );
+        } else if (requiredFields.length === 0) {
+          // Form has fields but none are required - this is valid for forms with all optional fields
+          testResults.passed.push(
+            `Form ${i + 1} (${formName}): Found ${allFields.length} field(s), all are optional (no required fields)`
           );
         } else {
           testResults.passed.push(
-            `Form ${i + 1} (${formName}): Found ${requiredFields.length} required field(s)`
+            `Form ${i + 1} (${formName}): Found ${requiredFields.length} required field(s) out of ${allFields.length} total field(s)`
           );
           
           // Add details about required fields
@@ -463,6 +470,75 @@ export async function validateHTMLForm(
 }
 
 /**
+ * Extracts all form fields (input, select, textarea) from HTML
+ */
+function extractAllFields(html: string): Array<{
+  name: string;
+  type: string;
+  label?: string;
+}> {
+  const allFields: Array<{ name: string; type: string; label?: string }> = [];
+  
+  try {
+    // Regex pattern to find all form elements
+    const fieldPattern = /<(input|select|textarea)[^>]*>/gi;
+    const matches = html.match(fieldPattern) || [];
+    
+    matches.forEach((match) => {
+      // Skip hidden formId and submit buttons
+      const nameMatch = match.match(/name=["']([^"']+)["']/i);
+      const idMatch = match.match(/id=["']([^"']+)["']/i);
+      const typeMatch = match.match(/type=["']([^"']+)["']/i);
+      const tagMatch = match.match(/<(input|select|textarea)/i);
+      
+      const name = nameMatch?.[1] || idMatch?.[1];
+      if (!name || name === "formId" || typeMatch?.[1]?.toLowerCase() === "submit" || typeMatch?.[1]?.toLowerCase() === "button") {
+        return; // Skip hidden formId and submit buttons
+      }
+
+      const type = typeMatch?.[1]?.toLowerCase() || tagMatch?.[1]?.toLowerCase() || "text";
+      
+      // Try to find associated label
+      let label: string | undefined;
+      const id = idMatch?.[1];
+      if (id) {
+        const labelForPattern = new RegExp(
+          `<label[^>]*for=["']${id}["'][^>]*>([^<]+)</label>`,
+          "i"
+        );
+        const labelMatch = html.match(labelForPattern);
+        if (labelMatch) {
+          label = labelMatch[1].trim();
+        }
+      }
+      
+      // If no label found, look for preceding label
+      if (!label) {
+        const beforeMatch = html.substring(0, html.indexOf(match));
+        const labelPattern = /<label[^>]*>([^<]+)<\/label>\s*$/i;
+        const lastLabelMatch = beforeMatch.match(labelPattern);
+        if (lastLabelMatch) {
+          label = lastLabelMatch[1].trim();
+        }
+      }
+
+      // Avoid duplicates
+      if (!allFields.find((f) => f.name === name)) {
+        allFields.push({
+          name,
+          type,
+          label: label || undefined,
+        });
+      }
+    });
+  } catch (error: any) {
+    logger.error("Error parsing HTML for all fields", error);
+  }
+
+  return allFields;
+}
+
+/**
  * Extracts required fields from HTML form using regex
  * Looks for input, select, textarea elements with required attribute
  */
@@ -475,14 +551,30 @@ function extractRequiredFields(html: string): Array<{
   
   try {
     // Regex patterns to find form elements with required attribute
-    const requiredInputPattern = /<(input|select|textarea)[^>]*required[^>]*>/gi;
+    // Exclude fields marked as "optional"
+    const requiredInputPattern = /<(input|select|textarea)[^>]*>/gi;
     const matches = html.match(requiredInputPattern) || [];
     
     matches.forEach((match) => {
+      // Skip fields marked as optional
+      if (/optional/i.test(match)) {
+        return;
+      }
+      
+      // Only include fields with required attribute (or data-required="true")
+      if (!/required/i.test(match) && !/data-required=["']true["']/i.test(match)) {
+        return;
+      }
+      
       // Extract name attribute
       const nameMatch = match.match(/name=["']([^"']+)["']/i);
       const idMatch = match.match(/id=["']([^"']+)["']/i);
-      const name = nameMatch?.[1] || idMatch?.[1] || "unnamed";
+      const name = nameMatch?.[1] || idMatch?.[1];
+      
+      // Skip hidden formId and submit buttons
+      if (!name || name === "formId" || /type=["'](submit|button)["']/i.test(match)) {
+        return;
+      }
       
       // Extract type attribute
       const typeMatch = match.match(/type=["']([^"']+)["']/i);
