@@ -1179,10 +1179,12 @@ export async function validateFormIdConsistency(
     }
     
     // Find the previous action that has the matching form ID
+    // For numbered actions (like init_2), we need to check numbered previous actions (like on_init_1)
     let matchedPreviousAction: string | null = null;
     let matchedFormIds: string[] = [];
     
     for (const prevAction of possiblePreviousActions) {
+      // Check base action name only (Redis saves with base name, not numbered versions)
       const prevActionData = await getActionData(sessionID, flowId, transactionId, prevAction);
       
       if (prevActionData) {
@@ -1195,6 +1197,12 @@ export async function validateFormIdConsistency(
           // Found matching form IDs in this previous action
           matchedPreviousAction = prevAction;
           matchedFormIds = prevFormIds;
+          logger.info(`Found matching form IDs in ${prevAction} for ${currentAction}`, {
+            currentFormIds,
+            matchingFormIds,
+            prevFormIds,
+            prevAction
+          });
           break; // Use the first action that has matching form IDs
         }
       }
@@ -1206,8 +1214,11 @@ export async function validateFormIdConsistency(
       if (previousAction) {
         const previousActionData = await getActionData(sessionID, flowId, transactionId, previousAction);
         if (previousActionData) {
-          matchedPreviousAction = previousAction;
-          matchedFormIds = getFormIdsFromActionData(previousActionData, previousAction);
+          const prevFormIds = getFormIdsFromActionData(previousActionData, previousAction);
+          if (prevFormIds.length > 0) {
+            matchedPreviousAction = previousAction;
+            matchedFormIds = prevFormIds;
+          }
         }
       }
     }
