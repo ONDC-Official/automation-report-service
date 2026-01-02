@@ -714,17 +714,17 @@ async function getPreviousActionWithFormIds(
       // For on_select: previous should be select
       possiblePreviousActions = ["select"];
     } else if (currentActionLower === "init") {
-      // For init: previous could be on_init (from previous init) or on_select
-      // Check on_init first (more recent), then on_select as fallback
-      // init_2 should validate against on_init_1 first, then on_select if on_init not found
-      possiblePreviousActions = ["on_init", "on_select"];
+      // For init: previous could be on_init (from previous init) or on_status
+      // Check on_init first (more recent), then on_status as fallback
+      // init_2 should validate against on_init_1, init_3 should validate against on_status
+      possiblePreviousActions = ["on_init", "on_status"];
     } else if (currentActionLower === "on_init") {
       // For on_init: previous should be init
       possiblePreviousActions = ["init"];
     } else if (currentActionLower === "on_status") {
-      // For on_status: previous could be on_select, on_init, or previous on_status
+      // For on_status: previous could be on_init or on_select
       // Check in order: most recent first
-      possiblePreviousActions = ["on_status", "on_init", "on_select"];
+      possiblePreviousActions = ["on_init", "on_select"];
     } else {
       return null;
     }
@@ -742,14 +742,15 @@ async function getPreviousActionWithFormIds(
         if (formIds.length > 0) {
           return prevAction; // Found previous action with form IDs
         }
-        // For on_search, on_select, on_init, or search, even if no form IDs extracted but data exists, return it
+        // For on_search, on_select, on_init, on_status, or search, even if no form IDs extracted but data exists, return it
         // (data might be in a format we haven't handled yet, but it exists)
         // This is important because:
         // - on_search_3 might have form_response and need to validate against search_3
         // - select_3 should validate against on_select_2/on_select (previous on_select)
         // - init_2 should validate against on_init_1/on_init (previous on_init)
+        // - init_3 should validate against on_status (previous on_status)
         const prevActionLower = prevAction.toLowerCase();
-        if (prevActionLower === "on_search" || prevActionLower === "on_select" || prevActionLower === "on_init" || prevActionLower === "search") {
+        if (prevActionLower === "on_search" || prevActionLower === "on_select" || prevActionLower === "on_init" || prevActionLower === "on_status" || prevActionLower === "search") {
           return prevAction;
         }
       }
@@ -780,14 +781,16 @@ function getFormIdsFromActionData(previousActionData: any, actionName?: string):
   const isOnSearch = actionName?.toLowerCase() === "on_search";
   const isOnSelect = actionName?.toLowerCase() === "on_select";
   const isOnInit = actionName?.toLowerCase() === "on_init";
+  const isOnStatus = actionName?.toLowerCase() === "on_status";
   const isSearch = actionName?.toLowerCase() === "search";
   
-  // Handle on_search, on_select, and search extracted format: form_ids[] array (from save spec)
+  // Handle on_search, on_select, on_init, on_status, and search extracted format: form_ids[] array (from save spec)
   // on_search save spec: form_ids: "$.message.catalog.providers[*].items[*].xinput.form.id"
   // on_select save spec: form_ids: "$.message.order.items[*].xinput.form.id"
+  // on_init save spec: form_ids: "$.message.order.items[*].xinput.form.id"
   // search save spec: form_ids: "$.message.intent.provider.items[*].xinput.form.id"
   // This should extract ALL form IDs from ALL providers/items
-  if ((isOnSearch || isOnSelect || isSearch) && previousActionData.form_ids !== undefined && previousActionData.form_ids !== null) {
+  if ((isOnSearch || isOnSelect || isOnInit || isOnStatus || isSearch) && previousActionData.form_ids !== undefined && previousActionData.form_ids !== null) {
     if (Array.isArray(previousActionData.form_ids)) {
       // Array of form IDs - extract all
       for (const formId of previousActionData.form_ids) {
@@ -936,14 +939,14 @@ function getFormIdsFromActionData(previousActionData: any, actionName?: string):
     }
   }
   
-  // Handle select/init/on_select/on_init format: order.items[].xinput.form.id
-  // For on_select and on_init: include all form IDs (even without form_response) as they're sources for select/init
+  // Handle select/init/on_select/on_init/on_status format: order.items[].xinput.form.id
+  // For on_select, on_init, and on_status: include all form IDs (even without form_response) as they're sources for select/init
   // For other actions: only include if form_response exists (form was already submitted)
   if (previousActionData.order?.items && Array.isArray(previousActionData.order.items)) {
     for (const item of previousActionData.order.items) {
       if (item?.xinput?.form?.id) {
-        // For on_select and on_init, include all form IDs; for others, only with form_response
-        if (isOnSelect || isOnInit || item?.xinput?.form_response) {
+        // For on_select, on_init, and on_status, include all form IDs; for others, only with form_response
+        if (isOnSelect || isOnInit || isOnStatus || item?.xinput?.form_response) {
           const formId = item.xinput.form.id;
           if (!formIds.includes(formId)) {
             formIds.push(formId);
@@ -955,15 +958,15 @@ function getFormIdsFromActionData(previousActionData: any, actionName?: string):
   
   // Handle items array directly (from save spec)
   // Note: For search, items might be just IDs (strings), not full objects with xinput
-  // For on_select and on_init: include all form IDs (even without form_response) as they're sources for select/init
+  // For on_select, on_init, and on_status: include all form IDs (even without form_response) as they're sources for select/init
   // For other actions: only include if form_response exists (form was already submitted)
   if (previousActionData.items && Array.isArray(previousActionData.items)) {
     for (const item of previousActionData.items) {
       // Check if item is an object with xinput (not just a string ID)
       // For search, items array contains just IDs, so skip this check
       if (typeof item === 'object' && item !== null && item?.xinput?.form?.id) {
-        // For on_select and on_init, include all form IDs; for others, only with form_response
-        if (isOnSelect || isOnInit || item?.xinput?.form_response) {
+        // For on_select, on_init, and on_status, include all form IDs; for others, only with form_response
+        if (isOnSelect || isOnInit || isOnStatus || item?.xinput?.form_response) {
           const formId = item.xinput.form.id;
           if (!formIds.includes(formId)) {
             formIds.push(formId);
