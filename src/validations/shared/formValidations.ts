@@ -485,10 +485,7 @@ export async function validateHTMLForm(
             }
           }
         } else {
-          // Expected HTML not found - skip this validation (don't fail)
-          testResults.passed.push(
-            `Form ${i + 1} (${formName}): Expected form HTML template not found (validation skipped)`
-          );
+          return
         }
 
       } catch (error: any) {
