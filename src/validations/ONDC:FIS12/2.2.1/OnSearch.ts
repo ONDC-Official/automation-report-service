@@ -3,6 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { PURCHASE_FINANCE_FLOWS } from "../../../utils/constants";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 
 export default async function on_search(
   element: Payload,
@@ -44,6 +45,9 @@ export default async function on_search(
         } else if (missingItems.length > 0) {
           result.failed.push(`Items from search missing in on_search: ${missingItems.join(", ")}`);
         }
+        
+        // Validate form ID consistency if xinput is present
+        await validateFormIdIfXinputPresent(onSearchMessage, sessionID, flowId, txnId, "on_search", result);
       }
     } catch (error: any) {
       // Silently fail if validation cannot be performed

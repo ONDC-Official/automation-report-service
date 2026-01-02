@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 
 export default async function init(
   element: Payload,
@@ -55,6 +56,9 @@ export default async function init(
           init_vs_select: { missingFromSelect, priceMismatches },
         };
       }
+
+      // Validate form ID consistency if xinput is present
+      await validateFormIdIfXinputPresent(element?.jsonRequest?.message, sessionID, flowId, txnId, "init", result);
     }
   } catch (_) {}
 

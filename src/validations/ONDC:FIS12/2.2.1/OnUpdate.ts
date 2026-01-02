@@ -3,6 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { PURCHASE_FINANCE_FLOWS } from "../../../utils/constants";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 
 export default async function on_update(
   element: Payload,
@@ -27,7 +28,7 @@ export default async function on_update(
         const referenceItemIds: string[] = referenceItems.map(it => it?.id).filter(Boolean) as string[];
         
         // Get item IDs from on_update
-        const onUpdateItemIds = onUpdateItems.map(it => it?.id).filter(Boolean) as string[];
+        const onUpdateItemIds = onUpdateItems.map((it: any) => it?.id).filter(Boolean) as string[];
         
         // Validate items consistency
         const missingItems = referenceItemIds.filter(id => !onUpdateItemIds.includes(id));
@@ -44,42 +45,8 @@ export default async function on_update(
           }
         }
         
-        // Validate form ID consistency
-        const onSearchData = await getActionData(sessionID, flowId, txnId, "on_search");
-        const onSearchFormIds: string[] = [];
-        if (onSearchData?.providers && Array.isArray(onSearchData.providers)) {
-          for (const provider of onSearchData.providers) {
-            if (provider.items && Array.isArray(provider.items)) {
-              for (const item of provider.items) {
-                if (item?.xinput?.form?.id) {
-                  onSearchFormIds.push(item.xinput.form.id);
-                }
-              }
-            }
-          }
-        }
-        
-        for (const item of onUpdateItems) {
-          if (item?.xinput?.form?.id) {
-            const formId = item.xinput.form.id;
-            if (onSearchFormIds.includes(formId)) {
-              result.passed.push(`Item ${item.id}: Form ID "${formId}" matches on_search`);
-            } else if (onSearchFormIds.length > 0) {
-              result.failed.push(`Item ${item.id}: Form ID "${formId}" not found in on_search. Available form IDs: ${onSearchFormIds.join(", ")}`);
-            }
-          }
-          
-          // Validate form_response status
-          if (item?.xinput?.form_response?.status) {
-            const status = item.xinput.form_response.status;
-            const allowedStatuses = ["PENDING", "APPROVED", "REJECTED", "EXPIRED", "SUCCESS"];
-            if (allowedStatuses.includes(status)) {
-              result.passed.push(`Item ${item.id}: Form response status "${status}" is valid`);
-            } else {
-              result.failed.push(`Item ${item.id}: Invalid form response status "${status}". Allowed: ${allowedStatuses.join(", ")}`);
-            }
-          }
-        }
+        // Validate form ID consistency if xinput is present
+        await validateFormIdIfXinputPresent(onUpdateMessage, sessionID, flowId, txnId, "on_update", result);
       }
     } catch (error: any) {
       // Silently fail if validation cannot be performed

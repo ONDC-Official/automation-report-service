@@ -104,3 +104,4 @@ export function compareSelectVsOnSearch(
 
   return { passed, failed, details };
 }
+

@@ -3,6 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
 import { validateErrorResponse } from "../../shared/validationFactory";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 
 export default async function on_confirm(
   element: Payload,
@@ -62,6 +63,9 @@ export default async function on_confirm(
           on_confirm_vs_confirm: { missingFromConfirm, priceMismatches },
         };
       }
+      
+      // Validate form ID consistency if xinput is present
+      await validateFormIdIfXinputPresent(onConfirmMsg, sessionID, flowId, txnId, "on_confirm", result);
     }
   } catch (_) {}
 
