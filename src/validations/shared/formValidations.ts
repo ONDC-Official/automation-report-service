@@ -1158,7 +1158,6 @@ export async function validateFormIdConsistency(
     
     // Get possible previous actions based on current action
     const currentActionLower = currentAction.toLowerCase();
-    console.log("currentActionLower",currentActionLower)
     let possiblePreviousActions: string[] = [];
     
     if (currentActionLower === "search") {
@@ -1170,7 +1169,9 @@ export async function validateFormIdConsistency(
     } else if (currentActionLower === "on_select") {
       possiblePreviousActions = ["select"];
     } else if (currentActionLower === "init") {
-      possiblePreviousActions = ["on_init"];
+      // For init: previous could be on_status (for init_3), on_init (for init_2), or on_select (fallback)
+      // Check all three to find matching form IDs
+      possiblePreviousActions = ["on_status", "on_init", "on_select"];
     } else if (currentActionLower === "on_init") {
       possiblePreviousActions = ["init"];
     } else if (currentActionLower === "on_status") {
@@ -1183,7 +1184,7 @@ export async function validateFormIdConsistency(
     // For numbered actions (like init_2), we need to check numbered previous actions (like on_init_1)
     let matchedPreviousAction: string | null = null;
     let matchedFormIds: string[] = [];
-    console.log("possiblePreviousActions",possiblePreviousActions)
+    
     for (const prevAction of possiblePreviousActions) {
       // Check base action name only (Redis saves with base name, not numbered versions)
       const prevActionData = await getActionData(sessionID, flowId, transactionId, prevAction);
@@ -1252,13 +1253,24 @@ export async function validateFormIdConsistency(
         }
       }
     } else {
-      return
-      // Current has form_response but no previous action found
-      // for (const item of items) {
-      //   if (item?.xinput?.form?.id && item?.xinput?.form_response) {
-      //     testResults.failed.push(`Item ${item.id}: Form ID "${item.xinput.form.id}" has form_response but no previous action found to validate against`);
-      //   }
-      // }
+      // Current has form_response but no previous action found with matching form IDs
+      // Check all possible previous actions and show which ones were checked
+      const checkedActions: string[] = [];
+      for (const prevAction of possiblePreviousActions) {
+        const prevActionData = await getActionData(sessionID, flowId, transactionId, prevAction);
+        if (prevActionData) {
+          const prevFormIds = getFormIdsFromActionData(prevActionData, prevAction);
+          checkedActions.push(`${prevAction} (available form IDs: ${prevFormIds.length > 0 ? prevFormIds.join(", ") : "none"})`);
+        } else {
+          checkedActions.push(`${prevAction} (no data found)`);
+        }
+      }
+      
+      for (const item of items) {
+        if (item?.xinput?.form?.id && item?.xinput?.form_response) {
+          testResults.failed.push(`Item ${item.id}: Form ID "${item.xinput.form.id}" not found in any previous action. Checked: ${checkedActions.join(", ")}`);
+        }
+      }
     }
   } else {
     // Current action doesn't have form_response, so it's a new form - skip validation
