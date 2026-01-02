@@ -1166,11 +1166,11 @@ export async function validateFormIdConsistency(
     } else if (currentActionLower === "on_select") {
       possiblePreviousActions = ["select"];
     } else if (currentActionLower === "init") {
-      possiblePreviousActions = ["on_init", "on_select"];
+      possiblePreviousActions = ["on_init", "on_status"];
     } else if (currentActionLower === "on_init") {
       possiblePreviousActions = ["init"];
     } else if (currentActionLower === "on_status") {
-      possiblePreviousActions = ["on_status", "on_init", "on_select"];
+      possiblePreviousActions = ["on_init", "on_select"];
     } else {
       return; // Unknown action
     }
