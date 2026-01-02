@@ -3458,7 +3458,7 @@ function validateFulfillmentsFIS12(
   // when usecaseId is PURCHASE FINANCE
   const normalizedUsecaseId = usecaseId?.toUpperCase().trim();
   const shouldSkipValidation = 
-    ((action_id === "on_status_unsolicited" || action_id === "on_status_purchase_finance") && (normalizedUsecaseId === "PURCHASE FINANCE" || normalizedUsecaseId === "PURCHASE_FINANCE"));
+    ((action_id === "on_status_unsolicited" || action_id === "on_status_purchase_finance" || action_id === "on_status_purchase_finance1") && (normalizedUsecaseId === "PURCHASE FINANCE" || normalizedUsecaseId === "PURCHASE_FINANCE"));
   
   if (!fulfillments || !Array.isArray(fulfillments)) {
     if (!shouldSkipValidation) {
