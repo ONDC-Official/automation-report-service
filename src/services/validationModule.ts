@@ -138,6 +138,13 @@ function validateActionSequence(
         continue;
       }
 
+      // Skip DYNAMIC_FORM entries in the required sequence - they don't have corresponding payloads
+      if (expectedAction === "dynamic_form") {
+        logger.info(`Skipping DYNAMIC_FORM at sequence position ${i + 1}`);
+        // DYNAMIC_FORM is expected, so we just skip it and continue
+        continue;
+      }
+
       // Check if we have enough payloads
       if (payloadIndex >= payloads.length) {
         validSequence = false;
@@ -158,18 +165,19 @@ function validateActionSequence(
         
         validSequence = false;
         
-        // Find the previous non-HTML_FORM action for better error message
+        // Find the previous non-HTML_FORM/non-DYNAMIC_FORM action for better error message
         let previousAction = "start";
         for (let j = i - 1; j >= 0; j--) {
           const prevAction = requiredSequence[j].toLowerCase();
-          if (prevAction !== "html_form") {
+          if (prevAction !== "html_form" && prevAction !== "dynamic_form") {
             previousAction = prevAction;
             break;
           }
         }
         
-        // Also check if there's an HTML_FORM right before this expected action
+        // Also check if there's an HTML_FORM or DYNAMIC_FORM right before this expected action
         const hasHtmlFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "html_form";
+        const hasDynamicFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "dynamic_form";
         
         // Check if we're ahead in payloads (missing action scenario)
         // Look ahead to see if the expected action appears later
@@ -215,6 +223,9 @@ function validateActionSequence(
         if (hasHtmlFormBefore) {
           errorMessage += ` (HTML_FORM was skipped)`;
         }
+        if (hasDynamicFormBefore) {
+          errorMessage += ` (DYNAMIC_FORM was skipped)`;
+        }
         if (foundLater) {
           errorMessage += `. Note: '${expectedAction}' action found later at payload position ${foundAtPosition + 1}, suggesting a missing action in the sequence.`;
         }
@@ -252,6 +263,7 @@ async function processPayloads(
   const actionCounters = { ...INITIAL_ACTION_COUNTERS };
   let payloadIndex = 0; // Track actual payloads
   let htmlFormCounter = 0; // Track HTML_FORM occurrences
+  let dynamicFormCounter = 0; // Track DYNAMIC_FORM occurrences
 
   // If we have a required sequence, process in sequence order
   if (requiredSequence && requiredSequence.length > 0) {
@@ -286,6 +298,30 @@ async function processPayloads(
           messages[`html_form_${htmlFormCounter}`] = JSON.stringify({
             passed: [],
             failed: [`HTML_FORM validation error: ${error.message}`],
+          });
+        }
+        continue; // Skip to next sequence item
+      }
+
+      // Handle DYNAMIC_FORM validation inline (similar to HTML_FORM)
+      if (expectedAction === "dynamic_form") {
+        dynamicFormCounter++;
+        
+        try {
+          // For now, just mark dynamic forms as passed since there's no specific validation
+          // This can be extended later if needed
+          const dynamicFormTestResults: TestResult = { response: {}, passed: [], failed: [] };
+          dynamicFormTestResults.passed.push(`Dynamic form ${dynamicFormCounter} processed successfully`);
+          
+          messages[`dynamic_form_${dynamicFormCounter}`] = JSON.stringify({
+            passed: dynamicFormTestResults.passed,
+            failed: dynamicFormTestResults.failed,
+          });
+        } catch (error: any) {
+          logger.error(`Error processing DYNAMIC_FORM ${dynamicFormCounter}`, error);
+          messages[`dynamic_form_${dynamicFormCounter}`] = JSON.stringify({
+            passed: [],
+            failed: [`DYNAMIC_FORM processing error: ${error.message}`],
           });
         }
         continue; // Skip to next sequence item

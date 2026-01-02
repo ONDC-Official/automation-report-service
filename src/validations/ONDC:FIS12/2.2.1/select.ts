@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData, compareSelectVsOnSearch } from "../../../services/actionDataService";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 
 export default async function select(
   element: Payload,
@@ -24,6 +25,9 @@ export default async function select(
       if (Object.keys(cmp.details).length) {
         (result.response as any).select_vs_on_search = cmp.details;
       }
+      
+      // Validate form ID consistency if xinput is present
+      await validateFormIdIfXinputPresent(element?.jsonRequest?.message, sessionID, flowId, txnId, "select", result);
     }
   } catch (_) {}
   await saveFromElement(element,sessionID,flowId, "jsonRequest");

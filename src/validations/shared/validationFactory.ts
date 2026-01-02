@@ -38,6 +38,223 @@ const log11Validators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 
 /**
+ * Parse ISO 8601 duration format (e.g., "P5M", "P5Y", "P1Y6M") to years
+ * @param term - Duration string in ISO 8601 format
+ * @returns Number of years as a decimal
+ */
+function parseTermToYears(term: string): number {
+  if (!term || typeof term !== "string") {
+    throw new Error("Invalid term format");
+  }
+
+  // Remove 'P' prefix if present
+  const duration = term.toUpperCase().replace(/^P/, "");
+  
+  // Match years and months
+  const yearMatch = duration.match(/(\d+)Y/);
+  const monthMatch = duration.match(/(\d+)M/);
+  
+  let years = 0;
+  if (yearMatch) {
+    years += parseFloat(yearMatch[1]);
+  }
+  if (monthMatch) {
+    years += parseFloat(monthMatch[1]) / 12;
+  }
+  
+  // If no years or months found, try to parse as just a number (assume years)
+  if (years === 0) {
+    const numMatch = duration.match(/(\d+)/);
+    if (numMatch) {
+      years = parseFloat(numMatch[1]);
+    } else {
+      throw new Error(`Cannot parse term: ${term}`);
+    }
+  }
+  
+  return years;
+}
+
+/**
+ * Helper function to validate SETTLEMENT_AMOUNT calculation
+ * Supports three BUYER_FINDER_FEES_TYPE values:
+ * - "amount": Flat amount in INR (SETTLEMENT_AMOUNT = BUYER_FINDER_FEES_AMOUNT)
+ * - "percent": Absolute percentage of total loan amount (SETTLEMENT_AMOUNT = Principal × BFF / 100)
+ * - "percent-annualized": Percentage annualized (SETTLEMENT_AMOUNT = Principal × BFF × Tenure / 12)
+ * @param payment - Payment object containing tags
+ * @param paymentIndex - Index of the payment for error messages
+ * @param order - Order object containing quote and items
+ * @param testResults - TestResult object to add validation results
+ * @param tagType - Type of tag being validated (BAP_TERMS or BPP_TERMS)
+ */
+function validateSettlementAmount(
+  payment: any,
+  paymentIndex: number,
+  order: any,
+  testResults: TestResult,
+  tagType: "BAP_TERMS" | "BPP_TERMS" = "BAP_TERMS"
+): void {
+  if (!payment.tags || !Array.isArray(payment.tags)) {
+    return;
+  }
+
+  const termsTag = payment.tags.find((tag: any) => tag.descriptor?.code === tagType);
+  if (!termsTag || !termsTag.list || !Array.isArray(termsTag.list)) {
+    return;
+  }
+
+  // Helper function to get value by code
+  const getValue = (code: string): string | undefined => {
+    const item = termsTag.list.find((item: any) => item.descriptor?.code === code);
+    return item?.value;
+  };
+
+  const settlementAmountStr = getValue("SETTLEMENT_AMOUNT");
+  const buyerFinderFeesType = getValue("BUYER_FINDER_FEES_TYPE");
+
+  if (!settlementAmountStr || !buyerFinderFeesType) {
+    return;
+  }
+
+  try {
+    const actualSettlementAmount = parseFloat(settlementAmountStr.replace(/[₹,\s]/g, ""));
+    const tolerance = 0.01;
+
+    // Handle "amount" type: SETTLEMENT_AMOUNT should equal BUYER_FINDER_FEES_AMOUNT
+    if (buyerFinderFeesType === "amount") {
+      const buyerFinderFeesAmountStr = getValue("BUYER_FINDER_FEES_AMOUNT");
+      if (!buyerFinderFeesAmountStr) {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: ${tagType} BUYER_FINDER_FEES_AMOUNT is missing (required for BUYER_FINDER_FEES_TYPE="amount")`
+        );
+        return;
+      }
+
+      const expectedAmount = parseFloat(buyerFinderFeesAmountStr.replace(/[₹,\s]/g, ""));
+      const difference = Math.abs(actualSettlementAmount - expectedAmount);
+
+      if (difference <= tolerance) {
+        testResults.passed.push(
+          `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT matches BUYER_FINDER_FEES_AMOUNT. ` +
+          `Expected: ₹${expectedAmount.toFixed(2)}, Actual: ₹${actualSettlementAmount.toFixed(2)}`
+        );
+      } else {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT does not match BUYER_FINDER_FEES_AMOUNT. ` +
+          `Expected: ₹${expectedAmount.toFixed(2)}, Actual: ₹${actualSettlementAmount.toFixed(2)}, Difference: ₹${difference.toFixed(2)}`
+        );
+      }
+      return;
+    }
+
+    // Handle "percent" and "percent-annualized" types: need BUYER_FINDER_FEES_PERCENTAGE
+    const buyerFinderFeesPercentageStr = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+    if (!buyerFinderFeesPercentageStr || !order.quote?.breakup) {
+      if (!buyerFinderFeesPercentageStr) {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: ${tagType} BUYER_FINDER_FEES_PERCENTAGE is missing (required for BUYER_FINDER_FEES_TYPE="${buyerFinderFeesType}")`
+        );
+      }
+      return;
+    }
+
+    // Extract Principal Amount from quote breakup
+    const principalBreakup = order.quote.breakup.find(
+      (b: any) => b.title === "PRINCIPAL_AMOUNT" || b["@ondc/org/title_type"] === "PRINCIPAL_AMOUNT"
+    );
+
+    if (!principalBreakup?.price?.value) {
+      testResults.failed.push(
+        `Payment ${paymentIndex}: Cannot validate ${tagType} SETTLEMENT_AMOUNT - PRINCIPAL_AMOUNT not found in quote breakup`
+      );
+      return;
+    }
+
+    const principal = parseFloat(principalBreakup.price.value);
+    const bffPercentage = parseFloat(buyerFinderFeesPercentageStr);
+
+    // Handle "percent" type: SETTLEMENT_AMOUNT = Principal × (BFF / 100)
+    if (buyerFinderFeesType === "percent") {
+      const expectedSettlementAmount = principal * (bffPercentage / 100);
+      const roundedExpected = Math.round(expectedSettlementAmount * 100) / 100;
+      const difference = Math.abs(actualSettlementAmount - roundedExpected);
+
+      if (difference <= tolerance) {
+        testResults.passed.push(
+          `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is correct (percent type). ` +
+          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(2)}`
+        );
+      } else {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is incorrect (percent type). ` +
+          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(2)}, Difference: ₹${difference.toFixed(2)}`
+        );
+      }
+      return;
+    }
+
+    // Handle "percent-annualized" type: SETTLEMENT_AMOUNT = (Principal × BFF × Tenure) / 12
+    if (buyerFinderFeesType === "percent-annualized") {
+      // Extract Tenure from items tags
+      let tenureInYears: number | null = null;
+      if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+        const firstItem = order.items[0];
+        if (firstItem.tags && Array.isArray(firstItem.tags)) {
+          const infoTag = firstItem.tags.find((tag: any) => tag.descriptor?.code === "INFO");
+          if (infoTag?.list && Array.isArray(infoTag.list)) {
+            const termItem = infoTag.list.find((item: any) => item.descriptor?.code === "TERM");
+            if (termItem?.value) {
+              tenureInYears = parseTermToYears(termItem.value);
+            }
+          }
+        }
+      }
+
+      if (tenureInYears === null) {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: Cannot validate ${tagType} SETTLEMENT_AMOUNT - TERM not found in items tags (required for percent-annualized)`
+        );
+        return;
+      }
+
+      // For percent-annualized: SETTLEMENT_AMOUNT = Principal × (BFF / 100) × (Tenure in months / 12)
+      // tenureInYears is already in years, so we multiply by 12 to get months, then divide by 12
+      // This simplifies to: Principal × (BFF / 100) × tenureInYears
+      const expectedSettlementAmount = principal * (bffPercentage / 100) * tenureInYears;
+      const roundedExpected = Math.round(expectedSettlementAmount * 100) / 100;
+      const difference = Math.abs(actualSettlementAmount - roundedExpected);
+
+      if (difference <= tolerance) {
+        testResults.passed.push(
+          `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is correct (percent-annualized type). ` +
+          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(2)}`
+        );
+      } else {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is incorrect (percent-annualized type). ` +
+          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(2)}, Difference: ₹${difference.toFixed(2)}`
+        );
+      }
+      return;
+    }
+
+    // Invalid BUYER_FINDER_FEES_TYPE
+    testResults.failed.push(
+      `Payment ${paymentIndex}: ${tagType} BUYER_FINDER_FEES_TYPE is invalid. ` +
+      `Expected one of: "amount", "percent", "percent-annualized", found: "${buyerFinderFeesType}"`
+    );
+  } catch (error: any) {
+    testResults.failed.push(
+      `Payment ${paymentIndex}: Error validating ${tagType} SETTLEMENT_AMOUNT calculation: ${error.message}`
+    );
+  }
+}
+
+/**
  * Wrapper function to validate TAT for on_select, on_init, and on_confirm actions
  */
 function validateTAT(message: any, testResults: TestResult): void {
@@ -245,28 +462,46 @@ function validateTags(message: any, testResults: TestResult, flowId?: string): v
 
     // Validate BUYER_FINDER_FEES_TYPE
     const buyerFinderFeesType = getValue("BUYER_FINDER_FEES_TYPE");
+    const validTypes = ["amount", "percent", "percent-annualized"];
     if (!buyerFinderFeesType) {
       testResults.failed.push("BUYER_FINDER_FEES_TYPE is missing in BAP_TERMS");
-    } else if (buyerFinderFeesType !== "percent-annualized") {
+    } else if (!validTypes.includes(buyerFinderFeesType)) {
       testResults.failed.push(
-        `BUYER_FINDER_FEES_TYPE should be "percent-annualized", found: ${buyerFinderFeesType}`
+        `BUYER_FINDER_FEES_TYPE should be one of: ${validTypes.join(", ")}, found: ${buyerFinderFeesType}`
       );
     } else {
       testResults.passed.push(`BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`);
-    }
-
-    // Validate BUYER_FINDER_FEES_PERCENTAGE
-    const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
-    if (!buyerFinderFeesPercentage) {
-      testResults.failed.push("BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS");
-    } else {
-      const percentage = parseFloat(buyerFinderFeesPercentage);
-      if (isNaN(percentage) || percentage < 0) {
-        testResults.failed.push(
-          `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
-        );
+      
+      // Validate required fields based on type
+      if (buyerFinderFeesType === "amount") {
+        const buyerFinderFeesAmount = getValue("BUYER_FINDER_FEES_AMOUNT");
+        if (!buyerFinderFeesAmount) {
+          testResults.failed.push("BUYER_FINDER_FEES_AMOUNT is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='amount')");
+        } else {
+          const amount = parseFloat(buyerFinderFeesAmount.replace(/[₹,\s]/g, ""));
+          if (isNaN(amount) || amount < 0) {
+            testResults.failed.push(
+              `BUYER_FINDER_FEES_AMOUNT should be a valid positive number, found: ${buyerFinderFeesAmount}`
+            );
+          } else {
+            testResults.passed.push(`BUYER_FINDER_FEES_AMOUNT is valid: ${buyerFinderFeesAmount}`);
+          }
+        }
       } else {
-        testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+        // For "percent" and "percent-annualized", BUYER_FINDER_FEES_PERCENTAGE is required
+        const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+        if (!buyerFinderFeesPercentage) {
+          testResults.failed.push(`BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`);
+        } else {
+          const percentage = parseFloat(buyerFinderFeesPercentage);
+          if (isNaN(percentage) || percentage < 0) {
+            testResults.failed.push(
+              `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+            );
+          } else {
+            testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+          }
+        }
       }
     }
 
@@ -351,28 +586,46 @@ function validatePurchaseFinanceBapTerms(
 
   // Validate BUYER_FINDER_FEES_TYPE
   const buyerFinderFeesType = getValue("BUYER_FINDER_FEES_TYPE");
+  const validTypes = ["amount", "percent", "percent-annualized"];
   if (!buyerFinderFeesType) {
     testResults.failed.push("BUYER_FINDER_FEES_TYPE is missing in BAP_TERMS");
-  } else if (buyerFinderFeesType !== "percent-annualized") {
+  } else if (!validTypes.includes(buyerFinderFeesType)) {
     testResults.failed.push(
-      `BUYER_FINDER_FEES_TYPE should be "percent-annualized", found: ${buyerFinderFeesType}`
+      `BUYER_FINDER_FEES_TYPE should be one of: ${validTypes.join(", ")}, found: ${buyerFinderFeesType}`
     );
   } else {
     testResults.passed.push(`BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`);
-  }
-
-  // Validate BUYER_FINDER_FEES_PERCENTAGE
-  const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
-  if (!buyerFinderFeesPercentage) {
-    testResults.failed.push("BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS");
-  } else {
-    const percentage = parseFloat(buyerFinderFeesPercentage);
-    if (isNaN(percentage) || percentage < 0) {
-      testResults.failed.push(
-        `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
-      );
+    
+    // Validate required fields based on type
+    if (buyerFinderFeesType === "amount") {
+      const buyerFinderFeesAmount = getValue("BUYER_FINDER_FEES_AMOUNT");
+      if (!buyerFinderFeesAmount) {
+        testResults.failed.push("BUYER_FINDER_FEES_AMOUNT is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='amount')");
+      } else {
+        const amount = parseFloat(buyerFinderFeesAmount.replace(/[₹,\s]/g, ""));
+        if (isNaN(amount) || amount < 0) {
+          testResults.failed.push(
+            `BUYER_FINDER_FEES_AMOUNT should be a valid positive number, found: ${buyerFinderFeesAmount}`
+          );
+        } else {
+          testResults.passed.push(`BUYER_FINDER_FEES_AMOUNT is valid: ${buyerFinderFeesAmount}`);
+        }
+      }
     } else {
-      testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+      // For "percent" and "percent-annualized", BUYER_FINDER_FEES_PERCENTAGE is required
+      const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+      if (!buyerFinderFeesPercentage) {
+        testResults.failed.push(`BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`);
+      } else {
+        const percentage = parseFloat(buyerFinderFeesPercentage);
+        if (isNaN(percentage) || percentage < 0) {
+          testResults.failed.push(
+            `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+          );
+        } else {
+          testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+        }
+      }
     }
   }
 
@@ -873,6 +1126,9 @@ function validatePurchaseFinanceInit(
       );
     }
 
+    // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS
+    validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
+
     // Validate payment types
     const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
     if (!payment.type) {
@@ -1232,6 +1488,10 @@ function validatePurchaseFinanceOnInit(
           }
         }
       }
+
+      // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
+      validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
+      validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
     });
   }
 
@@ -1324,6 +1584,9 @@ function validatePurchaseFinanceConfirm(
             testResults.passed.push(`Payment ${paymentIndex}: BAP_TERMS.${fieldCode} is present: ${value}`);
           }
         });
+
+        // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS
+        validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
       }
     }
 
@@ -1360,6 +1623,9 @@ function validatePurchaseFinanceConfirm(
             testResults.passed.push(`Payment ${paymentIndex}: BPP_TERMS.${fieldCode} is present: ${value}`);
           }
         });
+
+        // Validate SETTLEMENT_AMOUNT calculation for BPP_TERMS
+        validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
       }
     }
 
@@ -1884,6 +2150,28 @@ function validatePurchaseFinanceOnUpdate(
     }
   });
 
+  // Validate payments
+  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+    testResults.failed.push("Payments array is missing or empty in order");
+  } else {
+    order.payments.forEach((payment: any, paymentIndex: number) => {
+      const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
+      if (!payment.type) {
+        testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
+      } else if (!validPaymentTypes.includes(payment.type)) {
+        testResults.failed.push(
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+        );
+      } else {
+        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+      }
+
+      // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
+      validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
+      validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
+    });
+  }
+
   // Validate updated_at timestamp
   if (!order.updated_at) {
     testResults.failed.push("Order updated_at timestamp is missing in on_update response");
@@ -2045,6 +2333,10 @@ function validatePurchaseFinanceOnConfirm(
           }
         }
       }
+
+      // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
+      validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
+      validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
     });
   }
 
@@ -4191,21 +4483,20 @@ function validateXInputStatusFIS12(
   ];
 
   // Check if this is a purchase finance flow and if xinput is required
-  // For purchase finance: select_purchase_finance (select1) does NOT require xinput
-  //                      select1_purchase_finance (select2) DOES require xinput
+  // For purchase finance: select1_purchase_finance does NOT require xinput
+  //                      init1_purchase_finance does NOT require xinput
   const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
   const isSelect1PurchaseFinance = action_id === "select_purchase_finance";
   const isInitPurchaseFinance = action_id === "init1_purchase_finance";
-  const xinputRequired = !(isPurchaseFinanceFlow && isSelect1PurchaseFinance) || !(isPurchaseFinanceFlow && isInitPurchaseFinance);
+  // xinput is NOT required if it's purchase finance flow AND (select1_purchase_finance OR init1_purchase_finance)
+  const xinputRequired = !(isPurchaseFinanceFlow && (isSelect1PurchaseFinance || isInitPurchaseFinance));
 
   items.forEach((item: any) => {
     if (!item.xinput) {
       if (xinputRequired) {
         testResults.failed.push(`Item ${item.id}: xinput is missing`);
         return;
-      } else {
-        // xinput is not required for select_purchase_finance (select1)
-        testResults.passed.push(`Item ${item.id}: xinput is not required for ${action_id}`);
+      }else{
         return;
       }
     }
@@ -5794,6 +6085,9 @@ export function createOnInitValidator(...config: string[]) {
       }
     }
 
+    // Purchase Finance specific validations for on_init
+    validatePurchaseFinanceOnInit(message, testResults, flowId);
+
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
 
@@ -5945,6 +6239,9 @@ export function createOnConfirmValidator(...config: string[]) {
         }
       }
     }
+
+    // Purchase Finance specific validations for on_confirm
+    validatePurchaseFinanceOnConfirm(message, testResults, flowId);
 
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
@@ -6268,6 +6565,9 @@ export function createOnUpdateValidator(...config: string[]) {
         }
       }
     }
+
+    // Purchase Finance specific validations for on_update
+    validatePurchaseFinanceOnUpdate(message, testResults, flowId);
 
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);

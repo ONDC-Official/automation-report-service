@@ -4,6 +4,8 @@ import logger from "@ondc/automation-logger";
 import axios from "axios";
 import * as fs from "fs";
 import * as path from "path";
+import { getActionData } from "../../services/actionDataService";
+import { PURCHASE_FINANCE_FLOWS } from "../../utils/constants";
 
 /**
  * Normalizes HTML content for comparison by:
@@ -642,5 +644,629 @@ function extractRequiredFields(html: string): Array<{
   }
 
   return requiredFields;
+}
+
+/**
+ * Gets the previous action that has form IDs for a given flow
+ * Checks possible previous actions in order of likelihood
+ * @param sessionID - Session ID
+ * @param flowId - Flow ID
+ * @param transactionId - Transaction ID
+ * @param currentAction - Current action name (e.g., "select", "init", "on_select", "on_init")
+ * @returns Previous action name that has form IDs, or null if not found
+ */
+async function getPreviousActionWithFormIds(
+  sessionID: string,
+  flowId: string,
+  transactionId: string,
+  currentAction: string
+): Promise<string | null> {
+  try {
+    const currentActionLower = currentAction.toLowerCase();
+    
+    // Define possible previous actions based on current action
+    // Check in order: most recent/likely first
+    let possiblePreviousActions: string[] = [];
+    
+    if (currentActionLower === "search") {
+      // For search: previous should be on_search
+      possiblePreviousActions = ["on_search"];
+    } else if (currentActionLower === "on_search") {
+      // For on_search: previous should be search
+      possiblePreviousActions = ["search"];
+    } else if (currentActionLower === "select") {
+      // For select: previous could be on_select (from previous select) or on_search
+      possiblePreviousActions = ["on_select", "on_search"];
+    } else if (currentActionLower === "on_select") {
+      // For on_select: previous should be select
+      possiblePreviousActions = ["select"];
+    } else if (currentActionLower === "init") {
+      // For init: previous could be on_init (from previous init) or on_select
+      possiblePreviousActions = ["on_init", "on_select"];
+    } else if (currentActionLower === "on_init") {
+      // For on_init: previous should be init
+      possiblePreviousActions = ["init"];
+    } else if (currentActionLower === "on_status") {
+      // For on_status: previous could be on_select, on_init, or previous on_status
+      // Check in order: most recent first
+      possiblePreviousActions = ["on_status", "on_init", "on_select"];
+    } else {
+      return null;
+    }
+    
+    // Check each possible previous action to see if it has form IDs
+    for (const prevAction of possiblePreviousActions) {
+      const prevActionData = await getActionData(sessionID, flowId, transactionId, prevAction);
+      
+      // If data exists, check for form IDs
+      if (prevActionData) {
+        const formIds = getFormIdsFromActionData(prevActionData, prevAction);
+        // Return if we found form IDs
+        // For on_search: returns all form IDs (even without form_response) as it's the source
+        // For other actions: returns only form IDs with form_response
+        if (formIds.length > 0) {
+          return prevAction; // Found previous action with form IDs
+        }
+        // For on_search, on_select, or search, even if no form IDs extracted but data exists, return it
+        // (data might be in a format we haven't handled yet, but it exists)
+        // This is important because:
+        // - on_search_3 might have form_response and need to validate against search_3
+        // - select_3 should validate against on_select_2/on_select (previous on_select)
+        const prevActionLower = prevAction.toLowerCase();
+        if (prevActionLower === "on_search" || prevActionLower === "on_select" || prevActionLower === "search") {
+          return prevAction;
+        }
+      }
+    }
+    
+    return null; // No previous action with form IDs found
+  } catch (error) {
+    logger.error("Error getting previous action with form IDs", error);
+    return null;
+  }
+}
+
+/**
+ * Gets form IDs from a previous action's data
+ * For on_search: returns all form IDs (even without form_response) as it's the source of truth
+ * For other actions: only returns form IDs with form_response
+ * @param previousActionData - Data from previous action
+ * @param actionName - Name of the previous action (to determine if it's on_search)
+ * @returns Array of form IDs
+ */
+function getFormIdsFromActionData(previousActionData: any, actionName?: string): string[] {
+  const formIds: string[] = [];
+  
+  if (!previousActionData) {
+    return formIds;
+  }
+  
+  const isOnSearch = actionName?.toLowerCase() === "on_search";
+  const isOnSelect = actionName?.toLowerCase() === "on_select";
+  const isSearch = actionName?.toLowerCase() === "search";
+  
+  // Handle on_search, on_select, and search extracted format: form_ids[] array (from save spec)
+  // on_search save spec: form_ids: "$.message.catalog.providers[*].items[*].xinput.form.id"
+  // on_select save spec: form_ids: "$.message.order.items[*].xinput.form.id"
+  // search save spec: form_ids: "$.message.intent.provider.items[*].xinput.form.id"
+  // This should extract ALL form IDs from ALL providers/items
+  if ((isOnSearch || isOnSelect || isSearch) && previousActionData.form_ids !== undefined && previousActionData.form_ids !== null) {
+    if (Array.isArray(previousActionData.form_ids)) {
+      // Array of form IDs - extract all
+      for (const formId of previousActionData.form_ids) {
+        if (formId !== null && formId !== undefined && formId !== '') {
+          const formIdStr = String(formId).trim();
+          if (formIdStr && !formIds.includes(formIdStr)) {
+            formIds.push(formIdStr);
+          }
+        }
+      }
+    } else if (typeof previousActionData.form_ids === 'string') {
+      // Single form ID as string
+      const formIdStr = previousActionData.form_ids.trim();
+      if (formIdStr && !formIds.includes(formIdStr)) {
+        formIds.push(formIdStr);
+      }
+    } else if (typeof previousActionData.form_ids === 'object') {
+      // Might be an object with form IDs - try to extract
+      logger.info(`Debug: form_ids is an object, not array or string`, {
+        formIdsType: typeof previousActionData.form_ids,
+        formIdsValue: previousActionData.form_ids
+      });
+    }
+  }
+  
+  // Handle on_search extracted format: items[] array (from save spec)
+  // Save spec extracts: items: "$.message.catalog.providers[*].items[*]"
+  if (isOnSearch && previousActionData.items) {
+    if (Array.isArray(previousActionData.items)) {
+      for (const item of previousActionData.items) {
+        if (item?.xinput?.form?.id) {
+          // For on_search, include all form IDs (even without form_response)
+          const formId = item.xinput.form.id;
+          if (formId && !formIds.includes(formId)) {
+            formIds.push(formId);
+          }
+        }
+      }
+    } else if (previousActionData.items?.xinput?.form?.id) {
+      // Single item object
+      const formId = previousActionData.items.xinput.form.id;
+      if (formId && !formIds.includes(formId)) {
+        formIds.push(formId);
+      }
+    }
+  }
+  
+  // Handle on_search extracted format: providers[] array (from save spec)
+  // Save spec extracts: providers: "$.message.catalog.providers[*]"
+  if (isOnSearch && previousActionData.providers) {
+    if (Array.isArray(previousActionData.providers)) {
+      for (const provider of previousActionData.providers) {
+        if (provider.items && Array.isArray(provider.items)) {
+          for (const item of provider.items) {
+            if (item?.xinput?.form?.id) {
+              // For on_search, include all form IDs (even without form_response)
+              const formId = item.xinput.form.id;
+              if (formId && !formIds.includes(formId)) {
+                formIds.push(formId);
+              }
+            }
+          }
+        } else if (provider.items?.xinput?.form?.id) {
+          // Single item in provider
+          const formId = provider.items.xinput.form.id;
+          if (formId && !formIds.includes(formId)) {
+            formIds.push(formId);
+          }
+        }
+      }
+    } else if (previousActionData.providers?.items) {
+      // Single provider object
+      const provider = previousActionData.providers;
+      if (Array.isArray(provider.items)) {
+        for (const item of provider.items) {
+          if (item?.xinput?.form?.id) {
+            const formId = item.xinput.form.id;
+            if (formId && !formIds.includes(formId)) {
+              formIds.push(formId);
+            }
+          }
+        }
+      } else if (provider.items?.xinput?.form?.id) {
+        const formId = provider.items.xinput.form.id;
+        if (formId && !formIds.includes(formId)) {
+          formIds.push(formId);
+        }
+      }
+    }
+  }
+  
+  // Handle on_search format: message.catalog.providers[].items[].xinput.form.id (when data is saved as full message)
+  if (previousActionData.message?.catalog?.providers && Array.isArray(previousActionData.message.catalog.providers)) {
+    for (const provider of previousActionData.message.catalog.providers) {
+      if (provider.items && Array.isArray(provider.items)) {
+        for (const item of provider.items) {
+          if (item?.xinput?.form?.id) {
+            // For on_search, include all form IDs; for others, only with form_response
+            if (isOnSearch || item?.xinput?.form_response) {
+              const formId = item.xinput.form.id;
+              if (!formIds.includes(formId)) {
+                formIds.push(formId);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle on_search format: catalog.providers[].items[].xinput.form.id (when data is extracted but has catalog)
+  if (previousActionData.catalog?.providers && Array.isArray(previousActionData.catalog.providers)) {
+    for (const provider of previousActionData.catalog.providers) {
+      if (provider.items && Array.isArray(provider.items)) {
+        for (const item of provider.items) {
+          if (item?.xinput?.form?.id) {
+            // For on_search, include all form IDs; for others, only with form_response
+            if (isOnSearch || item?.xinput?.form_response) {
+              const formId = item.xinput.form.id;
+              if (!formIds.includes(formId)) {
+                formIds.push(formId);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle on_search format (fallback): message.providers[].items[].xinput.form.id
+  if (previousActionData.message?.providers && Array.isArray(previousActionData.message.providers)) {
+    for (const provider of previousActionData.message.providers) {
+      if (provider.items && Array.isArray(provider.items)) {
+        for (const item of provider.items) {
+          if (item?.xinput?.form?.id) {
+            // For on_search, include all form IDs; for others, only with form_response
+            if (isOnSearch || item?.xinput?.form_response) {
+              const formId = item.xinput.form.id;
+              if (!formIds.includes(formId)) {
+                formIds.push(formId);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle select/init/on_select/on_init format: order.items[].xinput.form.id
+  // For on_select: include all form IDs (even without form_response) as it's a source for select
+  // For other actions: only include if form_response exists (form was already submitted)
+  if (previousActionData.order?.items && Array.isArray(previousActionData.order.items)) {
+    for (const item of previousActionData.order.items) {
+      if (item?.xinput?.form?.id) {
+        // For on_select, include all form IDs; for others, only with form_response
+        if (isOnSelect || item?.xinput?.form_response) {
+          const formId = item.xinput.form.id;
+          if (!formIds.includes(formId)) {
+            formIds.push(formId);
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle items array directly (from save spec)
+  // Note: For search, items might be just IDs (strings), not full objects with xinput
+  // For on_select: include all form IDs (even without form_response) as it's a source for select
+  // For other actions: only include if form_response exists (form was already submitted)
+  if (previousActionData.items && Array.isArray(previousActionData.items)) {
+    for (const item of previousActionData.items) {
+      // Check if item is an object with xinput (not just a string ID)
+      // For search, items array contains just IDs, so skip this check
+      if (typeof item === 'object' && item !== null && item?.xinput?.form?.id) {
+        // For on_select, include all form IDs; for others, only with form_response
+        if (isOnSelect || item?.xinput?.form_response) {
+          const formId = item.xinput.form.id;
+          if (!formIds.includes(formId)) {
+            formIds.push(formId);
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle search format: intent.provider.items[].xinput.form.id
+  // isSearch is already declared above
+  
+  // First check if we have the full message structure (message.intent.provider.items)
+  // This is the most reliable source for search form IDs
+  if (previousActionData.message?.intent?.provider?.items) {
+    if (Array.isArray(previousActionData.message.intent.provider.items)) {
+      for (const item of previousActionData.message.intent.provider.items) {
+        if (item?.xinput?.form?.id) {
+          // For search, include all form IDs (even without form_response) as it's the source
+          if (isSearch) {
+            const formId = item.xinput.form.id;
+            if (!formIds.includes(formId)) {
+              formIds.push(formId);
+            }
+          } else if (item?.xinput?.form_response) {
+            // For other actions, only include if it has form_response
+            const formId = item.xinput.form.id;
+            if (!formIds.includes(formId)) {
+              formIds.push(formId);
+            }
+          }
+        }
+      }
+    } else if (previousActionData.message.intent.provider.items?.xinput?.form?.id) {
+      // Single item
+      const formId = previousActionData.message.intent.provider.items.xinput.form.id;
+      if (isSearch || previousActionData.message.intent.provider.items?.xinput?.form_response) {
+        if (!formIds.includes(formId)) {
+          formIds.push(formId);
+        }
+      }
+    }
+  }
+  
+  // Handle search format: intent.provider.items[].xinput.form.id (when data is extracted but has intent)
+  if (previousActionData.intent?.provider?.items) {
+    if (Array.isArray(previousActionData.intent.provider.items)) {
+      for (const item of previousActionData.intent.provider.items) {
+        if (item?.xinput?.form?.id) {
+          // For search, include all form IDs (even without form_response) as it's the source
+          // For other actions, only include if it has form_response
+          if (isSearch) {
+            const formId = item.xinput.form.id;
+            if (!formIds.includes(formId)) {
+              formIds.push(formId);
+            }
+          } else if (item?.xinput?.form_response) {
+            const formId = item.xinput.form.id;
+            if (!formIds.includes(formId)) {
+              formIds.push(formId);
+            }
+          }
+        }
+      }
+    } else if (previousActionData.intent.provider.items?.xinput?.form?.id) {
+      // Single item
+      const formId = previousActionData.intent.provider.items.xinput.form.id;
+      if (isSearch || previousActionData.intent.provider.items?.xinput?.form_response) {
+        if (!formIds.includes(formId)) {
+          formIds.push(formId);
+        }
+      }
+    }
+  }
+  
+  // Handle search format: message.intent.item (when item is a single object, not array)
+  // Note: search save spec extracts items as IDs array, but full message might have item object
+  if (previousActionData.message?.intent?.item) {
+    const item = previousActionData.message.intent.item;
+    if (item?.xinput?.form?.id) {
+      if (isSearch || item?.xinput?.form_response) {
+        const formId = item.xinput.form.id;
+        if (!formIds.includes(formId)) {
+          formIds.push(formId);
+        }
+      }
+    }
+  }
+  
+  // Handle search format: intent.item (when item is extracted as single object)
+  if (previousActionData.intent?.item) {
+    const item = previousActionData.intent.item;
+    if (item?.xinput?.form?.id) {
+      if (isSearch || item?.xinput?.form_response) {
+        const formId = item.xinput.form.id;
+        if (!formIds.includes(formId)) {
+          formIds.push(formId);
+        }
+      }
+    }
+  }
+  
+  // Handle search extracted format: provider_items[] array (from save spec)
+  // search save spec: provider_items: "$.message.intent.provider.items[*]"
+  if (isSearch && previousActionData.provider_items) {
+    if (Array.isArray(previousActionData.provider_items)) {
+      for (const item of previousActionData.provider_items) {
+        if (item?.xinput?.form?.id) {
+          // For search, include all form IDs (even without form_response) as it's the source
+          const formId = item.xinput.form.id;
+          if (!formIds.includes(formId)) {
+            formIds.push(formId);
+          }
+        }
+      }
+    } else if (previousActionData.provider_items?.xinput?.form?.id) {
+      // Single item
+      const formId = previousActionData.provider_items.xinput.form.id;
+      if (!formIds.includes(formId)) {
+        formIds.push(formId);
+      }
+    }
+  }
+  
+  // Debug: Log if on_search but no form IDs found, or if form IDs found but might be incomplete
+  if (isOnSearch) {
+    if (formIds.length === 0) {
+      logger.info(`Debug: No form IDs extracted from on_search data`, {
+        dataKeys: Object.keys(previousActionData),
+        hasFormIds: !!previousActionData.form_ids,
+        formIdsValue: previousActionData.form_ids,
+        formIdsType: previousActionData.form_ids ? typeof previousActionData.form_ids : 'none',
+        hasItems: !!previousActionData.items,
+        itemsType: previousActionData.items ? typeof previousActionData.items : 'none',
+        itemsIsArray: Array.isArray(previousActionData.items),
+        itemsLength: previousActionData.items?.length,
+        hasProviders: !!previousActionData.providers,
+        providersType: previousActionData.providers ? typeof previousActionData.providers : 'none',
+        providersIsArray: Array.isArray(previousActionData.providers),
+        providersLength: previousActionData.providers?.length,
+        sampleItem: previousActionData.items?.[0],
+        sampleProvider: previousActionData.providers?.[0],
+        hasCatalog: !!previousActionData.catalog,
+        hasMessage: !!previousActionData.message
+      });
+    } else {
+      // Log extracted form IDs for debugging
+      logger.info(`Debug: Extracted form IDs from on_search`, {
+        formIdsCount: formIds.length,
+        formIds: formIds
+      });
+    }
+  }
+  
+  return formIds;
+}
+
+/**
+ * Common function to validate form ID consistency against previous action
+ * Only validates when both previous and current actions have form_response
+ * @param items - Array of items from current action
+ * @param sessionID - Session ID
+ * @param flowId - Flow ID
+ * @param transactionId - Transaction ID
+ * @param currentAction - Current action name (e.g., "select", "init", "on_select", "on_init")
+ * @param testResults - TestResult object to add validation results
+ */
+export async function validateFormIdConsistency(
+  items: any[],
+  sessionID: string,
+  flowId: string,
+  transactionId: string,
+  currentAction: string,
+  testResults: { passed: string[]; failed: string[] }
+): Promise<void> {
+  // Get previous action that has form IDs with form_response
+  const previousAction = await getPreviousActionWithFormIds(sessionID, flowId, transactionId, currentAction);
+  
+  // Check if current action has any item with form_response
+  const hasFormResponseInCurrent = items.some((item: any) => item?.xinput?.form_response);
+  
+  // Only validate if current action has form_response (meaning form was submitted in previous call)
+  if (hasFormResponseInCurrent) {
+    if (previousAction) {
+      // Get form IDs from previous action
+      const previousActionData = await getActionData(sessionID, flowId, transactionId, previousAction);
+      
+      if (!previousActionData) {
+        // Previous action data not found - debug logging
+        logger.info(`Debug: Previous action data not found`, {
+          currentAction,
+          previousAction,
+          sessionID,
+          flowId,
+          transactionId
+        });
+        // Previous action data not found
+        for (const item of items) {
+          if (item?.xinput?.form?.id && item?.xinput?.form_response) {
+            testResults.failed.push(`Item ${item.id}: Form ID "${item.xinput.form.id}" has form_response but ${previousAction} data not found`);
+          }
+        }
+      } else {
+        const previousFormIds = getFormIdsFromActionData(previousActionData, previousAction);
+        
+        // Debug logging for on_search when no form IDs found or when form IDs are found
+        const prevActionLower = previousAction.toLowerCase();
+        if (prevActionLower === "on_search") {
+          if (previousFormIds.length === 0) {
+            logger.info(`Debug: No form IDs extracted from on_search`, {
+              dataKeys: Object.keys(previousActionData || {}),
+              hasFormIds: !!previousActionData?.form_ids,
+              formIdsType: previousActionData?.form_ids ? typeof previousActionData.form_ids : 'none',
+              formIdsValue: previousActionData?.form_ids,
+              hasItems: !!previousActionData?.items,
+              itemsLength: previousActionData?.items?.length,
+              hasProviders: !!previousActionData?.providers,
+              providersLength: previousActionData?.providers?.length,
+              hasCatalog: !!previousActionData?.catalog,
+              hasMessage: !!previousActionData?.message,
+              sampleItem: previousActionData?.items?.[0],
+              sampleProvider: previousActionData?.providers?.[0]
+            });
+          } else {
+            logger.info(`Debug: Extracted form IDs from on_search for validation`, {
+              formIdsCount: previousFormIds.length,
+              formIds: previousFormIds,
+              currentActionFormId: items.find((item: any) => item?.xinput?.form?.id && item?.xinput?.form_response)?.xinput?.form?.id
+            });
+          }
+        }
+        
+        // Validate form IDs match previous action
+        for (const item of items) {
+          if (item?.xinput?.form?.id && item?.xinput?.form_response) {
+            const formId = item.xinput.form.id;
+            if (previousFormIds.includes(formId)) {
+              testResults.passed.push(`Item ${item.id}: Form ID "${formId}" matches ${previousAction} (form_response present)`);
+            } else if (previousFormIds.length > 0) {
+              testResults.failed.push(`Item ${item.id}: Form ID "${formId}" not found in ${previousAction}. Available form IDs: ${previousFormIds.join(", ")}`);
+            } else {
+              const dataKeys = previousActionData ? Object.keys(previousActionData) : [];
+              testResults.failed.push(`Item ${item.id}: Form ID "${formId}" not found in ${previousAction} (no form IDs extracted from data). Data keys: ${dataKeys.join(", ")}`);
+            }
+          }
+          
+          // Validate form_response status
+          if (item?.xinput?.form_response?.status) {
+            const status = item.xinput.form_response.status;
+            const allowedStatuses = ["PENDING", "APPROVED", "REJECTED", "EXPIRED", "SUCCESS"];
+            if (allowedStatuses.includes(status)) {
+              testResults.passed.push(`Item ${item.id}: Form response status "${status}" is valid`);
+            } else {
+              testResults.failed.push(`Item ${item.id}: Invalid form response status "${status}". Allowed: ${allowedStatuses.join(", ")}`);
+            }
+          }
+        }
+      }
+    } else {
+      // Current has form_response but no previous action found
+      for (const item of items) {
+        if (item?.xinput?.form?.id && item?.xinput?.form_response) {
+          testResults.failed.push(`Item ${item.id}: Form ID "${item.xinput.form.id}" has form_response but no previous action found to validate against`);
+        }
+      }
+    }
+  } else {
+    // Current action doesn't have form_response, so it's a new form - skip validation
+    for (const item of items) {
+      if (item?.xinput?.form?.id) {
+        testResults.passed.push(`Item ${item.id}: Form ID "${item.xinput.form.id}" is a new form (no form_response in current action)`);
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to check if payload has xinput and validate form ID consistency
+ * Can be called from any validation function
+ * @param message - Message object from payload
+ * @param sessionID - Session ID
+ * @param flowId - Flow ID
+ * @param transactionId - Transaction ID
+ * @param currentAction - Current action name
+ * @param testResults - TestResult object to add validation results
+ * @param flowIds - Array of flow IDs where this validation should apply (optional, defaults to purchase finance flows)
+ */
+export async function validateFormIdIfXinputPresent(
+  message: any,
+  sessionID: string,
+  flowId: string,
+  transactionId: string,
+  currentAction: string,
+  testResults: { passed: string[]; failed: string[] },
+  flowIds?: string[]
+): Promise<void> {
+  // Check if this flow requires form validation
+  const flowsToValidate = flowIds || PURCHASE_FINANCE_FLOWS;
+  
+  if (!flowId || !flowsToValidate.includes(flowId)) {
+    return; // Skip if not a purchase finance flow
+  }
+
+  // Extract items from message (handle different formats)
+  let items: any[] = [];
+  
+  // Handle on_search format: catalog.providers[].items[]
+  if (message?.catalog?.providers && Array.isArray(message.catalog.providers)) {
+    for (const provider of message.catalog.providers) {
+      if (provider.items && Array.isArray(provider.items)) {
+        items.push(...provider.items);
+      }
+    }
+  }
+  // Handle search format: intent.provider.items[]
+  else if (message?.intent?.provider?.items && Array.isArray(message.intent.provider.items)) {
+    items = message.intent.provider.items;
+  }
+  // Handle order.items[] format (select, init, confirm, etc.)
+  else if (message?.order?.items && Array.isArray(message.order.items)) {
+    items = message.order.items;
+  }
+  // Handle items array directly
+  else if (message?.items && Array.isArray(message.items)) {
+    items = message.items;
+  }
+  // Handle providers array directly (fallback)
+  else if (message?.providers && Array.isArray(message.providers)) {
+    for (const provider of message.providers) {
+      if (provider.items && Array.isArray(provider.items)) {
+        items.push(...provider.items);
+      }
+    }
+  }
+
+  // Check if any item has xinput
+  const hasXinput = items.some((item: any) => item?.xinput);
+  
+  if (hasXinput) {
+    await validateFormIdConsistency(items, sessionID, flowId, transactionId, currentAction, testResults);
+  }
 }
 
