@@ -9,5 +9,6 @@ save-data:
   payments: "$.message.order.payments[*]"
   tags: "$.message.order.tags[*]"
   billing: "$.message.order.billing"
+  form_ids: "$.message.order.items[*].xinput.form.id"
 
 
