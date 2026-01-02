@@ -3,6 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
 import { saveFromElement } from "../../../utils/specLoader";
+import { PURCHASE_FINANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_select(
   element: Payload,
@@ -29,14 +30,73 @@ export default async function on_select(
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
       const selectData = await getActionData(sessionID,flowId, txnId, "select");
-      const selItems: any[] = selectData?.order?.items || [];
+      const selItems: any[] = selectData?.order?.items || selectData?.items || [];
       const onSelItems: any[] = message?.order?.items || [];
 
       // Build price map from SELECT
       const selectPriceById = new Map<string, string>();
+      const selectItemIds: string[] = [];
       for (const it of selItems) {
-        if (it?.id && it?.price?.value !== undefined) {
-          selectPriceById.set(it.id, String(it.price.value));
+        if (it?.id) {
+          selectItemIds.push(it.id);
+          if (it?.price?.value !== undefined) {
+            selectPriceById.set(it.id, String(it.price.value));
+          }
+        }
+      }
+
+      // Validate items consistency for purchase finance flows
+      if (flowId && PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+        const onSelectItemIds = onSelItems.map(it => it?.id).filter(Boolean) as string[];
+        const missingItems = selectItemIds.filter(id => !onSelectItemIds.includes(id));
+        const extraItems = onSelectItemIds.filter(id => !selectItemIds.includes(id));
+        
+        if (missingItems.length === 0 && extraItems.length === 0 && selectItemIds.length > 0) {
+          result.passed.push(`All items from select (${selectItemIds.length}) are present in on_select`);
+        } else {
+          if (missingItems.length > 0) {
+            result.failed.push(`Items from select missing in on_select: ${missingItems.join(", ")}`);
+          }
+          if (extraItems.length > 0) {
+            result.failed.push(`Extra items in on_select not present in select: ${extraItems.join(", ")}`);
+          }
+        }
+        
+        // Validate form ID consistency
+        const onSearchData = await getActionData(sessionID, flowId, txnId, "on_search");
+        const onSearchFormIds: string[] = [];
+        if (onSearchData?.providers && Array.isArray(onSearchData.providers)) {
+          for (const provider of onSearchData.providers) {
+            if (provider.items && Array.isArray(provider.items)) {
+              for (const item of provider.items) {
+                if (item?.xinput?.form?.id) {
+                  onSearchFormIds.push(item.xinput.form.id);
+                }
+              }
+            }
+          }
+        }
+        
+        for (const item of onSelItems) {
+          if (item?.xinput?.form?.id) {
+            const formId = item.xinput.form.id;
+            if (onSearchFormIds.includes(formId)) {
+              result.passed.push(`Item ${item.id}: Form ID "${formId}" matches on_search`);
+            } else if (onSearchFormIds.length > 0) {
+              result.failed.push(`Item ${item.id}: Form ID "${formId}" not found in on_search. Available form IDs: ${onSearchFormIds.join(", ")}`);
+            }
+          }
+          
+          // Validate form_response status
+          if (item?.xinput?.form_response?.status) {
+            const status = item.xinput.form_response.status;
+            const allowedStatuses = ["PENDING", "APPROVED", "REJECTED", "EXPIRED", "SUCCESS"];
+            if (allowedStatuses.includes(status)) {
+              result.passed.push(`Item ${item.id}: Form response status "${status}" is valid`);
+            } else {
+              result.failed.push(`Item ${item.id}: Invalid form response status "${status}". Allowed: ${allowedStatuses.join(", ")}`);
+            }
+          }
         }
       }
 

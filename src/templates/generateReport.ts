@@ -231,9 +231,16 @@ export function generateCustomHTMLReport(data: Report) {
                       ([
                         api,
                         { ackStatus, errorCode, errorMessage, passed, failed },
-                      ]) => `
+                      ]) => {
+                        // Transform dynamic_form_1, dynamic_form_2, etc. to form1, form2, etc.
+                        let displayName = api;
+                        const dynamicFormMatch = api.match(/^dynamic_form_(\d+)$/);
+                        if (dynamicFormMatch) {
+                          displayName = `form${dynamicFormMatch[1]}`;
+                        }
+                        return `
                     <div class="api-header">
-                      <span>${api}</span>
+                      <span>${displayName}</span>
                       <div class="right-section">
                         ${
                           ackStatus
@@ -269,7 +276,8 @@ export function generateCustomHTMLReport(data: Report) {
                         )
                         .join("")}
                     </ul>
-                  `
+                  `;
+                      }
                     )
                     .join("")}
                 </div>
