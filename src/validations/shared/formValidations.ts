@@ -1158,6 +1158,7 @@ export async function validateFormIdConsistency(
     
     // Get possible previous actions based on current action
     const currentActionLower = currentAction.toLowerCase();
+    console.log("currentActionLower",currentActionLower)
     let possiblePreviousActions: string[] = [];
     
     if (currentActionLower === "search") {
@@ -1169,7 +1170,7 @@ export async function validateFormIdConsistency(
     } else if (currentActionLower === "on_select") {
       possiblePreviousActions = ["select"];
     } else if (currentActionLower === "init") {
-      possiblePreviousActions = ["on_init", "on_status"];
+      possiblePreviousActions = ["on_init"];
     } else if (currentActionLower === "on_init") {
       possiblePreviousActions = ["init"];
     } else if (currentActionLower === "on_status") {
@@ -1182,7 +1183,7 @@ export async function validateFormIdConsistency(
     // For numbered actions (like init_2), we need to check numbered previous actions (like on_init_1)
     let matchedPreviousAction: string | null = null;
     let matchedFormIds: string[] = [];
-    
+    console.log("possiblePreviousActions",possiblePreviousActions)
     for (const prevAction of possiblePreviousActions) {
       // Check base action name only (Redis saves with base name, not numbered versions)
       const prevActionData = await getActionData(sessionID, flowId, transactionId, prevAction);
