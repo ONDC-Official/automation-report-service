@@ -267,7 +267,7 @@ export const FLOW_ID_MAP: Record<
     "2.0.0": {
       "Hotel-Booking": {
         "Order to Confirm to Fulfillment (City Based)": "ACM_1",
-        "Hotel Booking TTL": "ACM_2",
+        "Incremental Catalog refresh": "ACM_2",
         "Order to Confirm to Fulfillment (Time range Based)": "ACM_3",
         "Order to Confirm to Fulfillment (Provider Specific)": "ACM_4",
         "Order to Confirm to Fulfillment (Part Payment)": "ACM_5",
