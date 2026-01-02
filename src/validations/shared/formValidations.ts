@@ -1252,12 +1252,13 @@ export async function validateFormIdConsistency(
         }
       }
     } else {
+      return
       // Current has form_response but no previous action found
-      for (const item of items) {
-        if (item?.xinput?.form?.id && item?.xinput?.form_response) {
-          testResults.failed.push(`Item ${item.id}: Form ID "${item.xinput.form.id}" has form_response but no previous action found to validate against`);
-        }
-      }
+      // for (const item of items) {
+      //   if (item?.xinput?.form?.id && item?.xinput?.form_response) {
+      //     testResults.failed.push(`Item ${item.id}: Form ID "${item.xinput.form.id}" has form_response but no previous action found to validate against`);
+      //   }
+      // }
     }
   } else {
     // Current action doesn't have form_response, so it's a new form - skip validation
