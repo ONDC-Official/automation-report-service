@@ -63,7 +63,6 @@ export default async function confirm(
       await validateFormIdIfXinputPresent(confirmMsg, sessionID, flowId, txnId, "confirm", result);
     }
   } catch (_) {}
-
   await saveFromElement(element,sessionID,flowId, "jsonRequest");
   return result;
 }
