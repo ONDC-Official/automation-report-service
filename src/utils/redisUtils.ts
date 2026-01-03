@@ -28,6 +28,7 @@ export const saveFlowData = async (
     const serializedValue = JSON.stringify(value);
 
     // Save the serialized value with optional TTL
+    console.log("redisKeyDatattttt",redisKey,serializedValue)
     await RedisService.setKey(redisKey, serializedValue, 3600);
   } catch (error) {
     logger.error("Error saving data",
