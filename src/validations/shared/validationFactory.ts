@@ -6079,9 +6079,11 @@ function validateCancellation(
   const cancellation = order.cancellation;
   if (
     !cancellation &&
-    action_id !== "soft_on_cancel_purchase_finance" &&
-    action_id !== "confirmed_on_cancel_purchase_finance"
+   ( action_id === "soft_on_cancel_purchase_finance" ||
+    action_id === "confirmed_on_cancel_purchase_finance")
   ) {
+    return;
+  }else{
     testResults.failed.push("Cancellation information is missing in order");
     return;
   }
