@@ -30,6 +30,7 @@ import {
   PAYMENT_COLLECTED_BY,
   PERSONAL_LOAN_FLOWS,
   PURCHASE_FINANCE_FLOWS,
+  PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION,
 } from "../../utils/constants";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
@@ -49,11 +50,11 @@ function parseTermToYears(term: string): number {
 
   // Remove 'P' prefix if present
   const duration = term.toUpperCase().replace(/^P/, "");
-  
+
   // Match years and months
   const yearMatch = duration.match(/(\d+)Y/);
   const monthMatch = duration.match(/(\d+)M/);
-  
+
   let years = 0;
   if (yearMatch) {
     years += parseFloat(yearMatch[1]);
@@ -61,7 +62,7 @@ function parseTermToYears(term: string): number {
   if (monthMatch) {
     years += parseFloat(monthMatch[1]) / 12;
   }
-  
+
   // If no years or months found, try to parse as just a number (assume years)
   if (years === 0) {
     const numMatch = duration.match(/(\d+)/);
@@ -71,7 +72,7 @@ function parseTermToYears(term: string): number {
       throw new Error(`Cannot parse term: ${term}`);
     }
   }
-  
+
   return years;
 }
 
@@ -98,14 +99,18 @@ function validateSettlementAmount(
     return;
   }
 
-  const termsTag = payment.tags.find((tag: any) => tag.descriptor?.code === tagType);
+  const termsTag = payment.tags.find(
+    (tag: any) => tag.descriptor?.code === tagType
+  );
   if (!termsTag || !termsTag.list || !Array.isArray(termsTag.list)) {
     return;
   }
 
   // Helper function to get value by code
   const getValue = (code: string): string | undefined => {
-    const item = termsTag.list.find((item: any) => item.descriptor?.code === code);
+    const item = termsTag.list.find(
+      (item: any) => item.descriptor?.code === code
+    );
     return item?.value;
   };
 
@@ -117,7 +122,9 @@ function validateSettlementAmount(
   }
 
   try {
-    const actualSettlementAmount = parseFloat(settlementAmountStr.replace(/[₹,\s]/g, ""));
+    const actualSettlementAmount = parseFloat(
+      settlementAmountStr.replace(/[₹,\s]/g, "")
+    );
     const tolerance = 0.01;
 
     // Handle "amount" type: SETTLEMENT_AMOUNT should equal BUYER_FINDER_FEES_AMOUNT
@@ -130,25 +137,35 @@ function validateSettlementAmount(
         return;
       }
 
-      const expectedAmount = parseFloat(buyerFinderFeesAmountStr.replace(/[₹,\s]/g, ""));
+      const expectedAmount = parseFloat(
+        buyerFinderFeesAmountStr.replace(/[₹,\s]/g, "")
+      );
       const difference = Math.abs(actualSettlementAmount - expectedAmount);
 
       if (difference <= tolerance) {
         testResults.passed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT matches BUYER_FINDER_FEES_AMOUNT. ` +
-          `Expected: ₹${expectedAmount.toFixed(2)}, Actual: ₹${actualSettlementAmount.toFixed(2)}`
+            `Expected: ₹${expectedAmount.toFixed(
+              2
+            )}, Actual: ₹${actualSettlementAmount.toFixed(2)}`
         );
       } else {
         testResults.failed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT does not match BUYER_FINDER_FEES_AMOUNT. ` +
-          `Expected: ₹${expectedAmount.toFixed(2)}, Actual: ₹${actualSettlementAmount.toFixed(2)}, Difference: ₹${difference.toFixed(2)}`
+            `Expected: ₹${expectedAmount.toFixed(
+              2
+            )}, Actual: ₹${actualSettlementAmount.toFixed(
+              2
+            )}, Difference: ₹${difference.toFixed(2)}`
         );
       }
       return;
     }
 
     // Handle "percent" and "percent-annualized" types: need BUYER_FINDER_FEES_PERCENTAGE
-    const buyerFinderFeesPercentageStr = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+    const buyerFinderFeesPercentageStr = getValue(
+      "BUYER_FINDER_FEES_PERCENTAGE"
+    );
     if (!buyerFinderFeesPercentageStr || !order.quote?.breakup) {
       if (!buyerFinderFeesPercentageStr) {
         testResults.failed.push(
@@ -160,7 +177,9 @@ function validateSettlementAmount(
 
     // Extract Principal Amount from quote breakup
     const principalBreakup = order.quote.breakup.find(
-      (b: any) => b.title === "PRINCIPAL_AMOUNT" || b["@ondc/org/title_type"] === "PRINCIPAL_AMOUNT"
+      (b: any) =>
+        b.title === "PRINCIPAL_AMOUNT" ||
+        b["@ondc/org/title_type"] === "PRINCIPAL_AMOUNT"
     );
 
     if (!principalBreakup?.price?.value) {
@@ -182,14 +201,20 @@ function validateSettlementAmount(
       if (difference <= tolerance) {
         testResults.passed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is correct (percent type). ` +
-          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
-          `Actual: ₹${actualSettlementAmount.toFixed(2)}`
+            `Expected: ₹${roundedExpected.toFixed(
+              2
+            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
+            `Actual: ₹${actualSettlementAmount.toFixed(2)}`
         );
       } else {
         testResults.failed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is incorrect (percent type). ` +
-          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
-          `Actual: ₹${actualSettlementAmount.toFixed(2)}, Difference: ₹${difference.toFixed(2)}`
+            `Expected: ₹${roundedExpected.toFixed(
+              2
+            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
+            `Actual: ₹${actualSettlementAmount.toFixed(
+              2
+            )}, Difference: ₹${difference.toFixed(2)}`
         );
       }
       return;
@@ -197,20 +222,24 @@ function validateSettlementAmount(
 
     // Handle "percent-annualized" type: SETTLEMENT_AMOUNT = (Principal × BFF × Tenure) / 12
     if (buyerFinderFeesType === "percent-annualized") {
-    // Extract Tenure from items tags
-    let tenureInYears: number | null = null;
-    if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-      const firstItem = order.items[0];
-      if (firstItem.tags && Array.isArray(firstItem.tags)) {
-        const infoTag = firstItem.tags.find((tag: any) => tag.descriptor?.code === "INFO");
-        if (infoTag?.list && Array.isArray(infoTag.list)) {
-          const termItem = infoTag.list.find((item: any) => item.descriptor?.code === "TERM");
-          if (termItem?.value) {
-            tenureInYears = parseTermToYears(termItem.value);
+      // Extract Tenure from items tags
+      let tenureInYears: number | null = null;
+      if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+        const firstItem = order.items[0];
+        if (firstItem.tags && Array.isArray(firstItem.tags)) {
+          const infoTag = firstItem.tags.find(
+            (tag: any) => tag.descriptor?.code === "INFO"
+          );
+          if (infoTag?.list && Array.isArray(infoTag.list)) {
+            const termItem = infoTag.list.find(
+              (item: any) => item.descriptor?.code === "TERM"
+            );
+            if (termItem?.value) {
+              tenureInYears = parseTermToYears(termItem.value);
+            }
           }
         }
       }
-    }
 
       if (tenureInYears === null) {
         testResults.failed.push(
@@ -222,31 +251,38 @@ function validateSettlementAmount(
       // For percent-annualized: SETTLEMENT_AMOUNT = Principal × (BFF / 100) × (Tenure in months / 12)
       // tenureInYears is already in years, so we multiply by 12 to get months, then divide by 12
       // This simplifies to: Principal × (BFF / 100) × tenureInYears
-      const expectedSettlementAmount = principal * (bffPercentage / 100) * tenureInYears;
+      const expectedSettlementAmount =
+        principal * (bffPercentage / 100) * tenureInYears;
       const roundedExpected = Math.round(expectedSettlementAmount * 100) / 100;
       const difference = Math.abs(actualSettlementAmount - roundedExpected);
 
       if (difference <= tolerance) {
         testResults.passed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is correct (percent-annualized type). ` +
-          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
-          `Actual: ₹${actualSettlementAmount.toFixed(2)}`
+            `Expected: ₹${roundedExpected.toFixed(
+              2
+            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
+            `Actual: ₹${actualSettlementAmount.toFixed(2)}`
         );
       } else {
         testResults.failed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is incorrect (percent-annualized type). ` +
-          `Expected: ₹${roundedExpected.toFixed(2)} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
-          `Actual: ₹${actualSettlementAmount.toFixed(2)}, Difference: ₹${difference.toFixed(2)}`
+            `Expected: ₹${roundedExpected.toFixed(
+              2
+            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
+            `Actual: ₹${actualSettlementAmount.toFixed(
+              2
+            )}, Difference: ₹${difference.toFixed(2)}`
         );
       }
       return;
     }
 
     // Invalid BUYER_FINDER_FEES_TYPE
-        testResults.failed.push(
+    testResults.failed.push(
       `Payment ${paymentIndex}: ${tagType} BUYER_FINDER_FEES_TYPE is invalid. ` +
-      `Expected one of: "amount", "percent", "percent-annualized", found: "${buyerFinderFeesType}"`
-        );
+        `Expected one of: "amount", "percent", "percent-annualized", found: "${buyerFinderFeesType}"`
+    );
   } catch (error: any) {
     testResults.failed.push(
       `Payment ${paymentIndex}: Error validating ${tagType} SETTLEMENT_AMOUNT calculation: ${error.message}`
@@ -356,30 +392,44 @@ function validateIntent(
 
       // Purchase Finance specific search validations
       const hasProvider = !!intent.provider;
-      const hasItems = hasProvider && !!intent.provider.items && Array.isArray(intent.provider.items) && intent.provider.items.length > 0;
+      const hasItems =
+        hasProvider &&
+        !!intent.provider.items &&
+        Array.isArray(intent.provider.items) &&
+        intent.provider.items.length > 0;
 
       if (!hasProvider && !hasItems) {
         // Search1: Initial search - only validate BAP_TERMS (already done by validateTags)
-        testResults.passed.push("Search1: Initial search validated (provider and items not required)");
+        testResults.passed.push(
+          "Search1: Initial search validated (provider and items not required)"
+        );
       } else {
         // Search2/3/4: Must have provider, items, and xinput
         if (!hasProvider) {
-          testResults.failed.push("Provider is missing in search request (required for search2/3/4)");
+          testResults.failed.push(
+            "Provider is missing in search request (required for search2/3/4)"
+          );
         } else {
           if (!intent.provider.id) {
             testResults.failed.push("Provider id is missing in search request");
           } else {
-            testResults.passed.push(`Provider id is present: ${intent.provider.id}`);
+            testResults.passed.push(
+              `Provider id is present: ${intent.provider.id}`
+            );
           }
         }
 
         if (!hasItems) {
-          testResults.failed.push("Items are missing in provider (required for search2/3/4)");
+          testResults.failed.push(
+            "Items are missing in provider (required for search2/3/4)"
+          );
         } else {
           // Validate each item has xinput
           intent.provider.items.forEach((item: any, index: number) => {
             if (!item.xinput) {
-              testResults.failed.push(`Item ${index}: xinput is missing (required for search2/3/4)`);
+              testResults.failed.push(
+                `Item ${index}: xinput is missing (required for search2/3/4)`
+              );
             } else {
               testResults.passed.push(`Item ${index}: xinput is present`);
             }
@@ -393,6 +443,7 @@ function validateIntent(
     }
   }
 
+if(intent.payment?.type !== "POST_FULFILLMENT"){
   if (!intent.payment?.collected_by) {
     testResults.failed.push("Payment collected_by is missing in intent");
   } else if (!PAYMENT_COLLECTED_BY.includes(intent.payment?.collected_by)) {
@@ -420,7 +471,11 @@ function validatePaymentCollectedBy(
   }
 }
 
-function validateTags(message: any, testResults: TestResult, flowId?: string): void {
+function validateTags(
+  message: any,
+  testResults: TestResult,
+  flowId?: string
+): void {
   const tags =
     message?.intent?.tags || message?.order?.tags || message?.catalog?.tags;
   if (tags && Array.isArray(tags)) {
@@ -439,13 +494,19 @@ function validateTags(message: any, testResults: TestResult, flowId?: string): v
   if (flowId && PURCHASE_FINANCE_FLOWS.includes(flowId)) {
     const paymentTags = message?.intent?.payment?.tags || message?.intent?.tags;
     if (!paymentTags || !Array.isArray(paymentTags)) {
-      testResults.failed.push("Payment tags are missing in search request for purchase finance");
+      testResults.failed.push(
+        "Payment tags are missing in search request for purchase finance"
+      );
       return;
     }
 
-    const bapTerms = paymentTags.find((tag) => tag.descriptor?.code === "BAP_TERMS");
+    const bapTerms = paymentTags.find(
+      (tag) => tag.descriptor?.code === "BAP_TERMS"
+    );
     if (!bapTerms) {
-      testResults.failed.push("BAP_TERMS tag is missing in payment tags for purchase finance");
+      testResults.failed.push(
+        "BAP_TERMS tag is missing in payment tags for purchase finance"
+      );
       return;
     }
 
@@ -456,7 +517,9 @@ function validateTags(message: any, testResults: TestResult, flowId?: string): v
 
     // Helper function to get value by code
     const getValue = (code: string): string | undefined => {
-      const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+      const item = bapTerms.list.find(
+        (item: any) => item.descriptor?.code === code
+      );
       return item?.value;
     };
 
@@ -467,39 +530,55 @@ function validateTags(message: any, testResults: TestResult, flowId?: string): v
       testResults.failed.push("BUYER_FINDER_FEES_TYPE is missing in BAP_TERMS");
     } else if (!validTypes.includes(buyerFinderFeesType)) {
       testResults.failed.push(
-        `BUYER_FINDER_FEES_TYPE should be one of: ${validTypes.join(", ")}, found: ${buyerFinderFeesType}`
+        `BUYER_FINDER_FEES_TYPE should be one of: ${validTypes.join(
+          ", "
+        )}, found: ${buyerFinderFeesType}`
       );
     } else {
-      testResults.passed.push(`BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`);
-      
+      testResults.passed.push(
+        `BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`
+      );
+
       // Validate required fields based on type
       if (buyerFinderFeesType === "amount") {
         const buyerFinderFeesAmount = getValue("BUYER_FINDER_FEES_AMOUNT");
         if (!buyerFinderFeesAmount) {
-          testResults.failed.push("BUYER_FINDER_FEES_AMOUNT is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='amount')");
+          testResults.failed.push(
+            "BUYER_FINDER_FEES_AMOUNT is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='amount')"
+          );
         } else {
-          const amount = parseFloat(buyerFinderFeesAmount.replace(/[₹,\s]/g, ""));
+          const amount = parseFloat(
+            buyerFinderFeesAmount.replace(/[₹,\s]/g, "")
+          );
           if (isNaN(amount) || amount < 0) {
             testResults.failed.push(
               `BUYER_FINDER_FEES_AMOUNT should be a valid positive number, found: ${buyerFinderFeesAmount}`
             );
           } else {
-            testResults.passed.push(`BUYER_FINDER_FEES_AMOUNT is valid: ${buyerFinderFeesAmount}`);
+            testResults.passed.push(
+              `BUYER_FINDER_FEES_AMOUNT is valid: ${buyerFinderFeesAmount}`
+            );
           }
         }
       } else {
         // For "percent" and "percent-annualized", BUYER_FINDER_FEES_PERCENTAGE is required
-    const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
-    if (!buyerFinderFeesPercentage) {
-          testResults.failed.push(`BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`);
-    } else {
-      const percentage = parseFloat(buyerFinderFeesPercentage);
-      if (isNaN(percentage) || percentage < 0) {
-        testResults.failed.push(
-          `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+        const buyerFinderFeesPercentage = getValue(
+          "BUYER_FINDER_FEES_PERCENTAGE"
         );
-      } else {
-        testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+        if (!buyerFinderFeesPercentage) {
+          testResults.failed.push(
+            `BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`
+          );
+        } else {
+          const percentage = parseFloat(buyerFinderFeesPercentage);
+          if (isNaN(percentage) || percentage < 0) {
+            testResults.failed.push(
+              `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+            );
+          } else {
+            testResults.passed.push(
+              `BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`
+            );
           }
         }
       }
@@ -528,12 +607,18 @@ function validateTags(message: any, testResults: TestResult, flowId?: string): v
       try {
         const url = new URL(staticTerms);
         if (url.protocol !== "http:" && url.protocol !== "https:") {
-          testResults.failed.push(`STATIC_TERMS should be a valid HTTP/HTTPS URL, found: ${staticTerms}`);
+          testResults.failed.push(
+            `STATIC_TERMS should be a valid HTTP/HTTPS URL, found: ${staticTerms}`
+          );
         } else {
-          testResults.passed.push(`STATIC_TERMS is a valid URL: ${staticTerms}`);
+          testResults.passed.push(
+            `STATIC_TERMS is a valid URL: ${staticTerms}`
+          );
         }
       } catch (error) {
-        testResults.failed.push(`STATIC_TERMS should be a valid URL, found: ${staticTerms}`);
+        testResults.failed.push(
+          `STATIC_TERMS should be a valid URL, found: ${staticTerms}`
+        );
       }
     }
 
@@ -563,13 +648,17 @@ function validatePurchaseFinanceBapTerms(
 
   const tags = message?.intent?.payment?.tags || message?.intent?.tags;
   if (!tags || !Array.isArray(tags)) {
-    testResults.failed.push("Payment tags are missing in search request for purchase finance");
+    testResults.failed.push(
+      "Payment tags are missing in search request for purchase finance"
+    );
     return;
   }
 
   const bapTerms = tags.find((tag) => tag.descriptor?.code === "BAP_TERMS");
   if (!bapTerms) {
-    testResults.failed.push("BAP_TERMS tag is missing in payment tags for purchase finance");
+    testResults.failed.push(
+      "BAP_TERMS tag is missing in payment tags for purchase finance"
+    );
     return;
   }
 
@@ -580,7 +669,9 @@ function validatePurchaseFinanceBapTerms(
 
   // Helper function to get value by code
   const getValue = (code: string): string | undefined => {
-    const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+    const item = bapTerms.list.find(
+      (item: any) => item.descriptor?.code === code
+    );
     return item?.value;
   };
 
@@ -591,16 +682,22 @@ function validatePurchaseFinanceBapTerms(
     testResults.failed.push("BUYER_FINDER_FEES_TYPE is missing in BAP_TERMS");
   } else if (!validTypes.includes(buyerFinderFeesType)) {
     testResults.failed.push(
-      `BUYER_FINDER_FEES_TYPE should be one of: ${validTypes.join(", ")}, found: ${buyerFinderFeesType}`
+      `BUYER_FINDER_FEES_TYPE should be one of: ${validTypes.join(
+        ", "
+      )}, found: ${buyerFinderFeesType}`
     );
   } else {
-    testResults.passed.push(`BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`);
-    
+    testResults.passed.push(
+      `BUYER_FINDER_FEES_TYPE is valid: ${buyerFinderFeesType}`
+    );
+
     // Validate required fields based on type
     if (buyerFinderFeesType === "amount") {
       const buyerFinderFeesAmount = getValue("BUYER_FINDER_FEES_AMOUNT");
       if (!buyerFinderFeesAmount) {
-        testResults.failed.push("BUYER_FINDER_FEES_AMOUNT is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='amount')");
+        testResults.failed.push(
+          "BUYER_FINDER_FEES_AMOUNT is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='amount')"
+        );
       } else {
         const amount = parseFloat(buyerFinderFeesAmount.replace(/[₹,\s]/g, ""));
         if (isNaN(amount) || amount < 0) {
@@ -608,22 +705,30 @@ function validatePurchaseFinanceBapTerms(
             `BUYER_FINDER_FEES_AMOUNT should be a valid positive number, found: ${buyerFinderFeesAmount}`
           );
         } else {
-          testResults.passed.push(`BUYER_FINDER_FEES_AMOUNT is valid: ${buyerFinderFeesAmount}`);
+          testResults.passed.push(
+            `BUYER_FINDER_FEES_AMOUNT is valid: ${buyerFinderFeesAmount}`
+          );
         }
       }
     } else {
       // For "percent" and "percent-annualized", BUYER_FINDER_FEES_PERCENTAGE is required
-  const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
-  if (!buyerFinderFeesPercentage) {
-        testResults.failed.push(`BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`);
-  } else {
-    const percentage = parseFloat(buyerFinderFeesPercentage);
-    if (isNaN(percentage) || percentage < 0) {
-      testResults.failed.push(
-        `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+      const buyerFinderFeesPercentage = getValue(
+        "BUYER_FINDER_FEES_PERCENTAGE"
       );
-    } else {
-      testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+      if (!buyerFinderFeesPercentage) {
+        testResults.failed.push(
+          `BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`
+        );
+      } else {
+        const percentage = parseFloat(buyerFinderFeesPercentage);
+        if (isNaN(percentage) || percentage < 0) {
+          testResults.failed.push(
+            `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+          );
+        } else {
+          testResults.passed.push(
+            `BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`
+          );
         }
       }
     }
@@ -652,12 +757,16 @@ function validatePurchaseFinanceBapTerms(
     try {
       const url = new URL(staticTerms);
       if (url.protocol !== "http:" && url.protocol !== "https:") {
-        testResults.failed.push(`STATIC_TERMS should be a valid HTTP/HTTPS URL, found: ${staticTerms}`);
+        testResults.failed.push(
+          `STATIC_TERMS should be a valid HTTP/HTTPS URL, found: ${staticTerms}`
+        );
       } else {
         testResults.passed.push(`STATIC_TERMS is a valid URL: ${staticTerms}`);
       }
     } catch (error) {
-      testResults.failed.push(`STATIC_TERMS should be a valid URL, found: ${staticTerms}`);
+      testResults.failed.push(
+        `STATIC_TERMS should be a valid URL, found: ${staticTerms}`
+      );
     }
   }
 
@@ -693,19 +802,27 @@ function validatePurchaseFinanceSearch(
 
   // Check if this is search1 (no provider/items) or search2/3/4 (has provider/items)
   const hasProvider = !!intent.provider;
-  const hasItems = hasProvider && !!intent.provider.items && Array.isArray(intent.provider.items) && intent.provider.items.length > 0;
+  const hasItems =
+    hasProvider &&
+    !!intent.provider.items &&
+    Array.isArray(intent.provider.items) &&
+    intent.provider.items.length > 0;
 
   if (!hasProvider && !hasItems) {
     // Search1: Initial search - only validate BAP_TERMS (already done by validatePurchaseFinanceBapTerms)
     // No additional validations needed for search1
-    testResults.passed.push("Search1: Initial search validated (provider and items not required)");
+    testResults.passed.push(
+      "Search1: Initial search validated (provider and items not required)"
+    );
     return;
   }
 
   // Search2/3/4: Must have provider, items, and xinput
   // Validate provider
   if (!hasProvider) {
-    testResults.failed.push("Provider is missing in search request (required for search2/3/4)");
+    testResults.failed.push(
+      "Provider is missing in search request (required for search2/3/4)"
+    );
     return;
   }
 
@@ -717,21 +834,29 @@ function validatePurchaseFinanceSearch(
 
   // Validate items
   if (!hasItems) {
-    testResults.failed.push("Items are missing in provider (required for search2/3/4)");
+    testResults.failed.push(
+      "Items are missing in provider (required for search2/3/4)"
+    );
     return;
   }
 
   // Validate context has bpp_id and bpp_uri for search2/3/4
   if (!context.bpp_id) {
-    testResults.failed.push("bpp_id is missing in context (required for search2/3/4)");
+    testResults.failed.push(
+      "bpp_id is missing in context (required for search2/3/4)"
+    );
   } else {
     testResults.passed.push(`bpp_id is present in context: ${context.bpp_id}`);
   }
 
   if (!context.bpp_uri) {
-    testResults.failed.push("bpp_uri is missing in context (required for search2/3/4)");
+    testResults.failed.push(
+      "bpp_uri is missing in context (required for search2/3/4)"
+    );
   } else {
-    testResults.passed.push(`bpp_uri is present in context: ${context.bpp_uri}`);
+    testResults.passed.push(
+      `bpp_uri is present in context: ${context.bpp_uri}`
+    );
   }
 
   // Validate each item has xinput
@@ -744,11 +869,15 @@ function validatePurchaseFinanceSearch(
     if (!item.xinput) {
       // Skip xinput validation if item has parent_item_id (it's a child item)
       if (item.parent_item_id) {
-        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`
+        );
         return;
       }
-      
-      testResults.failed.push(`Item ${item.id}: xinput is missing (required for search2/3/4)`);
+
+      testResults.failed.push(
+        `Item ${item.id}: xinput is missing (required for search2/3/4)`
+      );
       return;
     }
 
@@ -759,24 +888,32 @@ function validatePurchaseFinanceSearch(
       if (!item.xinput.form.id) {
         testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+        );
       }
     }
 
     // Validate xinput.form_response
     if (!item.xinput.form_response) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response is missing`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response is missing`
+      );
       return;
     }
 
     const formResponse = item.xinput.form_response;
     const allowedStatuses = ["SUCCESS", "APPROVED"];
-    
+
     if (!formResponse.status) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.status is missing`
+      );
     } else if (!allowedStatuses.includes(formResponse.status)) {
       testResults.failed.push(
-        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+        `Item ${item.id}: Invalid xinput.form_response.status "${
+          formResponse.status
+        }". Allowed: ${allowedStatuses.join(", ")}`
       );
     } else {
       testResults.passed.push(
@@ -785,7 +922,9 @@ function validatePurchaseFinanceSearch(
     }
 
     if (!formResponse.submission_id) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is missing`
+      );
     } else {
       testResults.passed.push(
         `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
@@ -824,11 +963,15 @@ function validatePurchaseFinanceOnSelect(
     if (!item.xinput) {
       // Skip xinput validation if item has parent_item_id (it's a child item)
       if (item.parent_item_id) {
-        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`
+        );
         return;
       }
-      
-      testResults.failed.push(`Item ${item.id}: xinput is missing in on_select response`);
+
+      testResults.failed.push(
+        `Item ${item.id}: xinput is missing in on_select response`
+      );
       return;
     }
 
@@ -841,12 +984,16 @@ function validatePurchaseFinanceOnSelect(
       // on_select3: Has form_response - validate it
       const formResponse = item.xinput.form_response;
       const allowedStatuses = ["SUCCESS", "APPROVED"];
-      
+
       if (!formResponse.status) {
-        testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form_response.status is missing`
+        );
       } else if (!allowedStatuses.includes(formResponse.status)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+          `Item ${item.id}: Invalid xinput.form_response.status "${
+            formResponse.status
+          }". Allowed: ${allowedStatuses.join(", ")}`
         );
       } else {
         testResults.passed.push(
@@ -855,7 +1002,9 @@ function validatePurchaseFinanceOnSelect(
       }
 
       if (!formResponse.submission_id) {
-        testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form_response.submission_id is missing`
+        );
       } else {
         testResults.passed.push(
           `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
@@ -864,9 +1013,13 @@ function validatePurchaseFinanceOnSelect(
 
       // Validate form.id is present
       if (!item.xinput.form || !item.xinput.form.id) {
-        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing (required for on_select3)`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form.id is missing (required for on_select3)`
+        );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+        );
       }
     } else if (hasHead && hasForm) {
       // on_select1/2: Has xinput.head and xinput.form - validate them
@@ -874,7 +1027,9 @@ function validatePurchaseFinanceOnSelect(
       if (!item.xinput.form.id) {
         testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+        );
       }
 
       if (!item.xinput.form.url) {
@@ -883,39 +1038,63 @@ function validatePurchaseFinanceOnSelect(
         try {
           const url = new URL(item.xinput.form.url);
           if (url.protocol !== "http:" && url.protocol !== "https:") {
-            testResults.failed.push(`Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`);
+            testResults.failed.push(
+              `Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`
+            );
           } else {
-            testResults.passed.push(`Item ${item.id}: xinput.form.url is a valid URL`);
+            testResults.passed.push(
+              `Item ${item.id}: xinput.form.url is a valid URL`
+            );
           }
         } catch (error) {
-          testResults.failed.push(`Item ${item.id}: xinput.form.url is not a valid URL`);
+          testResults.failed.push(
+            `Item ${item.id}: xinput.form.url is not a valid URL`
+          );
         }
       }
 
       const validMimeTypes = ["text/html", "application/html"];
       if (!item.xinput.form.mime_type) {
-        testResults.failed.push(`Item ${item.id}: xinput.form.mime_type is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form.mime_type is missing`
+        );
       } else if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form.mime_type "${item.xinput.form.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+          `Item ${item.id}: Invalid xinput.form.mime_type "${
+            item.xinput.form.mime_type
+          }". Allowed: ${validMimeTypes.join(", ")}`
         );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.mime_type is valid: "${item.xinput.form.mime_type}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.mime_type is valid: "${item.xinput.form.mime_type}"`
+        );
       }
 
       // Validate xinput.head
       if (!item.xinput.head.descriptor || !item.xinput.head.descriptor.name) {
-        testResults.failed.push(`Item ${item.id}: xinput.head.descriptor.name is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.head.descriptor.name is missing`
+        );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`
+        );
       }
 
       if (!item.xinput.head.index) {
-        testResults.failed.push(`Item ${item.id}: xinput.head.index is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.head.index is missing`
+        );
       } else {
         const index = item.xinput.head.index;
-        if (typeof index.min !== "number" || typeof index.cur !== "number" || typeof index.max !== "number") {
-          testResults.failed.push(`Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`);
+        if (
+          typeof index.min !== "number" ||
+          typeof index.cur !== "number" ||
+          typeof index.max !== "number"
+        ) {
+          testResults.failed.push(
+            `Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`
+          );
         } else {
           if (index.cur < index.min || index.cur > index.max) {
             testResults.failed.push(
@@ -929,8 +1108,14 @@ function validatePurchaseFinanceOnSelect(
         }
       }
 
-      if (!item.xinput.head.headings || !Array.isArray(item.xinput.head.headings) || item.xinput.head.headings.length === 0) {
-        testResults.failed.push(`Item ${item.id}: xinput.head.headings is missing or empty`);
+      if (
+        !item.xinput.head.headings ||
+        !Array.isArray(item.xinput.head.headings) ||
+        item.xinput.head.headings.length === 0
+      ) {
+        testResults.failed.push(
+          `Item ${item.id}: xinput.head.headings is missing or empty`
+        );
       } else {
         const allowedHeadings = [
           "SET_DOWN_PAYMENT",
@@ -938,29 +1123,45 @@ function validatePurchaseFinanceOnSelect(
           "EMANDATE",
           "ESIGN",
           "MERCHANT_AND_PRDOUCT_DEATILS",
-          "PERSONAL_INFORMATION"
+          "PERSONAL_INFORMATION",
         ];
         item.xinput.head.headings.forEach((heading: string) => {
           if (!allowedHeadings.includes(heading)) {
             testResults.failed.push(
-              `Item ${item.id}: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(", ")}`
+              `Item ${
+                item.id
+              }: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(
+                ", "
+              )}`
             );
           } else {
-            testResults.passed.push(`Item ${item.id}: Valid heading "${heading}"`);
+            testResults.passed.push(
+              `Item ${item.id}: Valid heading "${heading}"`
+            );
           }
         });
       }
 
       if (item.xinput.required !== true && item.xinput.required !== false) {
-        testResults.failed.push(`Item ${item.id}: xinput.required should be a boolean`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.required should be a boolean`
+        );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.required is present: ${item.xinput.required}`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.required is present: ${item.xinput.required}`
+        );
       }
 
       // Validate CHECKLISTS tag if present
       if (item.tags && Array.isArray(item.tags)) {
-        const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
-        if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+        const checklistsTag = item.tags.find(
+          (tag: any) => tag.descriptor?.code === "CHECKLISTS"
+        );
+        if (
+          checklistsTag &&
+          checklistsTag.list &&
+          Array.isArray(checklistsTag.list)
+        ) {
           const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
           checklistsTag.list.forEach((checklistItem: any) => {
             const code = checklistItem.descriptor?.code;
@@ -968,17 +1169,25 @@ function validatePurchaseFinanceOnSelect(
             if (code && value) {
               if (!allowedChecklistStatuses.includes(value)) {
                 testResults.failed.push(
-                  `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                  `Item ${
+                    item.id
+                  }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
+                    ", "
+                  )}`
                 );
               } else {
-                testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+                testResults.passed.push(
+                  `Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`
+                );
               }
             }
           });
         }
       }
     } else {
-      testResults.failed.push(`Item ${item.id}: xinput must have either (head and form) or form_response`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput must have either (head and form) or form_response`
+      );
     }
   });
 }
@@ -1013,35 +1222,47 @@ function validatePurchaseFinanceSelect(
     // Check if this is select1 (no xinput) or select2/3 (has xinput with form_response)
     if (!item.xinput) {
       // select1: Basic select - no xinput required
-      testResults.passed.push(`Item ${item.id}: Basic select validated (xinput not required for select1)`);
+      testResults.passed.push(
+        `Item ${item.id}: Basic select validated (xinput not required for select1)`
+      );
       return;
     }
 
     // select2/3: Must have xinput with form and form_response
     if (!item.xinput.form) {
-      testResults.failed.push(`Item ${item.id}: xinput.form is missing (required for select2/3)`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form is missing (required for select2/3)`
+      );
       return;
     }
 
     if (!item.xinput.form.id) {
       testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
     } else {
-      testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      testResults.passed.push(
+        `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+      );
     }
 
     if (!item.xinput.form_response) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response is missing (required for select2/3)`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response is missing (required for select2/3)`
+      );
       return;
     }
 
     const formResponse = item.xinput.form_response;
     const allowedStatuses = ["SUCCESS", "APPROVED"];
-    
+
     if (!formResponse.status) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.status is missing`
+      );
     } else if (!allowedStatuses.includes(formResponse.status)) {
       testResults.failed.push(
-        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+        `Item ${item.id}: Invalid xinput.form_response.status "${
+          formResponse.status
+        }". Allowed: ${allowedStatuses.join(", ")}`
       );
     } else {
       testResults.passed.push(
@@ -1050,7 +1271,9 @@ function validatePurchaseFinanceSelect(
     }
 
     if (!formResponse.submission_id) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is missing`
+      );
     } else {
       testResults.passed.push(
         `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
@@ -1081,7 +1304,11 @@ function validatePurchaseFinanceInit(
   }
 
   // Validate payments
-  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+  if (
+    !order.payments ||
+    !Array.isArray(order.payments) ||
+    order.payments.length === 0
+  ) {
     testResults.failed.push("Payments array is missing or empty in order");
     return;
   }
@@ -1093,20 +1320,28 @@ function validatePurchaseFinanceInit(
       return;
     }
 
-    const bapTerms = payment.tags.find((tag: any) => tag.descriptor?.code === "BAP_TERMS");
+    const bapTerms = payment.tags.find(
+      (tag: any) => tag.descriptor?.code === "BAP_TERMS"
+    );
     if (!bapTerms) {
-      testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS tag is missing`);
+      testResults.failed.push(
+        `Payment ${paymentIndex}: BAP_TERMS tag is missing`
+      );
       return;
     }
 
     if (!bapTerms.list || !Array.isArray(bapTerms.list)) {
-      testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS list is missing or invalid`);
+      testResults.failed.push(
+        `Payment ${paymentIndex}: BAP_TERMS list is missing or invalid`
+      );
       return;
     }
 
     // Helper function to get value by code
     const getValue = (code: string): string | undefined => {
-      const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+      const item = bapTerms.list.find(
+        (item: any) => item.descriptor?.code === code
+      );
       return item?.value;
     };
 
@@ -1118,28 +1353,41 @@ function validatePurchaseFinanceInit(
       "SETTLEMENT_TYPE",
       "DELAY_INTEREST",
       "STATIC_TERMS",
-      "OFFLINE_CONTRACT"
+      "OFFLINE_CONTRACT",
     ];
 
     requiredFields.forEach((fieldCode) => {
       const value = getValue(fieldCode);
       if (!value) {
-        testResults.failed.push(`Payment ${paymentIndex}: ${fieldCode} is missing in BAP_TERMS`);
+        testResults.failed.push(
+          `Payment ${paymentIndex}: ${fieldCode} is missing in BAP_TERMS`
+        );
       } else {
-        testResults.passed.push(`Payment ${paymentIndex}: ${fieldCode} is present: ${value}`);
+        testResults.passed.push(
+          `Payment ${paymentIndex}: ${fieldCode} is present: ${value}`
+        );
       }
     });
 
     // Validate SETTLEMENT_TYPE
     const settlementType = getValue("SETTLEMENT_TYPE");
-    if (settlementType && !["neft", "rtgs", "upi", "imps"].includes(settlementType.toLowerCase())) {
+    if (
+      settlementType &&
+      !["neft", "rtgs", "upi", "imps"].includes(settlementType.toLowerCase())
+    ) {
       testResults.failed.push(
         `Payment ${paymentIndex}: Invalid SETTLEMENT_TYPE "${settlementType}". Should be one of: neft, rtgs, upi, imps`
       );
     }
 
     // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS
-    validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
+    validateSettlementAmount(
+      payment,
+      paymentIndex,
+      order,
+      testResults,
+      "BAP_TERMS"
+    );
 
     // Validate payment types
     const validPaymentTypes = ["ON_ORDER", "PRE_ORDER", "POST_FULFILLMENT"];
@@ -1147,31 +1395,49 @@ function validatePurchaseFinanceInit(
       testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
     } else if (!validPaymentTypes.includes(payment.type)) {
       testResults.failed.push(
-        `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+        `Payment ${paymentIndex}: Invalid payment type "${
+          payment.type
+        }". Allowed: ${validPaymentTypes.join(", ")}`
       );
     } else {
-      testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+      testResults.passed.push(
+        `Payment ${paymentIndex}: Valid payment type: ${payment.type}`
+      );
     }
 
     // Validate PRE_ORDER payment has params
     if (payment.type === "PRE_ORDER") {
       if (!payment.params) {
-        testResults.failed.push(`Payment ${paymentIndex}: params is missing for PRE_ORDER payment`);
+        testResults.failed.push(
+          `Payment ${paymentIndex}: params is missing for PRE_ORDER payment`
+        );
       } else {
         if (!payment.params.amount) {
-          testResults.failed.push(`Payment ${paymentIndex}: params.amount is missing for PRE_ORDER payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: params.amount is missing for PRE_ORDER payment`
+          );
         } else {
-          testResults.passed.push(`Payment ${paymentIndex}: params.amount is present: ${payment.params.amount}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: params.amount is present: ${payment.params.amount}`
+          );
         }
         if (!payment.params.currency) {
-          testResults.failed.push(`Payment ${paymentIndex}: params.currency is missing for PRE_ORDER payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: params.currency is missing for PRE_ORDER payment`
+          );
         } else {
-          testResults.passed.push(`Payment ${paymentIndex}: params.currency is present: ${payment.params.currency}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: params.currency is present: ${payment.params.currency}`
+          );
         }
         if (payment.status === "PAID" && !payment.params.transaction_id) {
-          testResults.failed.push(`Payment ${paymentIndex}: params.transaction_id is missing for PAID PRE_ORDER payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: params.transaction_id is missing for PAID PRE_ORDER payment`
+          );
         } else if (payment.params.transaction_id) {
-          testResults.passed.push(`Payment ${paymentIndex}: params.transaction_id is present: ${payment.params.transaction_id}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: params.transaction_id is present: ${payment.params.transaction_id}`
+          );
         }
       }
     }
@@ -1187,35 +1453,47 @@ function validatePurchaseFinanceInit(
     // Check if this is init1 (no xinput) or init2/3 (has xinput with form_response)
     if (!item.xinput) {
       // init1: Basic init - no xinput required
-      testResults.passed.push(`Item ${item.id}: Basic init validated (xinput not required for init1)`);
+      testResults.passed.push(
+        `Item ${item.id}: Basic init validated (xinput not required for init1)`
+      );
       return;
     }
 
     // init2/3: Must have xinput with form and form_response
     if (!item.xinput.form) {
-      testResults.failed.push(`Item ${item.id}: xinput.form is missing (required for init2/3)`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form is missing (required for init2/3)`
+      );
       return;
     }
 
     if (!item.xinput.form.id) {
       testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
     } else {
-      testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+      testResults.passed.push(
+        `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+      );
     }
 
     if (!item.xinput.form_response) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response is missing (required for init2/3)`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response is missing (required for init2/3)`
+      );
       return;
     }
 
     const formResponse = item.xinput.form_response;
     const allowedStatuses = ["SUCCESS", "APPROVED"];
-    
+
     if (!formResponse.status) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.status is missing`
+      );
     } else if (!allowedStatuses.includes(formResponse.status)) {
       testResults.failed.push(
-        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+        `Item ${item.id}: Invalid xinput.form_response.status "${
+          formResponse.status
+        }". Allowed: ${allowedStatuses.join(", ")}`
       );
     } else {
       testResults.passed.push(
@@ -1224,7 +1502,9 @@ function validatePurchaseFinanceInit(
     }
 
     if (!formResponse.submission_id) {
-      testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput.form_response.submission_id is missing`
+      );
     } else {
       testResults.passed.push(
         `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
@@ -1263,11 +1543,15 @@ function validatePurchaseFinanceOnInit(
     if (!item.xinput) {
       // Skip xinput validation if item has parent_item_id (it's a child item)
       if (item.parent_item_id) {
-        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`
+        );
         return;
       }
-      
-      testResults.failed.push(`Item ${item.id}: xinput is missing in on_init response`);
+
+      testResults.failed.push(
+        `Item ${item.id}: xinput is missing in on_init response`
+      );
       return;
     }
 
@@ -1280,12 +1564,16 @@ function validatePurchaseFinanceOnInit(
       // on_init3: Has form_response - validate it
       const formResponse = item.xinput.form_response;
       const allowedStatuses = ["SUCCESS", "APPROVED"];
-      
+
       if (!formResponse.status) {
-        testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form_response.status is missing`
+        );
       } else if (!allowedStatuses.includes(formResponse.status)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+          `Item ${item.id}: Invalid xinput.form_response.status "${
+            formResponse.status
+          }". Allowed: ${allowedStatuses.join(", ")}`
         );
       } else {
         testResults.passed.push(
@@ -1294,7 +1582,9 @@ function validatePurchaseFinanceOnInit(
       }
 
       if (!formResponse.submission_id) {
-        testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form_response.submission_id is missing`
+        );
       } else {
         testResults.passed.push(
           `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
@@ -1303,15 +1593,25 @@ function validatePurchaseFinanceOnInit(
 
       // Validate form.id is present
       if (!item.xinput.form || !item.xinput.form.id) {
-        testResults.failed.push(`Item ${item.id}: xinput.form.id is missing (required for on_init3)`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form.id is missing (required for on_init3)`
+        );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+        );
       }
 
       // Validate CHECKLISTS tag if present
       if (item.tags && Array.isArray(item.tags)) {
-        const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
-        if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+        const checklistsTag = item.tags.find(
+          (tag: any) => tag.descriptor?.code === "CHECKLISTS"
+        );
+        if (
+          checklistsTag &&
+          checklistsTag.list &&
+          Array.isArray(checklistsTag.list)
+        ) {
           const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
           checklistsTag.list.forEach((checklistItem: any) => {
             const code = checklistItem.descriptor?.code;
@@ -1319,10 +1619,16 @@ function validatePurchaseFinanceOnInit(
             if (code && value) {
               if (!allowedChecklistStatuses.includes(value)) {
                 testResults.failed.push(
-                  `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                  `Item ${
+                    item.id
+                  }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
+                    ", "
+                  )}`
                 );
               } else {
-                testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+                testResults.passed.push(
+                  `Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`
+                );
               }
             }
           });
@@ -1334,7 +1640,9 @@ function validatePurchaseFinanceOnInit(
       if (!item.xinput.form.id) {
         testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+        );
       }
 
       if (!item.xinput.form.url) {
@@ -1343,39 +1651,63 @@ function validatePurchaseFinanceOnInit(
         try {
           const url = new URL(item.xinput.form.url);
           if (url.protocol !== "http:" && url.protocol !== "https:") {
-            testResults.failed.push(`Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`);
+            testResults.failed.push(
+              `Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`
+            );
           } else {
-            testResults.passed.push(`Item ${item.id}: xinput.form.url is a valid URL`);
+            testResults.passed.push(
+              `Item ${item.id}: xinput.form.url is a valid URL`
+            );
           }
         } catch (error) {
-          testResults.failed.push(`Item ${item.id}: xinput.form.url is not a valid URL`);
+          testResults.failed.push(
+            `Item ${item.id}: xinput.form.url is not a valid URL`
+          );
         }
       }
 
       const validMimeTypes = ["text/html", "application/html"];
       if (!item.xinput.form.mime_type) {
-        testResults.failed.push(`Item ${item.id}: xinput.form.mime_type is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form.mime_type is missing`
+        );
       } else if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form.mime_type "${item.xinput.form.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+          `Item ${item.id}: Invalid xinput.form.mime_type "${
+            item.xinput.form.mime_type
+          }". Allowed: ${validMimeTypes.join(", ")}`
         );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.mime_type is valid: "${item.xinput.form.mime_type}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.mime_type is valid: "${item.xinput.form.mime_type}"`
+        );
       }
 
       // Validate xinput.head
       if (!item.xinput.head.descriptor || !item.xinput.head.descriptor.name) {
-        testResults.failed.push(`Item ${item.id}: xinput.head.descriptor.name is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.head.descriptor.name is missing`
+        );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`
+        );
       }
 
       if (!item.xinput.head.index) {
-        testResults.failed.push(`Item ${item.id}: xinput.head.index is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.head.index is missing`
+        );
       } else {
         const index = item.xinput.head.index;
-        if (typeof index.min !== "number" || typeof index.cur !== "number" || typeof index.max !== "number") {
-          testResults.failed.push(`Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`);
+        if (
+          typeof index.min !== "number" ||
+          typeof index.cur !== "number" ||
+          typeof index.max !== "number"
+        ) {
+          testResults.failed.push(
+            `Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`
+          );
         } else {
           if (index.cur < index.min || index.cur > index.max) {
             testResults.failed.push(
@@ -1389,8 +1721,14 @@ function validatePurchaseFinanceOnInit(
         }
       }
 
-      if (!item.xinput.head.headings || !Array.isArray(item.xinput.head.headings) || item.xinput.head.headings.length === 0) {
-        testResults.failed.push(`Item ${item.id}: xinput.head.headings is missing or empty`);
+      if (
+        !item.xinput.head.headings ||
+        !Array.isArray(item.xinput.head.headings) ||
+        item.xinput.head.headings.length === 0
+      ) {
+        testResults.failed.push(
+          `Item ${item.id}: xinput.head.headings is missing or empty`
+        );
       } else {
         const allowedHeadings = [
           "SET_DOWN_PAYMENT",
@@ -1398,29 +1736,45 @@ function validatePurchaseFinanceOnInit(
           "EMANDATE",
           "ESIGN",
           "MERCHANT_AND_PRDOUCT_DEATILS",
-          "PERSONAL_INFORMATION"
+          "PERSONAL_INFORMATION",
         ];
         item.xinput.head.headings.forEach((heading: string) => {
           if (!allowedHeadings.includes(heading)) {
             testResults.failed.push(
-              `Item ${item.id}: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(", ")}`
+              `Item ${
+                item.id
+              }: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(
+                ", "
+              )}`
             );
           } else {
-            testResults.passed.push(`Item ${item.id}: Valid heading "${heading}"`);
+            testResults.passed.push(
+              `Item ${item.id}: Valid heading "${heading}"`
+            );
           }
         });
       }
 
       if (item.xinput.required !== true && item.xinput.required !== false) {
-        testResults.failed.push(`Item ${item.id}: xinput.required should be a boolean`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.required should be a boolean`
+        );
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.required is present: ${item.xinput.required}`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.required is present: ${item.xinput.required}`
+        );
       }
 
       // Validate CHECKLISTS tag if present
       if (item.tags && Array.isArray(item.tags)) {
-        const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
-        if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+        const checklistsTag = item.tags.find(
+          (tag: any) => tag.descriptor?.code === "CHECKLISTS"
+        );
+        if (
+          checklistsTag &&
+          checklistsTag.list &&
+          Array.isArray(checklistsTag.list)
+        ) {
           const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
           checklistsTag.list.forEach((checklistItem: any) => {
             const code = checklistItem.descriptor?.code;
@@ -1428,49 +1782,79 @@ function validatePurchaseFinanceOnInit(
             if (code && value) {
               if (!allowedChecklistStatuses.includes(value)) {
                 testResults.failed.push(
-                  `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                  `Item ${
+                    item.id
+                  }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
+                    ", "
+                  )}`
                 );
               } else {
-                testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+                testResults.passed.push(
+                  `Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`
+                );
               }
             }
           });
         }
       }
     } else {
-      testResults.failed.push(`Item ${item.id}: xinput must have either (head and form) or form_response`);
+      testResults.failed.push(
+        `Item ${item.id}: xinput must have either (head and form) or form_response`
+      );
     }
   });
 
   // Validate fulfillments
-  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+  if (
+    !order.fulfillments ||
+    !Array.isArray(order.fulfillments) ||
+    order.fulfillments.length === 0
+  ) {
     testResults.failed.push("Fulfillments array is missing or empty in order");
   } else {
     order.fulfillments.forEach((fulfillment: any, index: number) => {
       if (!fulfillment.id) {
         testResults.failed.push(`Fulfillment ${index}: id is missing`);
       } else {
-        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: id is present: ${fulfillment.id}`
+        );
       }
 
       if (!fulfillment.type) {
         testResults.failed.push(`Fulfillment ${index}: type is missing`);
       } else if (fulfillment.type !== "LOAN") {
-        testResults.failed.push(`Fulfillment ${index}: type should be "LOAN" for purchase finance`);
+        testResults.failed.push(
+          `Fulfillment ${index}: type should be "LOAN" for purchase finance`
+        );
       } else {
-        testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: type is valid: ${fulfillment.type}`
+        );
       }
 
-      if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
-        testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+      if (
+        !fulfillment.state ||
+        !fulfillment.state.descriptor ||
+        !fulfillment.state.descriptor.code
+      ) {
+        testResults.failed.push(
+          `Fulfillment ${index}: state.descriptor.code is missing`
+        );
       } else {
-        testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is present: ${fulfillment.state.descriptor.code}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: state.descriptor.code is present: ${fulfillment.state.descriptor.code}`
+        );
       }
     });
   }
 
   // Validate payments
-  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+  if (
+    !order.payments ||
+    !Array.isArray(order.payments) ||
+    order.payments.length === 0
+  ) {
     testResults.failed.push("Payments array is missing or empty in order");
   } else {
     order.payments.forEach((payment: any, paymentIndex: number) => {
@@ -1479,37 +1863,67 @@ function validatePurchaseFinanceOnInit(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+          `Payment ${paymentIndex}: Invalid payment type "${
+            payment.type
+          }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
-        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+        testResults.passed.push(
+          `Payment ${paymentIndex}: Valid payment type: ${payment.type}`
+        );
       }
 
       // Validate POST_FULFILLMENT payments have BREAKUP tag
       if (payment.type === "POST_FULFILLMENT") {
         if (!payment.tags || !Array.isArray(payment.tags)) {
-          testResults.failed.push(`Payment ${paymentIndex}: tags array is missing for POST_FULFILLMENT payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: tags array is missing for POST_FULFILLMENT payment`
+          );
         } else {
-          const breakupTag = payment.tags.find((tag: any) => tag.descriptor?.code === "BREAKUP");
+          const breakupTag = payment.tags.find(
+            (tag: any) => tag.descriptor?.code === "BREAKUP"
+          );
           if (!breakupTag) {
-            testResults.failed.push(`Payment ${paymentIndex}: BREAKUP tag is missing for POST_FULFILLMENT payment`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: BREAKUP tag is missing for POST_FULFILLMENT payment`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: BREAKUP tag is present`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: BREAKUP tag is present`
+            );
           }
 
           if (!payment.time || !payment.time.label) {
-            testResults.failed.push(`Payment ${paymentIndex}: time.label is missing for POST_FULFILLMENT payment`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: time.label is missing for POST_FULFILLMENT payment`
+            );
           } else if (payment.time.label !== "INSTALLMENT") {
-            testResults.failed.push(`Payment ${paymentIndex}: time.label should be "INSTALLMENT" for POST_FULFILLMENT payment`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: time.label should be "INSTALLMENT" for POST_FULFILLMENT payment`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`
+            );
           }
         }
       }
 
       // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
-      validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
-      validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
+      validateSettlementAmount(
+        payment,
+        paymentIndex,
+        order,
+        testResults,
+        "BAP_TERMS"
+      );
+      validateSettlementAmount(
+        payment,
+        paymentIndex,
+        order,
+        testResults,
+        "BPP_TERMS"
+      );
     });
   }
 
@@ -1523,16 +1937,28 @@ function validatePurchaseFinanceOnInit(
       testResults.passed.push(`Quote id is present: ${order.quote.id}`);
     }
 
-    if (!order.quote.price || !order.quote.price.value || !order.quote.price.currency) {
+    if (
+      !order.quote.price ||
+      !order.quote.price.value ||
+      !order.quote.price.currency
+    ) {
       testResults.failed.push("Quote price.value or price.currency is missing");
     } else {
-      testResults.passed.push(`Quote price is present: ${order.quote.price.value} ${order.quote.price.currency}`);
+      testResults.passed.push(
+        `Quote price is present: ${order.quote.price.value} ${order.quote.price.currency}`
+      );
     }
 
-    if (!order.quote.breakup || !Array.isArray(order.quote.breakup) || order.quote.breakup.length === 0) {
+    if (
+      !order.quote.breakup ||
+      !Array.isArray(order.quote.breakup) ||
+      order.quote.breakup.length === 0
+    ) {
       testResults.failed.push("Quote breakup array is missing or empty");
     } else {
-      testResults.passed.push(`Quote breakup array has ${order.quote.breakup.length} items`);
+      testResults.passed.push(
+        `Quote breakup array has ${order.quote.breakup.length} items`
+      );
     }
   }
 }
@@ -1559,7 +1985,11 @@ function validatePurchaseFinanceConfirm(
   }
 
   // Validate payments
-  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+  if (
+    !order.payments ||
+    !Array.isArray(order.payments) ||
+    order.payments.length === 0
+  ) {
     testResults.failed.push("Payments array is missing or empty in order");
     return;
   }
@@ -1572,14 +2002,20 @@ function validatePurchaseFinanceConfirm(
     }
 
     // Validate BAP_TERMS tag
-    const bapTerms = payment.tags.find((tag: any) => tag.descriptor?.code === "BAP_TERMS");
+    const bapTerms = payment.tags.find(
+      (tag: any) => tag.descriptor?.code === "BAP_TERMS"
+    );
     if (bapTerms) {
       if (!bapTerms.list || !Array.isArray(bapTerms.list)) {
-        testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS list is missing or invalid`);
+        testResults.failed.push(
+          `Payment ${paymentIndex}: BAP_TERMS list is missing or invalid`
+        );
       } else {
         // Helper function to get value by code
         const getValue = (code: string): string | undefined => {
-          const item = bapTerms.list.find((item: any) => item.descriptor?.code === code);
+          const item = bapTerms.list.find(
+            (item: any) => item.descriptor?.code === code
+          );
           return item?.value;
         };
 
@@ -1591,32 +2027,48 @@ function validatePurchaseFinanceConfirm(
           "SETTLEMENT_TYPE",
           "DELAY_INTEREST",
           "STATIC_TERMS",
-          "OFFLINE_CONTRACT"
+          "OFFLINE_CONTRACT",
         ];
 
         requiredFields.forEach((fieldCode) => {
           const value = getValue(fieldCode);
           if (!value) {
-            testResults.failed.push(`Payment ${paymentIndex}: BAP_TERMS.${fieldCode} is missing`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: BAP_TERMS.${fieldCode} is missing`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: BAP_TERMS.${fieldCode} is present: ${value}`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: BAP_TERMS.${fieldCode} is present: ${value}`
+            );
           }
         });
 
         // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS
-        validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
+        validateSettlementAmount(
+          payment,
+          paymentIndex,
+          order,
+          testResults,
+          "BAP_TERMS"
+        );
       }
     }
 
     // Validate BPP_TERMS tag
-    const bppTerms = payment.tags.find((tag: any) => tag.descriptor?.code === "BPP_TERMS");
+    const bppTerms = payment.tags.find(
+      (tag: any) => tag.descriptor?.code === "BPP_TERMS"
+    );
     if (bppTerms) {
       if (!bppTerms.list || !Array.isArray(bppTerms.list)) {
-        testResults.failed.push(`Payment ${paymentIndex}: BPP_TERMS list is missing or invalid`);
+        testResults.failed.push(
+          `Payment ${paymentIndex}: BPP_TERMS list is missing or invalid`
+        );
       } else {
         // Helper function to get value by code
         const getValue = (code: string): string | undefined => {
-          const item = bppTerms.list.find((item: any) => item.descriptor?.code === code);
+          const item = bppTerms.list.find(
+            (item: any) => item.descriptor?.code === code
+          );
           return item?.value;
         };
 
@@ -1630,20 +2082,30 @@ function validatePurchaseFinanceConfirm(
           "COURT_JURISDICTION",
           "STATIC_TERMS",
           "SETTLEMENT_AMOUNT",
-          "OFFLINE_CONTRACT"
+          "OFFLINE_CONTRACT",
         ];
 
         requiredFields.forEach((fieldCode) => {
           const value = getValue(fieldCode);
           if (!value) {
-            testResults.failed.push(`Payment ${paymentIndex}: BPP_TERMS.${fieldCode} is missing`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: BPP_TERMS.${fieldCode} is missing`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: BPP_TERMS.${fieldCode} is present: ${value}`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: BPP_TERMS.${fieldCode} is present: ${value}`
+            );
           }
         });
 
         // Validate SETTLEMENT_AMOUNT calculation for BPP_TERMS
-        validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
+        validateSettlementAmount(
+          payment,
+          paymentIndex,
+          order,
+          testResults,
+          "BPP_TERMS"
+        );
       }
     }
 
@@ -1653,31 +2115,49 @@ function validatePurchaseFinanceConfirm(
       testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
     } else if (!validPaymentTypes.includes(payment.type)) {
       testResults.failed.push(
-        `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+        `Payment ${paymentIndex}: Invalid payment type "${
+          payment.type
+        }". Allowed: ${validPaymentTypes.join(", ")}`
       );
     } else {
-      testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+      testResults.passed.push(
+        `Payment ${paymentIndex}: Valid payment type: ${payment.type}`
+      );
     }
 
     // Validate PRE_ORDER payment has params
     if (payment.type === "PRE_ORDER") {
       if (!payment.params) {
-        testResults.failed.push(`Payment ${paymentIndex}: params is missing for PRE_ORDER payment`);
+        testResults.failed.push(
+          `Payment ${paymentIndex}: params is missing for PRE_ORDER payment`
+        );
       } else {
         if (!payment.params.amount) {
-          testResults.failed.push(`Payment ${paymentIndex}: params.amount is missing for PRE_ORDER payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: params.amount is missing for PRE_ORDER payment`
+          );
         } else {
-          testResults.passed.push(`Payment ${paymentIndex}: params.amount is present: ${payment.params.amount}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: params.amount is present: ${payment.params.amount}`
+          );
         }
         if (!payment.params.currency) {
-          testResults.failed.push(`Payment ${paymentIndex}: params.currency is missing for PRE_ORDER payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: params.currency is missing for PRE_ORDER payment`
+          );
         } else {
-          testResults.passed.push(`Payment ${paymentIndex}: params.currency is present: ${payment.params.currency}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: params.currency is present: ${payment.params.currency}`
+          );
         }
         if (payment.status === "PAID" && !payment.params.transaction_id) {
-          testResults.failed.push(`Payment ${paymentIndex}: params.transaction_id is missing for PAID PRE_ORDER payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: params.transaction_id is missing for PAID PRE_ORDER payment`
+          );
         } else if (payment.params.transaction_id) {
-          testResults.passed.push(`Payment ${paymentIndex}: params.transaction_id is present: ${payment.params.transaction_id}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: params.transaction_id is present: ${payment.params.transaction_id}`
+          );
         }
       }
     }
@@ -1722,7 +2202,9 @@ function validatePurchaseFinanceOnCancel(
     const validStatuses = ["SOFT_CANCEL", "CANCELLED"];
     if (!validStatuses.includes(order.status)) {
       testResults.failed.push(
-        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(", ")}`
+        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(
+          ", "
+        )}`
       );
     } else {
       testResults.passed.push(`Order status is valid: ${order.status}`);
@@ -1743,8 +2225,14 @@ function validatePurchaseFinanceOnCancel(
 
     // Validate CHECKLISTS tag if present
     if (item.tags && Array.isArray(item.tags)) {
-      const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
-      if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+      const checklistsTag = item.tags.find(
+        (tag: any) => tag.descriptor?.code === "CHECKLISTS"
+      );
+      if (
+        checklistsTag &&
+        checklistsTag.list &&
+        Array.isArray(checklistsTag.list)
+      ) {
         const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
         checklistsTag.list.forEach((checklistItem: any) => {
           const code = checklistItem.descriptor?.code;
@@ -1752,10 +2240,16 @@ function validatePurchaseFinanceOnCancel(
           if (code && value) {
             if (!allowedChecklistStatuses.includes(value)) {
               testResults.failed.push(
-                `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                `Item ${
+                  item.id
+                }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
+                  ", "
+                )}`
               );
             } else {
-              testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+              testResults.passed.push(
+                `Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`
+              );
             }
           }
         });
@@ -1764,14 +2258,20 @@ function validatePurchaseFinanceOnCancel(
   });
 
   // Validate fulfillments
-  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+  if (
+    !order.fulfillments ||
+    !Array.isArray(order.fulfillments) ||
+    order.fulfillments.length === 0
+  ) {
     testResults.failed.push("Fulfillments array is missing or empty in order");
   } else {
     order.fulfillments.forEach((fulfillment: any, index: number) => {
       if (!fulfillment.id) {
         testResults.failed.push(`Fulfillment ${index}: id is missing`);
       } else {
-        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: id is present: ${fulfillment.id}`
+        );
       }
 
       if (!fulfillment.type) {
@@ -1780,43 +2280,78 @@ function validatePurchaseFinanceOnCancel(
         const validTypes = ["LOAN", "BASE_ORDER"];
         if (!validTypes.includes(fulfillment.type)) {
           testResults.failed.push(
-            `Fulfillment ${index}: Invalid type "${fulfillment.type}". Allowed: ${validTypes.join(", ")}`
+            `Fulfillment ${index}: Invalid type "${
+              fulfillment.type
+            }". Allowed: ${validTypes.join(", ")}`
           );
         } else {
-          testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+          testResults.passed.push(
+            `Fulfillment ${index}: type is valid: ${fulfillment.type}`
+          );
         }
       }
 
-      if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
-        testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+      if (
+        !fulfillment.state ||
+        !fulfillment.state.descriptor ||
+        !fulfillment.state.descriptor.code
+      ) {
+        testResults.failed.push(
+          `Fulfillment ${index}: state.descriptor.code is missing`
+        );
       } else {
         const stateCode = fulfillment.state.descriptor.code;
-        const validStates = ["DISBURSED", "DELIVERED", "SANCTIONED", "PLACED", "INITIATED", "COMPLETE"];
+        const validStates = [
+          "DISBURSED",
+          "DELIVERED",
+          "SANCTIONED",
+          "PLACED",
+          "INITIATED",
+          "COMPLETE",
+        ];
         if (!validStates.includes(stateCode)) {
           testResults.failed.push(
-            `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(", ")}`
+            `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(
+              ", "
+            )}`
           );
         } else {
-          testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`);
+          testResults.passed.push(
+            `Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`
+          );
         }
 
         // Validate REFERENCE_NUMBER tag when state is DISBURSED
         if (stateCode === "DISBURSED" && fulfillment.type === "LOAN") {
           if (!fulfillment.tags || !Array.isArray(fulfillment.tags)) {
-            testResults.failed.push(`Fulfillment ${index}: tags array is missing (required for DISBURSED LOAN fulfillment)`);
+            testResults.failed.push(
+              `Fulfillment ${index}: tags array is missing (required for DISBURSED LOAN fulfillment)`
+            );
           } else {
-            const infoTag = fulfillment.tags.find((tag: any) => tag.descriptor?.code === "INFO");
+            const infoTag = fulfillment.tags.find(
+              (tag: any) => tag.descriptor?.code === "INFO"
+            );
             if (!infoTag) {
-              testResults.failed.push(`Fulfillment ${index}: INFO tag is missing (required for DISBURSED LOAN fulfillment)`);
+              testResults.failed.push(
+                `Fulfillment ${index}: INFO tag is missing (required for DISBURSED LOAN fulfillment)`
+              );
             } else {
               if (!infoTag.list || !Array.isArray(infoTag.list)) {
-                testResults.failed.push(`Fulfillment ${index}: INFO tag list is missing or invalid`);
+                testResults.failed.push(
+                  `Fulfillment ${index}: INFO tag list is missing or invalid`
+                );
               } else {
-                const referenceNumber = infoTag.list.find((item: any) => item.descriptor?.code === "REFERENCE_NUMBER");
+                const referenceNumber = infoTag.list.find(
+                  (item: any) => item.descriptor?.code === "REFERENCE_NUMBER"
+                );
                 if (!referenceNumber || !referenceNumber.value) {
-                  testResults.failed.push(`Fulfillment ${index}: REFERENCE_NUMBER is missing in INFO tag (required for DISBURSED LOAN fulfillment)`);
+                  testResults.failed.push(
+                    `Fulfillment ${index}: REFERENCE_NUMBER is missing in INFO tag (required for DISBURSED LOAN fulfillment)`
+                  );
                 } else {
-                  testResults.passed.push(`Fulfillment ${index}: REFERENCE_NUMBER is present: ${referenceNumber.value}`);
+                  testResults.passed.push(
+                    `Fulfillment ${index}: REFERENCE_NUMBER is present: ${referenceNumber.value}`
+                  );
                 }
               }
             }
@@ -1827,7 +2362,11 @@ function validatePurchaseFinanceOnCancel(
   }
 
   // Validate payments
-  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+  if (
+    !order.payments ||
+    !Array.isArray(order.payments) ||
+    order.payments.length === 0
+  ) {
     testResults.failed.push("Payments array is missing or empty in order");
   } else {
     order.payments.forEach((payment: any, paymentIndex: number) => {
@@ -1836,42 +2375,66 @@ function validatePurchaseFinanceOnCancel(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+          `Payment ${paymentIndex}: Invalid payment type "${
+            payment.type
+          }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
-        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+        testResults.passed.push(
+          `Payment ${paymentIndex}: Valid payment type: ${payment.type}`
+        );
       }
 
       // Validate POST_FULFILLMENT payments for cancellation refunds
       if (payment.type === "POST_FULFILLMENT") {
-        if (!payment.params || !payment.params.amount || !payment.params.currency) {
-          testResults.failed.push(`Payment ${paymentIndex}: params.amount or params.currency is missing for POST_FULFILLMENT payment`);
+        if (
+          !payment.params ||
+          !payment.params.amount ||
+          !payment.params.currency
+        ) {
+          testResults.failed.push(
+            `Payment ${paymentIndex}: params.amount or params.currency is missing for POST_FULFILLMENT payment`
+          );
         } else {
-          testResults.passed.push(`Payment ${paymentIndex}: params.amount and params.currency are present`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: params.amount and params.currency are present`
+          );
         }
 
         // Validate bank_account_number and bank_code for cancellation refunds
         if (payment.params.bank_account_number) {
-          testResults.passed.push(`Payment ${paymentIndex}: bank_account_number is present: ${payment.params.bank_account_number}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: bank_account_number is present: ${payment.params.bank_account_number}`
+          );
         }
         if (payment.params.bank_code) {
-          testResults.passed.push(`Payment ${paymentIndex}: bank_code is present: ${payment.params.bank_code}`);
+          testResults.passed.push(
+            `Payment ${paymentIndex}: bank_code is present: ${payment.params.bank_code}`
+          );
         }
 
         // Validate BREAKUP tag if present (for installment payments)
         if (payment.tags && Array.isArray(payment.tags)) {
-          const breakupTag = payment.tags.find((tag: any) => tag.descriptor?.code === "BREAKUP");
+          const breakupTag = payment.tags.find(
+            (tag: any) => tag.descriptor?.code === "BREAKUP"
+          );
           if (breakupTag) {
-            testResults.passed.push(`Payment ${paymentIndex}: BREAKUP tag is present`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: BREAKUP tag is present`
+            );
           }
         }
 
         // Validate time.label if present (for installment payments)
         if (payment.time && payment.time.label) {
           if (payment.time.label === "INSTALLMENT") {
-            testResults.passed.push(`Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: time.label is present: ${payment.time.label}`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: time.label is present: ${payment.time.label}`
+            );
           }
         }
       }
@@ -1879,20 +2442,32 @@ function validatePurchaseFinanceOnCancel(
   }
 
   // Validate documents
-  if (!order.documents || !Array.isArray(order.documents) || order.documents.length === 0) {
-    testResults.failed.push("Documents array is missing or empty in on_cancel response");
+  if (
+    !order.documents ||
+    !Array.isArray(order.documents) ||
+    order.documents.length === 0
+  ) {
+    testResults.failed.push(
+      "Documents array is missing or empty in on_cancel response"
+    );
   } else {
     order.documents.forEach((document: any, index: number) => {
       if (!document.descriptor || !document.descriptor.code) {
-        testResults.failed.push(`Document ${index}: descriptor.code is missing`);
+        testResults.failed.push(
+          `Document ${index}: descriptor.code is missing`
+        );
       } else {
         const validCodes = ["LOAN_AGREEMENT", "LOAN_CANCELLATION"];
         if (!validCodes.includes(document.descriptor.code)) {
           testResults.failed.push(
-            `Document ${index}: Invalid descriptor.code "${document.descriptor.code}". Allowed: ${validCodes.join(", ")}`
+            `Document ${index}: Invalid descriptor.code "${
+              document.descriptor.code
+            }". Allowed: ${validCodes.join(", ")}`
           );
         } else {
-          testResults.passed.push(`Document ${index}: descriptor.code is valid: ${document.descriptor.code}`);
+          testResults.passed.push(
+            `Document ${index}: descriptor.code is valid: ${document.descriptor.code}`
+          );
         }
       }
 
@@ -1902,7 +2477,9 @@ function validatePurchaseFinanceOnCancel(
         try {
           const url = new URL(document.url);
           if (url.protocol !== "http:" && url.protocol !== "https:") {
-            testResults.failed.push(`Document ${index}: url should be a valid HTTP/HTTPS URL`);
+            testResults.failed.push(
+              `Document ${index}: url should be a valid HTTP/HTTPS URL`
+            );
           } else {
             testResults.passed.push(`Document ${index}: url is a valid URL`);
           }
@@ -1917,10 +2494,14 @@ function validatePurchaseFinanceOnCancel(
         const validMimeTypes = ["application/pdf", "application/json"];
         if (!validMimeTypes.includes(document.mime_type)) {
           testResults.failed.push(
-            `Document ${index}: Invalid mime_type "${document.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+            `Document ${index}: Invalid mime_type "${
+              document.mime_type
+            }". Allowed: ${validMimeTypes.join(", ")}`
           );
         } else {
-          testResults.passed.push(`Document ${index}: mime_type is valid: ${document.mime_type}`);
+          testResults.passed.push(
+            `Document ${index}: mime_type is valid: ${document.mime_type}`
+          );
         }
       }
     });
@@ -1928,15 +2509,23 @@ function validatePurchaseFinanceOnCancel(
 
   // Validate timestamps
   if (!order.created_at) {
-    testResults.failed.push("Order created_at timestamp is missing in on_cancel response");
+    testResults.failed.push(
+      "Order created_at timestamp is missing in on_cancel response"
+    );
   } else {
-    testResults.passed.push(`Order created_at timestamp is present: ${order.created_at}`);
+    testResults.passed.push(
+      `Order created_at timestamp is present: ${order.created_at}`
+    );
   }
 
   if (!order.updated_at) {
-    testResults.failed.push("Order updated_at timestamp is missing in on_cancel response");
+    testResults.failed.push(
+      "Order updated_at timestamp is missing in on_cancel response"
+    );
   } else {
-    testResults.passed.push(`Order updated_at timestamp is present: ${order.updated_at}`);
+    testResults.passed.push(
+      `Order updated_at timestamp is present: ${order.updated_at}`
+    );
   }
 }
 
@@ -1972,12 +2561,16 @@ function validatePurchaseFinanceOnStatus(
     if (item.xinput && item.xinput.form_response) {
       const formResponse = item.xinput.form_response;
       const allowedStatuses = ["SUCCESS", "APPROVED"];
-      
+
       if (!formResponse.status) {
-        testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form_response.status is missing`
+        );
       } else if (!allowedStatuses.includes(formResponse.status)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+          `Item ${item.id}: Invalid xinput.form_response.status "${
+            formResponse.status
+          }". Allowed: ${allowedStatuses.join(", ")}`
         );
       } else {
         testResults.passed.push(
@@ -1986,7 +2579,9 @@ function validatePurchaseFinanceOnStatus(
       }
 
       if (!formResponse.submission_id) {
-        testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form_response.submission_id is missing`
+        );
       } else {
         testResults.passed.push(
           `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
@@ -1997,14 +2592,22 @@ function validatePurchaseFinanceOnStatus(
       if (!item.xinput.form || !item.xinput.form.id) {
         testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+        );
       }
     }
 
     // Validate CHECKLISTS tag if present
     if (item.tags && Array.isArray(item.tags)) {
-      const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
-      if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+      const checklistsTag = item.tags.find(
+        (tag: any) => tag.descriptor?.code === "CHECKLISTS"
+      );
+      if (
+        checklistsTag &&
+        checklistsTag.list &&
+        Array.isArray(checklistsTag.list)
+      ) {
         const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
         checklistsTag.list.forEach((checklistItem: any) => {
           const code = checklistItem.descriptor?.code;
@@ -2012,10 +2615,16 @@ function validatePurchaseFinanceOnStatus(
           if (code && value) {
             if (!allowedChecklistStatuses.includes(value)) {
               testResults.failed.push(
-                `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                `Item ${
+                  item.id
+                }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
+                  ", "
+                )}`
               );
             } else {
-              testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+              testResults.passed.push(
+                `Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`
+              );
             }
           }
         });
@@ -2033,16 +2642,28 @@ function validatePurchaseFinanceOnStatus(
       testResults.passed.push(`Quote id is present: ${order.quote.id}`);
     }
 
-    if (!order.quote.price || !order.quote.price.value || !order.quote.price.currency) {
+    if (
+      !order.quote.price ||
+      !order.quote.price.value ||
+      !order.quote.price.currency
+    ) {
       testResults.failed.push("Quote price.value or price.currency is missing");
     } else {
-      testResults.passed.push(`Quote price is present: ${order.quote.price.value} ${order.quote.price.currency}`);
+      testResults.passed.push(
+        `Quote price is present: ${order.quote.price.value} ${order.quote.price.currency}`
+      );
     }
 
-    if (!order.quote.breakup || !Array.isArray(order.quote.breakup) || order.quote.breakup.length === 0) {
+    if (
+      !order.quote.breakup ||
+      !Array.isArray(order.quote.breakup) ||
+      order.quote.breakup.length === 0
+    ) {
       testResults.failed.push("Quote breakup array is missing or empty");
     } else {
-      testResults.passed.push(`Quote breakup array has ${order.quote.breakup.length} items`);
+      testResults.passed.push(
+        `Quote breakup array has ${order.quote.breakup.length} items`
+      );
     }
   }
 }
@@ -2073,10 +2694,12 @@ function validatePurchaseFinanceOnUpdate(
   if (!order.status) {
     testResults.failed.push("Order status is missing in on_update response");
   } else {
-    const validStatuses = ["ACTIVE", "COMPLETE"];
+    const validStatuses = ["ACTIVE", "COMPLETE", "CANCELLED"];
     if (!validStatuses.includes(order.status)) {
       testResults.failed.push(
-        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(", ")}`
+        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(
+          ", "
+        )}`
       );
     } else {
       testResults.passed.push(`Order status is valid: ${order.status}`);
@@ -2084,7 +2707,11 @@ function validatePurchaseFinanceOnUpdate(
   }
 
   // Validate fulfillments
-  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+  if (
+    !order.fulfillments ||
+    !Array.isArray(order.fulfillments) ||
+    order.fulfillments.length === 0
+  ) {
     testResults.failed.push("Fulfillments array is missing or empty in order");
     return;
   }
@@ -2093,7 +2720,9 @@ function validatePurchaseFinanceOnUpdate(
     if (!fulfillment.id) {
       testResults.failed.push(`Fulfillment ${index}: id is missing`);
     } else {
-      testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+      testResults.passed.push(
+        `Fulfillment ${index}: id is present: ${fulfillment.id}`
+      );
     }
 
     if (!fulfillment.type) {
@@ -2102,43 +2731,78 @@ function validatePurchaseFinanceOnUpdate(
       const validTypes = ["LOAN", "BASE_ORDER"];
       if (!validTypes.includes(fulfillment.type)) {
         testResults.failed.push(
-          `Fulfillment ${index}: Invalid type "${fulfillment.type}". Allowed: ${validTypes.join(", ")}`
+          `Fulfillment ${index}: Invalid type "${
+            fulfillment.type
+          }". Allowed: ${validTypes.join(", ")}`
         );
       } else {
-        testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: type is valid: ${fulfillment.type}`
+        );
       }
     }
 
-    if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
-      testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+    if (
+      !fulfillment.state ||
+      !fulfillment.state.descriptor ||
+      !fulfillment.state.descriptor.code
+    ) {
+      testResults.failed.push(
+        `Fulfillment ${index}: state.descriptor.code is missing`
+      );
     } else {
       const stateCode = fulfillment.state.descriptor.code;
-      const validStates = ["SANCTIONED", "DISBURSED", "DELIVERED", "PLACED", "INITIATED", "COMPLETE"];
+      const validStates = [
+        "SANCTIONED",
+        "DISBURSED",
+        "DELIVERED",
+        "PLACED",
+        "INITIATED",
+        "COMPLETE",
+      ];
       if (!validStates.includes(stateCode)) {
         testResults.failed.push(
-          `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(", ")}`
+          `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(
+            ", "
+          )}`
         );
       } else {
-        testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`
+        );
       }
 
       // Validate REFERENCE_NUMBER tag when state is DISBURSED
       if (stateCode === "DISBURSED" && fulfillment.type === "LOAN") {
         if (!fulfillment.tags || !Array.isArray(fulfillment.tags)) {
-          testResults.failed.push(`Fulfillment ${index}: tags array is missing (required for DISBURSED LOAN fulfillment)`);
+          testResults.failed.push(
+            `Fulfillment ${index}: tags array is missing (required for DISBURSED LOAN fulfillment)`
+          );
         } else {
-          const infoTag = fulfillment.tags.find((tag: any) => tag.descriptor?.code === "INFO");
+          const infoTag = fulfillment.tags.find(
+            (tag: any) => tag.descriptor?.code === "INFO"
+          );
           if (!infoTag) {
-            testResults.failed.push(`Fulfillment ${index}: INFO tag is missing (required for DISBURSED LOAN fulfillment)`);
+            testResults.failed.push(
+              `Fulfillment ${index}: INFO tag is missing (required for DISBURSED LOAN fulfillment)`
+            );
           } else {
             if (!infoTag.list || !Array.isArray(infoTag.list)) {
-              testResults.failed.push(`Fulfillment ${index}: INFO tag list is missing or invalid`);
+              testResults.failed.push(
+                `Fulfillment ${index}: INFO tag list is missing or invalid`
+              );
             } else {
-              const referenceNumber = infoTag.list.find((item: any) => item.descriptor?.code === "REFERENCE_NUMBER");
+              const referenceNumber = infoTag.list.find(
+                (item: any) => item.descriptor?.code === "REFERENCE_NUMBER"
+              );
               if (!referenceNumber || !referenceNumber.value) {
-                testResults.failed.push(`Fulfillment ${index}: REFERENCE_NUMBER is missing in INFO tag (required for DISBURSED LOAN fulfillment)`);
+                testResults.failed.push(
+                  `Fulfillment ${index}: REFERENCE_NUMBER is missing in INFO tag (required for DISBURSED LOAN fulfillment)`
+                );
               } else {
-                testResults.passed.push(`Fulfillment ${index}: REFERENCE_NUMBER is present: ${referenceNumber.value}`);
+                testResults.passed.push(
+                  `Fulfillment ${index}: REFERENCE_NUMBER is present: ${referenceNumber.value}`
+                );
               }
             }
           }
@@ -2147,21 +2811,34 @@ function validatePurchaseFinanceOnUpdate(
     }
 
     // Validate customer creds if present (for BASE_ORDER fulfillments)
-    if (fulfillment.type === "BASE_ORDER" && fulfillment.customer?.person?.creds) {
+    if (
+      fulfillment.type === "BASE_ORDER" &&
+      fulfillment.customer?.person?.creds
+    ) {
       const creds = fulfillment.customer.person.creds;
       if (!Array.isArray(creds) || creds.length === 0) {
-        testResults.failed.push(`Fulfillment ${index}: customer.person.creds should be a non-empty array`);
+        testResults.failed.push(
+          `Fulfillment ${index}: customer.person.creds should be a non-empty array`
+        );
       } else {
         creds.forEach((cred: any, credIndex: number) => {
           if (!cred.type) {
-            testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].type is missing`);
+            testResults.failed.push(
+              `Fulfillment ${index}: creds[${credIndex}].type is missing`
+            );
           } else {
-            testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].type is present: ${cred.type}`);
+            testResults.passed.push(
+              `Fulfillment ${index}: creds[${credIndex}].type is present: ${cred.type}`
+            );
           }
           if (!cred.id) {
-            testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].id is missing`);
+            testResults.failed.push(
+              `Fulfillment ${index}: creds[${credIndex}].id is missing`
+            );
           } else {
-            testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].id is present: ${cred.id}`);
+            testResults.passed.push(
+              `Fulfillment ${index}: creds[${credIndex}].id is present: ${cred.id}`
+            );
           }
         });
       }
@@ -2169,7 +2846,11 @@ function validatePurchaseFinanceOnUpdate(
   });
 
   // Validate payments
-  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+  if (
+    !order.payments ||
+    !Array.isArray(order.payments) ||
+    order.payments.length === 0
+  ) {
     testResults.failed.push("Payments array is missing or empty in order");
   } else {
     order.payments.forEach((payment: any, paymentIndex: number) => {
@@ -2178,23 +2859,43 @@ function validatePurchaseFinanceOnUpdate(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+          `Payment ${paymentIndex}: Invalid payment type "${
+            payment.type
+          }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
-        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+        testResults.passed.push(
+          `Payment ${paymentIndex}: Valid payment type: ${payment.type}`
+        );
       }
 
       // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
-      validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
-      validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
+      validateSettlementAmount(
+        payment,
+        paymentIndex,
+        order,
+        testResults,
+        "BAP_TERMS"
+      );
+      validateSettlementAmount(
+        payment,
+        paymentIndex,
+        order,
+        testResults,
+        "BPP_TERMS"
+      );
     });
   }
 
   // Validate updated_at timestamp
   if (!order.updated_at) {
-    testResults.failed.push("Order updated_at timestamp is missing in on_update response");
+    testResults.failed.push(
+      "Order updated_at timestamp is missing in on_update response"
+    );
   } else {
-    testResults.passed.push(`Order updated_at timestamp is present: ${order.updated_at}`);
+    testResults.passed.push(
+      `Order updated_at timestamp is present: ${order.updated_at}`
+    );
   }
 }
 
@@ -2224,10 +2925,12 @@ function validatePurchaseFinanceOnConfirm(
   if (!order.status) {
     testResults.failed.push("Order status is missing in on_confirm response");
   } else {
-    const validStatuses = ["ACTIVE", "COMPLETE"];
+    const validStatuses = ["ACTIVE", "COMPLETE", "CANCELLED"];
     if (!validStatuses.includes(order.status)) {
       testResults.failed.push(
-        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(", ")}`
+        `Invalid order status "${order.status}". Allowed: ${validStatuses.join(
+          ", "
+        )}`
       );
     } else {
       testResults.passed.push(`Order status is valid: ${order.status}`);
@@ -2248,8 +2951,14 @@ function validatePurchaseFinanceOnConfirm(
 
     // Validate CHECKLISTS tag if present
     if (item.tags && Array.isArray(item.tags)) {
-      const checklistsTag = item.tags.find((tag: any) => tag.descriptor?.code === "CHECKLISTS");
-      if (checklistsTag && checklistsTag.list && Array.isArray(checklistsTag.list)) {
+      const checklistsTag = item.tags.find(
+        (tag: any) => tag.descriptor?.code === "CHECKLISTS"
+      );
+      if (
+        checklistsTag &&
+        checklistsTag.list &&
+        Array.isArray(checklistsTag.list)
+      ) {
         const allowedChecklistStatuses = ["PENDING", "COMPLETED"];
         checklistsTag.list.forEach((checklistItem: any) => {
           const code = checklistItem.descriptor?.code;
@@ -2257,10 +2966,16 @@ function validatePurchaseFinanceOnConfirm(
           if (code && value) {
             if (!allowedChecklistStatuses.includes(value)) {
               testResults.failed.push(
-                `Item ${item.id}: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(", ")}`
+                `Item ${
+                  item.id
+                }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
+                  ", "
+                )}`
               );
             } else {
-              testResults.passed.push(`Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`);
+              testResults.passed.push(
+                `Item ${item.id}: CHECKLISTS.${code} status is valid: "${value}"`
+              );
             }
           }
         });
@@ -2269,14 +2984,20 @@ function validatePurchaseFinanceOnConfirm(
   });
 
   // Validate fulfillments
-  if (!order.fulfillments || !Array.isArray(order.fulfillments) || order.fulfillments.length === 0) {
+  if (
+    !order.fulfillments ||
+    !Array.isArray(order.fulfillments) ||
+    order.fulfillments.length === 0
+  ) {
     testResults.failed.push("Fulfillments array is missing or empty in order");
   } else {
     order.fulfillments.forEach((fulfillment: any, index: number) => {
       if (!fulfillment.id) {
         testResults.failed.push(`Fulfillment ${index}: id is missing`);
       } else {
-        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: id is present: ${fulfillment.id}`
+        );
       }
 
       if (!fulfillment.type) {
@@ -2285,31 +3006,49 @@ function validatePurchaseFinanceOnConfirm(
         const validTypes = ["LOAN", "BASE_ORDER"];
         if (!validTypes.includes(fulfillment.type)) {
           testResults.failed.push(
-            `Fulfillment ${index}: Invalid type "${fulfillment.type}". Allowed: ${validTypes.join(", ")}`
+            `Fulfillment ${index}: Invalid type "${
+              fulfillment.type
+            }". Allowed: ${validTypes.join(", ")}`
           );
         } else {
-          testResults.passed.push(`Fulfillment ${index}: type is valid: ${fulfillment.type}`);
+          testResults.passed.push(
+            `Fulfillment ${index}: type is valid: ${fulfillment.type}`
+          );
         }
       }
 
-      if (!fulfillment.state || !fulfillment.state.descriptor || !fulfillment.state.descriptor.code) {
-        testResults.failed.push(`Fulfillment ${index}: state.descriptor.code is missing`);
+      if (
+        !fulfillment.state ||
+        !fulfillment.state.descriptor ||
+        !fulfillment.state.descriptor.code
+      ) {
+        testResults.failed.push(
+          `Fulfillment ${index}: state.descriptor.code is missing`
+        );
       } else {
         const stateCode = fulfillment.state.descriptor.code;
         const validStates = ["SANCTIONED", "PLACED", "INITIATED", "DISBURSED"];
         if (!validStates.includes(stateCode)) {
           testResults.failed.push(
-            `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(", ")}`
+            `Fulfillment ${index}: Invalid state "${stateCode}". Allowed: ${validStates.join(
+              ", "
+            )}`
           );
         } else {
-          testResults.passed.push(`Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`);
+          testResults.passed.push(
+            `Fulfillment ${index}: state.descriptor.code is valid: ${stateCode}`
+          );
         }
       }
     });
   }
 
   // Validate payments
-  if (!order.payments || !Array.isArray(order.payments) || order.payments.length === 0) {
+  if (
+    !order.payments ||
+    !Array.isArray(order.payments) ||
+    order.payments.length === 0
+  ) {
     testResults.failed.push("Payments array is missing or empty in order");
   } else {
     order.payments.forEach((payment: any, paymentIndex: number) => {
@@ -2318,61 +3057,111 @@ function validatePurchaseFinanceOnConfirm(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${payment.type}". Allowed: ${validPaymentTypes.join(", ")}`
+          `Payment ${paymentIndex}: Invalid payment type "${
+            payment.type
+          }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
-        testResults.passed.push(`Payment ${paymentIndex}: Valid payment type: ${payment.type}`);
+        testResults.passed.push(
+          `Payment ${paymentIndex}: Valid payment type: ${payment.type}`
+        );
       }
 
       // Validate POST_FULFILLMENT payments have BREAKUP tag
       if (payment.type === "POST_FULFILLMENT") {
         if (!payment.tags || !Array.isArray(payment.tags)) {
-          testResults.failed.push(`Payment ${paymentIndex}: tags array is missing for POST_FULFILLMENT payment`);
+          testResults.failed.push(
+            `Payment ${paymentIndex}: tags array is missing for POST_FULFILLMENT payment`
+          );
         } else {
-          const breakupTag = payment.tags.find((tag: any) => tag.descriptor?.code === "BREAKUP");
+          const breakupTag = payment.tags.find(
+            (tag: any) => tag.descriptor?.code === "BREAKUP"
+          );
           if (!breakupTag) {
-            testResults.failed.push(`Payment ${paymentIndex}: BREAKUP tag is missing for POST_FULFILLMENT payment`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: BREAKUP tag is missing for POST_FULFILLMENT payment`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: BREAKUP tag is present`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: BREAKUP tag is present`
+            );
           }
 
           if (!payment.time || !payment.time.label) {
-            testResults.failed.push(`Payment ${paymentIndex}: time.label is missing for POST_FULFILLMENT payment`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: time.label is missing for POST_FULFILLMENT payment`
+            );
           } else if (payment.time.label !== "INSTALLMENT") {
-            testResults.failed.push(`Payment ${paymentIndex}: time.label should be "INSTALLMENT" for POST_FULFILLMENT payment`);
+            testResults.failed.push(
+              `Payment ${paymentIndex}: time.label should be "INSTALLMENT" for POST_FULFILLMENT payment`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: time.label is valid: ${payment.time.label}`
+            );
           }
 
-          if (!payment.params || !payment.params.amount || !payment.params.currency) {
-            testResults.failed.push(`Payment ${paymentIndex}: params.amount or params.currency is missing for POST_FULFILLMENT payment`);
+          if (
+            !payment.params ||
+            !payment.params.amount ||
+            !payment.params.currency
+          ) {
+            testResults.failed.push(
+              `Payment ${paymentIndex}: params.amount or params.currency is missing for POST_FULFILLMENT payment`
+            );
           } else {
-            testResults.passed.push(`Payment ${paymentIndex}: params.amount and params.currency are present`);
+            testResults.passed.push(
+              `Payment ${paymentIndex}: params.amount and params.currency are present`
+            );
           }
         }
       }
 
       // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
-      validateSettlementAmount(payment, paymentIndex, order, testResults, "BAP_TERMS");
-      validateSettlementAmount(payment, paymentIndex, order, testResults, "BPP_TERMS");
+      validateSettlementAmount(
+        payment,
+        paymentIndex,
+        order,
+        testResults,
+        "BAP_TERMS"
+      );
+      validateSettlementAmount(
+        payment,
+        paymentIndex,
+        order,
+        testResults,
+        "BPP_TERMS"
+      );
     });
   }
 
   // Validate documents
-  if (!order.documents || !Array.isArray(order.documents) || order.documents.length === 0) {
-    testResults.failed.push("Documents array is missing or empty in on_confirm response");
+  if (
+    !order.documents ||
+    !Array.isArray(order.documents) ||
+    order.documents.length === 0
+  ) {
+    testResults.failed.push(
+      "Documents array is missing or empty in on_confirm response"
+    );
   } else {
     order.documents.forEach((document: any, index: number) => {
       if (!document.descriptor || !document.descriptor.code) {
-        testResults.failed.push(`Document ${index}: descriptor.code is missing`);
+        testResults.failed.push(
+          `Document ${index}: descriptor.code is missing`
+        );
       } else {
         const validCodes = ["LOAN_AGREEMENT"];
         if (!validCodes.includes(document.descriptor.code)) {
           testResults.failed.push(
-            `Document ${index}: Invalid descriptor.code "${document.descriptor.code}". Allowed: ${validCodes.join(", ")}`
+            `Document ${index}: Invalid descriptor.code "${
+              document.descriptor.code
+            }". Allowed: ${validCodes.join(", ")}`
           );
         } else {
-          testResults.passed.push(`Document ${index}: descriptor.code is valid: ${document.descriptor.code}`);
+          testResults.passed.push(
+            `Document ${index}: descriptor.code is valid: ${document.descriptor.code}`
+          );
         }
       }
 
@@ -2382,7 +3171,9 @@ function validatePurchaseFinanceOnConfirm(
         try {
           const url = new URL(document.url);
           if (url.protocol !== "http:" && url.protocol !== "https:") {
-            testResults.failed.push(`Document ${index}: url should be a valid HTTP/HTTPS URL`);
+            testResults.failed.push(
+              `Document ${index}: url should be a valid HTTP/HTTPS URL`
+            );
           } else {
             testResults.passed.push(`Document ${index}: url is a valid URL`);
           }
@@ -2397,10 +3188,14 @@ function validatePurchaseFinanceOnConfirm(
         const validMimeTypes = ["application/pdf", "application/json"];
         if (!validMimeTypes.includes(document.mime_type)) {
           testResults.failed.push(
-            `Document ${index}: Invalid mime_type "${document.mime_type}". Allowed: ${validMimeTypes.join(", ")}`
+            `Document ${index}: Invalid mime_type "${
+              document.mime_type
+            }". Allowed: ${validMimeTypes.join(", ")}`
           );
         } else {
-          testResults.passed.push(`Document ${index}: mime_type is valid: ${document.mime_type}`);
+          testResults.passed.push(
+            `Document ${index}: mime_type is valid: ${document.mime_type}`
+          );
         }
       }
     });
@@ -2408,15 +3203,23 @@ function validatePurchaseFinanceOnConfirm(
 
   // Validate timestamps
   if (!order.created_at) {
-    testResults.failed.push("Order created_at timestamp is missing in on_confirm response");
+    testResults.failed.push(
+      "Order created_at timestamp is missing in on_confirm response"
+    );
   } else {
-    testResults.passed.push(`Order created_at timestamp is present: ${order.created_at}`);
+    testResults.passed.push(
+      `Order created_at timestamp is present: ${order.created_at}`
+    );
   }
 
   if (!order.updated_at) {
-    testResults.failed.push("Order updated_at timestamp is missing in on_confirm response");
+    testResults.failed.push(
+      "Order updated_at timestamp is missing in on_confirm response"
+    );
   } else {
-    testResults.passed.push(`Order updated_at timestamp is present: ${order.updated_at}`);
+    testResults.passed.push(
+      `Order updated_at timestamp is present: ${order.updated_at}`
+    );
   }
 }
 
@@ -2446,36 +3249,58 @@ function validatePurchaseFinanceOnSearch(
   }
 
   providers.forEach((provider: any, providerIndex: number) => {
-    if (!provider.items || !Array.isArray(provider.items) || provider.items.length === 0) {
-      testResults.failed.push(`Provider ${providerIndex}: Items array is missing or empty`);
+    if (
+      !provider.items ||
+      !Array.isArray(provider.items) ||
+      provider.items.length === 0
+    ) {
+      testResults.failed.push(
+        `Provider ${providerIndex}: Items array is missing or empty`
+      );
       return;
     }
 
     provider.items.forEach((item: any) => {
       if (!item.id) {
-        testResults.failed.push(`Item in provider ${providerIndex}: id is missing`);
+        testResults.failed.push(
+          `Item in provider ${providerIndex}: id is missing`
+        );
         return;
       }
 
       // Check if this is on_search3 (with AA - has CONSENT_INFO tag, no xinput)
-      const hasConsentInfo = item.tags && Array.isArray(item.tags) && 
+      const hasConsentInfo =
+        item.tags &&
+        Array.isArray(item.tags) &&
         item.tags.some((tag: any) => tag.descriptor?.code === "CONSENT_INFO");
-      
+
       // Check if this is on_search4 (has form_response and child items)
       const hasFormResponse = item.xinput?.form_response;
-      const hasChildItems = provider.items.some((i: any) => i.parent_item_id === item.id);
+      const hasChildItems = provider.items.some(
+        (i: any) => i.parent_item_id === item.id
+      );
 
       // Validate that item has either xinput or CONSENT_INFO tag
       if (!item.xinput && !hasConsentInfo) {
-        testResults.failed.push(`Item ${item.id}: Must have either xinput or CONSENT_INFO tag for purchase finance`);
+        testResults.failed.push(
+          `Item ${item.id}: Must have either xinput or CONSENT_INFO tag for purchase finance`
+        );
         return;
       }
 
       if (hasConsentInfo && !item.xinput) {
         // on_search3: With AA - validate CONSENT_INFO tag
-        const consentInfoTag = item.tags.find((tag: any) => tag.descriptor?.code === "CONSENT_INFO");
-        if (!consentInfoTag || !consentInfoTag.list || !Array.isArray(consentInfoTag.list)) {
-          testResults.failed.push(`Item ${item.id}: CONSENT_INFO tag list is missing or invalid`);
+        const consentInfoTag = item.tags.find(
+          (tag: any) => tag.descriptor?.code === "CONSENT_INFO"
+        );
+        if (
+          !consentInfoTag ||
+          !consentInfoTag.list ||
+          !Array.isArray(consentInfoTag.list)
+        ) {
+          testResults.failed.push(
+            `Item ${item.id}: CONSENT_INFO tag list is missing or invalid`
+          );
           return;
         }
 
@@ -2483,20 +3308,28 @@ function validatePurchaseFinanceOnSearch(
           (listItem: any) => listItem.descriptor?.code === "CONSENT_HANDLER"
         );
         if (!consentHandler || !consentHandler.value) {
-          testResults.failed.push(`Item ${item.id}: CONSENT_HANDLER is missing in CONSENT_INFO tag`);
+          testResults.failed.push(
+            `Item ${item.id}: CONSENT_HANDLER is missing in CONSENT_INFO tag`
+          );
         } else {
-          testResults.passed.push(`Item ${item.id}: CONSENT_HANDLER is present: ${consentHandler.value}`);
+          testResults.passed.push(
+            `Item ${item.id}: CONSENT_HANDLER is present: ${consentHandler.value}`
+          );
         }
       } else if (hasFormResponse) {
         // on_search4: Has form_response - validate it
         const formResponse = item.xinput.form_response;
         const allowedStatuses = ["SUCCESS", "APPROVED"];
-        
+
         if (!formResponse.status) {
-          testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+          testResults.failed.push(
+            `Item ${item.id}: xinput.form_response.status is missing`
+          );
         } else if (!allowedStatuses.includes(formResponse.status)) {
           testResults.failed.push(
-            `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status}". Allowed: ${allowedStatuses.join(", ")}`
+            `Item ${item.id}: Invalid xinput.form_response.status "${
+              formResponse.status
+            }". Allowed: ${allowedStatuses.join(", ")}`
           );
         } else {
           testResults.passed.push(
@@ -2505,7 +3338,9 @@ function validatePurchaseFinanceOnSearch(
         }
 
         if (!formResponse.submission_id) {
-          testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+          testResults.failed.push(
+            `Item ${item.id}: xinput.form_response.submission_id is missing`
+          );
         } else {
           testResults.passed.push(
             `Item ${item.id}: xinput.form_response.submission_id is present: "${formResponse.submission_id}"`
@@ -2514,26 +3349,42 @@ function validatePurchaseFinanceOnSearch(
 
         // Validate child items if present
         if (hasChildItems) {
-          const childItems = provider.items.filter((i: any) => i.parent_item_id === item.id);
+          const childItems = provider.items.filter(
+            (i: any) => i.parent_item_id === item.id
+          );
           childItems.forEach((childItem: any) => {
             if (!childItem.id) {
-              testResults.failed.push(`Child item of ${item.id}: id is missing`);
+              testResults.failed.push(
+                `Child item of ${item.id}: id is missing`
+              );
             } else {
-              testResults.passed.push(`Child item ${childItem.id} is present with parent_item_id: ${item.id}`);
+              testResults.passed.push(
+                `Child item ${childItem.id} is present with parent_item_id: ${item.id}`
+              );
             }
 
             if (!childItem.price) {
-              testResults.failed.push(`Child item ${childItem.id}: price is missing`);
+              testResults.failed.push(
+                `Child item ${childItem.id}: price is missing`
+              );
             } else {
               if (!childItem.price.value) {
-                testResults.failed.push(`Child item ${childItem.id}: price.value is missing`);
+                testResults.failed.push(
+                  `Child item ${childItem.id}: price.value is missing`
+                );
               } else {
-                testResults.passed.push(`Child item ${childItem.id}: price.value is present: ${childItem.price.value}`);
+                testResults.passed.push(
+                  `Child item ${childItem.id}: price.value is present: ${childItem.price.value}`
+                );
               }
               if (!childItem.price.currency) {
-                testResults.failed.push(`Child item ${childItem.id}: price.currency is missing`);
+                testResults.failed.push(
+                  `Child item ${childItem.id}: price.currency is missing`
+                );
               } else {
-                testResults.passed.push(`Child item ${childItem.id}: price.currency is present: ${childItem.price.currency}`);
+                testResults.passed.push(
+                  `Child item ${childItem.id}: price.currency is present: ${childItem.price.currency}`
+                );
               }
             }
           });
@@ -2544,30 +3395,46 @@ function validatePurchaseFinanceOnSearch(
           testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
         } else {
           if (!item.xinput.form.id) {
-            testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
+            testResults.failed.push(
+              `Item ${item.id}: xinput.form.id is missing`
+            );
           } else {
-            testResults.passed.push(`Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`);
+            testResults.passed.push(
+              `Item ${item.id}: xinput.form.id is present: "${item.xinput.form.id}"`
+            );
           }
 
           if (!item.xinput.form.url) {
-            testResults.failed.push(`Item ${item.id}: xinput.form.url is missing`);
+            testResults.failed.push(
+              `Item ${item.id}: xinput.form.url is missing`
+            );
           } else {
             try {
               const url = new URL(item.xinput.form.url);
               if (url.protocol !== "http:" && url.protocol !== "https:") {
-                testResults.failed.push(`Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`);
+                testResults.failed.push(
+                  `Item ${item.id}: xinput.form.url should be a valid HTTP/HTTPS URL`
+                );
               } else {
-                testResults.passed.push(`Item ${item.id}: xinput.form.url is a valid URL`);
+                testResults.passed.push(
+                  `Item ${item.id}: xinput.form.url is a valid URL`
+                );
               }
             } catch (error) {
-              testResults.failed.push(`Item ${item.id}: xinput.form.url is not a valid URL`);
+              testResults.failed.push(
+                `Item ${item.id}: xinput.form.url is not a valid URL`
+              );
             }
           }
 
           if (item.xinput.form.mime_type !== "text/html") {
-            testResults.failed.push(`Item ${item.id}: xinput.form.mime_type should be "text/html"`);
+            testResults.failed.push(
+              `Item ${item.id}: xinput.form.mime_type should be "text/html"`
+            );
           } else {
-            testResults.passed.push(`Item ${item.id}: xinput.form.mime_type is valid`);
+            testResults.passed.push(
+              `Item ${item.id}: xinput.form.mime_type is valid`
+            );
           }
         }
 
@@ -2575,18 +3442,33 @@ function validatePurchaseFinanceOnSearch(
         if (!item.xinput.head) {
           testResults.failed.push(`Item ${item.id}: xinput.head is missing`);
         } else {
-          if (!item.xinput.head.descriptor || !item.xinput.head.descriptor.name) {
-            testResults.failed.push(`Item ${item.id}: xinput.head.descriptor.name is missing`);
+          if (
+            !item.xinput.head.descriptor ||
+            !item.xinput.head.descriptor.name
+          ) {
+            testResults.failed.push(
+              `Item ${item.id}: xinput.head.descriptor.name is missing`
+            );
           } else {
-            testResults.passed.push(`Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`);
+            testResults.passed.push(
+              `Item ${item.id}: xinput.head.descriptor.name is present: "${item.xinput.head.descriptor.name}"`
+            );
           }
 
           if (!item.xinput.head.index) {
-            testResults.failed.push(`Item ${item.id}: xinput.head.index is missing`);
+            testResults.failed.push(
+              `Item ${item.id}: xinput.head.index is missing`
+            );
           } else {
             const index = item.xinput.head.index;
-            if (typeof index.min !== "number" || typeof index.cur !== "number" || typeof index.max !== "number") {
-              testResults.failed.push(`Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`);
+            if (
+              typeof index.min !== "number" ||
+              typeof index.cur !== "number" ||
+              typeof index.max !== "number"
+            ) {
+              testResults.failed.push(
+                `Item ${item.id}: xinput.head.index should have min, cur, and max as numbers`
+              );
             } else {
               if (index.cur < index.min || index.cur > index.max) {
                 testResults.failed.push(
@@ -2600,8 +3482,14 @@ function validatePurchaseFinanceOnSearch(
             }
           }
 
-          if (!item.xinput.head.headings || !Array.isArray(item.xinput.head.headings) || item.xinput.head.headings.length === 0) {
-            testResults.failed.push(`Item ${item.id}: xinput.head.headings is missing or empty`);
+          if (
+            !item.xinput.head.headings ||
+            !Array.isArray(item.xinput.head.headings) ||
+            item.xinput.head.headings.length === 0
+          ) {
+            testResults.failed.push(
+              `Item ${item.id}: xinput.head.headings is missing or empty`
+            );
           } else {
             const allowedHeadings = [
               "MERCHANT_AND_PRDOUCT_DEATILS",
@@ -2609,24 +3497,34 @@ function validatePurchaseFinanceOnSearch(
               "KYC",
               "KYC_OFFLINE",
               "JOURNEY_OFFLINE",
-              "SET_LOAN_AMOUNT"
+              "SET_LOAN_AMOUNT",
             ];
             item.xinput.head.headings.forEach((heading: string) => {
               if (!allowedHeadings.includes(heading)) {
                 testResults.failed.push(
-                  `Item ${item.id}: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(", ")}`
+                  `Item ${
+                    item.id
+                  }: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(
+                    ", "
+                  )}`
                 );
               } else {
-                testResults.passed.push(`Item ${item.id}: Valid heading "${heading}"`);
+                testResults.passed.push(
+                  `Item ${item.id}: Valid heading "${heading}"`
+                );
               }
             });
           }
         }
 
         if (item.xinput.required !== true && item.xinput.required !== false) {
-          testResults.failed.push(`Item ${item.id}: xinput.required should be a boolean`);
+          testResults.failed.push(
+            `Item ${item.id}: xinput.required should be a boolean`
+          );
         } else {
-          testResults.passed.push(`Item ${item.id}: xinput.required is present: ${item.xinput.required}`);
+          testResults.passed.push(
+            `Item ${item.id}: xinput.required is present: ${item.xinput.required}`
+          );
         }
       }
     });
@@ -3471,13 +4369,17 @@ function validateFulfillmentsFIS12(
   const fulfillments =
     message?.catalog?.providers?.[0]?.fulfillments ||
     message?.order?.fulfillments;
-  
-  // Skip fulfillments validation for on_status_unsolicited and on_status_purchase_finance 
+
+  // Skip fulfillments validation for on_status_unsolicited and on_status_purchase_finance
   // when usecaseId is PURCHASE FINANCE
   const normalizedUsecaseId = usecaseId?.toUpperCase().trim();
-  const shouldSkipValidation = 
-    ((action_id === "on_status_unsolicited" || action_id === "on_status_purchase_finance" || action_id === "on_status_purchase_finance1") && (normalizedUsecaseId === "PURCHASE FINANCE" || normalizedUsecaseId === "PURCHASE_FINANCE"));
-  
+  const shouldSkipValidation =
+    (action_id === "on_status_unsolicited" ||
+      action_id === "on_status_purchase_finance" ||
+      action_id === "on_status_purchase_finance1") &&
+    (normalizedUsecaseId === "PURCHASE FINANCE" ||
+      normalizedUsecaseId === "PURCHASE_FINANCE");
+
   if (!fulfillments || !Array.isArray(fulfillments)) {
     if (!shouldSkipValidation) {
       testResults.failed.push("Fulfillments array is missing or invalid");
@@ -3488,42 +4390,44 @@ function validateFulfillmentsFIS12(
   fulfillments.forEach((fulfillment: any, index: number) => {
     // Validate type
     if (usecaseId !== "PERSONAL LOAN") {
-    if (!fulfillment.type) {
-      testResults.failed.push(`Fulfillment ${index} type is missing`);
-    } else {
-      testResults.passed.push(
-        `Fulfillment ${index} has type: ${fulfillment.type}`
-      );
-    }}
+      if (!fulfillment.type) {
+        testResults.failed.push(`Fulfillment ${index} type is missing`);
+      } else {
+        testResults.passed.push(
+          `Fulfillment ${index} has type: ${fulfillment.type}`
+        );
+      }
+    }
 
     if (fulfillment.type !== "LOAN") {
-    
-    // Validate customer info
-    if (!fulfillment.customer) {
-      testResults.failed.push(`Fulfillment ${index} customer info is missing`);
-    } else {
-      const { person, contact } = fulfillment.customer;
-      if (!person?.name)
+      // Validate customer info
+      if (!fulfillment.customer) {
         testResults.failed.push(
-          `Fulfillment ${index} customer name is missing`
+          `Fulfillment ${index} customer info is missing`
         );
-      if (!contact?.phone && !contact?.email)
-        testResults.failed.push(
-          `Fulfillment ${index} customer contact is missing`
-        );
-    }
+      } else {
+        const { person, contact } = fulfillment.customer;
+        if (!person?.name)
+          testResults.failed.push(
+            `Fulfillment ${index} customer name is missing`
+          );
+        if (!contact?.phone && !contact?.email)
+          testResults.failed.push(
+            `Fulfillment ${index} customer contact is missing`
+          );
+      }
 
-    // Validate state descriptor
-    if (!fulfillment.state?.descriptor?.code) {
-      testResults.failed.push(
-        `Fulfillment ${index} state descriptor code is missing`
-      );
-    } else {
-      testResults.passed.push(
-        `Fulfillment ${index} state code: ${fulfillment.state.descriptor.code}`
-      );
+      // Validate state descriptor
+      if (!fulfillment.state?.descriptor?.code) {
+        testResults.failed.push(
+          `Fulfillment ${index} state descriptor code is missing`
+        );
+      } else {
+        testResults.passed.push(
+          `Fulfillment ${index} state code: ${fulfillment.state.descriptor.code}`
+        );
+      }
     }
-  }
   });
 }
 
@@ -3580,22 +4484,23 @@ function validatePaymentsFIS12(message: any, testResults: TestResult): void {
 
 function validateDocumentsFIS12(message: any, testResults: TestResult): void {
   const documents = message?.order?.documents;
-  
+
   // Always add a message to indicate validation ran
   if (!documents || !Array.isArray(documents) || documents.length === 0) {
     // Documents are optional in some flows, so log as info rather than fail
-    testResults.passed.push("Documents validation: Documents array is optional (not present in order)");
+    testResults.passed.push(
+      "Documents validation: Documents array is optional (not present in order)"
+    );
     return;
   }
-  
+
   // Documents are present - validate them
-  testResults.passed.push(`Documents validation: Found ${documents.length} document(s) to validate`);
+  testResults.passed.push(
+    `Documents validation: Found ${documents.length} document(s) to validate`
+  );
 
   // Expected document types for FIS12 Gold Loan
-  const expectedDocumentTypes = [
-    "LOAN_AGREEMENT",
-    "LOAN_CANCELLATION",
-  ];
+  const expectedDocumentTypes = ["LOAN_AGREEMENT", "LOAN_CANCELLATION"];
 
   const foundDocumentTypes: string[] = [];
 
@@ -3616,11 +4521,20 @@ function validateDocumentsFIS12(message: any, testResults: TestResult): void {
 
     // Validate mime_type
     if (!doc.mime_type) {
-      testResults.failed.push(`Document ${index} (${code}): mime_type is missing`);
+      testResults.failed.push(
+        `Document ${index} (${code}): mime_type is missing`
+      );
     } else {
       // Validate mime_type format (should be like "application/pdf", "text/html", etc.)
-      const validMimeTypes = ["application/pdf", "text/html", "application/json"];
-      if (!validMimeTypes.includes(doc.mime_type) && !doc.mime_type.includes("/")) {
+      const validMimeTypes = [
+        "application/pdf",
+        "text/html",
+        "application/json",
+      ];
+      if (
+        !validMimeTypes.includes(doc.mime_type) &&
+        !doc.mime_type.includes("/")
+      ) {
         testResults.failed.push(
           `Document ${index} (${code}): Invalid mime_type format "${doc.mime_type}"`
         );
@@ -3642,13 +4556,17 @@ function validateDocumentsFIS12(message: any, testResults: TestResult): void {
           `Document ${index} (${code}): Invalid URL format "${doc.url}". Must be http:// or https://`
         );
       } else {
-        testResults.passed.push(`Document ${index} (${code}): Valid URL "${doc.url}"`);
+        testResults.passed.push(
+          `Document ${index} (${code}): Valid URL "${doc.url}"`
+        );
       }
     }
 
     // Validate descriptor fields
     if (!doc.descriptor.name) {
-      testResults.failed.push(`Document ${index} (${code}): descriptor.name is missing`);
+      testResults.failed.push(
+        `Document ${index} (${code}): descriptor.name is missing`
+      );
     } else {
       testResults.passed.push(
         `Document ${index} (${code}): descriptor.name is present: "${doc.descriptor.name}"`
@@ -3674,7 +4592,9 @@ function validateDocumentsFIS12(message: any, testResults: TestResult): void {
       "Required document type 'LOAN_AGREEMENT' is missing"
     );
   } else {
-    testResults.passed.push("Required document type 'LOAN_AGREEMENT' is present");
+    testResults.passed.push(
+      "Required document type 'LOAN_AGREEMENT' is present"
+    );
   }
 
   // Check for LOAN_CANCELLATION (optional but recommended)
@@ -3688,7 +4608,9 @@ function validateDocumentsFIS12(message: any, testResults: TestResult): void {
 
   // Summary
   testResults.passed.push(
-    `Found ${documents.length} document(s) with types: ${foundDocumentTypes.join(", ")}`
+    `Found ${
+      documents.length
+    } document(s) with types: ${foundDocumentTypes.join(", ")}`
   );
 }
 
@@ -3701,7 +4623,11 @@ function validateFulfillmentStateOnUpdateFIS12(
   // Validate for Gold Loan Foreclosure flow
   if (flowId === "Gold_Loan_Foreclosure") {
     const fulfillments = message?.order?.fulfillments;
-    if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
+    if (
+      !fulfillments ||
+      !Array.isArray(fulfillments) ||
+      fulfillments.length === 0
+    ) {
       testResults.failed.push(
         "Fulfillments array is missing or empty in order for fulfillment state validation"
       );
@@ -3746,10 +4672,13 @@ function validateFulfillmentStateOnUpdateFIS12(
     return;
   }
 
-  // Validate for Purchase Finance flows
-  if (PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (PURCHASE_FINANCE_FLOWS.includes(flowId) && !PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION.includes(flowId)) {
     const fulfillments = message?.order?.fulfillments;
-    if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
+    if (
+      !fulfillments ||
+      !Array.isArray(fulfillments) ||
+      fulfillments.length === 0
+    ) {
       testResults.failed.push(
         "Fulfillments array is missing or empty in order for fulfillment state validation"
       );
@@ -3757,13 +4686,22 @@ function validateFulfillmentStateOnUpdateFIS12(
     }
 
     // Valid state codes for purchase finance update
-    const validStates = ["DELIVERED", "DISBURSED", "SANCTIONED", "PLACED", "INITIATED", "COMPLETE"];
+    const validStates = [
+      "DELIVERED",
+      "DISBURSED",
+      "SANCTIONED",
+      "PLACED",
+      "INITIATED",
+      "COMPLETE",
+    ];
 
     fulfillments.forEach((fulfillment: any, index: number) => {
       if (!fulfillment.id) {
         testResults.failed.push(`Fulfillment ${index}: id is missing`);
       } else {
-        testResults.passed.push(`Fulfillment ${index}: id is present: ${fulfillment.id}`);
+        testResults.passed.push(
+          `Fulfillment ${index}: id is present: ${fulfillment.id}`
+        );
       }
 
       const stateCode = fulfillment?.state?.descriptor?.code;
@@ -3777,7 +4715,9 @@ function validateFulfillmentStateOnUpdateFIS12(
 
       if (!validStates.includes(stateCode)) {
         testResults.failed.push(
-          `Fulfillment ${index}: Invalid state code "${stateCode}". Allowed: ${validStates.join(", ")}`
+          `Fulfillment ${index}: Invalid state code "${stateCode}". Allowed: ${validStates.join(
+            ", "
+          )}`
         );
       } else {
         testResults.passed.push(
@@ -3789,18 +4729,28 @@ function validateFulfillmentStateOnUpdateFIS12(
       if (fulfillment.customer?.person?.creds) {
         const creds = fulfillment.customer.person.creds;
         if (!Array.isArray(creds) || creds.length === 0) {
-          testResults.failed.push(`Fulfillment ${index}: customer.person.creds should be a non-empty array`);
+          testResults.failed.push(
+            `Fulfillment ${index}: customer.person.creds should be a non-empty array`
+          );
         } else {
           creds.forEach((cred: any, credIndex: number) => {
             if (!cred.type) {
-              testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].type is missing`);
+              testResults.failed.push(
+                `Fulfillment ${index}: creds[${credIndex}].type is missing`
+              );
             } else {
-              testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].type is present: ${cred.type}`);
+              testResults.passed.push(
+                `Fulfillment ${index}: creds[${credIndex}].type is present: ${cred.type}`
+              );
             }
             if (!cred.id) {
-              testResults.failed.push(`Fulfillment ${index}: creds[${credIndex}].id is missing`);
+              testResults.failed.push(
+                `Fulfillment ${index}: creds[${credIndex}].id is missing`
+              );
             } else {
-              testResults.passed.push(`Fulfillment ${index}: creds[${credIndex}].id is present: ${cred.id}`);
+              testResults.passed.push(
+                `Fulfillment ${index}: creds[${credIndex}].id is present: ${cred.id}`
+              );
             }
           });
         }
@@ -3845,14 +4795,19 @@ function validateUpdatePaymentsFIS12(
     // Validate time.label for foreclosure
     if (payment.time) {
       if (!payment.time.label) {
-        testResults.failed.push(
-          `Payment ${index}: time.label is missing`
-        );
+        testResults.failed.push(`Payment ${index}: time.label is missing`);
       } else {
-        const validLabels = ["FORECLOSURE","MISSED_EMI_PAYMENT", "INSTALLMENT", "PRE_PART_PAYMENT"];
+        const validLabels = [
+          "FORECLOSURE",
+          "MISSED_EMI_PAYMENT",
+          "INSTALLMENT",
+          "PRE_PART_PAYMENT",
+        ];
         if (!validLabels.includes(payment.time.label)) {
           testResults.failed.push(
-            `Payment ${index}: Invalid time.label "${payment.time.label}". Expected one of: ${validLabels.join(", ")}`
+            `Payment ${index}: Invalid time.label "${
+              payment.time.label
+            }". Expected one of: ${validLabels.join(", ")}`
           );
         } else {
           testResults.passed.push(
@@ -3910,7 +4865,9 @@ function validateUpdatePaymentsFIS12(
       const validStatuses = ["NOT-PAID", "PAID", "PENDING"];
       if (!validStatuses.includes(payment.status)) {
         testResults.failed.push(
-          `Payment ${index}: Invalid status "${payment.status}". Expected one of: ${validStatuses.join(", ")}`
+          `Payment ${index}: Invalid status "${
+            payment.status
+          }". Expected one of: ${validStatuses.join(", ")}`
         );
       } else {
         testResults.passed.push(
@@ -3924,7 +4881,9 @@ function validateUpdatePaymentsFIS12(
       const validTypes = ["ON_ORDER", "POST_FULFILLMENT"];
       if (!validTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${index}: Invalid type "${payment.type}". Expected one of: ${validTypes.join(", ")}`
+          `Payment ${index}: Invalid type "${
+            payment.type
+          }". Expected one of: ${validTypes.join(", ")}`
         );
       } else {
         testResults.passed.push(
@@ -4064,7 +5023,11 @@ function validateGoldLoanOnInitFIS12(
     });
 
     // Basic format checks for a few important fields
-    const percentFields = ["INTEREST_RATE", "LTV_RATIO", "ANNUAL_PERCENTAGE_RATE"];
+    const percentFields = [
+      "INTEREST_RATE",
+      "LTV_RATIO",
+      "ANNUAL_PERCENTAGE_RATE",
+    ];
     percentFields.forEach((code) => {
       const entry = codeMap.get(code);
       if (entry?.value && typeof entry.value === "string") {
@@ -4130,7 +5093,7 @@ function validateOnSearchItemsFIS12(
   }
 
   const validCategoryIds = new Set(categories.map((c: any) => c.id));
-  
+
   // Create a map of category codes by category id
   const categoryCodeMap = new Map<string, string>();
   categories.forEach((cat: any) => {
@@ -4157,7 +5120,9 @@ function validateOnSearchItemsFIS12(
         `Item ${item.id}: descriptor.code should be one of ["LOAN", "PERSONAL_LOAN", "GOLD_LOAN"], but found "${item.descriptor.code}"`
       );
     } else {
-      testResults.passed.push(`Item ${item.id}: Valid descriptor.code "${item.descriptor.code}"`);
+      testResults.passed.push(
+        `Item ${item.id}: Valid descriptor.code "${item.descriptor.code}"`
+      );
     }
 
     // Validate category_ids array
@@ -4207,7 +5172,10 @@ function validateOnSearchItemsFIS12(
         );
       }
     } else if (hasPersonalLoanCategory) {
-      if (!itemName.includes("personal loan") && !itemName.includes("personal")) {
+      if (
+        !itemName.includes("personal loan") &&
+        !itemName.includes("personal")
+      ) {
         testResults.failed.push(
           `Item ${item.id}: Has PERSONAL_LOAN category but descriptor.name "${item.descriptor.name}" doesn't match Personal Loan pattern`
         );
@@ -4216,16 +5184,19 @@ function validateOnSearchItemsFIS12(
           `Item ${item.id}: Valid Personal Loan item with matching descriptor.name`
         );
       }
-      
+
       // Validate AA_PERSONAL_LOAN items
       if (hasAAPersonalLoanCategory) {
         // Items with AA_PERSONAL_LOAN must also have PERSONAL_LOAN category (already validated above)
         testResults.passed.push(
           `Item ${item.id}: Valid AA Personal Loan item with both PERSONAL_LOAN and AA_PERSONAL_LOAN categories`
         );
-        
+
         // Items with AA_PERSONAL_LOAN should indicate "with AA" in the name
-        if (!itemName.includes("with aa") && !itemName.includes("with account aggregator")) {
+        if (
+          !itemName.includes("with aa") &&
+          !itemName.includes("with account aggregator")
+        ) {
           testResults.failed.push(
             `Item ${item.id}: Has AA_PERSONAL_LOAN category but descriptor.name "${item.descriptor.name}" should indicate "with AA" or "with Account Aggregator"`
           );
@@ -4278,15 +5249,15 @@ async function validateXinputFIS12(
   testResults: TestResult,
   sessionID?: string,
   transactionId?: string,
-  flowId?:string,
-  action_id?:string
+  flowId?: string,
+  action_id?: string
 ): Promise<void> {
   const items = message?.catalog?.providers?.[0]?.items?.length
     ? message.catalog.providers[0].items
     : message?.order?.items || [];
 
   const categories = message?.catalog?.providers?.[0]?.categories || [];
-  
+
   // Create a map of category codes by category id
   const categoryCodeMap = new Map<string, string>();
   categories.forEach((cat: any) => {
@@ -4296,8 +5267,9 @@ async function validateXinputFIS12(
   });
 
   // Check if this is a purchase finance flow
-  const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
-  
+  const isPurchaseFinanceFlow =
+    flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+
   const allowedHeadings = [
     "KYC",
     "KYC_OFFLINE",
@@ -4309,9 +5281,9 @@ async function validateXinputFIS12(
     "Know your Customer",
     "Account Information",
     "Emandate",
-    "Loan Agreement"
+    "Loan Agreement",
   ];
-  
+
   // Add purchase finance specific headings
   if (isPurchaseFinanceFlow) {
     allowedHeadings.push("MERCHANT_AND_PRDOUCT_DEATILS");
@@ -4323,7 +5295,7 @@ async function validateXinputFIS12(
     // Check if item is GOLD_LOAN or PERSONAL_LOAN
     let isGoldLoan = false;
     let isPersonalLoan = false;
-    
+
     if (item.category_ids && Array.isArray(item.category_ids)) {
       item.category_ids.forEach((catId: string) => {
         const categoryCode = categoryCodeMap.get(catId);
@@ -4338,10 +5310,12 @@ async function validateXinputFIS12(
     if (!item.xinput) {
       // Skip xinput validation if item has parent_item_id (it's a child item)
       if (item.parent_item_id) {
-        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`
+        );
         return;
       }
-      
+
       testResults.failed.push(`Item ${item.id}: xinput is missing`);
       return;
     }
@@ -4357,35 +5331,49 @@ async function validateXinputFIS12(
       } else if (!item.xinput.form.id) {
         testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
       } else {
-        testResults.passed.push(`Item ${item.id}: xinput.form.id is present: ${item.xinput.form.id}`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput.form.id is present: ${item.xinput.form.id}`
+        );
       }
 
       if (!item.xinput.form_response) {
-        testResults.failed.push(`Item ${item.id}: xinput.form_response is missing`);
+        testResults.failed.push(
+          `Item ${item.id}: xinput.form_response is missing`
+        );
       } else {
         if (!item.xinput.form_response.status) {
-          testResults.failed.push(`Item ${item.id}: xinput.form_response.status is missing`);
+          testResults.failed.push(
+            `Item ${item.id}: xinput.form_response.status is missing`
+          );
         } else {
           const validStatuses = ["SUCCESS", "PENDING", "FAILED"];
           if (!validStatuses.includes(item.xinput.form_response.status)) {
             testResults.failed.push(
-              `Item ${item.id}: Invalid xinput.form_response.status "${item.xinput.form_response.status}". Allowed: ${validStatuses.join(", ")}`
+              `Item ${item.id}: Invalid xinput.form_response.status "${
+                item.xinput.form_response.status
+              }". Allowed: ${validStatuses.join(", ")}`
             );
           } else {
-            testResults.passed.push(`Item ${item.id}: Valid xinput.form_response.status: ${item.xinput.form_response.status}`);
+            testResults.passed.push(
+              `Item ${item.id}: Valid xinput.form_response.status: ${item.xinput.form_response.status}`
+            );
           }
         }
 
         if (!item.xinput.form_response.submission_id) {
-          testResults.failed.push(`Item ${item.id}: xinput.form_response.submission_id is missing`);
+          testResults.failed.push(
+            `Item ${item.id}: xinput.form_response.submission_id is missing`
+          );
         } else {
-          testResults.passed.push(`Item ${item.id}: xinput.form_response.submission_id is present: ${item.xinput.form_response.submission_id}`);
+          testResults.passed.push(
+            `Item ${item.id}: xinput.form_response.submission_id is present: ${item.xinput.form_response.submission_id}`
+          );
         }
       }
     } else if (hasHead) {
       // Format 2: head + form + required
       const head = item.xinput.head;
-      
+
       if (
         !head.headings ||
         !Array.isArray(head.headings) ||
@@ -4405,7 +5393,9 @@ async function validateXinputFIS12(
               )}`
             );
           } else {
-            testResults.passed.push(`Item ${item.id}: Valid xinput heading "${h}"`);
+            testResults.passed.push(
+              `Item ${item.id}: Valid xinput heading "${h}"`
+            );
           }
         });
       }
@@ -4426,21 +5416,29 @@ async function validateXinputFIS12(
         if (isGoldLoan || isPersonalLoan) {
           if (item.xinput.required !== true) {
             testResults.failed.push(
-              `Item ${item.id}: xinput.required must be true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items`
+              `Item ${item.id}: xinput.required must be true for ${
+                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              } items`
             );
           } else {
             testResults.passed.push(
-              `Item ${item.id}: xinput.required is true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
+              `Item ${item.id}: xinput.required is true for ${
+                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              } item`
             );
           }
 
           if (item.xinput.form.mime_type !== "text/html") {
             testResults.failed.push(
-              `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} items, but found "${item.xinput.form.mime_type}"`
+              `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${
+                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              } items, but found "${item.xinput.form.mime_type}"`
             );
           } else {
             testResults.passed.push(
-              `Item ${item.id}: xinput.form.mime_type is "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"} item`
+              `Item ${item.id}: xinput.form.mime_type is "text/html" for ${
+                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              } item`
             );
           }
         }
@@ -4461,14 +5459,19 @@ async function validateXinputFIS12(
       }
     } else {
       // Neither format detected - check if it's an exception case
-      if (flowId === "Personal_Loan_With_AA_And_Monitoring_Consent" || action_id === "on_select_1_personal_loan") {
+      if (
+        flowId === "Personal_Loan_With_AA_And_Monitoring_Consent" ||
+        action_id === "on_select_1_personal_loan"
+      ) {
         // These flows may not require head, but still need form
         if (!item.xinput.form) {
           testResults.failed.push(`Item ${item.id}: xinput.form is missing`);
         } else if (!item.xinput.form.id) {
           testResults.failed.push(`Item ${item.id}: xinput.form.id is missing`);
         } else {
-          testResults.passed.push(`Item ${item.id}: xinput.form.id is present: ${item.xinput.form.id}`);
+          testResults.passed.push(
+            `Item ${item.id}: xinput.form.id is present: ${item.xinput.form.id}`
+          );
         }
       } else {
         testResults.failed.push(
@@ -4483,7 +5486,9 @@ async function validateXinputFIS12(
     try {
       const { saveData } = await import("../../utils/redisUtils");
       await saveData(sessionID, transactionId, "formUrls", { urls: formUrls });
-      logger.info(`Saved ${formUrls.length} form URL(s) to Redis for HTML_FORM validation`);
+      logger.info(
+        `Saved ${formUrls.length} form URL(s) to Redis for HTML_FORM validation`
+      );
     } catch (error: any) {
       logger.error("Error saving form URLs to Redis", error);
     }
@@ -4509,24 +5514,30 @@ function validateXInputStatusFIS12(
   // Check if this is a purchase finance flow and if xinput is required
   // For purchase finance: select1_purchase_finance does NOT require xinput
   //                      init1_purchase_finance does NOT require xinput
-  const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+  const isPurchaseFinanceFlow =
+    flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
   const isSelect1PurchaseFinance = action_id === "select_purchase_finance";
   const isInitPurchaseFinance = action_id === "init1_purchase_finance";
   // xinput is NOT required if it's purchase finance flow AND (select1_purchase_finance OR init1_purchase_finance)
-  const xinputRequired = !(isPurchaseFinanceFlow && (isSelect1PurchaseFinance || isInitPurchaseFinance));
+  const xinputRequired = !(
+    isPurchaseFinanceFlow &&
+    (isSelect1PurchaseFinance || isInitPurchaseFinance)
+  );
 
   items.forEach((item: any) => {
     if (!item.xinput) {
       // Skip xinput validation if item has parent_item_id (it's a child item)
       if (item.parent_item_id) {
-        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        testResults.passed.push(
+          `Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`
+        );
         return;
       }
-      
+
       if (xinputRequired) {
         testResults.failed.push(`Item ${item.id}: xinput is missing`);
         return;
-      }else{
+      } else {
         return;
       }
     }
@@ -4603,9 +5614,12 @@ function validateXInputStatusFIS12(
     // Usecase-specific validations
     if (usecaseId) {
       const normalizedUsecaseId = usecaseId.toUpperCase().trim();
-      
+
       // PERSONAL LOAN specific validations
-      if (normalizedUsecaseId === "PERSONAL LOAN" || normalizedUsecaseId === "PERSONAL_LOAN") {
+      if (
+        normalizedUsecaseId === "PERSONAL LOAN" ||
+        normalizedUsecaseId === "PERSONAL_LOAN"
+      ) {
         // Validate form.id for Personal Loan flows
         if (item.xinput.form?.id) {
           const formId = item.xinput.form.id;
@@ -4637,18 +5651,19 @@ function validateXInputStatusFIS12(
 
         // Validate submission_id format for Personal Loan
         if (!formResponse.submission_id) {
-          testResults.failed.push(
-            `Item ${item.id}: submission_id is missing`
-          );
+          testResults.failed.push(`Item ${item.id}: submission_id is missing`);
         } else {
           testResults.passed.push(
             `Item ${item.id}: submission_id is present: "${formResponse.submission_id}"`
           );
         }
       }
-      
+
       // GOLD LOAN specific validations
-      else if (normalizedUsecaseId === "GOLD LOAN" || normalizedUsecaseId === "GOLD_LOAN") {
+      else if (
+        normalizedUsecaseId === "GOLD LOAN" ||
+        normalizedUsecaseId === "GOLD_LOAN"
+      ) {
         // Validate form.id for Gold Loan flows
         if (item.xinput.form?.id) {
           const formId = item.xinput.form.id;
@@ -4677,7 +5692,7 @@ function validateXInputStatusFIS12(
           }
         }
       }
-      
+
       // Log usecase validation
       testResults.passed.push(
         `Item ${item.id}: Validated with usecaseId "${usecaseId}"`
@@ -4767,16 +5782,22 @@ function validateOrder(message: any, testResults: TestResult): void {
   }
 }
 
-function validateQuote(message: any, testResults: TestResult,action_id: string,flowId: string): void {
+function validateQuote(
+  message: any,
+  testResults: TestResult,
+  action_id: string,
+  flowId: string
+): void {
   const quote = message?.order?.quote;
-  if (flowId !== "Personal_Loan_Without_AA_And_Monitoring_Consent" && action_id === "on_select_1_personal_loan") {
+  if (
+    flowId !== "Personal_Loan_Without_AA_And_Monitoring_Consent" &&
+    action_id === "on_select_1_personal_loan"
+  ) {
     return;
-  }
-  else if (!quote) {
+  } else if (!quote) {
     testResults.failed.push("Quote is missing in order");
     return;
-  }
-  else{
+  } else {
     testResults.passed.push("Quote is present in order");
   }
   if (!quote.id) {
@@ -4792,13 +5813,21 @@ function validateQuote(message: any, testResults: TestResult,action_id: string,f
   }
 }
 
-function validateQuoteTRV10(message: any, testResults: TestResult,action_id?: string,flowId?: string): void {
+function validateQuoteTRV10(
+  message: any,
+  testResults: TestResult,
+  action_id?: string,
+  flowId?: string
+): void {
   const quote = message?.order?.quote;
-  if (!quote && flowId !== "Personal_Loan_With_AA_And_Monitoring_Consent" && action_id !== "on_select_1_personal_loan") {
+  if (
+    !quote &&
+    flowId !== "Personal_Loan_With_AA_And_Monitoring_Consent" &&
+    action_id !== "on_select_1_personal_loan"
+  ) {
     testResults.failed.push("Quote is missing in order");
     return;
-  }
-  else{
+  } else {
     testResults.passed.push("Quote is present in order");
   }
   // For TRV10, quote.id is optional
@@ -4918,8 +5947,9 @@ export function validateCancel(
       testResults.failed.push("Cancellation descriptor code is missing");
     } else {
       // For purchase finance flows, allow both SOFT_CANCEL and CONFIRM_CANCEL for cancel action
-      const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
-      
+      const isPurchaseFinanceFlow =
+        flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+
       // For cancel action, code should be SOFT_CANCEL (or CONFIRM_CANCEL for purchase finance)
       // For cancel_hard action, code should be CONFIRM_CANCEL
       if (action_id === "cancel") {
@@ -4927,13 +5957,18 @@ export function validateCancel(
           testResults.passed.push(
             "Cancellation descriptor code is SOFT_CANCEL for cancel action"
           );
-        } else if (isPurchaseFinanceFlow && descriptor.code === "CONFIRM_CANCEL") {
+        } else if (
+          isPurchaseFinanceFlow &&
+          descriptor.code === "CONFIRM_CANCEL"
+        ) {
           testResults.passed.push(
             "Cancellation descriptor code is CONFIRM_CANCEL for cancel action (allowed for purchase finance flows)"
           );
         } else {
           testResults.failed.push(
-            `Cancellation descriptor code should be SOFT_CANCEL${isPurchaseFinanceFlow ? " or CONFIRM_CANCEL" : ""} for cancel action, got ${descriptor.code}`
+            `Cancellation descriptor code should be SOFT_CANCEL${
+              isPurchaseFinanceFlow ? " or CONFIRM_CANCEL" : ""
+            } for cancel action, got ${descriptor.code}`
           );
         }
       } else if (action_id === "cancel_hard") {
@@ -4979,14 +6014,18 @@ function validateCancellation(
   }
 
   // Check if this is a purchase finance flow
-  const isPurchaseFinanceFlow = flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+  const isPurchaseFinanceFlow =
+    flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
 
   // Validate order status based on action_id
-  if (action_id === "on_cancel_ride_cancel") {
+  if (
+    action_id === "on_cancel_ride_cancel" ||
+    action_id === "soft_on_cancel_purchase_finance"
+  ) {
     // For on_cancel_ride_cancel, status should be SOFT_CANCEL
     if (order.status !== "SOFT_CANCEL") {
       testResults.failed.push(
-        "Order status should be SOFT_CANCEL in on_cancel_ride_cancel"
+        `Order status should be SOFT_CANCEL in ${action_id}`
       );
     } else {
       testResults.passed.push(
@@ -5035,7 +6074,7 @@ function validateCancellation(
 
   // Validate cancellation object
   const cancellation = order.cancellation;
-  if (!cancellation) {
+  if (!cancellation && action_id !== "soft_on_cancel_purchase_finance" && action_id !== "confirmed_on_cancel_purchase_finance") {
     testResults.failed.push("Cancellation information is missing in order");
     return;
   }
@@ -5453,7 +6492,12 @@ export function createUpdateValidator(...config: string[]) {
             validateUpdatePaymentsFIS12(message, testResults);
             break;
           case fis12Validators.update.validate_fulfillment_state:
-            validateFulfillmentStateOnUpdateFIS12(message, testResults, action_id, flowId);
+            validateFulfillmentStateOnUpdateFIS12(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
             break;
 
           default:
@@ -5477,7 +6521,7 @@ export function createOnSearchValidator(...config: string[]) {
     element: Payload,
     sessionID: string,
     flowId: string,
-    action_id: string,
+    action_id: string
   ): Promise<TestResult> {
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
@@ -5572,7 +6616,14 @@ export function createOnSearchValidator(...config: string[]) {
             validateOnSearchItemsFIS12(message, testResults);
             break;
           case fis12Validators.items.validate_xinput:
-            await validateXinputFIS12(message, testResults, sessionID, transactionId,flowId,action_id);
+            await validateXinputFIS12(
+              message,
+              testResults,
+              sessionID,
+              transactionId,
+              flowId,
+              action_id
+            );
             break;
           default:
             break;
@@ -5598,7 +6649,7 @@ export function createSelectValidator(...config: string[]) {
     action_id: string,
     usecaseId?: string
   ): Promise<TestResult> {
-    logger.info(`Inside ${action_id || 'select'} validations`, { usecaseId });
+    logger.info(`Inside ${action_id || "select"} validations`, { usecaseId });
     const { testResults, action, context, message } =
       createBaseValidationSetup(element);
 
@@ -5636,7 +6687,7 @@ export function createSelectValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.provider.validate_provider:
-            validateProvider(message, testResults, action_id,usecaseId);
+            validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
             validateItems(message, testResults, action_id, flowId, usecaseId);
@@ -5648,7 +6699,12 @@ export function createSelectValidator(...config: string[]) {
            * on_status flow. Without this case, that config entry is a no-op.
            */
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            validateFulfillmentsFIS12(
+              message,
+              testResults,
+              usecaseId,
+              action_id
+            );
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -5663,7 +6719,13 @@ export function createSelectValidator(...config: string[]) {
             break;
 
           case fis12Validators.items.select_validate_xinput:
-            validateXInputStatusFIS12(message, testResults, usecaseId, action_id, flowId);
+            validateXInputStatusFIS12(
+              message,
+              testResults,
+              usecaseId,
+              action_id,
+              flowId
+            );
             break;
           default:
             break;
@@ -5722,14 +6784,14 @@ export function createOnSelectValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults,action_id,flowId);
+            validateQuote(message, testResults, action_id, flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
 
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -5743,7 +6805,7 @@ export function createOnSelectValidator(...config: string[]) {
             validateProviderTRV10(message, testResults, action_id);
             break;
           case trv10Validators.quote_trv10.validate_quote_trv10:
-            validateQuoteTRV10(message, testResults,action_id,flowId);
+            validateQuoteTRV10(message, testResults, action_id, flowId);
             break;
           case trv10Validators.fulfillment_stops_order
             .validate_fulfillment_stops_order:
@@ -5822,7 +6884,7 @@ export function createInitValidator(...config: string[]) {
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -5842,7 +6904,13 @@ export function createInitValidator(...config: string[]) {
           // FIS12 validations
           case fis12Validators.items.select_validate_xinput:
             // Validate xinput.form_response status & submission_id for FIS12 flows
-            validateXInputStatusFIS12(message, testResults, undefined, action_id, flowId);
+            validateXInputStatusFIS12(
+              message,
+              testResults,
+              undefined,
+              action_id,
+              flowId
+            );
             break;
           // TRV10 validations
           case trv10Validators.provider_trv10.validate_provider_trv10:
@@ -5966,7 +7034,7 @@ export function createConfirmValidator(...config: string[]) {
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -6050,13 +7118,13 @@ export function createOnInitValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults,action_id,flowId);
+            validateQuote(message, testResults, action_id, flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -6093,14 +7161,24 @@ export function createOnInitValidator(...config: string[]) {
 
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            validateFulfillmentsFIS12(
+              message,
+              testResults,
+              usecaseId,
+              action_id
+            );
             break;
           case fis12Validators.documents.validate_documents:
             validateDocumentsFIS12(message, testResults);
             break;
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            validateFulfillmentsFIS12(
+              message,
+              testResults,
+              usecaseId,
+              action_id
+            );
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -6154,7 +7232,12 @@ export function createOnConfirmValidator(...config: string[]) {
       if (validation) {
         switch (validation) {
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            validateFulfillmentsFIS12(
+              message,
+              testResults,
+              usecaseId,
+              action_id
+            );
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -6219,13 +7302,13 @@ export function createOnConfirmValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults,action_id,flowId);
+            validateQuote(message, testResults, action_id, flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -6245,7 +7328,7 @@ export function createOnConfirmValidator(...config: string[]) {
             validateProviderTRV10(message, testResults, action_id);
             break;
           case trv10Validators.quote_trv10.validate_quote_trv10:
-            validateQuoteTRV10(message, testResults,action_id,flowId);
+            validateQuoteTRV10(message, testResults, action_id, flowId);
             break;
           case trv10Validators.payments_trv10.validate_payments_trv10:
             validatePaymentsTRV10(message, testResults);
@@ -6256,7 +7339,12 @@ export function createOnConfirmValidator(...config: string[]) {
 
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            validateFulfillmentsFIS12(
+              message,
+              testResults,
+              usecaseId,
+              action_id
+            );
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -6324,13 +7412,13 @@ export function createOnStatusValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults,action_id,flowId);
+            validateQuote(message, testResults, action_id, flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -6370,7 +7458,12 @@ export function createOnStatusValidator(...config: string[]) {
 
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
-            validateFulfillmentsFIS12(message, testResults, usecaseId, action_id);
+            validateFulfillmentsFIS12(
+              message,
+              testResults,
+              usecaseId,
+              action_id
+            );
             break;
           case fis12Validators.payments.validate_payments:
             validatePaymentsFIS12(message, testResults);
@@ -6379,7 +7472,12 @@ export function createOnStatusValidator(...config: string[]) {
             validateDocumentsFIS12(message, testResults);
             break;
           case fis12Validators.update.validate_fulfillment_state:
-            validateFulfillmentStateOnUpdateFIS12(message, testResults, action_id, flowId);
+            validateFulfillmentStateOnUpdateFIS12(
+              message,
+              testResults,
+              action_id,
+              flowId
+            );
             break;
 
           default:
@@ -6442,13 +7540,13 @@ export function createOnCancelValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults,action_id,flowId);
+            validateQuote(message, testResults, action_id, flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);
@@ -6546,13 +7644,13 @@ export function createOnUpdateValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults,action_id,flowId);
+            validateQuote(message, testResults, action_id, flowId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
             break;
           case fis11Validators.items.validate_items:
-            validateItems(message, testResults, action_id, flowId,usecaseId);
+            validateItems(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
             validateFulfillments(message, testResults);

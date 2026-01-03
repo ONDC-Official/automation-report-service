@@ -53,6 +53,15 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Cancellation"
 ]
 
+export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
+  "Purchase_Finance_With_AA_Loan_Foreclosure",
+  "Purchase_Finance_With_AA_Missed_EMI_Payment",
+  "Purchase_Finance_With_AA_Pre_Part_Payment",
+  "Purchase_Finance_Without_AA_Loan_Foreclosure",
+  "Purchase_Finance_Without_AA_Missed_EMI_Payment",
+  "Purchase_Finance_Without_AA_Pre_Part_Payment",
+]
+
 export const validCategoryMap: Record<string, string> = {
   GOLD_LOAN: "Gold Loan",
   BUREAU_LOAN: "Bureau Loan",
