@@ -443,21 +443,20 @@ function validateIntent(
     }
   }
 
-if(intent.payment?.type !== "POST_FULFILLMENT"){
-  if (!intent.payment?.collected_by) {
-    testResults.failed.push("Payment collected_by is missing in intent");
-  } else if (!PAYMENT_COLLECTED_BY.includes(intent.payment?.collected_by)) {
-    testResults.passed.push(
-      `Invalid payment collected_by found in intent,collected by should be one of these ${PAYMENT_COLLECTED_BY}`
-    );
-  } else {
-    testResults.passed.push(
-      `Payment collected_by ${intent.payment?.collected_by} is present in intent`
-    );
+  if (intent.payment?.type !== "POST_FULFILLMENT") {
+    if (!intent.payment?.collected_by) {
+      testResults.failed.push("Payment collected_by is missing in intent");
+    } else if (!PAYMENT_COLLECTED_BY.includes(intent.payment?.collected_by)) {
+      testResults.passed.push(
+        `Invalid payment collected_by found in intent,collected by should be one of these ${PAYMENT_COLLECTED_BY}`
+      );
+    } else {
+      testResults.passed.push(
+        `Payment collected_by ${intent.payment?.collected_by} is present in intent`
+      );
+    }
   }
 }
-}
-
 function validatePaymentCollectedBy(
   message: any,
   testResults: TestResult
@@ -4673,8 +4672,10 @@ function validateFulfillmentStateOnUpdateFIS12(
     return;
   }
 
-
-  if (PURCHASE_FINANCE_FLOWS.includes(flowId) && !PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION.includes(flowId)) {
+  if (
+    PURCHASE_FINANCE_FLOWS.includes(flowId) &&
+    PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION.includes(flowId)
+  ) {
     const fulfillments = message?.order?.fulfillments;
     if (
       !fulfillments ||
@@ -6076,7 +6077,11 @@ function validateCancellation(
 
   // Validate cancellation object
   const cancellation = order.cancellation;
-  if (!cancellation && action_id !== "soft_on_cancel_purchase_finance" && action_id !== "confirmed_on_cancel_purchase_finance") {
+  if (
+    !cancellation &&
+    action_id !== "soft_on_cancel_purchase_finance" &&
+    action_id !== "confirmed_on_cancel_purchase_finance"
+  ) {
     testResults.failed.push("Cancellation information is missing in order");
     return;
   }
