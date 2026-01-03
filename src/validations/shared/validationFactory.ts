@@ -5709,10 +5709,14 @@ function validatePaymentsTRV10(message: any, testResults: TestResult): void {
   }
 
   payments.forEach((payment, index) => {
-    if (!payment.collected_by) {
-      testResults.failed.push(`Payment ${index} collected_by is missing`);
+    if (payment.type !== "POST_FULFILLMENT") {
+      if (!payment.collected_by) {
+        testResults.failed.push(`Payment ${index} collected_by is missing`);
+      } else {
+        testResults.passed.push(`Payment ${index} collected_by is present`);
+      }
     } else {
-      testResults.passed.push(`Payment ${index} collected_by is present`);
+      testResults.passed.push(`Payment ${index} type is POST_FULFILLMENT, skipping collected_by validation`);
     }
 
     // For TRV10, payment type can be PRE_ORDER, ON_ORDER, POST_FULFILLMENT, or ON-FULFILLMENT
