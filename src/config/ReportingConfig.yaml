@@ -1725,3 +1725,274 @@ domains:
               - Purchase_Finance_With_AA_Pre_Part_Payment
               - Purchase_Finance_With_AA_Cancellation
             validationModules: "../validations/ONDC:FIS12/validator#validate"
+      "2.0.3":
+        usecases:
+          PERSONAL LOAN:
+            flows:
+              Personal_Loan_With_AA_And_Monitoring_Consent:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+                - status
+                - on_status
+
+              Personal_Loan_Sachet_Insurance_with_AA_And_Monitoring_Consent:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+                - status
+                - on_status
+
+              Personal_Loan_Without_AA_And_Monitoring_Consent:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+                - status
+                - on_status
+
+              Personal_Loan_Offline:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - status
+                - on_status
+
+              Personal_Loan_Foreclosure:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_status
+                - status
+                - on_status
+                - update
+                - on_update
+                - on_update
+
+              Personal_Loan_Missed_EMI:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_status
+                - status
+                - on_status
+                - update
+                - on_update
+                - on_update
+
+              Personal_Loan_Pre_Part_Payment:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_status
+                - update
+                - on_update
+                - on_update
+
+              Personal_Loan_Multiple_Offers:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+                - status
+                - on_status
+            optional_flows:
+              - Personal_Loan_With_AA_And_Monitoring_Consent
+              - Personal_Loan_Sachet_Insurance_with_AA_And_Monitoring_Consent
+              - Personal_Loan_Without_AA_And_Monitoring_Consent
+              - Personal_Loan_Offline
+              - Personal_Loan_Foreclosure
+              - Personal_Loan_Missed_EMI
+              - Personal_Loan_Pre_Part_Payment
+              - Personal_Loan_Multiple_Offers
+            validationModules: "../validations/ONDC:FIS12/validator#validate"
+
+          CREDIT CARD:
+            flows:
+              Credit_Card_With_AA_And_Monitoring_Consent:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+                - status
+                - on_status
+            optional_flows:
+              - Credit_Card_With_AA_And_Monitoring_Consent
+            validationModules: "../validations/ONDC:FIS12/validator#validate"
