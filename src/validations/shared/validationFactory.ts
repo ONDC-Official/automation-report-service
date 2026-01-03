@@ -455,6 +455,8 @@ function validateIntent(
         `Payment collected_by ${intent.payment?.collected_by} is present in intent`
       );
     }
+  }else{
+    return; 
   }
 }
 
