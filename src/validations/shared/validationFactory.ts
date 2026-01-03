@@ -3892,6 +3892,9 @@ function validateFulfillmentStopsInOrder(
 
   // Skip validation for update_quote as per business rule
   if (action_id === "update_quote") return;
+  if(flowId === "Purchase_Finance_Without_AA_Cancellation" || flowId === "Purchase_Finance_With_AA_Cancellation" || flowId === "Purchase_Finance_With_AA_Pre_Part_Payment"){
+    return;
+  }
 
   const fulfillments = order.fulfillments;
   if (!Array.isArray(fulfillments) || fulfillments.length === 0) {
