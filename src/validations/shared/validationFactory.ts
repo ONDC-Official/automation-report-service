@@ -443,21 +443,19 @@ function validateIntent(
     }
   }
 
-  if(intent.payment?.type !== "POST_FULFILLMENT"){
-    if (!intent.payment?.collected_by) {
-      testResults.failed.push("Payment collected_by is missing in intent");
-    } else if (!PAYMENT_COLLECTED_BY.includes(intent.payment?.collected_by)) {
-      testResults.passed.push(
-        `Invalid payment collected_by found in intent,collected by should be one of these ${PAYMENT_COLLECTED_BY}`
-      );
-    } else {
-      testResults.passed.push(
-        `Payment collected_by ${intent.payment?.collected_by} is present in intent`
-      );
-    }
-  }else{
-    return; 
+if(intent.payment?.type !== "POST_FULFILLMENT"){
+  if (!intent.payment?.collected_by) {
+    testResults.failed.push("Payment collected_by is missing in intent");
+  } else if (!PAYMENT_COLLECTED_BY.includes(intent.payment?.collected_by)) {
+    testResults.passed.push(
+      `Invalid payment collected_by found in intent,collected by should be one of these ${PAYMENT_COLLECTED_BY}`
+    );
+  } else {
+    testResults.passed.push(
+      `Payment collected_by ${intent.payment?.collected_by} is present in intent`
+    );
   }
+}
 }
 
 function validatePaymentCollectedBy(
@@ -4675,6 +4673,7 @@ function validateFulfillmentStateOnUpdateFIS12(
     return;
   }
 
+
   if (PURCHASE_FINANCE_FLOWS.includes(flowId) && !PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION.includes(flowId)) {
     const fulfillments = message?.order?.fulfillments;
     if (
@@ -7067,7 +7066,6 @@ export function createConfirmValidator(...config: string[]) {
             break;
         }
       }
-    
     }
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
