@@ -197,20 +197,20 @@ function validateSettlementAmount(
 
     // Handle "percent-annualized" type: SETTLEMENT_AMOUNT = (Principal × BFF × Tenure) / 12
     if (buyerFinderFeesType === "percent-annualized") {
-      // Extract Tenure from items tags
-      let tenureInYears: number | null = null;
-      if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-        const firstItem = order.items[0];
-        if (firstItem.tags && Array.isArray(firstItem.tags)) {
-          const infoTag = firstItem.tags.find((tag: any) => tag.descriptor?.code === "INFO");
-          if (infoTag?.list && Array.isArray(infoTag.list)) {
-            const termItem = infoTag.list.find((item: any) => item.descriptor?.code === "TERM");
-            if (termItem?.value) {
-              tenureInYears = parseTermToYears(termItem.value);
-            }
+    // Extract Tenure from items tags
+    let tenureInYears: number | null = null;
+    if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+      const firstItem = order.items[0];
+      if (firstItem.tags && Array.isArray(firstItem.tags)) {
+        const infoTag = firstItem.tags.find((tag: any) => tag.descriptor?.code === "INFO");
+        if (infoTag?.list && Array.isArray(infoTag.list)) {
+          const termItem = infoTag.list.find((item: any) => item.descriptor?.code === "TERM");
+          if (termItem?.value) {
+            tenureInYears = parseTermToYears(termItem.value);
           }
         }
       }
+    }
 
       if (tenureInYears === null) {
         testResults.failed.push(
@@ -243,10 +243,10 @@ function validateSettlementAmount(
     }
 
     // Invalid BUYER_FINDER_FEES_TYPE
-    testResults.failed.push(
+        testResults.failed.push(
       `Payment ${paymentIndex}: ${tagType} BUYER_FINDER_FEES_TYPE is invalid. ` +
       `Expected one of: "amount", "percent", "percent-annualized", found: "${buyerFinderFeesType}"`
-    );
+        );
   } catch (error: any) {
     testResults.failed.push(
       `Payment ${paymentIndex}: Error validating ${tagType} SETTLEMENT_AMOUNT calculation: ${error.message}`
@@ -489,17 +489,17 @@ function validateTags(message: any, testResults: TestResult, flowId?: string): v
         }
       } else {
         // For "percent" and "percent-annualized", BUYER_FINDER_FEES_PERCENTAGE is required
-        const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
-        if (!buyerFinderFeesPercentage) {
+    const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+    if (!buyerFinderFeesPercentage) {
           testResults.failed.push(`BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`);
-        } else {
-          const percentage = parseFloat(buyerFinderFeesPercentage);
-          if (isNaN(percentage) || percentage < 0) {
-            testResults.failed.push(
-              `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
-            );
-          } else {
-            testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+    } else {
+      const percentage = parseFloat(buyerFinderFeesPercentage);
+      if (isNaN(percentage) || percentage < 0) {
+        testResults.failed.push(
+          `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+        );
+      } else {
+        testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
           }
         }
       }
@@ -613,17 +613,17 @@ function validatePurchaseFinanceBapTerms(
       }
     } else {
       // For "percent" and "percent-annualized", BUYER_FINDER_FEES_PERCENTAGE is required
-      const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
-      if (!buyerFinderFeesPercentage) {
+  const buyerFinderFeesPercentage = getValue("BUYER_FINDER_FEES_PERCENTAGE");
+  if (!buyerFinderFeesPercentage) {
         testResults.failed.push(`BUYER_FINDER_FEES_PERCENTAGE is missing in BAP_TERMS (required when BUYER_FINDER_FEES_TYPE='${buyerFinderFeesType}')`);
-      } else {
-        const percentage = parseFloat(buyerFinderFeesPercentage);
-        if (isNaN(percentage) || percentage < 0) {
-          testResults.failed.push(
-            `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
-          );
-        } else {
-          testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
+  } else {
+    const percentage = parseFloat(buyerFinderFeesPercentage);
+    if (isNaN(percentage) || percentage < 0) {
+      testResults.failed.push(
+        `BUYER_FINDER_FEES_PERCENTAGE should be a valid positive number, found: ${buyerFinderFeesPercentage}`
+      );
+    } else {
+      testResults.passed.push(`BUYER_FINDER_FEES_PERCENTAGE is valid: ${buyerFinderFeesPercentage}`);
         }
       }
     }
@@ -742,6 +742,12 @@ function validatePurchaseFinanceSearch(
     }
 
     if (!item.xinput) {
+      // Skip xinput validation if item has parent_item_id (it's a child item)
+      if (item.parent_item_id) {
+        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        return;
+      }
+      
       testResults.failed.push(`Item ${item.id}: xinput is missing (required for search2/3/4)`);
       return;
     }
@@ -816,6 +822,12 @@ function validatePurchaseFinanceOnSelect(
     }
 
     if (!item.xinput) {
+      // Skip xinput validation if item has parent_item_id (it's a child item)
+      if (item.parent_item_id) {
+        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        return;
+      }
+      
       testResults.failed.push(`Item ${item.id}: xinput is missing in on_select response`);
       return;
     }
@@ -1249,6 +1261,12 @@ function validatePurchaseFinanceOnInit(
     }
 
     if (!item.xinput) {
+      // Skip xinput validation if item has parent_item_id (it's a child item)
+      if (item.parent_item_id) {
+        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        return;
+      }
+      
       testResults.failed.push(`Item ${item.id}: xinput is missing in on_init response`);
       return;
     }
@@ -4318,6 +4336,12 @@ async function validateXinputFIS12(
     }
 
     if (!item.xinput) {
+      // Skip xinput validation if item has parent_item_id (it's a child item)
+      if (item.parent_item_id) {
+        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        return;
+      }
+      
       testResults.failed.push(`Item ${item.id}: xinput is missing`);
       return;
     }
@@ -4493,6 +4517,12 @@ function validateXInputStatusFIS12(
 
   items.forEach((item: any) => {
     if (!item.xinput) {
+      // Skip xinput validation if item has parent_item_id (it's a child item)
+      if (item.parent_item_id) {
+        testResults.passed.push(`Item ${item.id}: xinput is not required (has parent_item_id: ${item.parent_item_id})`);
+        return;
+      }
+      
       if (xinputRequired) {
         testResults.failed.push(`Item ${item.id}: xinput is missing`);
         return;
