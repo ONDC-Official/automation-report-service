@@ -145,18 +145,18 @@ function validateSettlementAmount(
       if (difference <= tolerance) {
         testResults.passed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT matches BUYER_FINDER_FEES_AMOUNT. ` +
-            `Expected: ₹${expectedAmount.toFixed(
-              2
-            )}, Actual: ₹${actualSettlementAmount.toFixed(2)}`
+          `Expected: ₹${expectedAmount.toFixed(
+            2
+          )}, Actual: ₹${actualSettlementAmount.toFixed(2)}`
         );
       } else {
         testResults.failed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT does not match BUYER_FINDER_FEES_AMOUNT. ` +
-            `Expected: ₹${expectedAmount.toFixed(
-              2
-            )}, Actual: ₹${actualSettlementAmount.toFixed(
-              2
-            )}, Difference: ₹${difference.toFixed(2)}`
+          `Expected: ₹${expectedAmount.toFixed(
+            2
+          )}, Actual: ₹${actualSettlementAmount.toFixed(
+            2
+          )}, Difference: ₹${difference.toFixed(2)}`
         );
       }
       return;
@@ -201,20 +201,20 @@ function validateSettlementAmount(
       if (difference <= tolerance) {
         testResults.passed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is correct (percent type). ` +
-            `Expected: ₹${roundedExpected.toFixed(
-              2
-            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
-            `Actual: ₹${actualSettlementAmount.toFixed(2)}`
+          `Expected: ₹${roundedExpected.toFixed(
+            2
+          )} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(2)}`
         );
       } else {
         testResults.failed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is incorrect (percent type). ` +
-            `Expected: ₹${roundedExpected.toFixed(
-              2
-            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
-            `Actual: ₹${actualSettlementAmount.toFixed(
-              2
-            )}, Difference: ₹${difference.toFixed(2)}`
+          `Expected: ₹${roundedExpected.toFixed(
+            2
+          )} (Principal: ₹${principal}, BFF: ${bffPercentage}%), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(
+            2
+          )}, Difference: ₹${difference.toFixed(2)}`
         );
       }
       return;
@@ -259,20 +259,20 @@ function validateSettlementAmount(
       if (difference <= tolerance) {
         testResults.passed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is correct (percent-annualized type). ` +
-            `Expected: ₹${roundedExpected.toFixed(
-              2
-            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
-            `Actual: ₹${actualSettlementAmount.toFixed(2)}`
+          `Expected: ₹${roundedExpected.toFixed(
+            2
+          )} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(2)}`
         );
       } else {
         testResults.failed.push(
           `Payment ${paymentIndex}: ${tagType} SETTLEMENT_AMOUNT calculation is incorrect (percent-annualized type). ` +
-            `Expected: ₹${roundedExpected.toFixed(
-              2
-            )} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
-            `Actual: ₹${actualSettlementAmount.toFixed(
-              2
-            )}, Difference: ₹${difference.toFixed(2)}`
+          `Expected: ₹${roundedExpected.toFixed(
+            2
+          )} (Principal: ₹${principal}, BFF: ${bffPercentage}%, Tenure: ${tenureInYears} years), ` +
+          `Actual: ₹${actualSettlementAmount.toFixed(
+            2
+          )}, Difference: ₹${difference.toFixed(2)}`
         );
       }
       return;
@@ -281,7 +281,7 @@ function validateSettlementAmount(
     // Invalid BUYER_FINDER_FEES_TYPE
     testResults.failed.push(
       `Payment ${paymentIndex}: ${tagType} BUYER_FINDER_FEES_TYPE is invalid. ` +
-        `Expected one of: "amount", "percent", "percent-annualized", found: "${buyerFinderFeesType}"`
+      `Expected one of: "amount", "percent", "percent-annualized", found: "${buyerFinderFeesType}"`
     );
   } catch (error: any) {
     testResults.failed.push(
@@ -911,8 +911,7 @@ function validatePurchaseFinanceSearch(
       );
     } else if (!allowedStatuses.includes(formResponse.status)) {
       testResults.failed.push(
-        `Item ${item.id}: Invalid xinput.form_response.status "${
-          formResponse.status
+        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status
         }". Allowed: ${allowedStatuses.join(", ")}`
       );
     } else {
@@ -991,8 +990,7 @@ function validatePurchaseFinanceOnSelect(
         );
       } else if (!allowedStatuses.includes(formResponse.status)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form_response.status "${
-            formResponse.status
+          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status
           }". Allowed: ${allowedStatuses.join(", ")}`
         );
       } else {
@@ -1060,8 +1058,7 @@ function validatePurchaseFinanceOnSelect(
         );
       } else if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form.mime_type "${
-            item.xinput.form.mime_type
+          `Item ${item.id}: Invalid xinput.form.mime_type "${item.xinput.form.mime_type
           }". Allowed: ${validMimeTypes.join(", ")}`
         );
       } else {
@@ -1128,8 +1125,7 @@ function validatePurchaseFinanceOnSelect(
         item.xinput.head.headings.forEach((heading: string) => {
           if (!allowedHeadings.includes(heading)) {
             testResults.failed.push(
-              `Item ${
-                item.id
+              `Item ${item.id
               }: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(
                 ", "
               )}`
@@ -1169,8 +1165,7 @@ function validatePurchaseFinanceOnSelect(
             if (code && value) {
               if (!allowedChecklistStatuses.includes(value)) {
                 testResults.failed.push(
-                  `Item ${
-                    item.id
+                  `Item ${item.id
                   }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
                     ", "
                   )}`
@@ -1260,8 +1255,7 @@ function validatePurchaseFinanceSelect(
       );
     } else if (!allowedStatuses.includes(formResponse.status)) {
       testResults.failed.push(
-        `Item ${item.id}: Invalid xinput.form_response.status "${
-          formResponse.status
+        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status
         }". Allowed: ${allowedStatuses.join(", ")}`
       );
     } else {
@@ -1395,8 +1389,7 @@ function validatePurchaseFinanceInit(
       testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
     } else if (!validPaymentTypes.includes(payment.type)) {
       testResults.failed.push(
-        `Payment ${paymentIndex}: Invalid payment type "${
-          payment.type
+        `Payment ${paymentIndex}: Invalid payment type "${payment.type
         }". Allowed: ${validPaymentTypes.join(", ")}`
       );
     } else {
@@ -1491,8 +1484,7 @@ function validatePurchaseFinanceInit(
       );
     } else if (!allowedStatuses.includes(formResponse.status)) {
       testResults.failed.push(
-        `Item ${item.id}: Invalid xinput.form_response.status "${
-          formResponse.status
+        `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status
         }". Allowed: ${allowedStatuses.join(", ")}`
       );
     } else {
@@ -1571,8 +1563,7 @@ function validatePurchaseFinanceOnInit(
         );
       } else if (!allowedStatuses.includes(formResponse.status)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form_response.status "${
-            formResponse.status
+          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status
           }". Allowed: ${allowedStatuses.join(", ")}`
         );
       } else {
@@ -1619,8 +1610,7 @@ function validatePurchaseFinanceOnInit(
             if (code && value) {
               if (!allowedChecklistStatuses.includes(value)) {
                 testResults.failed.push(
-                  `Item ${
-                    item.id
+                  `Item ${item.id
                   }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
                     ", "
                   )}`
@@ -1673,8 +1663,7 @@ function validatePurchaseFinanceOnInit(
         );
       } else if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form.mime_type "${
-            item.xinput.form.mime_type
+          `Item ${item.id}: Invalid xinput.form.mime_type "${item.xinput.form.mime_type
           }". Allowed: ${validMimeTypes.join(", ")}`
         );
       } else {
@@ -1741,8 +1730,7 @@ function validatePurchaseFinanceOnInit(
         item.xinput.head.headings.forEach((heading: string) => {
           if (!allowedHeadings.includes(heading)) {
             testResults.failed.push(
-              `Item ${
-                item.id
+              `Item ${item.id
               }: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(
                 ", "
               )}`
@@ -1782,8 +1770,7 @@ function validatePurchaseFinanceOnInit(
             if (code && value) {
               if (!allowedChecklistStatuses.includes(value)) {
                 testResults.failed.push(
-                  `Item ${
-                    item.id
+                  `Item ${item.id
                   }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
                     ", "
                   )}`
@@ -1863,8 +1850,7 @@ function validatePurchaseFinanceOnInit(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${
-            payment.type
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type
           }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
@@ -2115,8 +2101,7 @@ function validatePurchaseFinanceConfirm(
       testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
     } else if (!validPaymentTypes.includes(payment.type)) {
       testResults.failed.push(
-        `Payment ${paymentIndex}: Invalid payment type "${
-          payment.type
+        `Payment ${paymentIndex}: Invalid payment type "${payment.type
         }". Allowed: ${validPaymentTypes.join(", ")}`
       );
     } else {
@@ -2240,8 +2225,7 @@ function validatePurchaseFinanceOnCancel(
           if (code && value) {
             if (!allowedChecklistStatuses.includes(value)) {
               testResults.failed.push(
-                `Item ${
-                  item.id
+                `Item ${item.id
                 }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
                   ", "
                 )}`
@@ -2280,8 +2264,7 @@ function validatePurchaseFinanceOnCancel(
         const validTypes = ["LOAN", "BASE_ORDER"];
         if (!validTypes.includes(fulfillment.type)) {
           testResults.failed.push(
-            `Fulfillment ${index}: Invalid type "${
-              fulfillment.type
+            `Fulfillment ${index}: Invalid type "${fulfillment.type
             }". Allowed: ${validTypes.join(", ")}`
           );
         } else {
@@ -2375,8 +2358,7 @@ function validatePurchaseFinanceOnCancel(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${
-            payment.type
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type
           }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
@@ -2460,8 +2442,7 @@ function validatePurchaseFinanceOnCancel(
         const validCodes = ["LOAN_AGREEMENT", "LOAN_CANCELLATION"];
         if (!validCodes.includes(document.descriptor.code)) {
           testResults.failed.push(
-            `Document ${index}: Invalid descriptor.code "${
-              document.descriptor.code
+            `Document ${index}: Invalid descriptor.code "${document.descriptor.code
             }". Allowed: ${validCodes.join(", ")}`
           );
         } else {
@@ -2494,8 +2475,7 @@ function validatePurchaseFinanceOnCancel(
         const validMimeTypes = ["application/pdf", "application/json"];
         if (!validMimeTypes.includes(document.mime_type)) {
           testResults.failed.push(
-            `Document ${index}: Invalid mime_type "${
-              document.mime_type
+            `Document ${index}: Invalid mime_type "${document.mime_type
             }". Allowed: ${validMimeTypes.join(", ")}`
           );
         } else {
@@ -2568,8 +2548,7 @@ function validatePurchaseFinanceOnStatus(
         );
       } else if (!allowedStatuses.includes(formResponse.status)) {
         testResults.failed.push(
-          `Item ${item.id}: Invalid xinput.form_response.status "${
-            formResponse.status
+          `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status
           }". Allowed: ${allowedStatuses.join(", ")}`
         );
       } else {
@@ -2615,8 +2594,7 @@ function validatePurchaseFinanceOnStatus(
           if (code && value) {
             if (!allowedChecklistStatuses.includes(value)) {
               testResults.failed.push(
-                `Item ${
-                  item.id
+                `Item ${item.id
                 }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
                   ", "
                 )}`
@@ -2731,8 +2709,7 @@ function validatePurchaseFinanceOnUpdate(
       const validTypes = ["LOAN", "BASE_ORDER"];
       if (!validTypes.includes(fulfillment.type)) {
         testResults.failed.push(
-          `Fulfillment ${index}: Invalid type "${
-            fulfillment.type
+          `Fulfillment ${index}: Invalid type "${fulfillment.type
           }". Allowed: ${validTypes.join(", ")}`
         );
       } else {
@@ -2859,8 +2836,7 @@ function validatePurchaseFinanceOnUpdate(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${
-            payment.type
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type
           }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
@@ -2966,8 +2942,7 @@ function validatePurchaseFinanceOnConfirm(
           if (code && value) {
             if (!allowedChecklistStatuses.includes(value)) {
               testResults.failed.push(
-                `Item ${
-                  item.id
+                `Item ${item.id
                 }: Invalid CHECKLISTS.${code} status "${value}". Allowed: ${allowedChecklistStatuses.join(
                   ", "
                 )}`
@@ -3006,8 +2981,7 @@ function validatePurchaseFinanceOnConfirm(
         const validTypes = ["LOAN", "BASE_ORDER"];
         if (!validTypes.includes(fulfillment.type)) {
           testResults.failed.push(
-            `Fulfillment ${index}: Invalid type "${
-              fulfillment.type
+            `Fulfillment ${index}: Invalid type "${fulfillment.type
             }". Allowed: ${validTypes.join(", ")}`
           );
         } else {
@@ -3057,8 +3031,7 @@ function validatePurchaseFinanceOnConfirm(
         testResults.failed.push(`Payment ${paymentIndex}: type is missing`);
       } else if (!validPaymentTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${paymentIndex}: Invalid payment type "${
-            payment.type
+          `Payment ${paymentIndex}: Invalid payment type "${payment.type
           }". Allowed: ${validPaymentTypes.join(", ")}`
         );
       } else {
@@ -3154,8 +3127,7 @@ function validatePurchaseFinanceOnConfirm(
         const validCodes = ["LOAN_AGREEMENT"];
         if (!validCodes.includes(document.descriptor.code)) {
           testResults.failed.push(
-            `Document ${index}: Invalid descriptor.code "${
-              document.descriptor.code
+            `Document ${index}: Invalid descriptor.code "${document.descriptor.code
             }". Allowed: ${validCodes.join(", ")}`
           );
         } else {
@@ -3188,8 +3160,7 @@ function validatePurchaseFinanceOnConfirm(
         const validMimeTypes = ["application/pdf", "application/json"];
         if (!validMimeTypes.includes(document.mime_type)) {
           testResults.failed.push(
-            `Document ${index}: Invalid mime_type "${
-              document.mime_type
+            `Document ${index}: Invalid mime_type "${document.mime_type
             }". Allowed: ${validMimeTypes.join(", ")}`
           );
         } else {
@@ -3327,8 +3298,7 @@ function validatePurchaseFinanceOnSearch(
           );
         } else if (!allowedStatuses.includes(formResponse.status)) {
           testResults.failed.push(
-            `Item ${item.id}: Invalid xinput.form_response.status "${
-              formResponse.status
+            `Item ${item.id}: Invalid xinput.form_response.status "${formResponse.status
             }". Allowed: ${allowedStatuses.join(", ")}`
           );
         } else {
@@ -3502,8 +3472,7 @@ function validatePurchaseFinanceOnSearch(
             item.xinput.head.headings.forEach((heading: string) => {
               if (!allowedHeadings.includes(heading)) {
                 testResults.failed.push(
-                  `Item ${
-                    item.id
+                  `Item ${item.id
                   }: Invalid heading "${heading}". Allowed: ${allowedHeadings.join(
                     ", "
                   )}`
@@ -4608,8 +4577,7 @@ function validateDocumentsFIS12(message: any, testResults: TestResult): void {
 
   // Summary
   testResults.passed.push(
-    `Found ${
-      documents.length
+    `Found ${documents.length
     } document(s) with types: ${foundDocumentTypes.join(", ")}`
   );
 }
@@ -4808,8 +4776,7 @@ function validateUpdatePaymentsFIS12(
         ];
         if (!validLabels.includes(payment.time.label)) {
           testResults.failed.push(
-            `Payment ${index}: Invalid time.label "${
-              payment.time.label
+            `Payment ${index}: Invalid time.label "${payment.time.label
             }". Expected one of: ${validLabels.join(", ")}`
           );
         } else {
@@ -4868,8 +4835,7 @@ function validateUpdatePaymentsFIS12(
       const validStatuses = ["NOT-PAID", "PAID", "PENDING"];
       if (!validStatuses.includes(payment.status)) {
         testResults.failed.push(
-          `Payment ${index}: Invalid status "${
-            payment.status
+          `Payment ${index}: Invalid status "${payment.status
           }". Expected one of: ${validStatuses.join(", ")}`
         );
       } else {
@@ -4884,8 +4850,7 @@ function validateUpdatePaymentsFIS12(
       const validTypes = ["ON_ORDER", "POST_FULFILLMENT"];
       if (!validTypes.includes(payment.type)) {
         testResults.failed.push(
-          `Payment ${index}: Invalid type "${
-            payment.type
+          `Payment ${index}: Invalid type "${payment.type
           }". Expected one of: ${validTypes.join(", ")}`
         );
       } else {
@@ -5352,8 +5317,7 @@ async function validateXinputFIS12(
           const validStatuses = ["SUCCESS", "PENDING", "FAILED"];
           if (!validStatuses.includes(item.xinput.form_response.status)) {
             testResults.failed.push(
-              `Item ${item.id}: Invalid xinput.form_response.status "${
-                item.xinput.form_response.status
+              `Item ${item.id}: Invalid xinput.form_response.status "${item.xinput.form_response.status
               }". Allowed: ${validStatuses.join(", ")}`
             );
           } else {
@@ -5389,8 +5353,7 @@ async function validateXinputFIS12(
         head.headings.forEach((h: string) => {
           if (!allowedHeadings.includes(h)) {
             testResults.failed.push(
-              `Item ${
-                item.id
+              `Item ${item.id
               }: Invalid xinput heading "${h}". Allowed: ${allowedHeadings.join(
                 ", "
               )}`
@@ -5419,28 +5382,24 @@ async function validateXinputFIS12(
         if (isGoldLoan || isPersonalLoan) {
           if (item.xinput.required !== true) {
             testResults.failed.push(
-              `Item ${item.id}: xinput.required must be true for ${
-                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              `Item ${item.id}: xinput.required must be true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
               } items`
             );
           } else {
             testResults.passed.push(
-              `Item ${item.id}: xinput.required is true for ${
-                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              `Item ${item.id}: xinput.required is true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
               } item`
             );
           }
 
           if (item.xinput.form.mime_type !== "text/html") {
             testResults.failed.push(
-              `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${
-                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
               } items, but found "${item.xinput.form.mime_type}"`
             );
           } else {
             testResults.passed.push(
-              `Item ${item.id}: xinput.form.mime_type is "text/html" for ${
-                isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
+              `Item ${item.id}: xinput.form.mime_type is "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
               } item`
             );
           }
@@ -5575,8 +5534,7 @@ function validateXInputStatusFIS12(
       );
     } else if (!allowedStatuses.includes(status)) {
       testResults.failed.push(
-        `Item ${
-          item.id
+        `Item ${item.id
         }: Invalid xinput.form_response.status "${status}". Allowed: ${allowedStatuses.join(
           ", "
         )}`
@@ -5713,21 +5671,24 @@ function validatePayments(message: any, testResults: TestResult): void {
   }
 
   payments.forEach((payment, index) => {
-    if (!payment.collected_by) {
-      testResults.failed.push(`Payment ${index} collected_by is missing`);
-    } else if (
-      payment?.collected_by &&
-      ["BAP", "BPP"].includes(payment.collected_by)
-    ) {
-      testResults.passed.push(
-        `Payment collected_by has valid value ${payment.collected_by}`
-      );
+    if (payment.type !== "POST_FULFILLMENT") {
+      if (!payment.collected_by) {
+        testResults.failed.push(`Payment ${index} collected_by is missing`);
+      } else if (
+        payment?.collected_by &&
+        ["BAP", "BPP"].includes(payment.collected_by)
+      ) {
+        testResults.passed.push(
+          `Payment collected_by has valid value ${payment.collected_by}`
+        );
+      } else {
+        testResults.passed.push(
+          `Payment ${index} collected_by should be one of BAP or BPP`
+        );
+      }
     } else {
-      testResults.passed.push(
-        `Payment ${index} collected_by should be one of BAP or BPP`
-      );
+      testResults.passed.push(`Payment ${index} type is POST_FULFILLMENT`);
     }
-
     if (
       payment.type &&
       !["PRE_ORDER", "ON_ORDER", "POST_FULFILLMENT"].includes(payment.type)
@@ -5969,8 +5930,7 @@ export function validateCancel(
           );
         } else {
           testResults.failed.push(
-            `Cancellation descriptor code should be SOFT_CANCEL${
-              isPurchaseFinanceFlow ? " or CONFIRM_CANCEL" : ""
+            `Cancellation descriptor code should be SOFT_CANCEL${isPurchaseFinanceFlow ? " or CONFIRM_CANCEL" : ""
             } for cancel action, got ${descriptor.code}`
           );
         }
@@ -6079,11 +6039,11 @@ function validateCancellation(
   const cancellation = order.cancellation;
   if (
     !cancellation &&
-   ( action_id === "soft_on_cancel_purchase_finance" ||
-    action_id === "confirmed_on_cancel_purchase_finance")
+    (action_id === "soft_on_cancel_purchase_finance" ||
+      action_id === "confirmed_on_cancel_purchase_finance")
   ) {
     return;
-  }else{
+  } else {
     testResults.failed.push("Cancellation information is missing in order");
     return;
   }
