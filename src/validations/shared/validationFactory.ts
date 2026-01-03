@@ -7563,6 +7563,9 @@ export function createOnCancelValidator(...config: string[]) {
       }
     }
 
+    // Purchase Finance specific validations for on_cancel
+    validatePurchaseFinanceOnCancel(message, testResults, flowId);
+
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
 
