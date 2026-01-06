@@ -469,6 +469,7 @@ function validateIntent(
     }
   }
 }
+
 function validatePaymentCollectedBy(
   message: any,
   testResults: TestResult

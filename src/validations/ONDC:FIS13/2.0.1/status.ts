@@ -1,6 +1,6 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
-import { validateStatus } from "../../shared/validationFactory";
+import { validateStatusRefId } from "../../shared";
 
 export default async function status(
   element: Payload,
@@ -20,7 +20,7 @@ export default async function status(
   const message = jsonRequest?.message;
 
   // Validate status message
-  validateStatus(message, testResults, actionId);
+  validateStatusRefId(message, testResults);
 
   // Add default message if no validations ran
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {
