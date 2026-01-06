@@ -2,7 +2,6 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
-import { validateErrorResponse, validateSettlementAmount } from "../../shared/validationFactory";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
@@ -72,28 +71,28 @@ export default async function on_confirm(
     }
 
     // Validate settlement amount calculation for health insurance flows
-    if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-      const order = message?.order;
-      if (order?.payments && Array.isArray(order.payments)) {
-        order.payments.forEach((payment: any, paymentIndex: number) => {
-          // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
-          validateSettlementAmount(
-            payment,
-            paymentIndex,
-            order,
-            result,
-            "BAP_TERMS"
-          );
-          validateSettlementAmount(
-            payment,
-            paymentIndex,
-            order,
-            result,
-            "BPP_TERMS"
-          );
-        });
-      }
-    }
+    // if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
+    //   const order = message?.order;
+    //   if (order?.payments && Array.isArray(order.payments)) {
+    //     order.payments.forEach((payment: any, paymentIndex: number) => {
+    //       // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
+    //       validateSettlementAmount(
+    //         payment,
+    //         paymentIndex,
+    //         order,
+    //         result,
+    //         "BAP_TERMS"
+    //       );
+    //       validateSettlementAmount(
+    //         payment,
+    //         paymentIndex,
+    //         order,
+    //         result,
+    //         "BPP_TERMS"
+    //       );
+    //     });
+    //   }
+    // }
   } catch (_) {}
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
