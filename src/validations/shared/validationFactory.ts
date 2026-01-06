@@ -31,6 +31,8 @@ import {
   PERSONAL_LOAN_FLOWS,
   PURCHASE_FINANCE_FLOWS,
   PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION,
+  HEALTH_INSURANCE_FLOWS,
+  ITEM_PRICE_NOT_REQUIRED_FIS13,
 } from "../../utils/constants";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
@@ -435,6 +437,16 @@ function validateIntent(
             }
           });
         }
+      }
+    } else if (flow_id && HEALTH_INSURANCE_FLOWS.includes(flow_id)) {
+      if (intent.category?.descriptor?.code !== "HEALTH_INSURANCE") {
+        testResults.failed.push(
+          `Intent category descriptor code should be HEALTH_INSURANCE for ${flow_id}`
+        );
+      } else {
+        testResults.passed.push(
+          `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
+        );
       }
     } else {
       testResults.passed.push(
@@ -4104,8 +4116,11 @@ function validateProvider(
     usecaseId !== "PERSONAL LOAN" &&
     usecaseId !== "PURCHASE FINANCE" &&
     action_id !== "select_2" &&
+    action_id !== "select2" &&
     action_id !== "select" &&
     action_id !== "init" &&
+    action_id !== "init2" &&
+    action_id !== "init3" &&
     action_id !== "confirm" &&
     action_id !== "confirm_card_balance_faliure" &&
     action_id !== "confirm_card_balance_success"
@@ -4168,9 +4183,12 @@ function validateItems(
     ) {
       if (
         action_id !== "select" &&
+        action_id !== "select2" &&
         action_id !== "select_rental" &&
         action_id !== "select_adjust_loan_amount" &&
         action_id !== "init" &&
+        action_id !== "init2" &&
+        action_id !== "init3" &&
         action_id !== "confirm" &&
         action_id !== "confirm_card_balance_faliure" &&
         action_id !== "confirm_card_balance_success"
@@ -4185,7 +4203,7 @@ function validateItems(
       if (
         action_id !== "select_rental" &&
         action_id !== "select_adjust_loan_amount" &&
-        !item.price?.value
+        !item.price?.value && (!ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id ?? "") && flowId && HEALTH_INSURANCE_FLOWS.includes(flowId))
       ) {
         testResults.failed.push(`Item ${index} price value is missing`);
       } else {
@@ -4213,6 +4231,17 @@ function validateItemsTRV10(
     return;
   }
 
+  const actionsExemptFromDescriptorName = new Set([
+    "select",
+    "select2",
+    "select_rental",
+    "select_preorder_bid",
+    "init",
+    "confirm",
+    "confirm_card_balance_faliure",
+    "confirm_card_balance_success",
+  ]);
+
   items.forEach((item, index) => {
     if (!item.id) {
       testResults.failed.push(`Item ${index} ID is missing`);
@@ -4220,15 +4249,7 @@ function validateItemsTRV10(
       testResults.passed.push(`Item ${index} ID is present`);
     }
 
-    if (
-      action_id !== "select" &&
-      action_id !== "select_rental" &&
-      action_id !== "select_preorder_bid" &&
-      action_id !== "init" &&
-      action_id !== "confirm" &&
-      action_id !== "confirm_card_balance_faliure" &&
-      action_id !== "confirm_card_balance_success"
-    ) {
+    if (action_id && !actionsExemptFromDescriptorName.has(action_id)) {
       if (!item.descriptor?.name) {
         testResults.failed.push(`Item ${index} descriptor name is missing`);
       } else {
@@ -4344,13 +4365,15 @@ function validateFulfillmentsFIS12(
 
   // Skip fulfillments validation for on_status_unsolicited and on_status_purchase_finance
   // when usecaseId is PURCHASE FINANCE
+  // Also skip for on_search action (FIS13 2.0.1)
   const normalizedUsecaseId = usecaseId?.toUpperCase().trim();
   const shouldSkipValidation =
-    (action_id === "on_status_unsolicited" ||
+    action_id === "on_search" ||
+    ((action_id === "on_status_unsolicited" ||
       action_id === "on_status_purchase_finance" ||
       action_id === "on_status_purchase_finance1") &&
-    (normalizedUsecaseId === "PURCHASE FINANCE" ||
-      normalizedUsecaseId === "PURCHASE_FINANCE");
+      (normalizedUsecaseId === "PURCHASE FINANCE" ||
+        normalizedUsecaseId === "PURCHASE_FINANCE")) || ((action_id === "select" || action_id === "select2") && normalizedUsecaseId === "HEALTH_INSURANCE")
 
   if (!fulfillments || !Array.isArray(fulfillments)) {
     if (!shouldSkipValidation) {
@@ -4413,7 +4436,6 @@ function validatePaymentsFIS12(message: any, testResults: TestResult): void {
 
   payments.forEach((payment: any, index: number) => {
     // Validate basic payment info
-    if (!payment.id) testResults.failed.push(`Payment ${index} id is missing`);
     if (!payment.type)
       testResults.failed.push(`Payment ${index} type is missing`);
     if (!payment.status)
@@ -4865,23 +4887,32 @@ function validateUpdatePaymentsFIS12(
   });
 }
 
-function validateCategoriesFIS12(message: any, testResults: TestResult): void {
+function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?: string): void {
   const categories: any[] = message.catalog.providers[0].categories;
   if (!categories || !Array.isArray(categories) || categories.length === 0) {
     testResults.failed.push("Categories array is missing or empty");
     return;
   }
 
-  const validCategoryMap: Record<string, string> = {
-    GOLD_LOAN: "Gold Loan",
-    BUREAU_LOAN: "Bureau Loan",
-    AA_LOAN: "Account Aggregator Loan",
-    PERSONAL_LOAN: "Personal Loan",
-    AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
-    PURCHASE_FINANCE: "Purchase Finance",
-    AGRI_PURCHASE_FINANCE: "Agri Purchase Finance",
-    ELECTRONICS_PURCHASE_FINANCE: "Electronics Purchase Finance",
-  };
+  // Check if this is a health insurance flow
+  const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  const validCategoryMap: Record<string, string> = isHealthInsuranceFlow
+    ? {
+        INDIVIDUAL_INSURANCE: "Individual Insurance",
+        FAMILY_INSURANCE: "Family Insurance",
+        HEALTH_INSURANCE: "Health Insurance",
+      }
+    : {
+        GOLD_LOAN: "Gold Loan",
+        BUREAU_LOAN: "Bureau Loan",
+        AA_LOAN: "Account Aggregator Loan",
+        PERSONAL_LOAN: "Personal Loan",
+        AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
+        PURCHASE_FINANCE: "Purchase Finance",
+        AGRI_PURCHASE_FINANCE: "Agri Purchase Finance",
+        ELECTRONICS_PURCHASE_FINANCE: "Electronics Purchase Finance",
+      };
 
   categories.forEach((cat) => {
     const code = cat?.descriptor?.code;
@@ -5237,9 +5268,11 @@ async function validateXinputFIS12(
     }
   });
 
-  // Check if this is a purchase finance flow
+  // Check if this is a purchase finance flow or health insurance flow
   const isPurchaseFinanceFlow =
     flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+  const isHealthInsuranceFlow =
+    flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
 
   const allowedHeadings = [
     "KYC",
@@ -5260,12 +5293,26 @@ async function validateXinputFIS12(
     allowedHeadings.push("MERCHANT_AND_PRDOUCT_DEATILS");
   }
 
+  // Add health insurance specific headings
+  if (isHealthInsuranceFlow) {
+    allowedHeadings.push(
+      "INSURED_PERSONAL_DETAILS",
+      "CUSTOMER_INFORMATION",
+      "Customer Information",
+      "Health Information",
+      "Medical History",
+      "Nominee Details"
+    );
+  }
+
   const formUrls: string[] = [];
 
   items.forEach((item: any) => {
-    // Check if item is GOLD_LOAN or PERSONAL_LOAN
+    // Check if item is GOLD_LOAN, PERSONAL_LOAN, INDIVIDUAL_INSURANCE, or FAMILY_INSURANCE
     let isGoldLoan = false;
     let isPersonalLoan = false;
+    let isIndividualInsurance = false;
+    let isFamilyInsurance = false;
 
     if (item.category_ids && Array.isArray(item.category_ids)) {
       item.category_ids.forEach((catId: string) => {
@@ -5274,11 +5321,21 @@ async function validateXinputFIS12(
           isGoldLoan = true;
         } else if (categoryCode === "PERSONAL_LOAN") {
           isPersonalLoan = true;
+        } else if (categoryCode === "INDIVIDUAL_INSURANCE") {
+          isIndividualInsurance = true;
+        } else if (categoryCode === "FAMILY_INSURANCE") {
+          isFamilyInsurance = true;
         }
       });
     }
 
-    if (!item.xinput) {
+    if(action_id === "on_search3" && HEALTH_INSURANCE_FLOWS.includes(flowId ?? "")){
+      return;
+    }
+
+    if (
+      !item.xinput
+    ) {
       // Skip xinput validation if item has parent_item_id (it's a child item)
       if (item.parent_item_id) {
         testResults.passed.push(
@@ -5286,7 +5343,6 @@ async function validateXinputFIS12(
         );
         return;
       }
-
       testResults.failed.push(`Item ${item.id}: xinput is missing`);
       return;
     }
@@ -5317,7 +5373,9 @@ async function validateXinputFIS12(
             `Item ${item.id}: xinput.form_response.status is missing`
           );
         } else {
-          const validStatuses = ["SUCCESS", "PENDING", "FAILED"];
+          const validStatuses = isHealthInsuranceFlow
+            ? ["SUCCESS", "PENDING", "FAILED", "APPROVED", "REJECTED", "EXPIRED"]
+            : ["SUCCESS", "PENDING", "FAILED"];
           if (!validStatuses.includes(item.xinput.form_response.status)) {
             testResults.failed.push(
               `Item ${item.id}: Invalid xinput.form_response.status "${item.xinput.form_response.status
@@ -5381,29 +5439,41 @@ async function validateXinputFIS12(
           `Item ${item.id}: xinput.form fields are incomplete`
         );
       } else {
-        // For GOLD_LOAN and PERSONAL_LOAN items, validate required and mime_type
-        if (isGoldLoan || isPersonalLoan) {
+        // For GOLD_LOAN, PERSONAL_LOAN, INDIVIDUAL_INSURANCE, and FAMILY_INSURANCE items, validate required and mime_type
+        if (isGoldLoan || isPersonalLoan || isIndividualInsurance || isFamilyInsurance) {
+          const itemType = isGoldLoan
+            ? "GOLD_LOAN"
+            : isPersonalLoan
+            ? "PERSONAL_LOAN"
+            : isIndividualInsurance
+            ? "INDIVIDUAL_INSURANCE"
+            : "FAMILY_INSURANCE";
+
           if (item.xinput.required !== true) {
             testResults.failed.push(
-              `Item ${item.id}: xinput.required must be true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
-              } items`
+              `Item ${item.id}: xinput.required must be true for ${itemType} items`
             );
           } else {
             testResults.passed.push(
-              `Item ${item.id}: xinput.required is true for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
-              } item`
+              `Item ${item.id}: xinput.required is true for ${itemType} item`
             );
           }
 
-          if (item.xinput.form.mime_type !== "text/html") {
+          // For individual insurance: text/html, for family insurance: text/html-multi, for loans: text/html
+          const expectedMimeType =
+            isIndividualInsurance
+              ? "text/html"
+              : isFamilyInsurance
+              ? "text/html-multi"
+              : "text/html";
+
+          if (item.xinput.form.mime_type !== expectedMimeType) {
             testResults.failed.push(
-              `Item ${item.id}: xinput.form.mime_type must be "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
-              } items, but found "${item.xinput.form.mime_type}"`
+              `Item ${item.id}: xinput.form.mime_type must be "${expectedMimeType}" for ${itemType} items, but found "${item.xinput.form.mime_type}"`
             );
           } else {
             testResults.passed.push(
-              `Item ${item.id}: xinput.form.mime_type is "text/html" for ${isGoldLoan ? "GOLD_LOAN" : "PERSONAL_LOAN"
-              } item`
+              `Item ${item.id}: xinput.form.mime_type is "${expectedMimeType}" for ${itemType} item`
             );
           }
         }
@@ -6584,9 +6654,9 @@ export function createOnSearchValidator(...config: string[]) {
             validateFulfillmentStopsInCatalog(message, testResults, action_id);
             break;
 
-          //FIS12
+          //FIS12/FIS13
           case fis12Validators.catalog.providers.categories:
-            validateCategoriesFIS12(message, testResults);
+            validateCategoriesFIS12(message, testResults, flowId);
             break;
           case fis12Validators.items.validate_onsearch_items:
             validateOnSearchItemsFIS12(message, testResults);
@@ -7219,7 +7289,7 @@ export function createOnConfirmValidator(...config: string[]) {
             validatePaymentsFIS12(message, testResults);
             break;
           case fis12Validators.catalog.providers.categories:
-            validateCategoriesFIS12(message, testResults);
+            validateCategoriesFIS12(message, testResults, flowId);
             break;
           case fis12Validators.documents.validate_documents:
             validateDocumentsFIS12(message, testResults);

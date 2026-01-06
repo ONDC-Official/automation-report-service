@@ -402,4 +402,104 @@ export const DomainValidators = {
     fis12Validators.documents.validate_documents,
     fis11Validators.order_status.validate_order_status
   ),
+
+  // FIS13 Health Insurance validators (similar to FIS12)
+  fis13Search: createSearchValidator(
+    fis11Validators.intent.validate_intent,
+    fis11Validators.payment.validate_payment_collected_by,
+    fis11Validators.tags.validate_tags
+  ),
+
+  fis13OnSearch: createOnSearchValidator(
+    fis11Validators.catalog.validate_catalog,
+    fis11Validators.providers.validate_providers,
+    fis11Validators.items.validate_items,
+    fis11Validators.payments.validate_payments,
+    fis12Validators.catalog.providers.categories,
+    fis12Validators.items.validate_xinput
+  ),
+
+  fis13Select: createSelectValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+  ),
+
+  fis13OnSelect: createOnSelectValidator(
+    trv10Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    fis11Validators.items.validate_items,
+    fis12Validators.items.validate_xinput
+  ),
+
+  fis13Init: createInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.items.select_validate_xinput
+  ),
+
+  fis13OnInit: createOnInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments
+  ),
+
+  fis13Confirm: createConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis12Validators.payments.validate_payments
+  ),
+
+  fis13OnConfirm: createOnConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis11Validators.order_status.validate_order_status,
+    fis12Validators.documents.validate_documents
+  ),
+
+  fis13OnStatus: createOnStatusValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis11Validators.order_status.validate_order_status
+  ),
+
+  fis13Update: createUpdateValidator(
+    trv10Validators.update_request_trv10.validate_update_request_trv10,
+    fis12Validators.update.validate_update_payments,
+    fis12Validators.update.validate_fulfillment_state
+  ),
+
+  fis13OnUpdate: createOnUpdateValidator(
+    trv10Validators.order.validate_order,
+    trv10Validators.quote_trv10.validate_quote_trv10,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    trv10Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
+    fis12Validators.update.validate_fulfillment_state
+  ),
+
+  fis13OnCancel: createOnCancelValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
+    fis11Validators.order_status.validate_order_status
+  ),
 };
