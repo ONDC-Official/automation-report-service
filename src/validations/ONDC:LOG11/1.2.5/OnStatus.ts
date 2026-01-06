@@ -411,8 +411,7 @@ export async function checkOnStatus(
         }
         const isOrderPickedUp = statesAfterPickup.includes(ffState);
         const isTrackingEnabled = Boolean(fulfillment.tracking); // Ensure boolean value
-        console.log(isTrackingEnabled);
-        console.log(isOrderPickedUp);
+        
 
         const isTrackingTagPresent =
           trackingTag !== undefined && trackingTag !== null;
