@@ -28,7 +28,7 @@ const dynamicValidator = async (
     const finalUsecaseId = usecaseId;
 
     // Log all parameters before calling the function
-    console.log("dynamicValidator - About to call function:", {
+    logger.info("dynamicValidator - About to call function:", {
       functionName,
       functionLength: validatorFunc.length,
       expectedParams: 5,
@@ -54,7 +54,6 @@ const dynamicValidator = async (
         actionId,     // param 4
         finalUsecaseId // param 5 (usecaseId)
       );
-      console.log("dynamicValidator - Function call completed, usecaseId was:", finalUsecaseId);
       return result;
 
     } else {

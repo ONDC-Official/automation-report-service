@@ -53,7 +53,7 @@ export class ReportService {
       const flows = sortPayloadsByCreatedAt(payloads);
 
       // Check if domain is not in enabled domains - use Pramaan report
-      if (!ENABLED_DOMAINS.includes(sessionDetails.domain)) {
+      if (!ENABLED_DOMAINS.includes(`${sessionDetails.domain}:${sessionDetails.version}`)) {
         return await this.checkPramaanReport(sessionDetails, sessionId);
       }
 
