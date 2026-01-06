@@ -4403,7 +4403,7 @@ function validateFulfillmentsFIS12(
         );
       } else {
         const { person, contact } = fulfillment.customer;
-        if (!person?.name)
+        if (!person?.name && normalizedUsecaseId !== "HEALTH_INSURANCE")
           testResults.failed.push(
             `Fulfillment ${index} customer name is missing`
           );
@@ -4414,7 +4414,7 @@ function validateFulfillmentsFIS12(
       }
 
       // Validate state descriptor
-      if (!fulfillment.state?.descriptor?.code) {
+      if (!fulfillment.state?.descriptor?.code && normalizedUsecaseId !== "HEALTH_INSURANCE") {
         testResults.failed.push(
           `Fulfillment ${index} state descriptor code is missing`
         );
