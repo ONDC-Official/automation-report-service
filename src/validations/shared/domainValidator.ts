@@ -352,7 +352,7 @@ export const DomainValidators = {
     fis11Validators.order.validate_order,
     fis11Validators.quote.validate_quote,
     fis11Validators.provider.validate_provider,
-    fis12Validators.payments.validate_payments,
+    fis12Validators.payments.validate_payments
   ),
 
   fis12OnConfirm: createOnConfirmValidator(
@@ -378,6 +378,7 @@ export const DomainValidators = {
   fis12Update: createUpdateValidator(
     trv10Validators.update_request_trv10.validate_update_request_trv10,
     fis12Validators.update.validate_update_payments,
+    fis12Validators.update.validate_fulfillment_state
   ),
 
   fis12OnUpdate: createOnUpdateValidator(
@@ -388,6 +389,17 @@ export const DomainValidators = {
     fis12Validators.fulfillments.validate_fulfillments,
     fis12Validators.payments.validate_payments,
     fis12Validators.documents.validate_documents,
-    fis12Validators.update.validate_fulfillment_state,
+    fis12Validators.update.validate_fulfillment_state
+  ),
+
+  fis12OnCancel: createOnCancelValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
+    fis11Validators.order_status.validate_order_status
   ),
 };
