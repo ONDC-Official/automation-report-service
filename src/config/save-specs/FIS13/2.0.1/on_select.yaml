@@ -1,0 +1,12 @@
+save-data:
+  message_id: "$.context.message_id"
+  transaction_id: "$.context.transaction_id"
+  provider: "$.message.order.provider"
+  items: "$.message.order.items[*]"
+  fulfillments: "$.message.order.fulfillments[*]"
+  quote: "$.message.order.quote"
+  quote_breakup: "$.message.order.quote.breakup[*]"
+  form_ids: "$.message.order.items[*].xinput.form.id"
+  form_response_status: "$.message.order.items[*].xinput.form_response.status"
+  form_response_submission_id: "$.message.order.items[*].xinput.form_response.submission_id"
+

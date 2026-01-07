@@ -1,8 +1,8 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
-import { validateCancel } from "../../shared/validationFactory";
+import { validateStatusRefId } from "../../shared";
 
-export default async function cancel(
+export default async function status(
   element: Payload,
   sessionID: string,
   flowId: string,
@@ -19,12 +19,12 @@ export default async function cancel(
 
   const message = jsonRequest?.message;
 
-  // Validate cancel message based on action_id
-  validateCancel(message, testResults, actionId,flowId);
+  // Validate status message
+  validateStatusRefId(message, testResults);
 
   // Add default message if no validations ran
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {
-    testResults.passed.push(`Validated cancel`);
+    testResults.passed.push(`Validated status`);
   }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");

@@ -1258,7 +1258,6 @@ export async function validateFormIdConsistency(
       const checkedActions: string[] = [];
       for (const prevAction of possiblePreviousActions) {
         const prevActionData = await getActionData(sessionID, flowId, transactionId, prevAction);
-        console.log("prevActionData",prevAction,prevActionData)
         if (prevActionData) {
           const prevFormIds = getFormIdsFromActionData(prevActionData, prevAction);
           checkedActions.push(`${prevAction} (available form IDs: ${prevFormIds.length > 0 ? prevFormIds.join(", ") : "none"})`);

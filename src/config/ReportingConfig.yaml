@@ -238,7 +238,6 @@ domains:
           - QUICK_COMMERCE_FLOW
           - IMMEDIATE_DELIVERY_FLOW
         validationModules: "../validations/nic2004:60232/validator#validate"
-
   ONDC:LOG10:
     versions:
       "1.2.5":
@@ -2095,3 +2094,253 @@ domains:
             optional_flows:
               - Credit_Card_With_AA_And_Monitoring_Consent
             validationModules: "../validations/ONDC:FIS12/validator#validate"
+
+  ONDC:FIS13:
+    versions:
+      "2.0.1":
+        usecases:
+          HEALTH INSURANCE:
+            flows:
+              Health_Insurance_Application(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+
+              Health_Insurance_Application(PRE-ORDER-Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+
+              Claim_Health_Insurance(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Renew_Health_Insurance(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Health_Insurance(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - cancel
+                - on_cancel
+                - on_update
+
+              Health_Insurance_Application(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+
+              Health_Insurance_Application(PRE-ORDER-Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+
+              Claim_Health_Insurance(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Renew_Health_Insurance(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Health_Insurance(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - cancel
+                - on_cancel
+                - on_update
+            optional_flows:
+              - Health_Insurance_Application(PRE-ORDER-Individual)
+              - Health_Insurance_Application(PRE-ORDER-Family)
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
+      
+      
