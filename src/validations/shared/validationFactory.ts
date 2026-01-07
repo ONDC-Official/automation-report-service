@@ -6132,9 +6132,11 @@ function validateCancellation(
   const cancellation = order.cancellation;
   if (
     !cancellation &&
-    isHealthInsuranceFlow &&
+    (isHealthInsuranceFlow ||
+
     (action_id === "soft_on_cancel_purchase_finance" ||
-      action_id === "confirmed_on_cancel_purchase_finance")
+      action_id === "confirmed_on_cancel_purchase_finance"
+    ))
   ) {
     return;
   } else {
