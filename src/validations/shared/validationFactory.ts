@@ -4374,7 +4374,7 @@ function validateFulfillmentsFIS12(
       action_id === "on_status_purchase_finance" ||
       action_id === "on_status_purchase_finance1") &&
       (normalizedUsecaseId === "PURCHASE FINANCE" ||
-        normalizedUsecaseId === "PURCHASE_FINANCE")) || ((action_id === "select" || action_id === "select2") && normalizedUsecaseId === "HEALTH_INSURANCE")
+        normalizedUsecaseId === "PURCHASE_FINANCE")) || ((action_id === "select" || action_id === "select2") && normalizedUsecaseId === "HEALTH INSURANCE")
 
   if (!fulfillments || !Array.isArray(fulfillments)) {
     if (!shouldSkipValidation) {
@@ -4403,7 +4403,7 @@ function validateFulfillmentsFIS12(
         );
       } else {
         const { person, contact } = fulfillment.customer;
-        if (!person?.name && normalizedUsecaseId !== "HEALTH_INSURANCE")
+        if (!person?.name && normalizedUsecaseId !== "HEALTH INSURANCE")
           testResults.failed.push(
             `Fulfillment ${index} customer name is missing`
           );
@@ -4414,14 +4414,12 @@ function validateFulfillmentsFIS12(
       }
 
       // Validate state descriptor
-      if (!fulfillment.state?.descriptor?.code && normalizedUsecaseId !== "HEALTH_INSURANCE") {
+      if (!fulfillment.state?.descriptor?.code && normalizedUsecaseId !== "HEALTH INSURANCE") {
         testResults.failed.push(
           `Fulfillment ${index} state descriptor code is missing`
         );
       } else {
-        testResults.passed.push(
-          `Fulfillment ${index} state code: ${fulfillment.state.descriptor.code}`
-        );
+       return
       }
     }
   });
@@ -6113,12 +6111,12 @@ function validateCancellation(
       }
     } else {
       // For non-purchase finance flows, status should be SOFT_CANCEL
-      if (order.status !== "SOFT_CANCEL") {
+      if (order.status !== "SOFT_CANCEL" && !isHealthInsuranceFlow) {
         testResults.failed.push(
           "Order status should be SOFT_CANCEL in on_cancel"
         );
       } else {
-        testResults.passed.push("Order status is SOFT_CANCEL in on_cancel");
+        testResults.passed.push(`Order status is ${order.status} in on_cancel`);
       }
     }
   } else {
@@ -6134,7 +6132,7 @@ function validateCancellation(
   const cancellation = order.cancellation;
   if (
     !cancellation &&
-    !isHealthInsuranceFlow &&
+    isHealthInsuranceFlow &&
     (action_id === "soft_on_cancel_purchase_finance" ||
       action_id === "confirmed_on_cancel_purchase_finance")
   ) {
