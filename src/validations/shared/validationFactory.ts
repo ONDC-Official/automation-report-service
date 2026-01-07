@@ -4895,12 +4895,13 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
 
   // Check if this is a health insurance flow
   const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
-
+  console.log("isHealthInsuranceFlow=>>>>>>>>>", isHealthInsuranceFlow, categories);
   const validCategoryMap: Record<string, string> = isHealthInsuranceFlow
     ? {
         INDIVIDUAL_INSURANCE: "Individual Insurance",
-        FAMILY_INSURANCE: "Family Insurance",
+        FAMILY_INSURANCE: "Family Insurance" ,
         HEALTH_INSURANCE: "Health Insurance",
+        
       }
     : {
         GOLD_LOAN: "Gold Loan",
