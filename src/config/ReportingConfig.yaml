@@ -1727,6 +1727,105 @@ domains:
             validationModules: "../validations/ONDC:FIS12/validator#validate"
       "2.0.3":
         usecases:
+          GOLD LOAN:
+            flows:
+              Gold_Loan_With_Account_Aggregator:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+
+              Gold_Loan_Without_Account_Aggregator:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+
+              Gold_Loan_Foreclosure:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+
+              Gold_Loan_Missed_EMI:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+
+              Gold_Loan_Pre_Part_Payment:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+            optional_flows:
+              - Gold_Loan_With_Account_Aggregator
+              - Gold_Loan_Without_Account_Aggregator
+              - Gold_Loan_Foreclosure
+              - Gold_Loan_Missed_EMI
+              - Gold_Loan_Pre_Part_Payment
+            validationModules: "../validations/ONDC:FIS12/validator#validate"
+
           PERSONAL LOAN:
             flows:
               Personal_Loan_With_AA_And_Monitoring_Consent:
