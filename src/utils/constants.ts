@@ -64,12 +64,12 @@ export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
 
 export const HEALTH_INSURANCE_FLOWS = [
   "Health_Insurance_Application(Individual)",
-  "Health_Insurance_Application(PRE-ORDER Individual)",
+  "Health_Insurance_Application(PRE-ORDER-Individual)",
   "Claim_Health_Insurance(Individual)",
   "Renew_Health_Insurance(Individual)",
   "Cancel_Health_Insurance(Individual)",
   "Health_Insurance_Application(Family)",
-  "Health_Insurance_Application(PRE-ORDER Family)",
+  "Health_Insurance_Application(PRE-ORDER-Family)",
   "Claim_Health_Insurance(Family)",
   "Renew_Health_Insurance(Family)",
   "Cancel_Health_Insurance(Family)"

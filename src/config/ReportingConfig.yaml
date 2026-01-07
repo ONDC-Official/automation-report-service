@@ -2101,7 +2101,7 @@ domains:
         usecases:
           HEALTH INSURANCE:
             flows:
-              Health_Insurance_Application_Individual:
+              Health_Insurance_Application(Individual):
                 - search
                 - on_search
                 - search
@@ -2123,7 +2123,7 @@ domains:
                 - on_confirm
                 - on_update
 
-              Health_Insurance_Application_PRE_ORDER_Individual:
+              Health_Insurance_Application(PRE-ORDER-Individual):
                 - search
                 - on_search
                 - search
@@ -2144,33 +2144,7 @@ domains:
                 - confirm
                 - on_confirm
 
-              Claim_Health_Insurance_Individual:
-                - search
-                - on_search
-                - search
-                - on_search
-                - select
-                - on_select
-                - on_status
-                - select
-                - on_select
-                - on_status
-                - init
-                - on_init
-                - init
-                - on_init
-                - init
-                - on_init
-                - on_status
-                - confirm
-                - on_confirm
-                - on_update
-                - on_update
-                - on_update
-                - on_status
-                - on_update
-
-              Renew_Health_Insurance_Individual:
+              Claim_Health_Insurance(Individual):
                 - search
                 - on_search
                 - search
@@ -2192,10 +2166,36 @@ domains:
                 - on_confirm
                 - on_update
                 - on_update
+                - on_update
                 - on_status
                 - on_update
 
-              Cancel_Health_Insurance_Individual:
+              Renew_Health_Insurance(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Health_Insurance(Individual):
                 - search
                 - on_search
                 - search
@@ -2220,7 +2220,7 @@ domains:
                 - on_cancel
                 - on_update
 
-              Health_Insurance_Application_Family:
+              Health_Insurance_Application(Family):
                 - search
                 - on_search
                 - search
@@ -2242,7 +2242,7 @@ domains:
                 - on_confirm
                 - on_update
 
-              Health_Insurance_Application_PRE_ORDER_Family:
+              Health_Insurance_Application(PRE-ORDER-Family):
                 - search
                 - on_search
                 - search
@@ -2263,33 +2263,7 @@ domains:
                 - confirm
                 - on_confirm
 
-              Claim_Health_Insurance_Family:
-                - search
-                - on_search
-                - search
-                - on_search
-                - select
-                - on_select
-                - on_status
-                - select
-                - on_select
-                - on_status
-                - init
-                - on_init
-                - init
-                - on_init
-                - init
-                - on_init
-                - on_status
-                - confirm
-                - on_confirm
-                - on_update
-                - on_update
-                - on_update
-                - on_status
-                - on_update
-
-              Renew_Health_Insurance_Family:
+              Claim_Health_Insurance(Family):
                 - search
                 - on_search
                 - search
@@ -2311,10 +2285,36 @@ domains:
                 - on_confirm
                 - on_update
                 - on_update
+                - on_update
                 - on_status
                 - on_update
 
-              Cancel_Health_Insurance_Family:
+              Renew_Health_Insurance(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Health_Insurance(Family):
                 - search
                 - on_search
                 - search
@@ -2339,8 +2339,8 @@ domains:
                 - on_cancel
                 - on_update
             optional_flows:
-              - Health_Insurance_Application_PRE_ORDER_Individual
-              - Health_Insurance_Application_PRE_ORDER_Family
+              - Health_Insurance_Application(PRE-ORDER-Individual)
+              - Health_Insurance_Application(PRE-ORDER-Family)
             validationModules: "../validations/ONDC:FIS13/validator#validate"
       
       
