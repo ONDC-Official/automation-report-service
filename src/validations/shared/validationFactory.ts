@@ -5458,23 +5458,6 @@ async function validateXinputFIS12(
             );
           }
 
-          // For individual insurance: text/html, for family insurance: text/html-multi, for loans: text/html
-          const expectedMimeType =
-            isIndividualInsurance
-              ? "text/html"
-              : isFamilyInsurance
-              ? "text/html-multi"
-              : "text/html";
-
-          if (item.xinput.form.mime_type !== expectedMimeType) {
-            testResults.failed.push(
-              `Item ${item.id}: xinput.form.mime_type must be "${expectedMimeType}" for ${itemType} items, but found "${item.xinput.form.mime_type}"`
-            );
-          } else {
-            testResults.passed.push(
-              `Item ${item.id}: xinput.form.mime_type is "${expectedMimeType}" for ${itemType} item`
-            );
-          }
         }
 
         // Save form URL to Redis for HTML_FORM validation
