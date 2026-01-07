@@ -4934,7 +4934,6 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
       );
       return;
     }
-
     testResults.passed.push(`Valid category: ${code} - ${name}`);
   });
 }
