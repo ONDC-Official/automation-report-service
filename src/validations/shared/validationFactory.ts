@@ -5916,6 +5916,7 @@ function validateOrderStatus(
   const order = message?.order;
   if (order?.status) {
     const validStatuses = [
+      "CANCELLATION_INITIATED",
       "ACTIVE",
       "COMPLETE",
       "CANCELLED",
@@ -5980,12 +5981,20 @@ export function validateCancel(
     }
   }
 
+  const isHealthInsuranceFlow =
+        flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
   // Validate descriptor
   const descriptor = message?.descriptor;
   if (!descriptor) {
     testResults.failed.push("Cancellation descriptor is missing");
   } else {
-    if (!descriptor.code) {
+    if(isHealthInsuranceFlow) {
+      if(!descriptor.short_desc) {
+        testResults.failed.push("Cancellation descriptor short description is missing");
+      } else {
+        testResults.passed.push("Cancellation descriptor short description is present");
+      }
+    }else if (!descriptor.code) {  
       testResults.failed.push("Cancellation descriptor code is missing");
     } else {
       // For purchase finance flows, allow both SOFT_CANCEL and CONFIRM_CANCEL for cancel action
@@ -6036,7 +6045,6 @@ export function validateCancel(
         }
       }
     }
-
     if (descriptor.name) {
       testResults.passed.push("Cancellation descriptor name is present");
     }
@@ -6057,6 +6065,15 @@ function validateCancellation(
   // Check if this is a purchase finance flow
   const isPurchaseFinanceFlow =
     flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+
+  const isHealthInsuranceFlow =
+    flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  if(isHealthInsuranceFlow && order.status !== "CANCELLATION_INITIATED") {
+    testResults.failed.push(
+      "Order status should be CANCELLATION_INITIATED in on_cancel"
+    );
+  }
 
   // Validate order status based on action_id
   if (
@@ -6117,6 +6134,7 @@ function validateCancellation(
   const cancellation = order.cancellation;
   if (
     !cancellation &&
+    !isHealthInsuranceFlow &&
     (action_id === "soft_on_cancel_purchase_finance" ||
       action_id === "confirmed_on_cancel_purchase_finance")
   ) {
