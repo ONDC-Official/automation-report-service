@@ -84,7 +84,7 @@ domains:
             - on_update
         optional_flows:
           - DELAYED_CANCELLATION_FLOW_REJECTED
-        validationModules: "../validations/trv11/validator#validate"
+        validationModules: "../validations/ONDC:TRV11/validator#validate"
       "2.0.0":
         flows:
           STATION_CODE_FLOW_CATALOG:
@@ -139,7 +139,7 @@ domains:
 
         optional_flows:
 
-        validationModules: "../validations/trv11/validator#validate"
+        validationModules: "../validations/ONDC:TRV11/validator#validate"
   "nic2004:60232":
     versions:
       "1.2.5":
