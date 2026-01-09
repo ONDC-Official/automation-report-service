@@ -36,6 +36,8 @@ export const PERSONAL_LOAN_FLOWS = [
   "Personal_Loan_Multiple_Offers"
 ]
 
+export const CREDIT_CARD_FLOWS = ["Credit_card"]
+
 export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_Without_AA",
   "Purchase_Finance_Single_Redirection_Without_AA",
