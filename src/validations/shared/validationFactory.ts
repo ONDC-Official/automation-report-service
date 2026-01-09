@@ -4166,6 +4166,7 @@ function validateProvider(
   }
   if (
     usecaseId !== "GOLD LOAN" &&
+    usecaseId !== "CREDIT CARD" &&
     usecaseId !== "PERSONAL LOAN" &&
     usecaseId !== "PURCHASE FINANCE" &&
     action_id !== "select_2" &&
@@ -4223,51 +4224,71 @@ function validateItems(
     return;
   }
 
+  // Define sets for better performance and readability
+  const excludedUsecases = new Set([
+    "GOLD LOAN",
+    "CREDIT CARD",
+    "PERSONAL LOAN",
+    "PURCHASE FINANCE",
+  ]);
+
+  const actionsExemptFromDescriptorName = new Set([
+    "select",
+    "select2",
+    "select_rental",
+    "select_adjust_loan_amount",
+    "init",
+    "init2",
+    "init3",
+    "confirm",
+    "confirm_card_balance_faliure",
+    "confirm_card_balance_success",
+  ]);
+
+  const actionsExemptFromPrice = new Set([
+    "select_rental",
+    "select_adjust_loan_amount",
+  ]);
+
+  const isExcludedUsecase = excludedUsecases.has(usecaseId ?? "");
+  const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isPriceNotRequiredForFIS13 = action_id && ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id);
+
   items.forEach((item, index) => {
+    // Validate item ID
     if (!item.id) {
       testResults.failed.push(`Item ${index} ID is missing`);
     } else {
       testResults.passed.push(`Item ${index} ID is present`);
     }
-    if (
-      usecaseId !== "GOLD LOAN" &&
-      usecaseId !== "PERSONAL LOAN" &&
-      usecaseId !== "PURCHASE FINANCE"
-    ) {
-      if (
-        action_id !== "select" &&
-        action_id !== "select2" &&
-        action_id !== "select_rental" &&
-        action_id !== "select_adjust_loan_amount" &&
-        action_id !== "init" &&
-        action_id !== "init2" &&
-        action_id !== "init3" &&
-        action_id !== "confirm" &&
-        action_id !== "confirm_card_balance_faliure" &&
-        action_id !== "confirm_card_balance_success"
-      ) {
-        if (!item.descriptor?.name) {
-          testResults.failed.push(`Item ${index} descriptor name is missing`);
-        } else {
-          testResults.passed.push(`Item ${index} descriptor name is present`);
-        }
-      }
 
-      if (
-        action_id !== "select_rental" &&
-        action_id !== "select_adjust_loan_amount" &&
-        !item.price?.value && (!ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id ?? "") && flowId && HEALTH_INSURANCE_FLOWS.includes(flowId))
-      ) {
-        testResults.failed.push(`Item ${index} price value is missing`);
+    // Skip validations for excluded usecases
+    if (isExcludedUsecase) {
+      return;
+    }
+
+    // Validate descriptor name (if action is not exempt)
+    if (!actionsExemptFromDescriptorName.has(action_id ?? "")) {
+      if (!item.descriptor?.name) {
+        testResults.failed.push(`Item ${index} descriptor name is missing`);
       } else {
-        if (item.price?.value) {
-          testResults.passed.push(`Item ${index} price value is present`);
-        } else if (action_id === "select_adjust_loan_amount") {
-          testResults.passed.push(
-            `Item ${index} price value is optional for select_adjust_loan_amount action`
-          );
-        }
+        testResults.passed.push(`Item ${index} descriptor name is present`);
       }
+    }
+
+    // Validate price value
+    const isPriceExempt = actionsExemptFromPrice.has(action_id ?? "");
+    const isPriceOptional = isPriceExempt || (isHealthInsuranceFlow && isPriceNotRequiredForFIS13);
+    const hasPrice = !!item.price?.value;
+
+    if (!hasPrice && !isPriceOptional) {
+      testResults.failed.push(`Item ${index} price value is missing`);
+    } else if (hasPrice) {
+      testResults.passed.push(`Item ${index} price value is present`);
+    } else if (action_id === "select_adjust_loan_amount") {
+      testResults.passed.push(
+        `Item ${index} price value is optional for select_adjust_loan_amount action`
+      );
     }
   });
 }
@@ -4416,17 +4437,44 @@ function validateFulfillmentsFIS12(
     message?.catalog?.providers?.[0]?.fulfillments ||
     message?.order?.fulfillments;
 
-  // Skip fulfillments validation for on_status_unsolicited and on_status_purchase_finance
-  // when usecaseId is PURCHASE FINANCE
-  // Also skip for on_search action (FIS13 2.0.1)
+  // Skip fulfillments validation for:
+  // 1. on_search action (FIS13 2.0.1)
+  // 2. Purchase finance status actions when usecaseId is PURCHASE FINANCE
+  // 3. select/select2 actions when usecaseId is HEALTH INSURANCE
   const normalizedUsecaseId = usecaseId?.toUpperCase().trim();
+  
+  const purchaseFinanceStatusActions = new Set([
+    "on_status_unsolicited",
+    "on_status_purchase_finance",
+    "on_status_purchase_finance1",
+  ]);
+  
+  const creditCardStatusActions = new Set([
+    "on_status_unsolicited_cc",
+    "on_status_cc_1",
+    "on_status_cc_2",
+  ]);
+  const purchaseFinanceUsecases = new Set([
+    "PURCHASE FINANCE",
+    "PURCHASE_FINANCE",
+  ]);
+
+  const creditCardUsecases = new Set(["CREDIT CARD", "CREDIT_CARD"]);
+  
+  const selectActions = new Set(["select", "select2"]);
+  
+  const isPurchaseFinanceStatusAction = purchaseFinanceStatusActions.has(action_id ?? "");
+  const isPurchaseFinanceUsecase = purchaseFinanceUsecases.has(normalizedUsecaseId ?? "");
+  const isCreditCardStatusAction = creditCardStatusActions.has(action_id ?? "");
+  const isCreditCardUsecase = creditCardUsecases.has(normalizedUsecaseId ?? "");
+  const isSelectAction = selectActions.has(action_id ?? "");
+  const isHealthInsuranceUsecase = normalizedUsecaseId === "HEALTH INSURANCE";
+  
   const shouldSkipValidation =
     action_id === "on_search" ||
-    ((action_id === "on_status_unsolicited" ||
-      action_id === "on_status_purchase_finance" ||
-      action_id === "on_status_purchase_finance1") &&
-      (normalizedUsecaseId === "PURCHASE FINANCE" ||
-        normalizedUsecaseId === "PURCHASE_FINANCE")) || ((action_id === "select" || action_id === "select2") && normalizedUsecaseId === "HEALTH INSURANCE")
+    (isPurchaseFinanceStatusAction && isPurchaseFinanceUsecase) ||
+    (isCreditCardStatusAction && isCreditCardUsecase) ||
+    (isSelectAction && isHealthInsuranceUsecase);
 
   if (!fulfillments || !Array.isArray(fulfillments)) {
     if (!shouldSkipValidation) {
@@ -4437,7 +4485,7 @@ function validateFulfillmentsFIS12(
 
   fulfillments.forEach((fulfillment: any, index: number) => {
     // Validate type
-    if (usecaseId !== "PERSONAL LOAN") {
+    if (usecaseId !== "PERSONAL LOAN" && usecaseId !== "CREDIT CARD") {
       if (!fulfillment.type) {
         testResults.failed.push(`Fulfillment ${index} type is missing`);
       } else {
@@ -4477,7 +4525,10 @@ function validateFulfillmentsFIS12(
   });
 }
 
-function validatePaymentsFIS12(message: any, testResults: TestResult): void {
+function validatePaymentsFIS12(message: any, testResults: TestResult, flow_id?: string): void {
+  if (flow_id && CREDIT_CARD_FLOWS.includes(flow_id)) {
+    return;
+  }
   const payments =
     message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
   if (!payments || !Array.isArray(payments)) {
@@ -4951,6 +5002,7 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
 
   // Check if this is a health insurance flow
   const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isCreditCardFlow = flowId && CREDIT_CARD_FLOWS.includes(flowId);
   const validCategoryMap: Record<string, string> = isHealthInsuranceFlow
     ? {
         INDIVIDUAL_INSURANCE: "Individual Insurance",
@@ -4958,7 +5010,16 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
         HEALTH_INSURANCE: "Health Insurance",
         
       }
-    : {
+    : isCreditCardFlow?
+    {
+      CARD: "Card",
+      CREDIT_CARD: "Credit Card" ,
+      PREMIUIM_CARDS: "Premium Cards",
+      TRAVEL_CARDS:"Travel Cards",
+      REWARDS_CARDS:"Rewards Cards",
+      LIFESTYLE_CARDS:"Lifestyle Cards"
+    }
+    :{
         GOLD_LOAN: "Gold Loan",
         BUREAU_LOAN: "Bureau Loan",
         AA_LOAN: "Account Aggregator Loan",
@@ -5775,7 +5836,10 @@ function validateXInputStatusFIS12(
   });
 }
 
-function validatePayments(message: any, testResults: TestResult): void {
+function validatePayments(message: any, testResults: TestResult, flow_id?: string): void {
+  if (flow_id && CREDIT_CARD_FLOWS.includes(flow_id)) {
+    return;
+  }
   const payments =
     message?.catalog?.providers?.[0]?.payments || message?.order?.payments;
   if (!payments || !Array.isArray(payments)) {
@@ -5869,12 +5933,14 @@ function validateQuote(
   message: any,
   testResults: TestResult,
   action_id: string,
-  flowId: string
+  flowId: string,
+  usecaseId?: string
 ): void {
   const quote = message?.order?.quote;
   if (
-    flowId !== "Personal_Loan_Without_AA_And_Monitoring_Consent" &&
-    action_id === "on_select_1_personal_loan"
+    usecaseId === "CREDIT CARD" ||
+    (flowId !== "Personal_Loan_Without_AA_And_Monitoring_Consent" &&
+    action_id === "on_select_1_personal_loan")
   ) {
     return;
   } else if (!quote) {
@@ -6708,7 +6774,7 @@ export function createOnSearchValidator(...config: string[]) {
             validateFulfillments(message, testResults, action_id);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
 
           // TRV10 validations
@@ -6893,7 +6959,7 @@ export function createOnSelectValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults, action_id, flowId);
+            validateQuote(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
@@ -6999,7 +7065,7 @@ export function createInitValidator(...config: string[]) {
             validateFulfillments(message, testResults);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
@@ -7149,7 +7215,7 @@ export function createConfirmValidator(...config: string[]) {
             validateFulfillments(message, testResults);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
@@ -7227,7 +7293,7 @@ export function createOnInitValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults, action_id, flowId);
+            validateQuote(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
@@ -7239,7 +7305,7 @@ export function createOnInitValidator(...config: string[]) {
             validateFulfillments(message, testResults);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
@@ -7290,7 +7356,7 @@ export function createOnInitValidator(...config: string[]) {
             );
             break;
           case fis12Validators.payments.validate_payments:
-            validatePaymentsFIS12(message, testResults);
+            validatePaymentsFIS12(message, testResults, flowId);
             break;
           case fis12Validators.documents.validate_documents:
             validateDocumentsFIS12(message, testResults);
@@ -7349,7 +7415,7 @@ export function createOnConfirmValidator(...config: string[]) {
             );
             break;
           case fis12Validators.payments.validate_payments:
-            validatePaymentsFIS12(message, testResults);
+            validatePaymentsFIS12(message, testResults, flowId);
             break;
           case fis12Validators.catalog.providers.categories:
             validateCategoriesFIS12(message, testResults, flowId);
@@ -7411,7 +7477,7 @@ export function createOnConfirmValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults, action_id, flowId);
+            validateQuote(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
@@ -7423,7 +7489,7 @@ export function createOnConfirmValidator(...config: string[]) {
             validateFulfillments(message, testResults);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
@@ -7521,7 +7587,7 @@ export function createOnStatusValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults, action_id, flowId);
+            validateQuote(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
@@ -7533,7 +7599,7 @@ export function createOnStatusValidator(...config: string[]) {
             validateFulfillments(message, testResults);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
@@ -7649,7 +7715,7 @@ export function createOnCancelValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults, action_id, flowId);
+            validateQuote(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
@@ -7661,7 +7727,7 @@ export function createOnCancelValidator(...config: string[]) {
             validateFulfillments(message, testResults);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
@@ -7756,7 +7822,7 @@ export function createOnUpdateValidator(...config: string[]) {
             validateOrder(message, testResults);
             break;
           case fis11Validators.quote.validate_quote:
-            validateQuote(message, testResults, action_id, flowId);
+            validateQuote(message, testResults, action_id, flowId, usecaseId);
             break;
           case fis11Validators.provider.validate_provider:
             validateProvider(message, testResults, action_id, usecaseId);
@@ -7768,7 +7834,7 @@ export function createOnUpdateValidator(...config: string[]) {
             validateFulfillments(message, testResults);
             break;
           case fis11Validators.payments.validate_payments:
-            validatePayments(message, testResults);
+            validatePayments(message, testResults, flowId);
             break;
           case fis11Validators.billing.validate_billing:
             validateBilling(message, testResults);
