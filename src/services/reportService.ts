@@ -4,12 +4,12 @@ import { validationModule } from "./validationModule";
 import { generateCustomHTMLReport } from "../templates/generateReport";
 import { CacheService } from "./cacheService";
 import logger from "@ondc/automation-logger";
-import { ENABLED_DOMAINS, typeMapping } from "../utils/constants";
+import { ENABLED_DOMAINS, ENABLED_USECASES, typeMapping } from "../utils/constants";
 import axios from "axios";
 import { generateTestsFromPayloads } from "../utils/payloadUtils";
 
 export class ReportService {
-  async generate(
+  async  generate(
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>
   ): Promise<any> {
@@ -53,8 +53,20 @@ export class ReportService {
       const flows = sortPayloadsByCreatedAt(payloads);
 
       // Check if domain is not in enabled domains - use Pramaan report
-      if (!ENABLED_DOMAINS.includes(`${sessionDetails.domain}:${sessionDetails.version}`)) {
+      const domainVersionKey = `${sessionDetails.domain}:${sessionDetails.version}`;
+      if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
         return await this.checkPramaanReport(sessionDetails, sessionId);
+      }
+
+      // Check usecase-level enabling
+      // If domain:version has specific usecases configured, verify the current usecase is allowed
+      const allowedUsecases = ENABLED_USECASES[domainVersionKey];
+      if (allowedUsecases && allowedUsecases.length > 0) {
+        const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
+        if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
+          logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
+          return await this.checkPramaanReport(sessionDetails, sessionId);
+        }
       }
 
       const result = await validationModule(flows, sessionId);

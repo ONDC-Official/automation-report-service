@@ -82,6 +82,24 @@ domains:
             - cancel
             - on_cancel
             - on_update
+
+          END_STOP_UPDATE_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - update
+            - on_update
+            - update
+            - on_update
         optional_flows:
           - DELAYED_CANCELLATION_FLOW_REJECTED
         validationModules: "../validations/ONDC:TRV11/validator#validate"
