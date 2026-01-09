@@ -107,6 +107,14 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV11:2.0.1"
 ];
 
+// Usecase-level enabling: Map of domain:version -> allowed usecases
+// If a domain:version is in ENABLED_DOMAINS but not in this map, all usecases are allowed
+// If present in this map, only listed usecases will use internal validations
+export const ENABLED_USECASES: Record<string, string[]> = {
+  "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
+  "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
+};
+
 export const DOMAINS = {
   NIC:"nic2004:60232",
   LOG10:"ONDC:LOG10",
