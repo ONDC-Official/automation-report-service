@@ -113,6 +113,46 @@ export const validatorConstant = {
         },
       },
       trv: {
+        trv11: {
+          v201: {
+            search: {
+              validate_intent: "validateTrv11Intent",
+            },
+            on_search: {
+              validate_catalog: "validateTrv11OnSearch",
+            },
+            select: {
+              validate_order: "validateTrv11Select",
+            },
+            on_select: {
+              validate_order: "validateTrv11OnSelect",
+            },
+            init: {
+              validate_order: "validateTrv11Init",
+            },
+            on_init: {
+              validate_order: "validateTrv11OnInit",
+            },
+            confirm: {
+              validate_order: "validateTrv11Confirm",
+            },
+            on_confirm: {
+              validate_order: "validateTrv11OnConfirm",
+            },
+            status: {
+              validate_order: "validateTrv11Status",
+            },
+            on_status: {
+              validate_order: "validateTrv11OnStatus",
+            },
+            cancel: {
+              validate_order: "validateTrv11Cancel",
+            },
+            on_cancel: {
+              validate_order: "validateTrv11OnCancel",
+            },
+          },
+        },
         trv10: {
           v210: {
             intent: {

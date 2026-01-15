@@ -24,6 +24,7 @@ import {
   validateShipmentTypes,
 } from "./onSearchValidations";
 import { validatorConstant } from "./validatorConstant";
+import { validateTrv11Intent, validateTrv11OnSearch, validateTrv11Select, validateTrv11OnSelect, validateTrv11Init, validateTrv11OnInit, validateTrv11Confirm, validateTrv11OnConfirm, validateTrv11Status, validateTrv11OnStatus, validateTrv11Cancel, validateTrv11OnCancel } from "./trv11Validations";
 import logger from "@ondc/automation-logger";
 import {
   CREDIT_CARD_FLOWS,
@@ -40,6 +41,7 @@ const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
+const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 
 /**
  * Parse ISO 8601 duration format (e.g., "P5M", "P5Y", "P1Y6M") to years
@@ -6551,6 +6553,9 @@ export function createSearchValidator(...config: string[]) {
             break;
 
           // TRV10 validations
+          case trv11Validators.search.validate_intent:
+            validateTrv11Intent(message, testResults);
+            break;
           case trv10Validators.fulfillment_stops.validate_fulfillment_stops:
             validateFulfillmentStops(message, testResults, action_id, flowId);
             break;
@@ -6778,6 +6783,9 @@ export function createOnSearchValidator(...config: string[]) {
             break;
 
           // TRV10 validations
+          case trv11Validators.on_search.validate_catalog:
+            validateTrv11OnSearch(message, testResults);
+            break;
           case trv10Validators.fulfillment_stops_catalog
             .validate_fulfillment_stops_catalog:
             validateFulfillmentStopsInCatalog(message, testResults, action_id);
@@ -6889,6 +6897,10 @@ export function createSelectValidator(...config: string[]) {
           case trv10Validators.items_trv10.validate_items_trv10:
             validateItemsTRV10(message, testResults, action_id);
             break;
+          // TRV11 validations
+          case trv11Validators.select.validate_order:
+            validateTrv11Select(message, testResults);
+            break;
           case trv10Validators.fulfillments_trv10.validate_fulfillments_trv10:
             validateFulfillmentsTRV10(message, testResults, action_id);
             break;
@@ -6978,6 +6990,10 @@ export function createOnSelectValidator(...config: string[]) {
             break;
           case trv10Validators.provider_trv10.validate_provider_trv10:
             validateProviderTRV10(message, testResults, action_id);
+            break;
+          // TRV11 validations
+          case trv11Validators.on_select.validate_order:
+            validateTrv11OnSelect(message, testResults);
             break;
           case trv10Validators.quote_trv10.validate_quote_trv10:
             validateQuoteTRV10(message, testResults, action_id, flowId);
@@ -7113,6 +7129,11 @@ export function createInitValidator(...config: string[]) {
             );
             break;
 
+          // TRV11 validations
+          case trv11Validators.init.validate_order:
+            validateTrv11Init(message, testResults);
+            break;
+
           default:
             break;
         }
@@ -7233,6 +7254,11 @@ export function createConfirmValidator(...config: string[]) {
             break;
           case trv10Validators.billing_trv10.validate_billing_trv10:
             validateBillingTRV10(message, testResults);
+            break;
+
+          // TRV11 validations
+          case trv11Validators.confirm.validate_order:
+            validateTrv11Confirm(message, testResults);
             break;
 
           default:
@@ -7360,6 +7386,11 @@ export function createOnInitValidator(...config: string[]) {
             break;
           case fis12Validators.documents.validate_documents:
             validateDocumentsFIS12(message, testResults);
+            break;
+
+          // TRV11 validations
+          case trv11Validators.on_init.validate_order:
+            validateTrv11OnInit(message, testResults);
             break;
 
           default:
@@ -7512,6 +7543,11 @@ export function createOnConfirmValidator(...config: string[]) {
             validateBillingTRV10(message, testResults);
             break;
 
+          // TRV11 validations
+          case trv11Validators.on_confirm.validate_order:
+            validateTrv11OnConfirm(message, testResults);
+            break;
+
           // FIS12 validations
           case fis12Validators.fulfillments.validate_fulfillments:
             validateFulfillmentsFIS12(
@@ -7657,6 +7693,11 @@ export function createOnStatusValidator(...config: string[]) {
 
           default:
             break;
+
+          // TRV11 validations
+          case trv11Validators.on_status.validate_order:
+            validateTrv11OnStatus(message, testResults);
+            break;
         }
       }
     }
@@ -7757,6 +7798,11 @@ export function createOnCancelValidator(...config: string[]) {
               action_id,
               flowId
             );
+            break;
+
+          // TRV11 validations
+          case trv11Validators.on_cancel.validate_order:
+            validateTrv11OnCancel(message, testResults);
             break;
 
           default:

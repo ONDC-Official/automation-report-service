@@ -1,12 +1,12 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
-import { validateStatusOrderId } from "../../shared/validationFactory";
+import { validateTrackOrderId } from "../../shared/validationFactory";
 
-export default async function status(
+export default async function track(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId?: string
+  actionId: string
 ): Promise<TestResult> {
   const testResults: TestResult = {
     response: {},
@@ -20,11 +20,11 @@ export default async function status(
   const message = jsonRequest?.message;
 
   // Validate order_id
-  validateStatusOrderId(message, testResults);
+  validateTrackOrderId(message, testResults);
 
   // Add default message if no validations ran
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {
-    testResults.passed.push(`Validated status`);
+    testResults.passed.push(`Validated track`);
   }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");

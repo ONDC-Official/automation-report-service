@@ -1,46 +1,62 @@
-import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { checkCommon } from "./commonChecks";
-import logger from "@ondc/automation-logger";
-import { updateApiMap } from "../../../utils/redisUtils";
+import { DomainValidators } from "../../shared/domainValidator";
+import { saveFromElement } from "../../../utils/specLoader";
+import { getActionData } from "../../../services/actionDataService";
 
-export async function checkInit(
+export default async function init(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
+  const result = await DomainValidators.trv11Init(element, sessionID, flowId, actionId);
 
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
+  try {
+    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    if (txnId) {
+      const selectData = await getActionData(sessionID,flowId, txnId, "select");
+      const initMsg = element?.jsonRequest?.message;
+      // Basic consistency checks w.r.t. SELECT
+      const initProviderId = initMsg?.order?.provider?.id;
+      const selectProviderId = selectData?.order?.provider?.id || selectData?.provider?.id;
+      if (initProviderId && selectProviderId && initProviderId === selectProviderId) {
+        result.passed.push("Provider id matches SELECT");
+      } else if (initProviderId && selectProviderId) {
+        result.failed.push("Provider id mismatch with SELECT");
+      }
+      // If either is missing, don't fail (optional check)
 
-  const { jsonRequest, jsonResponse } = payload;
-  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+      const initItems: any[] = initMsg?.order?.items || [];
+      const selectItems: any[] = selectData?.order?.items || selectData?.items || [];
+      const selectPriceById = new Map<string, string>();
+      for (const it of selectItems) if (it?.id && it?.price?.value !== undefined) selectPriceById.set(it.id, String(it.price.value));
 
-  const transactionId = jsonRequest.context?.transaction_id;
-  await updateApiMap(sessionID, transactionId, action);
-  const { fulfillments, message } = jsonRequest;
+      const missingFromSelect: string[] = [];
+      const priceMismatches: Array<{ id: string; select: string; init: string }> = [];
+      for (const it of initItems) {
+        const id = it?.id;
+        if (!id) continue;
+        if (!selectPriceById.has(id)) {
+          missingFromSelect.push(id);
+          continue;
+        }
+        const sel = parseFloat(selectPriceById.get(id) as string);
+        const ini = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
+        if (!Number.isNaN(sel) && !Number.isNaN(ini)) {
+          if (sel === ini) result.passed.push(`Item '${id}' price matches SELECT`);
+          else priceMismatches.push({ id, select: String(sel), init: String(ini) });
+        }
+      }
+      if (priceMismatches.length) result.failed.push("Item price mismatches between SELECT and init");
+      if (missingFromSelect.length || priceMismatches.length) {
+        (result.response as any) = {
+          ...(result.response || {}),
+          init_vs_select: { missingFromSelect, priceMismatches },
+        };
+      }
+    }
+  } catch (_) {}
 
-  // Test: Fulfillments array length should be proportional to selected count where each fulfillment obj will refer to an individual TICKET
-  // try {
-  //   const selectedCount = message.selected_count;
-  //   assert.strictEqual(fulfillments.length, selectedCount, "Fulfillments array length should be proportional to selected count");
-  //   testResults.passed.push("Fulfillments array length is proportional to selected count");
-  // } catch (error: any) {
-  //   testResults.failed.push(`Fulfillments array length check: ${error.message}`);
-  // }
-
-  // Apply common checks for all versions
-  const commonResults = await checkCommon(payload, sessionID, flowId);
-  testResults.passed.push(...commonResults.passed);
-  testResults.failed.push(...commonResults.failed);
-
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
-    testResults.passed.push(`Validated ${action}`);
-  return testResults;
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
+  return result;
 }

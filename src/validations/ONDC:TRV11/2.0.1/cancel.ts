@@ -1,88 +1,33 @@
-import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import logger from "@ondc/automation-logger";
-import { fetchData, updateApiMap } from "../../../utils/redisUtils";
-import { BUYER_CANCEL_CODES } from "../../../utils/constants";
+import { saveFromElement } from "../../../utils/specLoader";
+import { validateTrv11Cancel } from "../../shared/trv11Validations";
 
-export async function checkCancel(
+export default async function cancel(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-
   const testResults: TestResult = {
     response: {},
     passed: [],
     failed: [],
   };
 
-  const { jsonRequest, jsonResponse } = payload;
-
-  const transactionId = jsonRequest.context?.transaction_id;
-  // await updateApiMap(sessionID, transactionId, action);
-
+  const { jsonRequest, jsonResponse } = element;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-  const { fulfillments, message } = jsonRequest;
-  let apiMapObject = await fetchData(sessionID, transactionId, "apiMap");
-  let apiMap = apiMapObject?.value;
-  if (apiMap) {
-    if (apiMap[apiMap.length - 1] === "on_confirm") {
-      try {
-        assert.ok(
-          message?.descriptor?.code === "SOFT_CANCEL" ||
-            message?.descriptor?.code === "CONFIRM_CANCEL",
-          `message.descriptor.code should be 'SOFT_CANCEL/CONFIRM_CANCEL`
-        );
-        testResults.passed.push(
-          `Valid message.descriptor.code (${message?.descriptor?.code})`
-        );
-        assert.ok(
-          BUYER_CANCEL_CODES.includes(message?.cancellation_reason_id),
-          `Appropriate cancellation reason id to be used for buyer side cancellation`
-        );
-        testResults.passed.push(
-          `Valid cancellation reason id (${message?.cancellation_reason_id})`
-        );
-      } catch (error: any) {
-        testResults.failed.push(`${error?.message}`);
-      }
-      if (message?.descriptor?.code === "SOFT_CANCEL")
-        await updateApiMap(sessionID, transactionId, "soft_cancel");
-      else if (message?.descriptor?.code === "CONFIRM_CANCEL") {
-        await updateApiMap(sessionID, transactionId, "confirm_cancel");
-      }
-    } else if (apiMap[apiMap.length - 1] === "on_cancel") {
-      try {
-        assert.ok(
-          message?.descriptor?.code === "CONFIRM_CANCEL",
-          `message.descriptor.code should be 'CONFIRM_CANCEL`
-        );
-        testResults.passed.push(
-          `Valid message.descriptor.code (CONFIRM_CANCEL)`
-        );
-        assert.ok(
-          BUYER_CANCEL_CODES.includes(message?.cancellation_reason_id),
-          `Appropriate cancellation reason id to be used for buyer side cancellation`
-        );
-        testResults.passed.push(
-          `Valid cancellation reason id (${message?.cancellation_reason_id})`
-        );
-      } catch (error: any) {
-        testResults.failed.push(`${error?.message}`);
-      }
 
-      await updateApiMap(sessionID, transactionId, "confirm_cancel");
-    } else if (apiMap[apiMap.length - 1] === "on_status") {
-      await updateApiMap(sessionID, transactionId, "technical_cancel");
-    } else {
-      await updateApiMap(sessionID, transactionId, action);
-    }
+  const message = jsonRequest?.message;
+
+  // Validate cancel message for TRV11
+  validateTrv11Cancel(message, testResults);
+
+  // Add default message if no validations ran
+  if (testResults.passed.length < 1 && testResults.failed.length < 1) {
+    testResults.passed.push(`Validated cancel`);
   }
 
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
-    testResults.passed.push(`Validated ${action}`);
+  await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return testResults;
 }
+
