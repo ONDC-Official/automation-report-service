@@ -24,7 +24,7 @@ import {
   validateShipmentTypes,
 } from "./onSearchValidations";
 import { validatorConstant } from "./validatorConstant";
-import { validateTrv11Intent, validateTrv11OnSearch, validateTrv11Select, validateTrv11OnSelect, validateTrv11Init, validateTrv11OnInit, validateTrv11Confirm, validateTrv11OnConfirm, validateTrv11Status, validateTrv11OnStatus, validateTrv11Cancel, validateTrv11OnCancel } from "./trv11Validations";
+import { validateTrv11Intent, validateTrv11OnSearch, validateTrv11Select, validateTrv11OnSelect, validateTrv11Init, validateTrv11OnInit, validateTrv11Confirm, validateTrv11OnConfirm, validateTrv11Status, validateTrv11OnStatus, validateTrv11Cancel, validateTrv11OnCancel, validateTrv11Update, validateTrv11OnUpdate } from "./trv11Validations";
 import logger from "@ondc/automation-logger";
 import {
   CREDIT_CARD_FLOWS,
@@ -7910,6 +7910,11 @@ export function createOnUpdateValidator(...config: string[]) {
               action_id,
               flowId
             );
+            break;
+
+          // TRV11 validations
+          case trv11Validators.on_update.validate_order:
+            validateTrv11OnUpdate(message, testResults);
             break;
 
           default:

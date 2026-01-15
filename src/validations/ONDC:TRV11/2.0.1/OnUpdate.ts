@@ -8,7 +8,7 @@ export default async function on_update(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.trv10OnUpdate(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.trv11OnUpdate(element, sessionID, flowId, actionId);
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;

@@ -533,4 +533,7 @@ export const DomainValidators = {
   trv11OnCancel: createOnCancelValidator(
     trv11Validators.on_cancel.validate_order
   ),
+  trv11OnUpdate: createOnUpdateValidator(
+    trv11Validators.on_update.validate_order
+  ),
 };
