@@ -151,6 +151,12 @@ export const validatorConstant = {
             on_cancel: {
               validate_order: "validateTrv11OnCancel",
             },
+            update: {
+              validate_order: "validateTrv11Update",
+            },
+            on_update: {
+              validate_order: "validateTrv11OnUpdate",
+            },
           },
         },
         trv10: {

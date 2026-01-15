@@ -865,17 +865,22 @@ export function validateTrv11OnConfirm(
 
 /**
  * Validates TRV11 Status request
+ * Accepts either order_id (normal flow) or ref_id (technical/delayed cancellation flows)
  */
 export function validateTrv11Status(
   message: any,
   testResults: TestResult
 ): void {
-  // Status request only requires order_id
+  // Status request can have order_id OR ref_id
   const orderId = message?.order_id;
-  if (!orderId) {
-    testResults.failed.push("order_id is missing in status request");
-  } else {
+  const refId = message?.ref_id;
+
+  if (!orderId && !refId) {
+    testResults.failed.push("Either order_id or ref_id is required in status request");
+  } else if (orderId) {
     testResults.passed.push(`order_id is present: ${orderId}`);
+  } else if (refId) {
+    testResults.passed.push(`ref_id is present: ${refId} (technical/delayed cancellation flow)`);
   }
 }
 
@@ -1224,6 +1229,251 @@ export function validateTrv11OnCancel(
     } else {
       testResults.passed.push(`Cancellation reason code: ${cancellation.reason.descriptor.code}`);
     }
+  }
+
+  // Validate timestamps
+  if (!order.created_at) testResults.failed.push("Order created_at is missing");
+  if (!order.updated_at) testResults.failed.push("Order updated_at is missing");
+  if (order.created_at && order.updated_at) {
+    testResults.passed.push("Order timestamps are present");
+  }
+
+  // Validate Cancellation Terms (optional)
+  const cancellationTerms = order.cancellation_terms;
+  if (cancellationTerms && Array.isArray(cancellationTerms) && cancellationTerms.length > 0) {
+    testResults.passed.push("Cancellation terms are present");
+  }
+}
+
+// Valid update targets for TRV11
+const VALID_UPDATE_TARGETS = ["order.fulfillments", "payments"];
+// Valid update statuses
+const VALID_UPDATE_STATUSES = ["SOFT_UPDATE", "CONFIRM_UPDATE", "UPDATED"];
+
+/**
+ * Validates TRV11 Update request
+ */
+export function validateTrv11Update(
+  message: any,
+  testResults: TestResult
+): void {
+  // Validate update_target
+  const updateTarget = message?.update_target;
+  if (!updateTarget) {
+    testResults.failed.push("update_target is missing in update request");
+  } else if (!VALID_UPDATE_TARGETS.includes(updateTarget)) {
+    testResults.failed.push(`update_target must be one of ${VALID_UPDATE_TARGETS.join(", ")}, found: ${updateTarget}`);
+  } else {
+    testResults.passed.push(`update_target is valid: ${updateTarget}`);
+  }
+
+  // Validate order
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in update request");
+    return;
+  }
+
+  // Validate Order ID
+  if (!order.id) {
+    testResults.failed.push("Order ID is missing");
+  } else {
+    testResults.passed.push(`Order ID is present: ${order.id}`);
+  }
+
+  // Validate based on update_target
+  if (updateTarget === "order.fulfillments") {
+    // For fulfillment updates, validate status and fulfillments
+    if (!order.status) {
+      testResults.failed.push("Order status is missing for fulfillment update");
+    } else if (order.status !== "SOFT_UPDATE" && order.status !== "CONFIRM_UPDATE") {
+      testResults.failed.push(`Order status for fulfillment update must be SOFT_UPDATE or CONFIRM_UPDATE, found: ${order.status}`);
+    } else {
+      testResults.passed.push(`Update type: ${order.status}`);
+    }
+
+    // Validate fulfillments are present
+    const fulfillments = order.fulfillments;
+    if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
+      testResults.failed.push("Fulfillments array is missing or empty for fulfillment update");
+    } else {
+      fulfillments.forEach((fulfillment: any, fIndex: number) => {
+        if (!fulfillment.id) testResults.failed.push(`Fulfillment ${fIndex}: id is missing`);
+        
+        // Check for stops with END type (destination change)
+        const stops = fulfillment.stops;
+        if (stops && Array.isArray(stops)) {
+          const hasEnd = stops.some((s: any) => s.type === "END");
+          if (hasEnd) {
+            testResults.passed.push(`Fulfillment ${fIndex}: END stop update specified`);
+          }
+        }
+      });
+      testResults.passed.push(`Fulfillments validated (${fulfillments.length} fulfillments)`);
+    }
+  } else if (updateTarget === "payments") {
+    // For payment updates, validate payments array
+    const payments = order.payments;
+    if (!payments || !Array.isArray(payments) || payments.length === 0) {
+      testResults.failed.push("Payments array is missing or empty for payment update");
+    } else {
+      payments.forEach((payment: any, pIndex: number) => {
+        if (!payment.id) testResults.failed.push(`Payment ${pIndex}: id is missing`);
+        if (!payment.collected_by) testResults.failed.push(`Payment ${pIndex}: collected_by is missing`);
+        if (!payment.status) testResults.failed.push(`Payment ${pIndex}: status is missing`);
+        if (!payment.type) testResults.failed.push(`Payment ${pIndex}: type is missing`);
+
+        // For payment updates, params with transaction details are expected
+        if (payment.status === "PAID") {
+          const params = payment.params;
+          if (!params) {
+            testResults.failed.push(`Payment ${pIndex}: params is missing for PAID status`);
+          } else {
+            if (!params.transaction_id) testResults.failed.push(`Payment ${pIndex}: params.transaction_id is missing`);
+            if (!params.amount) testResults.failed.push(`Payment ${pIndex}: params.amount is missing`);
+            if (params.transaction_id && params.amount) {
+              testResults.passed.push(`Payment ${pIndex}: transaction params are valid`);
+            }
+          }
+        }
+      });
+      testResults.passed.push(`Payments validated (${payments.length} payments)`);
+    }
+  }
+}
+
+/**
+ * Validates TRV11 OnUpdate response
+ */
+export function validateTrv11OnUpdate(
+  message: any,
+  testResults: TestResult
+): void {
+  const order = message?.order;
+  if (!order) {
+    testResults.failed.push("Order is missing in on_update response");
+    return;
+  }
+
+  // Validate Order ID
+  if (!order.id) {
+    testResults.failed.push("Order ID is missing");
+  } else {
+    testResults.passed.push(`Order ID is present: ${order.id}`);
+  }
+
+  // Validate Order Status
+  if (!order.status) {
+    testResults.failed.push("Order status is missing");
+  } else if (!VALID_UPDATE_STATUSES.includes(order.status)) {
+    testResults.failed.push(`Order status must be one of ${VALID_UPDATE_STATUSES.join(", ")}, found: ${order.status}`);
+  } else {
+    testResults.passed.push(`Order status is valid: ${order.status}`);
+  }
+
+  // Validate Provider
+  if (!order.provider?.id) {
+    testResults.failed.push("Provider ID is missing");
+  } else {
+    testResults.passed.push(`Provider ID is present: ${order.provider.id}`);
+  }
+
+  // Validate Items
+  const items = order.items;
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    testResults.failed.push("Items array is missing or empty");
+  } else {
+    items.forEach((item: any, index: number) => {
+      if (!item.id) testResults.failed.push(`Item ${index}: id is missing`);
+      if (!item.price?.value) testResults.failed.push(`Item ${index}: price.value is missing`);
+      if (!item.quantity?.selected?.count) testResults.failed.push(`Item ${index}: quantity.selected.count is missing`);
+    });
+    testResults.passed.push(`Items validated (${items.length} items)`);
+  }
+
+  // Validate Fulfillments
+  const fulfillments = order.fulfillments;
+  if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
+    testResults.failed.push("Fulfillments array is missing or empty");
+  } else {
+    fulfillments.forEach((fulfillment: any, fIndex: number) => {
+      if (!fulfillment.id) testResults.failed.push(`Fulfillment ${fIndex}: id is missing`);
+      if (!fulfillment.type) testResults.failed.push(`Fulfillment ${fIndex}: type is missing`);
+
+      // For TRIP fulfillment, validate stops
+      if (fulfillment.type === "TRIP") {
+        const stops = fulfillment.stops;
+        if (!stops || stops.length === 0) {
+          testResults.failed.push(`Fulfillment ${fIndex} (TRIP): stops are missing`);
+        } else {
+          const hasStart = stops.some((s: any) => s.type === "START");
+          const hasEnd = stops.some((s: any) => s.type === "END");
+          if (!hasStart) testResults.failed.push(`Fulfillment ${fIndex} (TRIP): Missing START stop`);
+          if (!hasEnd) testResults.failed.push(`Fulfillment ${fIndex} (TRIP): Missing END stop`);
+        }
+      }
+
+      // For TICKET fulfillment, validate INFO tag and authorization
+      if (fulfillment.type === "TICKET") {
+        const infoTag = fulfillment.tags?.find((t: any) => t?.descriptor?.code === "INFO");
+        if (!infoTag) {
+          testResults.failed.push(`Fulfillment ${fIndex} (TICKET): INFO tag is missing`);
+        }
+
+        // Check for authorization in stops
+        const stops = fulfillment.stops;
+        if (stops && stops.length > 0) {
+          const startStop = stops.find((s: any) => s.type === "START");
+          if (startStop?.authorization) {
+            const auth = startStop.authorization;
+            if (auth.type && auth.token) {
+              testResults.passed.push(`Fulfillment ${fIndex} (TICKET): authorization is present`);
+            }
+          }
+        }
+      }
+    });
+    testResults.passed.push(`Fulfillments validated (${fulfillments.length} fulfillments)`);
+  }
+
+  // Validate Billing
+  const billing = order.billing;
+  if (!billing) {
+    testResults.failed.push("Billing is missing");
+  } else {
+    if (!billing.name) testResults.failed.push("Billing name is missing");
+    if (!billing.phone) testResults.failed.push("Billing phone is missing");
+    if (billing.name && billing.phone) {
+      testResults.passed.push("Billing info is valid");
+    }
+  }
+
+  // Validate Quote
+  const quote = order.quote;
+  if (!quote) {
+    testResults.failed.push("Quote is missing");
+  } else {
+    if (!quote.price?.value) testResults.failed.push("Quote price.value is missing");
+    if (!quote.price?.currency) testResults.failed.push("Quote price.currency is missing");
+    if (!quote.breakup || !Array.isArray(quote.breakup) || quote.breakup.length === 0) {
+      testResults.failed.push("Quote breakup is missing or empty");
+    } else {
+      testResults.passed.push(`Quote breakup validated (${quote.breakup.length} items)`);
+    }
+  }
+
+  // Validate Payments
+  const payments = order.payments;
+  if (!payments || !Array.isArray(payments) || payments.length === 0) {
+    testResults.failed.push("Payments array is missing or empty");
+  } else {
+    payments.forEach((payment: any, pIndex: number) => {
+      if (!payment.id) testResults.failed.push(`Payment ${pIndex}: id is missing`);
+      if (!payment.collected_by) testResults.failed.push(`Payment ${pIndex}: collected_by is missing`);
+      if (!payment.status) testResults.failed.push(`Payment ${pIndex}: status is missing`);
+      if (!payment.type) testResults.failed.push(`Payment ${pIndex}: type is missing`);
+    });
+    testResults.passed.push(`Payments validated (${payments.length} payments)`);
   }
 
   // Validate timestamps
