@@ -1,54 +1,64 @@
-import assert from "assert";
-import { Payload, TestResult, WrappedPayload } from "../../../types/payload";
-import { checkCommon } from "./commonChecks";
-import logger from "@ondc/automation-logger";
-import { updateApiMap } from "../../../utils/redisUtils";
+import { TestResult, Payload } from "../../../types/payload";
+import { DomainValidators } from "../../shared/domainValidator";
+import { saveFromElement } from "../../../utils/specLoader";
+import { getActionData } from "../../../services/actionDataService";
 
-export async function checkConfirm(  element: Payload,
+export default async function confirm(
+  element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-  
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
+  const result = await DomainValidators.trv11Confirm(element, sessionID, flowId, actionId);
 
-  const { jsonRequest,jsonResponse } = payload;
+  try {
+    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    if (txnId) {
+      const onInitData = await getActionData(sessionID,flowId, txnId, "on_init");
+      const confirmMsg = element?.jsonRequest?.message;
 
-  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+      // Items present and price equals ON_INIT's item price
+      const confirmItems: any[] = confirmMsg?.order?.items || [];
+      const onInitBreakup: any[] = onInitData?.quote_breakup || [];
 
-  const transactionId = jsonRequest.context?.transaction_id;
-  await updateApiMap(sessionID, transactionId, action);
-  
-  const { fulfillments, context, authorization } = jsonRequest;
+      // Build price map using ON_INIT breakup item.id when available, else items[]
+      const onInitPriceById = new Map<string, string>();
+      for (const b of onInitBreakup) {
+        const id = b?.["@ondc/org/item_id"] || b?.item?.id;
+        const val = b?.price?.value ?? b?.item?.price?.value;
+        if (id && val !== undefined) onInitPriceById.set(String(id), String(val));
+      }
+      if (onInitPriceById.size === 0) {
+        const onInitItems: any[] = onInitData?.items || [];
+        for (const it of onInitItems) if (it?.id && it?.price?.value !== undefined) onInitPriceById.set(it.id, String(it.price.value));
+      }
 
-  // Test: Fulfillments array length should be proportional to selected count where each fulfillment obj will refer to an individual TICKET
-  // try {
-  //   assert.strictEqual(fulfillments.length, context.selected_count, "Fulfillments array length should be proportional to selected count");
-  //   testResults.passed.push("Fulfillments array length is proportional to selected count");
-  // } catch (error: any) {
-  //   testResults.failed.push(`Fulfillments array length check: ${error.message}`);
-  // }
+      const missingFromOnInit: string[] = [];
+      const priceMismatches: Array<{ id: string; on_init: string; confirm: string }> = [];
+      for (const it of confirmItems) {
+        const id = it?.id;
+        if (!id) continue;
+        if (!onInitPriceById.has(id)) {
+          missingFromOnInit.push(id);
+          continue;
+        }
+        const ini = parseFloat(onInitPriceById.get(id) as string);
+        const cnf = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
+        if (!Number.isNaN(ini) && !Number.isNaN(cnf)) {
+          if (ini === cnf) result.passed.push(`Item '${id}' price matches ON_INIT`);
+          else priceMismatches.push({ id, on_init: String(ini), confirm: String(cnf) });
+        }
+      }
+      if (priceMismatches.length) result.failed.push("Item price mismatches between ON_INIT and confirm");
+      if (missingFromOnInit.length || priceMismatches.length) {
+        (result.response as any) = {
+          ...(result.response || {}),
+          confirm_vs_on_init: { missingFromOnInit, priceMismatches },
+        };
+      }
+    }
+  } catch (_) {}
 
-  // // Test: Authorization.valid_to timestamp should be greater than context.timestamp
-  // try {
-  //   assert.ok(authorization.valid_to > context.timestamp, "Authorization.valid_to timestamp should be greater than context.timestamp");
-  //   testResults.passed.push("Authorization.valid_to timestamp is valid");
-  // } catch (error: any) {
-  //   testResults.failed.push(`Authorization.valid_to timestamp check: ${error.message}`);
-  // }
-
-  // Apply common checks for all versions
-  const commonResults = await checkCommon(payload,sessionID,flowId);
-  testResults.passed.push(...commonResults.passed);
-  testResults.failed.push(...commonResults.failed);
-
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
-    testResults.passed.push(`Validated ${action}`);
-  return testResults;
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
+  return result;
 }

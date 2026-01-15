@@ -37,7 +37,6 @@ export function createDomainValidator(
 
       try {
         const domain = element?.jsonRequest?.context?.domain;
-
         const ext = getRuntimeExtension();
 
         let baseName =

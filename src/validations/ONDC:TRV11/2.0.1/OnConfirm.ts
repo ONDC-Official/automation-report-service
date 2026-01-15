@@ -1,109 +1,83 @@
-import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import logger from "@ondc/automation-logger";
-import { updateApiMap } from "../../../utils/redisUtils";
+import { DomainValidators } from "../../shared/domainValidator";
+import { validateOrderQuote } from "../../shared/quoteValidations";
+import { getActionData } from "../../../services/actionDataService";
+import { validateErrorResponse } from "../../shared/validationFactory";
 
-export async function checkOnConfirm(
+export default async function on_confirm(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
+  // For error response scenarios (like on_confirm_driver_not_found), validate error first
+  if (actionId === "on_confirm_driver_not_found") {
+    const result: TestResult = {
+      response: {},
+      passed: [],
+      failed: [],
+    };
 
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
+    const { jsonResponse } = element;
+    if (jsonResponse?.response) result.response = jsonResponse?.response;
 
-  const { jsonRequest, jsonResponse } = payload;
-  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+    // Validate error response
+    validateErrorResponse(element?.jsonRequest, result, actionId);
 
-  const transactionId = jsonRequest.context?.transaction_id;
-  await updateApiMap(sessionID, transactionId, action);
-  
-  const { context, message } = jsonRequest;
-  const contextTimestamp = context?.timestamp;
-  const items = message?.order?.items;
-  let itemQuantity: number = 0;
-  for (const item of items) {
-    itemQuantity = item?.quantity?.selected?.count;
+    return result;
   }
-  const fulfillments = message?.order?.fulfillments;
-  try {
-    logger.info(`Checking number of fulfillments in ${action}`);
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const count = item?.quantity?.selected?.count;
-      const expectedLength = count + 1;
 
-      // Assertion: Check if fulfillment_ids.length matches count + 1
-      assert.ok(
-        item?.fulfillment_ids?.length === expectedLength,
-        `In /items, expected fulfillment_ids.length to be ${expectedLength}, but got ${item.fulfillment_ids.length}`
-      );
-      testResults.passed.push(
-        `Number of fulfillments are expected as per the selected quantity for item ${item?.id}`
-      );
-
-      // Assertion: Check if all fulfillment_ids exist in the fulfillments array
-      for (let j = 0; j < item.fulfillment_ids.length; j++) {
-        const id = item?.fulfillment_ids[j];
-        const fulfillmentExists = fulfillments.some(
-          (fulfillment: any) => fulfillment.id === id
-        );
-
-        assert.ok(
-          fulfillmentExists,
-          `In /items, Fulfillment ID '${id}' not found in fulfillments array`
-        );
-      }
-      testResults.passed.push(
-        `All fulfillment ids in /items for ${item?.id} are correctly mapped to the fulfillments array`
-      );
-    }
-  } catch (error: any) {
-    testResults.failed.push(`${error.message}`);
-  }
+  // For normal on_confirm, use domain validator
+  const result = await DomainValidators.trv11OnConfirm(element, sessionID, flowId, actionId);
 
   try {
-    // Log the action being checked for authorization validation
-    logger.info(`Checking authorization object in ${action}`);
-
-    // Iterate through each fulfillment to validate authorization timestamps
-    for (const fulfillment of fulfillments) {
-      // Check if the fulfillment is of type 'TICKET' and has 'stops'
-      if (fulfillment.type === "TICKET" && fulfillment.stops) {
-        // Validate each stop's authorization timestamp
-        const isValid = fulfillment.stops.every((stop: any) => {
-          const authorization = stop?.authorization;
-
-          // Ensure 'authorization.valid_upto' is greater than the context timestamp
-          assert.ok(
-            authorization.valid_upto > contextTimestamp,
-            "Authorization.valid_to timestamp should be greater than context.timestamp for fulfillment with type 'TICKET'"
-          );
-
-          return true; // Continue if the assertion passes
-        });
-
-        // If validation fails, it will throw an error caught in the catch block
-        if (!isValid) break;
-      }
+    const message = element?.jsonRequest?.message;
+    if (message?.order?.quote) {
+      validateOrderQuote(message, result, {
+        validateDecimalPlaces: true,
+        validateTotalMatch: true,
+        // For TRV10, item price consistency is optional
+        validateItemPriceConsistency: false,
+        flowId,
+      });
     }
 
-    // If no error was thrown, mark the test as passed
-    testResults.passed.push(
-      "Authorization.valid_to timestamp is valid w.r.t context.timestamp for fulfillment with type 'TICKET'"
-    );
-  } catch (error: any) {
-    // Log and record the failure reason
-    testResults.failed.push(error.message);
-  }
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
-    testResults.passed.push(`Validated ${action}`);
+    // Compare against CONFIRM request when available
+    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    if (txnId) {
+      const confirmData = await getActionData(sessionID,flowId, txnId, "confirm");
+      const onConfirmMsg = element?.jsonRequest?.message;
 
-  return testResults;
+      const onConfirmItems: any[] = onConfirmMsg?.order?.items || [];
+      const confirmItems: any[] = confirmData?.items || [];
+      const confirmPriceById = new Map<string, string>();
+      for (const it of confirmItems) if (it?.id && it?.price?.value !== undefined) confirmPriceById.set(it.id, String(it.price.value));
+
+      const missingFromConfirm: string[] = [];
+      const priceMismatches: Array<{ id: string; confirm: string; on_confirm: string }> = [];
+      for (const it of onConfirmItems) {
+        const id = it?.id;
+        if (!id) continue;
+        if (!confirmPriceById.has(id)) {
+          missingFromConfirm.push(id);
+          continue;
+        }
+        const cnf = parseFloat(confirmPriceById.get(id) as string);
+        const onCnf = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
+        if (!Number.isNaN(cnf) && !Number.isNaN(onCnf)) {
+          if (cnf === onCnf) result.passed.push(`Item '${id}' price matches CONFIRM`);
+          else priceMismatches.push({ id, confirm: String(cnf), on_confirm: String(onCnf) });
+        }
+      }
+      if (priceMismatches.length) result.failed.push("Item price mismatches between CONFIRM and on_confirm");
+      if (missingFromConfirm.length || priceMismatches.length) {
+        (result.response as any) = {
+          ...(result.response || {}),
+          on_confirm_vs_confirm: { missingFromConfirm, priceMismatches },
+        };
+      }
+    }
+  } catch (_) {}
+
+  return result;
 }

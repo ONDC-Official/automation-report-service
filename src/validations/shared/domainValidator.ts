@@ -18,6 +18,7 @@ import { validatorConstant } from "./validatorConstant";
  * Pre-configured validators for common domain patterns
  */
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
+const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const logValidators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
@@ -501,5 +502,35 @@ export const DomainValidators = {
     fis12Validators.payments.validate_payments,
     fis12Validators.documents.validate_documents,
     fis11Validators.order_status.validate_order_status
+  ),
+  trv11Search: createSearchValidator(
+    trv11Validators.search.validate_intent
+  ),
+  trv11OnSearch: createOnSearchValidator(
+    trv11Validators.on_search.validate_catalog
+  ),
+  trv11Select: createSelectValidator(
+    trv11Validators.select.validate_order
+  ),
+  trv11OnSelect: createOnSelectValidator(
+    trv11Validators.on_select.validate_order
+  ),
+  trv11Init: createInitValidator(
+    trv11Validators.init.validate_order
+  ),
+  trv11OnInit: createOnInitValidator(
+    trv11Validators.on_init.validate_order
+  ),
+  trv11Confirm: createConfirmValidator(
+    trv11Validators.confirm.validate_order
+  ),
+  trv11OnConfirm: createOnConfirmValidator(
+    trv11Validators.on_confirm.validate_order
+  ),
+  trv11OnStatus: createOnStatusValidator(
+    trv11Validators.on_status.validate_order
+  ),
+  trv11OnCancel: createOnCancelValidator(
+    trv11Validators.on_cancel.validate_order
   ),
 };
