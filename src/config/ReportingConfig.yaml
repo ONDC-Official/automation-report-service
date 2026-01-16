@@ -176,6 +176,25 @@ domains:
             - issue
             - on_issue
             - issue
+
+          STATION_CODE_FLOW_ORDER_IGM_No_Action(v-1.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - issue_status
+            - on_issue_status
+            - issue
         optional_flows:
           - DELAYED_CANCELLATION_FLOW_REJECTED
         validationModules: "../validations/ONDC:TRV11/validator#validate"

@@ -168,6 +168,20 @@ export const validatorConstant = {
               validate_on_issue: "validateIgm2OnIssue",
             },
           },
+          v100: {
+            issue: {
+              validate_issue: "validateIgm1Issue",
+            },
+            on_issue: {
+              validate_on_issue: "validateIgm1OnIssue",
+            },
+            issue_status: {
+              validate_issue_status: "validateIgm1IssueStatus",
+            },
+            on_issue_status: {
+              validate_on_issue_status: "validateIgm1OnIssueStatus",
+            },
+          },
         },
         trv10: {
           v210: {

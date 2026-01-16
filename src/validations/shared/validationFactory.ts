@@ -25,7 +25,7 @@ import {
 } from "./onSearchValidations";
 import { validatorConstant } from "./validatorConstant";
 import { validateTrv11Intent, validateTrv11OnSearch, validateTrv11Select, validateTrv11OnSelect, validateTrv11Init, validateTrv11OnInit, validateTrv11Confirm, validateTrv11OnConfirm, validateTrv11Status, validateTrv11OnStatus, validateTrv11Cancel, validateTrv11OnCancel, validateTrv11Update, validateTrv11OnUpdate } from "./trv11Validations";
-import { validateIgm2Issue, validateIgm2OnIssue } from "./igmValidations";
+import { validateIgm2Issue, validateIgm2OnIssue, validateIgm1Issue, validateIgm1OnIssue, validateIgm1IssueStatus, validateIgm1OnIssueStatus } from "./igmValidations";
 import logger from "@ondc/automation-logger";
 import {
   CREDIT_CARD_FLOWS,
@@ -44,6 +44,7 @@ const log11Validators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 const igmValidators = validatorConstant.beckn.ondc.trv.igm.v200;
+const igm1Validators = validatorConstant.beckn.ondc.trv.igm.v100;
 
 /**
  * Parse ISO 8601 duration format (e.g., "P5M", "P5Y", "P1Y6M") to years
@@ -7993,6 +7994,126 @@ export function createOnIssueValidator(...config: string[]) {
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);
 
+    return testResults;
+  };
+}
+
+// ============================================
+// IGM 1.0.0 Factory Functions
+// ============================================
+
+/**
+ * Creates an IGM 1.0.0 issue validation function
+ */
+export function createIgm1IssueValidator(...config: string[]) {
+  return async function checkIgm1Issue(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, message } = createBaseValidationSetup(element);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          case igm1Validators.issue.validate_issue:
+            validateIgm1Issue(message, testResults);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    addDefaultValidationMessage(testResults, action);
+    return testResults;
+  };
+}
+
+/**
+ * Creates an IGM 1.0.0 on_issue validation function
+ */
+export function createIgm1OnIssueValidator(...config: string[]) {
+  return async function checkIgm1OnIssue(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, message } = createBaseValidationSetup(element);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          case igm1Validators.on_issue.validate_on_issue:
+            validateIgm1OnIssue(message, testResults);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    addDefaultValidationMessage(testResults, action);
+    return testResults;
+  };
+}
+
+/**
+ * Creates an IGM 1.0.0 issue_status validation function
+ */
+export function createIssueStatusValidator(...config: string[]) {
+  return async function checkIssueStatus(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, message } = createBaseValidationSetup(element);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          case igm1Validators.issue_status.validate_issue_status:
+            validateIgm1IssueStatus(message, testResults);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    addDefaultValidationMessage(testResults, action);
+    return testResults;
+  };
+}
+
+/**
+ * Creates an IGM 1.0.0 on_issue_status validation function
+ */
+export function createOnIssueStatusValidator(...config: string[]) {
+  return async function checkOnIssueStatus(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, message } = createBaseValidationSetup(element);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          case igm1Validators.on_issue_status.validate_on_issue_status:
+            validateIgm1OnIssueStatus(message, testResults);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    addDefaultValidationMessage(testResults, action);
     return testResults;
   };
 }
