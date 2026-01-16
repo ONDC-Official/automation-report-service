@@ -10,7 +10,8 @@ export async function generateTestsFromPayloads(
   domain: string,
   version: string,
   usecaseId: string,
-  sessionId: string
+  sessionId: string,
+  flowIdToPayloadIdsMap: Record<string, string[]>
 ): Promise<{
   tests: TestItem[];
   subscriber_id: string;
@@ -25,6 +26,8 @@ export async function generateTestsFromPayloads(
 
   const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
   const flowMap: Record<string, TestItem & { timestamp: string }> = {};
+  const payloadIds = Object.values(flowIdToPayloadIdsMap).flat();
+  const pramaanFlowIds = Object.keys(FLOW_ID_MAP[domain][version][usecaseId]);
   const response = await axios.get(
     `${process.env.DATA_BASE_URL}/api/sessions/payload/${sessionId}`,
     {
@@ -45,7 +48,12 @@ export async function generateTestsFromPayloads(
 
   for (const entry of payloads) {
     const payload = entry.payload;
-
+    if (!payloadIds.includes(payload.payloadId)) {
+      continue;
+    }
+    if(!pramaanFlowIds.includes(payload.flowId)){
+      continue;
+    }
     if (!subscriber_id) {
       if (npType === "BPP" && payload.bppId) {
         subscriber_id = payload.bppId;
