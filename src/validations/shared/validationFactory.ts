@@ -43,6 +43,7 @@ const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
+const igmValidators = validatorConstant.beckn.ondc.trv.igm.v200;
 
 /**
  * Parse ISO 8601 duration format (e.g., "P5M", "P5Y", "P1Y6M") to years
@@ -7926,6 +7927,68 @@ export function createOnUpdateValidator(...config: string[]) {
 
     // Purchase Finance specific validations for on_update
     validatePurchaseFinanceOnUpdate(message, testResults, flowId);
+
+    // Add default message if no validations ran
+    addDefaultValidationMessage(testResults, action);
+
+    return testResults;
+  };
+}
+
+/**
+ * Creates an issue validation function
+ */
+export function createIssueValidator(...config: string[]) {
+  return async function checkIssue(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, message } = createBaseValidationSetup(element);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          case igmValidators.issue.validate_issue:
+            validateIgm2Issue(message, testResults);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    // Add default message if no validations ran
+    addDefaultValidationMessage(testResults, action);
+
+    return testResults;
+  };
+}
+
+/**
+ * Creates an on_issue validation function
+ */
+export function createOnIssueValidator(...config: string[]) {
+  return async function checkOnIssue(
+    element: Payload,
+    sessionID: string,
+    flowId: string,
+    action_id: string
+  ): Promise<TestResult> {
+    const { testResults, action, message } = createBaseValidationSetup(element);
+
+    for (const validation of config) {
+      if (validation) {
+        switch (validation) {
+          case igmValidators.on_issue.validate_on_issue:
+            validateIgm2OnIssue(message, testResults);
+            break;
+          default:
+            break;
+        }
+      }
+    }
 
     // Add default message if no validations ran
     addDefaultValidationMessage(testResults, action);

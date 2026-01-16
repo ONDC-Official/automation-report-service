@@ -11,6 +11,8 @@ import {
   createOnUpdateValidator,
   createSearchValidator,
   createSelectValidator,
+  createIssueValidator,
+  createOnIssueValidator,
 } from "./validationFactory";
 import { validatorConstant } from "./validatorConstant";
 
@@ -22,6 +24,7 @@ const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const logValidators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
+const igmValidators = validatorConstant.beckn.ondc.trv.igm.v200;
 
 export const DomainValidators = {
   fis11Search: createSearchValidator(
@@ -535,5 +538,13 @@ export const DomainValidators = {
   ),
   trv11OnUpdate: createOnUpdateValidator(
     trv11Validators.on_update.validate_order
+  ),
+
+  // IGM Validators (reusable across domains)
+  igmIssue: createIssueValidator(
+    igmValidators.issue.validate_issue
+  ),
+  igmOnIssue: createOnIssueValidator(
+    igmValidators.on_issue.validate_on_issue
   ),
 };
