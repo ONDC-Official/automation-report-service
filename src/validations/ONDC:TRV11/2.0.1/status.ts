@@ -1,6 +1,6 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
-import { validateStatusOrderId } from "../../shared/validationFactory";
+import { validateTrv11Status } from "../../shared/trv11Validations";
 
 export default async function status(
   element: Payload,
@@ -19,8 +19,8 @@ export default async function status(
 
   const message = jsonRequest?.message;
 
-  // Validate order_id
-  validateStatusOrderId(message, testResults);
+  // Validate status - supports both order_id and ref_id
+  validateTrv11Status(message, testResults);
 
   // Add default message if no validations ran
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {
@@ -30,4 +30,3 @@ export default async function status(
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return testResults;
 }
-
