@@ -1,0 +1,32 @@
+import { TestResult, Payload } from "../../../types/payload";
+import { saveFromElement } from "../../../utils/specLoader";
+import { validateIgm2Issue } from "../../shared/igmValidations";
+
+export default async function issue(
+  element: Payload,
+  sessionID: string,
+  flowId: string,
+  actionId?: string
+): Promise<TestResult> {
+  const testResults: TestResult = {
+    response: {},
+    passed: [],
+    failed: [],
+  };
+
+  const { jsonRequest, jsonResponse } = element;
+  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
+
+  const message = jsonRequest?.message;
+
+  // Validate issue message using IGM 2.0.0 validators
+  validateIgm2Issue(message, testResults);
+
+  // Add default message if no validations ran
+  if (testResults.passed.length < 1 && testResults.failed.length < 1) {
+    testResults.passed.push(`Validated issue`);
+  }
+
+  await saveFromElement(element, sessionID, flowId, "jsonRequest");
+  return testResults;
+}

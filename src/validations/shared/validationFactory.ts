@@ -25,6 +25,7 @@ import {
 } from "./onSearchValidations";
 import { validatorConstant } from "./validatorConstant";
 import { validateTrv11Intent, validateTrv11OnSearch, validateTrv11Select, validateTrv11OnSelect, validateTrv11Init, validateTrv11OnInit, validateTrv11Confirm, validateTrv11OnConfirm, validateTrv11Status, validateTrv11OnStatus, validateTrv11Cancel, validateTrv11OnCancel, validateTrv11Update, validateTrv11OnUpdate } from "./trv11Validations";
+import { validateIgm2Issue, validateIgm2OnIssue } from "./igmValidations";
 import logger from "@ondc/automation-logger";
 import {
   CREDIT_CARD_FLOWS,
