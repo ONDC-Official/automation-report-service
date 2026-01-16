@@ -13,6 +13,10 @@ import {
   createSelectValidator,
   createIssueValidator,
   createOnIssueValidator,
+  createIgm1IssueValidator,
+  createIgm1OnIssueValidator,
+  createIssueStatusValidator,
+  createOnIssueStatusValidator,
 } from "./validationFactory";
 import { validatorConstant } from "./validatorConstant";
 
@@ -25,6 +29,7 @@ const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const logValidators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 const igmValidators = validatorConstant.beckn.ondc.trv.igm.v200;
+const igm1Validators = validatorConstant.beckn.ondc.trv.igm.v100;
 
 export const DomainValidators = {
   fis11Search: createSearchValidator(
@@ -540,11 +545,25 @@ export const DomainValidators = {
     trv11Validators.on_update.validate_order
   ),
 
-  // IGM Validators (reusable across domains)
+  // IGM 2.0.0 Validators (reusable across domains)
   igmIssue: createIssueValidator(
     igmValidators.issue.validate_issue
   ),
   igmOnIssue: createOnIssueValidator(
     igmValidators.on_issue.validate_on_issue
+  ),
+
+  // IGM 1.0.0 Validators (reusable across domains)
+  igm1Issue: createIgm1IssueValidator(
+    igm1Validators.issue.validate_issue
+  ),
+  igm1OnIssue: createIgm1OnIssueValidator(
+    igm1Validators.on_issue.validate_on_issue
+  ),
+  igm1IssueStatus: createIssueStatusValidator(
+    igm1Validators.issue_status.validate_issue_status
+  ),
+  igm1OnIssueStatus: createOnIssueStatusValidator(
+    igm1Validators.on_issue_status.validate_on_issue_status
   ),
 };
