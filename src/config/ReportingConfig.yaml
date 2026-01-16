@@ -64,6 +64,8 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - status
+            - on_status
             - cancel
             - on_cancel
             - on_status
@@ -79,6 +81,8 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - status
+            - on_status
             - cancel
             - on_cancel
             - on_update
