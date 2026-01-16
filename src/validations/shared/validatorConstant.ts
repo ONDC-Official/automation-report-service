@@ -159,6 +159,16 @@ export const validatorConstant = {
             },
           },
         },
+        igm: {
+          v200: {
+            issue: {
+              validate_issue: "validateIgm2Issue",
+            },
+            on_issue: {
+              validate_on_issue: "validateIgm2OnIssue",
+            },
+          },
+        },
         trv10: {
           v210: {
             intent: {
