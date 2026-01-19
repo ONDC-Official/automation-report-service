@@ -17,7 +17,6 @@ export async function generateReportController(
     }
     logger.info(`${MESSAGES.report.enteringController} ${sessionId}`);
     const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
-    console.log("Flow to Payload IDs Map:", flowIdToPayloadIdsMap);
     
     const htmlReport = await new ReportService().generate(
       sessionId,
