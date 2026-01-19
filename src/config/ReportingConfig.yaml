@@ -2342,5 +2342,110 @@ domains:
               - Health_Insurance_Application(PRE-ORDER-Individual)
               - Health_Insurance_Application(PRE-ORDER-Family)
             validationModules: "../validations/ONDC:FIS13/validator#validate"
+
+          MOTOR INSURANCE:
+            flows:
+              Motor_Insurance_Application:
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - status
+                - on_status
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+
+              Motor_Insurance_Application(PRE-ORDER):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - status
+                - on_status
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+
+              Claim_Motor_Insurance:
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - status
+                - on_status
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Motor_Insurance:
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - status
+                - on_status
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - cancel
+                - on_cancel
+                - on_update
+            optional_flows:
+              - Motor_Insurance_Application(PRE-ORDER)
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
       
       

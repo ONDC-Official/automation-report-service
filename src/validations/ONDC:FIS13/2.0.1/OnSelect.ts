@@ -4,7 +4,7 @@ import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { saveFromElement } from "../../../utils/specLoader";
-import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
+import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_select(
   element: Payload,
@@ -45,8 +45,9 @@ export default async function on_select(
         }
       }
 
-      // Validate items consistency for health insurance flows
-      if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
+      // Validate items consistency for health insurance and motor insurance flows
+      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
+      if (isInsuranceFlow) {
         const onSelectItemIds = onSelItems.map(it => it?.id).filter(Boolean) as string[];
         const missingItems = selectItemIds.filter(id => !onSelectItemIds.includes(id));
         const extraItems = onSelectItemIds.filter(id => !selectItemIds.includes(id));
@@ -63,7 +64,8 @@ export default async function on_select(
         }
         
         // Validate form ID consistency if xinput is present
-        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_select", result, HEALTH_INSURANCE_FLOWS);
+        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
+        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_select", result, insuranceFlows);
       }
 
       const missingInSelect: string[] = [];

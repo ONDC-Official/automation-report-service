@@ -75,6 +75,13 @@ export const HEALTH_INSURANCE_FLOWS = [
   "Cancel_Health_Insurance(Family)"
 ]
 
+export const MOTOR_INSURANCE_FLOWS = [
+  "Motor_Insurance_Application",
+  "Motor_Insurance_Application(PRE-ORDER)",
+  "Claim_Motor_Insurance",
+  "Cancel_Motor_Insurance"
+]
+
 export const ITEM_PRICE_NOT_REQUIRED_FIS13 = [
 "on_search","on_search2","on_search3", "select", "select2","init","init2","init3"
 ]

@@ -32,6 +32,7 @@ import {
   PURCHASE_FINANCE_FLOWS,
   PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION,
   HEALTH_INSURANCE_FLOWS,
+  MOTOR_INSURANCE_FLOWS,
   ITEM_PRICE_NOT_REQUIRED_FIS13,
 } from "../../utils/constants";
 
@@ -442,6 +443,16 @@ function validateIntent(
       if (intent.category?.descriptor?.code !== "HEALTH_INSURANCE") {
         testResults.failed.push(
           `Intent category descriptor code should be HEALTH_INSURANCE for ${flow_id}`
+        );
+      } else {
+        testResults.passed.push(
+          `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
+        );
+      }
+    } else if (flow_id && MOTOR_INSURANCE_FLOWS.includes(flow_id)) {
+      if (intent.category?.descriptor?.code !== "MOTOR_INSURANCE") {
+        testResults.failed.push(
+          `Intent category descriptor code should be MOTOR_INSURANCE for ${flow_id}`
         );
       } else {
         testResults.passed.push(
@@ -4119,6 +4130,7 @@ function validateProvider(
     action_id !== "select_2" &&
     action_id !== "select2" &&
     action_id !== "select" &&
+    action_id !== "select_motor" &&
     action_id !== "init" &&
     action_id !== "init2" &&
     action_id !== "init3" &&
@@ -4185,6 +4197,7 @@ function validateItems(
       if (
         action_id !== "select" &&
         action_id !== "select2" &&
+        action_id !== "select_motor" &&
         action_id !== "select_rental" &&
         action_id !== "select_adjust_loan_amount" &&
         action_id !== "init" &&
@@ -4201,18 +4214,68 @@ function validateItems(
         }
       }
 
-      if (
+      // For on_search2 in motor insurance flows, validate child items have price
+      const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
+      // Detect on_search2 by checking if action_id is "on_search2" or if there are child items present
+      const hasChildItemsInFlow = items.some((otherItem: any) => otherItem.parent_item_id);
+      const isOnSearch2 = action_id === "on_search2" || (action_id === "on_search" && hasChildItemsInFlow && isMotorInsuranceFlow);
+      
+      // For select_motor in motor insurance flows, child items don't need price
+      if (action_id === "select_motor" && isMotorInsuranceFlow && item.parent_item_id) {
+        // Child items in select_motor don't require price
+        if (item.price?.value) {
+          testResults.passed.push(`Item ${index} (child item) price value is present: ${item.price.value}`);
+        } else {
+          testResults.passed.push(`Item ${index} (child item) price value is optional in select_motor`);
+        }
+      } else if (isOnSearch2 && isMotorInsuranceFlow && item.parent_item_id) {
+        // Child items must have price in on_search2
+        if (!item.price?.value) {
+          testResults.failed.push(`Item ${index} (child item) price value is missing in on_search2`);
+        } else {
+          testResults.passed.push(`Item ${index} (child item) price value is present: ${item.price.value}`);
+          if (!item.price?.currency) {
+            testResults.failed.push(`Item ${index} (child item) price currency is missing`);
+          } else {
+            testResults.passed.push(`Item ${index} (child item) price currency is present: ${item.price.currency}`);
+          }
+        }
+      } else if (
         action_id !== "select_rental" &&
         action_id !== "select_adjust_loan_amount" &&
-        !item.price?.value && (!ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id ?? "") && flowId && HEALTH_INSURANCE_FLOWS.includes(flowId))
+        action_id !== "select_motor" &&
+        !item.price?.value && 
+        !ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id ?? "") && 
+        !(flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId)))
       ) {
-        testResults.failed.push(`Item ${index} price value is missing`);
+        // For on_search2 in motor insurance flows, parent items don't need price
+        if (isOnSearch2 && isMotorInsuranceFlow && !item.parent_item_id) {
+          // Check if this parent item has child items
+          const hasChildItems = items.some((otherItem: any) => otherItem.parent_item_id === item.id);
+          if (hasChildItems) {
+            testResults.passed.push(
+              `Item ${index} (parent item) price value is optional in on_search2 (has child items)`
+            );
+          } else {
+            testResults.failed.push(`Item ${index} price value is missing`);
+          }
+        } else {
+          testResults.failed.push(`Item ${index} price value is missing`);
+        }
       } else {
         if (item.price?.value) {
           testResults.passed.push(`Item ${index} price value is present`);
         } else if (action_id === "select_adjust_loan_amount") {
           testResults.passed.push(
             `Item ${index} price value is optional for select_adjust_loan_amount action`
+          );
+        } else if (action_id === "select_motor" && isMotorInsuranceFlow) {
+          testResults.passed.push(
+            `Item ${index} price value is optional for select_motor in motor insurance flows`
+          );
+        } else if (flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId))) {
+          testResults.passed.push(
+            `Item ${index} price value is optional for insurance flows`
           );
         }
       }
@@ -4893,14 +4956,27 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
     return;
   }
 
-  // Check if this is a health insurance flow
+  // Check if this is a health insurance flow or motor insurance flow
   const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
   const validCategoryMap: Record<string, string> = isHealthInsuranceFlow
     ? {
         INDIVIDUAL_INSURANCE: "Individual Insurance",
         FAMILY_INSURANCE: "Family Insurance" ,
         HEALTH_INSURANCE: "Health Insurance",
         
+      }
+    : isMotorInsuranceFlow
+    ? {
+        MOTOR_INSURANCE: "Motor Insurance",
+        TWO_WHEELER_INSURANCE: "TWO WHEELER",
+        FOUR_WHEELER_INSURANCE: "FOUR WHEELER",
+        TWO_WHEELER_COMPRIHENSIVE_INSURANCE: "Two Wheeler Comprehensive",
+        TWO_WHEELER_THIRD_PARTY_INSURANCE: "Two Wheeler Third Party",
+        TWO_WHEELER_OWN_DAMAGE: "Two Wheeler Own Damage",
+        FOUR_WHEELER_COMPRIHENSIVE_INSURANCE: "Four Wheeler Comprehensive",
+        FOUR_WHEELER_THIRD_PARTY_INSURANCE: "Four Wheeler Third Party",
+        FOUR_WHEELER_OWN_DAMAGE: "Four Wheeler Own Damage",
       }
     : {
         GOLD_LOAN: "Gold Loan",
@@ -5266,11 +5342,13 @@ async function validateXinputFIS12(
     }
   });
 
-  // Check if this is a purchase finance flow or health insurance flow
+  // Check if this is a purchase finance flow, health insurance flow, or motor insurance flow
   const isPurchaseFinanceFlow =
     flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
   const isHealthInsuranceFlow =
     flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isMotorInsuranceFlow =
+    flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
 
   const allowedHeadings = [
     "KYC",
@@ -5303,6 +5381,23 @@ async function validateXinputFIS12(
     );
   }
 
+  // Add motor insurance specific headings
+  if (isMotorInsuranceFlow) {
+    allowedHeadings.push(
+      "VEHICLE_DETAILS",
+      "Vehicle Details",
+      "MANUAL_REVIEW",
+      "PAN_DOB",
+      "KYC",
+      "VEHICLE_NOMINEE_DETAILS",
+      "PERSONAL_INFO",
+      "CIS",
+      "CIS_AND_PAYMENT",
+      "Consumer Information",
+      "Personal Details"
+    );
+  }
+
   const formUrls: string[] = [];
 
   items.forEach((item: any) => {
@@ -5327,8 +5422,35 @@ async function validateXinputFIS12(
       });
     }
 
-    if(action_id === "on_search3" && HEALTH_INSURANCE_FLOWS.includes(flowId ?? "")){
+    const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId ?? "") || MOTOR_INSURANCE_FLOWS.includes(flowId ?? ""));
+    const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId ?? "");
+    const isMotorInsuranceApplicationFlow = flowId === "Motor_Insurance_Application";
+    
+    if(action_id === "on_search3" && isInsuranceFlow){
       return;
+    }
+
+    // For on_search2_motor in Motor_Insurance_Application flow, parent items don't need xinput
+    if (action_id === "on_search2_motor" && isMotorInsuranceApplicationFlow && !item.parent_item_id && !item.xinput) {
+      testResults.passed.push(
+        `Item ${item.id}: xinput is not required for parent item in on_search2_motor (Motor_Insurance_Application flow)`
+      );
+      return;
+    }
+
+    // For on_search2 in motor insurance flows, parent items don't need xinput
+    // Detect on_search2 by checking if action_id is "on_search2" or if there are child items present
+    const hasChildItems = items.some((otherItem: any) => otherItem.parent_item_id === item.id);
+    const isOnSearch2 = action_id === "on_search2" || (action_id === "on_search" && hasChildItems && isMotorInsuranceFlow);
+    
+    if (isOnSearch2 && isMotorInsuranceFlow && !item.parent_item_id && !item.xinput) {
+      // Parent items in on_search2 don't need xinput if they have child items
+      if (hasChildItems) {
+        testResults.passed.push(
+          `Item ${item.id}: xinput is not required for parent item in on_search2 (has child items)`
+        );
+        return;
+      }
     }
 
     if (
@@ -5371,7 +5493,8 @@ async function validateXinputFIS12(
             `Item ${item.id}: xinput.form_response.status is missing`
           );
         } else {
-          const validStatuses = isHealthInsuranceFlow
+          const isInsuranceFlow = isHealthInsuranceFlow || (flowId && MOTOR_INSURANCE_FLOWS.includes(flowId));
+          const validStatuses = isInsuranceFlow
             ? ["SUCCESS", "PENDING", "FAILED", "APPROVED", "REJECTED", "EXPIRED"]
             : ["SUCCESS", "PENDING", "FAILED"];
           if (!validStatuses.includes(item.xinput.form_response.status)) {
@@ -5963,12 +6086,15 @@ export function validateCancel(
 
   const isHealthInsuranceFlow =
         flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isMotorInsuranceFlow =
+        flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
+  const isInsuranceFlow = isHealthInsuranceFlow || isMotorInsuranceFlow;
   // Validate descriptor
   const descriptor = message?.descriptor;
   if (!descriptor) {
     testResults.failed.push("Cancellation descriptor is missing");
   } else {
-    if(isHealthInsuranceFlow) {
+    if(isInsuranceFlow) {
       if(!descriptor.short_desc) {
         testResults.failed.push("Cancellation descriptor short description is missing");
       } else {
@@ -6048,8 +6174,11 @@ function validateCancellation(
 
   const isHealthInsuranceFlow =
     flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isMotorInsuranceFlow =
+    flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
+  const isInsuranceFlow = isHealthInsuranceFlow || isMotorInsuranceFlow;
 
-  if(isHealthInsuranceFlow && order.status !== "CANCELLATION_INITIATED") {
+  if(isInsuranceFlow && order.status !== "CANCELLATION_INITIATED") {
     testResults.failed.push(
       "Order status should be CANCELLATION_INITIATED in on_cancel"
     );
@@ -6093,7 +6222,7 @@ function validateCancellation(
       }
     } else {
       // For non-purchase finance flows, status should be SOFT_CANCEL
-      if (order.status !== "SOFT_CANCEL" && !isHealthInsuranceFlow) {
+      if (order.status !== "SOFT_CANCEL" && !isInsuranceFlow) {
         testResults.failed.push(
           "Order status should be SOFT_CANCEL in on_cancel"
         );
@@ -6114,7 +6243,7 @@ function validateCancellation(
   const cancellation = order.cancellation;
   if (
     !cancellation &&
-    (isHealthInsuranceFlow ||
+    (isInsuranceFlow ||
 
     (action_id === "soft_on_cancel_purchase_finance" ||
       action_id === "confirmed_on_cancel_purchase_finance"
