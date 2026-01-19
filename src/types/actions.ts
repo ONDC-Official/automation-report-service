@@ -14,4 +14,8 @@ export type ValidationAction =
   | "status"
   | "on_status"
   | "track"
-  | "on_track";
+  | "on_track"
+  | "issue"
+  | "on_issue"
+  | "issue_status"
+  | "on_issue_status";

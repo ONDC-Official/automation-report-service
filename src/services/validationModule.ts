@@ -36,6 +36,10 @@ const INITIAL_ACTION_COUNTERS: Record<ValidationAction, number> = {
   status: 1,
   track: 1,
   on_track: 1,
+  issue: 1,
+  on_issue: 1,
+  issue_status: 1,
+  on_issue_status: 1,
 };
 
 // Interface for session details
