@@ -15,6 +15,10 @@ export const actions: String[] = [
   "on_status",
   "track",
   "on_track",
+  "issue",
+  "on_issue",
+  "issue_status",
+  "on_issue_status",
 ];
 
 export const MANDATORY_FLOWS: String[] = [
