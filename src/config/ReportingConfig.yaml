@@ -64,6 +64,8 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - status
+            - on_status
             - cancel
             - on_cancel
             - on_status
@@ -79,12 +81,123 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - status
+            - on_status
             - cancel
             - on_cancel
             - on_update
+
+          END_STOP_UPDATE_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - update
+            - on_update
+            - update
+            - on_update
+
+          STATION_CODE_FLOW_ORDER_IGM(v-2.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+
+          STATION_CODE_FLOW_ORDER_IGM_Rejection(v-2.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+
+          STATION_CODE_FLOW_ORDER_IGM_No_Action(v-2.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+
+          STATION_CODE_FLOW_ORDER_IGM_No_Action(v-1.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - issue_status
+            - on_issue_status
+            - issue
         optional_flows:
           - DELAYED_CANCELLATION_FLOW_REJECTED
-        validationModules: "../validations/trv11/validator#validate"
+        validationModules: "../validations/ONDC:TRV11/validator#validate"
       "2.0.0":
         flows:
           STATION_CODE_FLOW_CATALOG:
@@ -139,7 +252,7 @@ domains:
 
         optional_flows:
 
-        validationModules: "../validations/trv11/validator#validate"
+        validationModules: "../validations/ONDC:TRV11/validator#validate"
   "nic2004:60232":
     versions:
       "1.2.5":

@@ -36,6 +36,8 @@ export const PERSONAL_LOAN_FLOWS = [
   "Personal_Loan_Multiple_Offers"
 ]
 
+export const CREDIT_CARD_FLOWS = ["Credit_card"]
+
 export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_Without_AA",
   "Purchase_Finance_Single_Redirection_Without_AA",
@@ -108,7 +110,17 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.2.1",
   "ONDC:FIS13:2.0.1",
   "ONDC:TRV10:2.1.0",
+  "ONDC:TRV11:2.0.0",
+  "ONDC:TRV11:2.0.1"
 ];
+
+// Usecase-level enabling: Map of domain:version -> allowed usecases
+// If a domain:version is in ENABLED_DOMAINS but not in this map, all usecases are allowed
+// If present in this map, only listed usecases will use internal validations
+export const ENABLED_USECASES: Record<string, string[]> = {
+  "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
+  "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
+};
 
 export const DOMAINS = {
   NIC:"nic2004:60232",
@@ -117,6 +129,7 @@ export const DOMAINS = {
   FIS11:"ONDC:FIS11",
   FIS12:"ONDC:FIS12",
   TRV10:"ONDC:TRV10",
+  TRV11: "ONDC:TRV11"
 };
 
 export const FLOW_MAPPINGS: Record<string, string> = {
@@ -303,7 +316,7 @@ export const FLOW_ID_MAP: Record<
     "2.0.0": {
       "Hotel-Booking": {
         "Order to Confirm to Fulfillment (City Based)": "ACM_1",
-        "Hotel Booking TTL": "ACM_2",
+        "Incremental Catalog refresh": "ACM_2",
         "Order to Confirm to Fulfillment (Time range Based)": "ACM_3",
         "Order to Confirm to Fulfillment (Provider Specific)": "ACM_4",
         "Order to Confirm to Fulfillment (Part Payment)": "ACM_5",
@@ -318,7 +331,7 @@ export const FLOW_ID_MAP: Record<
       "unreserved-entry-pass": {
         "purchase_journey_with_form": "EP_1",
         "purchase_journey_without_form": "EP_2",
-          "purchase_journey_with_form_Multiple_Tickets":"EP_3",
+        "purchase_journey_with_form_Multiple_Tickets":"EP_3",
         "purchase_journey_without_form_Multiple_Tickets":"EP_4",
         "technical_cancellation_with_form":"EP_5",
         "technical_cancellation": "EP_6",
@@ -330,8 +343,16 @@ export const FLOW_ID_MAP: Record<
   "ONDC:TRV12": {
     "2.0.0": {
       "Intercity": {
-        "Intercity(Bus)_Cancel_Flow": "ITC_3",
+        "Intercity(Bus)_Station_Code_Based_Flow": "ITC_1",
+        "Intercity(Bus)_Station_Code_Based_Flow_Multiple_Tickets": "ITC_2",
+        "Intercity(Bus)_Cancel_Flow(Buyer)": "ITC_3",
         "Intercity(Bus)_Seller_Cancellation": "ITC_4"
+      },
+      "Airline": {
+        "Purchase Journey(Code Based Flow)": "AIR_1",
+        "Purchase Journey(Multiple Tickets)": "AIR_2",
+        "Cancellation by Buyer": "AIR_3",
+        "Cancellation by Seller": "AIR_4"
       },
     },
   },
