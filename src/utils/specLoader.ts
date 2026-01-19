@@ -28,7 +28,6 @@ export async function saveFromElement(
     const version: string | undefined = context?.version;
     if (transactionId && domainKey && version && action) {
       const spec = loadSaveSpec(domainKey, version, action);
-      console.log("saveDataaaaaaa",action)
       await saveActionData(sessionID,flowId, transactionId, action, payload, spec);
     }
   } catch (_) {}

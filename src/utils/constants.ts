@@ -36,6 +36,8 @@ export const PERSONAL_LOAN_FLOWS = [
   "Personal_Loan_Multiple_Offers"
 ]
 
+export const CREDIT_CARD_FLOWS = ["Credit_card"]
+
 export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_Without_AA",
   "Purchase_Finance_Single_Redirection_Without_AA",
@@ -62,6 +64,23 @@ export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
   "Purchase_Finance_Without_AA_Pre_Part_Payment",
 ]
 
+export const HEALTH_INSURANCE_FLOWS = [
+  "Health_Insurance_Application(Individual)",
+  "Health_Insurance_Application(PRE-ORDER-Individual)",
+  "Claim_Health_Insurance(Individual)",
+  "Renew_Health_Insurance(Individual)",
+  "Cancel_Health_Insurance(Individual)",
+  "Health_Insurance_Application(Family)",
+  "Health_Insurance_Application(PRE-ORDER-Family)",
+  "Claim_Health_Insurance(Family)",
+  "Renew_Health_Insurance(Family)",
+  "Cancel_Health_Insurance(Family)"
+]
+
+export const ITEM_PRICE_NOT_REQUIRED_FIS13 = [
+"on_search","on_search2","on_search3", "select", "select2","init","init2","init3"
+]
+
 export const validCategoryMap: Record<string, string> = {
   GOLD_LOAN: "Gold Loan",
   BUREAU_LOAN: "Bureau Loan",
@@ -75,13 +94,26 @@ export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
 
 export const ENABLED_DOMAINS: String[] = [
-  "nic2004:60232",
-  "ONDC:LOG10",
-  "ONDC:LOG11",
-  "ONDC:FIS11",
-  "ONDC:FIS12",
-  "ONDC:TRV10",
+  "nic2004:60232:1.2.5",
+  "ONDC:LOG10:1.2.5",
+  "ONDC:LOG11:1.2.5",
+  "ONDC:FIS11:2.0.0",
+  "ONDC:FIS12:2.0.2",
+  "ONDC:FIS12:2.0.3",
+  "ONDC:FIS12:2.2.1",
+  "ONDC:FIS13:2.0.1",
+  "ONDC:TRV10:2.1.0",
+  "ONDC:TRV11:2.0.0",
+  "ONDC:TRV11:2.0.1"
 ];
+
+// Usecase-level enabling: Map of domain:version -> allowed usecases
+// If a domain:version is in ENABLED_DOMAINS but not in this map, all usecases are allowed
+// If present in this map, only listed usecases will use internal validations
+export const ENABLED_USECASES: Record<string, string[]> = {
+  "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
+  "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
+};
 
 export const DOMAINS = {
   NIC:"nic2004:60232",
@@ -90,6 +122,7 @@ export const DOMAINS = {
   FIS11:"ONDC:FIS11",
   FIS12:"ONDC:FIS12",
   TRV10:"ONDC:TRV10",
+  TRV11: "ONDC:TRV11"
 };
 
 export const FLOW_MAPPINGS: Record<string, string> = {

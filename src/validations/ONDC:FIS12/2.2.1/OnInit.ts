@@ -63,7 +63,6 @@ export default async function on_init(
       await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result);
     }
   } catch (_) {}
-  console.log("Entering in save element")
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;

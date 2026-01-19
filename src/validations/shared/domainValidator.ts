@@ -11,6 +11,12 @@ import {
   createOnUpdateValidator,
   createSearchValidator,
   createSelectValidator,
+  createIssueValidator,
+  createOnIssueValidator,
+  createIgm1IssueValidator,
+  createIgm1OnIssueValidator,
+  createIssueStatusValidator,
+  createOnIssueStatusValidator,
 } from "./validationFactory";
 import { validatorConstant } from "./validatorConstant";
 
@@ -18,9 +24,12 @@ import { validatorConstant } from "./validatorConstant";
  * Pre-configured validators for common domain patterns
  */
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
+const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const logValidators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
+const igmValidators = validatorConstant.beckn.ondc.trv.igm.v200;
+const igm1Validators = validatorConstant.beckn.ondc.trv.igm.v100;
 
 export const DomainValidators = {
   fis11Search: createSearchValidator(
@@ -401,5 +410,160 @@ export const DomainValidators = {
     fis12Validators.payments.validate_payments,
     fis12Validators.documents.validate_documents,
     fis11Validators.order_status.validate_order_status
+  ),
+
+  // FIS13 Health Insurance validators (similar to FIS12)
+  fis13Search: createSearchValidator(
+    fis11Validators.intent.validate_intent,
+    fis11Validators.payment.validate_payment_collected_by,
+    fis11Validators.tags.validate_tags
+  ),
+
+  fis13OnSearch: createOnSearchValidator(
+    fis11Validators.catalog.validate_catalog,
+    fis11Validators.providers.validate_providers,
+    fis11Validators.items.validate_items,
+    fis11Validators.payments.validate_payments,
+    fis12Validators.catalog.providers.categories,
+    fis12Validators.items.validate_xinput
+  ),
+
+  fis13Select: createSelectValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+  ),
+
+  fis13OnSelect: createOnSelectValidator(
+    trv10Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    fis11Validators.items.validate_items,
+    fis12Validators.items.validate_xinput
+  ),
+
+  fis13Init: createInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.items.select_validate_xinput
+  ),
+
+  fis13OnInit: createOnInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments
+  ),
+
+  fis13Confirm: createConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis12Validators.payments.validate_payments
+  ),
+
+  fis13OnConfirm: createOnConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis11Validators.order_status.validate_order_status,
+    fis12Validators.documents.validate_documents
+  ),
+
+  fis13OnStatus: createOnStatusValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis11Validators.order_status.validate_order_status
+  ),
+
+  fis13Update: createUpdateValidator(
+    trv10Validators.update_request_trv10.validate_update_request_trv10,
+    fis12Validators.update.validate_update_payments,
+    fis12Validators.update.validate_fulfillment_state
+  ),
+
+  fis13OnUpdate: createOnUpdateValidator(
+    trv10Validators.order.validate_order,
+    trv10Validators.quote_trv10.validate_quote_trv10,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    trv10Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
+    fis12Validators.update.validate_fulfillment_state
+  ),
+
+  fis13OnCancel: createOnCancelValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
+    fis11Validators.order_status.validate_order_status
+  ),
+  trv11Search: createSearchValidator(
+    trv11Validators.search.validate_intent
+  ),
+  trv11OnSearch: createOnSearchValidator(
+    trv11Validators.on_search.validate_catalog
+  ),
+  trv11Select: createSelectValidator(
+    trv11Validators.select.validate_order
+  ),
+  trv11OnSelect: createOnSelectValidator(
+    trv11Validators.on_select.validate_order
+  ),
+  trv11Init: createInitValidator(
+    trv11Validators.init.validate_order
+  ),
+  trv11OnInit: createOnInitValidator(
+    trv11Validators.on_init.validate_order
+  ),
+  trv11Confirm: createConfirmValidator(
+    trv11Validators.confirm.validate_order
+  ),
+  trv11OnConfirm: createOnConfirmValidator(
+    trv11Validators.on_confirm.validate_order
+  ),
+  trv11OnStatus: createOnStatusValidator(
+    trv11Validators.on_status.validate_order
+  ),
+  trv11OnCancel: createOnCancelValidator(
+    trv11Validators.on_cancel.validate_order
+  ),
+  trv11OnUpdate: createOnUpdateValidator(
+    trv11Validators.on_update.validate_order
+  ),
+
+  // IGM 2.0.0 Validators (reusable across domains)
+  igmIssue: createIssueValidator(
+    igmValidators.issue.validate_issue
+  ),
+  igmOnIssue: createOnIssueValidator(
+    igmValidators.on_issue.validate_on_issue
+  ),
+
+  // IGM 1.0.0 Validators (reusable across domains)
+  igm1Issue: createIgm1IssueValidator(
+    igm1Validators.issue.validate_issue
+  ),
+  igm1OnIssue: createIgm1OnIssueValidator(
+    igm1Validators.on_issue.validate_on_issue
+  ),
+  igm1IssueStatus: createIssueStatusValidator(
+    igm1Validators.issue_status.validate_issue_status
+  ),
+  igm1OnIssueStatus: createOnIssueStatusValidator(
+    igm1Validators.on_issue_status.validate_on_issue_status
   ),
 };

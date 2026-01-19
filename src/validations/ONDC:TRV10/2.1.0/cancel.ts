@@ -20,7 +20,7 @@ export default async function cancel(
   const message = jsonRequest?.message;
 
   // Validate cancel message based on action_id
-  validateCancel(message, testResults, actionId);
+  validateCancel(message, testResults, actionId,flowId);
 
   // Add default message if no validations ran
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {

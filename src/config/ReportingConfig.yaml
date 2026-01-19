@@ -64,6 +64,8 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - status
+            - on_status
             - cancel
             - on_cancel
             - on_status
@@ -79,12 +81,123 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - status
+            - on_status
             - cancel
             - on_cancel
             - on_update
+
+          END_STOP_UPDATE_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - update
+            - on_update
+            - update
+            - on_update
+
+          STATION_CODE_FLOW_ORDER_IGM(v-2.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+
+          STATION_CODE_FLOW_ORDER_IGM_Rejection(v-2.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+
+          STATION_CODE_FLOW_ORDER_IGM_No_Action(v-2.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+
+          STATION_CODE_FLOW_ORDER_IGM_No_Action(v-1.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - issue_status
+            - on_issue_status
+            - issue
         optional_flows:
           - DELAYED_CANCELLATION_FLOW_REJECTED
-        validationModules: "../validations/trv11/validator#validate"
+        validationModules: "../validations/ONDC:TRV11/validator#validate"
       "2.0.0":
         flows:
           STATION_CODE_FLOW_CATALOG:
@@ -139,7 +252,7 @@ domains:
 
         optional_flows:
 
-        validationModules: "../validations/trv11/validator#validate"
+        validationModules: "../validations/ONDC:TRV11/validator#validate"
   "nic2004:60232":
     versions:
       "1.2.5":
@@ -238,7 +351,6 @@ domains:
           - QUICK_COMMERCE_FLOW
           - IMMEDIATE_DELIVERY_FLOW
         validationModules: "../validations/nic2004:60232/validator#validate"
-
   ONDC:LOG10:
     versions:
       "1.2.5":
@@ -1727,6 +1839,105 @@ domains:
             validationModules: "../validations/ONDC:FIS12/validator#validate"
       "2.0.3":
         usecases:
+          GOLD LOAN:
+            flows:
+              Gold_Loan_With_Account_Aggregator:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+
+              Gold_Loan_Without_Account_Aggregator:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+
+              Gold_Loan_Foreclosure:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+
+              Gold_Loan_Missed_EMI:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+
+              Gold_Loan_Pre_Part_Payment:
+                - search
+                - on_search
+                - HTML_FORM
+                - select
+                - on_select
+                - HTML_FORM
+                - on_status
+                - status
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+            optional_flows:
+              - Gold_Loan_With_Account_Aggregator
+              - Gold_Loan_Without_Account_Aggregator
+              - Gold_Loan_Foreclosure
+              - Gold_Loan_Missed_EMI
+              - Gold_Loan_Pre_Part_Payment
+            validationModules: "../validations/ONDC:FIS12/validator#validate"
+
           PERSONAL LOAN:
             flows:
               Personal_Loan_With_AA_And_Monitoring_Consent:
@@ -1996,3 +2207,253 @@ domains:
             optional_flows:
               - Credit_Card_With_AA_And_Monitoring_Consent
             validationModules: "../validations/ONDC:FIS12/validator#validate"
+
+  ONDC:FIS13:
+    versions:
+      "2.0.1":
+        usecases:
+          HEALTH INSURANCE:
+            flows:
+              Health_Insurance_Application(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+
+              Health_Insurance_Application(PRE-ORDER-Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+
+              Claim_Health_Insurance(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Renew_Health_Insurance(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Health_Insurance(Individual):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - cancel
+                - on_cancel
+                - on_update
+
+              Health_Insurance_Application(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+
+              Health_Insurance_Application(PRE-ORDER-Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+
+              Claim_Health_Insurance(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Renew_Health_Insurance(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Health_Insurance(Family):
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - select
+                - on_select
+                - on_status
+                - init
+                - on_init
+                - init
+                - on_init
+                - init
+                - on_init
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - cancel
+                - on_cancel
+                - on_update
+            optional_flows:
+              - Health_Insurance_Application(PRE-ORDER-Individual)
+              - Health_Insurance_Application(PRE-ORDER-Family)
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
+      
+      
