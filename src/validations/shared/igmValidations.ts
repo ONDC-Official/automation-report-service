@@ -1,6 +1,58 @@
 import { TestResult } from "../../types/payload";
 
 // ============================================
+// IGM Version Detection
+// ============================================
+
+/**
+ * Detects IGM version (1.0.0 or 2.0.0) based on payload structure.
+ * Uses a scoring approach checking multiple field indicators.
+ * 
+ * IGM 1.0.0 uses: category, sub_category, complainant_info, order_details, 
+ *                 issue_actions, issue_type, source, description
+ * IGM 2.0.0 uses: level, refs, actors, actions, source_id, 
+ *                 complainant_id, descriptor, update_target
+ */
+export function detectIgmVersion(message: any): '1.0.0' | '2.0.0' {
+  const issue = message?.issue;
+  
+  if (!issue) {
+    // Default to 2.0.0 if no issue object
+    return '2.0.0';
+  }
+  
+  // IGM 1.0.0 specific fields
+  const igm1Indicators = [
+    issue.category !== undefined,           // ITEM/FULFILLMENT
+    issue.sub_category !== undefined,       // ITM01-04, FLM01-04
+    issue.complainant_info !== undefined,   // Person/contact object
+    issue.order_details !== undefined,      // Order info
+    issue.issue_actions !== undefined,      // complainant_actions/respondent_actions
+    issue.issue_type !== undefined,         // ISSUE/GRIEVANCE/DISPUTE
+    issue.source?.network_participant_id !== undefined,
+    issue.description !== undefined,        // short_desc/long_desc (not descriptor)
+  ];
+  
+  // IGM 2.0.0 specific fields
+  const igm2Indicators = [
+    issue.level !== undefined,              // ISSUE/GRIEVANCE/DISPUTE
+    issue.refs !== undefined && Array.isArray(issue.refs),
+    issue.actors !== undefined && Array.isArray(issue.actors),
+    issue.actions !== undefined && Array.isArray(issue.actions),
+    issue.source_id !== undefined,          // Actor ID
+    issue.complainant_id !== undefined,     // Actor ID
+    issue.descriptor?.code !== undefined,   // descriptor with code
+    message?.update_target !== undefined,   // For on_issue
+  ];
+  
+  const igm1Score = igm1Indicators.filter(Boolean).length;
+  const igm2Score = igm2Indicators.filter(Boolean).length;
+  
+  // Return version with higher score, default to 1.0.0 if tied (more conservative)
+  return igm1Score >= igm2Score ? '1.0.0' : '2.0.0';
+}
+
+// ============================================
 // IGM 2.0.0 Constants
 // ============================================
 
