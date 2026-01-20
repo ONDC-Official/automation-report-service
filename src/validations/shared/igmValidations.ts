@@ -73,7 +73,7 @@ export const VALID_ACTION_CODES = [
   "RESOLUTION_REJECTED",
   "ESCALATED",
   "RESOLVED",
-  "CLOSE"
+  "CLOSED"
 ];
 
 // Valid actor types
