@@ -9,14 +9,13 @@ export default async function on_issue(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const context = element?.jsonRequest?.context;
   const message = element?.jsonRequest?.message;
+  const issue = message?.issue;
   
-  // Detect IGM version from context
-  // IGM 1.0.0 uses core_version, IGM 2.0.0 uses version
-  const coreVersion = context?.core_version;
-  const version = context?.version;
-  const isIgm1 = coreVersion === "1.0.0" || (coreVersion && !version);
+  // Detect IGM version by payload structure, not context
+  // IGM 1.0.0 has 'issue_actions', IGM 2.0.0 has 'update_target' and 'actions'
+  const isIgm1 = issue?.issue_actions !== undefined || 
+                 (issue && issue.category !== undefined);
   
   let result: TestResult;
   

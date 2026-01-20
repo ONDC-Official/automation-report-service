@@ -9,14 +9,12 @@ export default async function issue(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const context = element?.jsonRequest?.context;
   const message = element?.jsonRequest?.message;
+  const issue = message?.issue;
   
-  // Detect IGM version from context
-  // IGM 1.0.0 uses core_version, IGM 2.0.0 uses version
-  const coreVersion = context?.core_version;
-  const version = context?.version;
-  const isIgm1 = coreVersion === "1.0.0" || (coreVersion && !version);
+  // Detect IGM version by payload structure, not context
+  // IGM 1.0.0 has 'category' field, IGM 2.0.0 has 'level' field
+  const isIgm1 = issue?.category !== undefined;
   
   let result: TestResult;
   
