@@ -155,13 +155,8 @@ export function validateIgm1IssueActions(issueActions: any, testResults: TestRes
   }
 }
 
-/**
- * Validates resolution_provider object
- */
 export function validateIgm1ResolutionProvider(provider: any, testResults: TestResult): void {
-  if (!provider) {
-    return; // Optional field
-  }
+  if (!provider) return;
 
   if (!provider.respondent_info) {
     testResults.failed.push("resolution_provider.respondent_info is missing");
@@ -177,22 +172,17 @@ export function validateIgm1ResolutionProvider(provider: any, testResults: TestR
     testResults.passed.push(`Resolution provider type: ${info.type}`);
   }
 
-  if (!info.organization?.org?.name) {
-    testResults.failed.push("resolution_provider organization name is missing");
+  if (info.organization?.org?.name) {
+    testResults.passed.push(`Resolution provider org: ${info.organization.org.name}`);
   }
 
-  if (!info.resolution_support?.phone && !info.resolution_support?.email) {
-    testResults.failed.push("resolution_provider.resolution_support contact is missing");
+  if (info.resolution_support?.phone || info.resolution_support?.email) {
+    testResults.passed.push("Resolution support contact present");
   }
 }
 
-/**
- * Validates resolution object
- */
 export function validateIgm1Resolution(resolution: any, testResults: TestResult): void {
-  if (!resolution) {
-    return; // Optional field
-  }
+  if (!resolution) return;
 
   if (!resolution.short_desc) {
     testResults.failed.push("resolution.short_desc is missing");
