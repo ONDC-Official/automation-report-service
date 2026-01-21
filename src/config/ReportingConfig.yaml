@@ -152,9 +152,6 @@ domains:
             - on_issue
             - issue
             - on_issue
-            - on_issue
-            - issue
-            - on_issue
             - issue
 
           STATION_CODE_FLOW_ORDER_IGM_No_Action(v-2.0.0):
