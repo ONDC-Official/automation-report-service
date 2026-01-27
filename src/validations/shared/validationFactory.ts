@@ -37,6 +37,9 @@ import {
   HEALTH_INSURANCE_FLOWS,
   MOTOR_INSURANCE_FLOWS,
   ITEM_PRICE_NOT_REQUIRED_FIS13,
+  MOTOR_INSURANCE_SELECT_ACTIONS,
+  MOTOR_INSURANCE_INIT_ACTIONS,
+  MOTOR_INSURANCE_CONFIRM_ACTIONS,
 } from "../../utils/constants";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
@@ -4188,7 +4191,9 @@ function validateProvider(
     action_id !== "select_2" &&
     action_id !== "select2" &&
     action_id !== "select" &&
-    action_id !== "select_motor" &&
+    !MOTOR_INSURANCE_SELECT_ACTIONS.includes(action_id ?? "") &&
+    !MOTOR_INSURANCE_INIT_ACTIONS.includes(action_id ?? "") &&
+    !MOTOR_INSURANCE_CONFIRM_ACTIONS.includes(action_id ?? "") &&
     action_id !== "init" &&
     action_id !== "init2" &&
     action_id !== "init3" &&
@@ -4260,6 +4265,8 @@ function validateItems(
     "confirm",
     "confirm_card_balance_faliure",
     "confirm_card_balance_success",
+    ...MOTOR_INSURANCE_INIT_ACTIONS,
+    ...MOTOR_INSURANCE_SELECT_ACTIONS,
   ]);
 
   const actionsExemptFromPrice = new Set([
@@ -4269,6 +4276,7 @@ function validateItems(
 
   const isExcludedUsecase = excludedUsecases.has(usecaseId ?? "");
   const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
   const isPriceNotRequiredForFIS13 = action_id && ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id);
 
   items.forEach((item, index) => {
@@ -4286,7 +4294,8 @@ function validateItems(
       if (
         action_id !== "select" &&
         action_id !== "select2" &&
-        action_id !== "select_motor" &&
+        !MOTOR_INSURANCE_SELECT_ACTIONS.includes(action_id ?? "") &&
+        !MOTOR_INSURANCE_INIT_ACTIONS.includes(action_id ?? "") &&
         action_id !== "select_rental" &&
         action_id !== "select_adjust_loan_amount" &&
         action_id !== "init" &&
@@ -4304,14 +4313,13 @@ function validateItems(
       }
 
       // For on_search2 in motor insurance flows, validate child items have price
-      const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
       // Detect on_search2 by checking if action_id is "on_search2" or if there are child items present
       const hasChildItemsInFlow = items.some((otherItem: any) => otherItem.parent_item_id);
       const isOnSearch2 = action_id === "on_search2" || (action_id === "on_search" && hasChildItemsInFlow && isMotorInsuranceFlow);
       
       // For select_motor in motor insurance flows, child items don't need price
-      if (action_id === "select_motor" && isMotorInsuranceFlow && item.parent_item_id) {
-        // Child items in select_motor don't require price
+      if (MOTOR_INSURANCE_SELECT_ACTIONS.includes(action_id ?? "") && isMotorInsuranceFlow && item.parent_item_id) {
+        // Child items in select_motor dProvider descriptor name is missingon't require price
         if (item.price?.value) {
           testResults.passed.push(`Item ${index} (child item) price value is present: ${item.price.value}`);
         } else {
@@ -4330,24 +4338,17 @@ function validateItems(
           }
         }
       } else if (
-        action_id !== "select_rental" &&
-        action_id !== "select_adjust_loan_amount" &&
-        action_id !== "select_motor" &&
+        !MOTOR_INSURANCE_SELECT_ACTIONS.includes(action_id ?? "") &&
+        !MOTOR_INSURANCE_INIT_ACTIONS.includes(action_id ?? "") &&
         !item.price?.value && 
         !ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id ?? "") && 
         !(flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId)))
       ) {
-        // For on_search2 in motor insurance flows, parent items don't need price
-        if (isOnSearch2 && isMotorInsuranceFlow && !item.parent_item_id) {
-          // Check if this parent item has child items
-          const hasChildItems = items.some((otherItem: any) => otherItem.parent_item_id === item.id);
-          if (hasChildItems) {
-            testResults.passed.push(
-              `Item ${index} (parent item) price value is optional in on_search2 (has child items)`
-            );
-          } else {
-            testResults.failed.push(`Item ${index} price value is missing`);
-          }
+        // Skip price validation for motor insurance flows
+        if (isMotorInsuranceFlow) {
+          testResults.passed.push(
+            `Item ${index} price value is optional for motor insurance flows`
+          );
         } else {
           testResults.failed.push(`Item ${index} price value is missing`);
         }
@@ -4358,7 +4359,7 @@ function validateItems(
           testResults.passed.push(
             `Item ${index} price value is optional for select_adjust_loan_amount action`
           );
-        } else if (action_id === "select_motor" && isMotorInsuranceFlow) {
+        } else if (MOTOR_INSURANCE_SELECT_ACTIONS.includes(action_id ?? "") && isMotorInsuranceFlow) {
           testResults.passed.push(
             `Item ${index} price value is optional for select_motor in motor insurance flows`
           );
@@ -4384,7 +4385,7 @@ function validateItems(
   }
     // Validate price value
     const isPriceExempt = actionsExemptFromPrice.has(action_id ?? "");
-    const isPriceOptional = isPriceExempt || (isHealthInsuranceFlow && isPriceNotRequiredForFIS13);
+    const isPriceOptional = isPriceExempt || (isHealthInsuranceFlow && isPriceNotRequiredForFIS13) || isMotorInsuranceFlow;
     const hasPrice = !!item.price?.value;
 
     if (!hasPrice && !isPriceOptional) {
@@ -4394,6 +4395,10 @@ function validateItems(
     } else if (action_id === "select_adjust_loan_amount") {
       testResults.passed.push(
         `Item ${index} price value is optional for select_adjust_loan_amount action`
+      );
+    } else if (isMotorInsuranceFlow) {
+      testResults.passed.push(
+        `Item ${index} price value is optional for motor insurance flows`
       );
     }
   }
@@ -4538,7 +4543,8 @@ function validateFulfillmentsFIS12(
   message: any,
   testResults: TestResult,
   usecaseId?: string,
-  action_id?: string
+  action_id?: string,
+  flowId?: string
 ): void {
   const fulfillments =
     message?.catalog?.providers?.[0]?.fulfillments ||
@@ -4621,12 +4627,24 @@ function validateFulfillmentsFIS12(
       }
 
       // Validate state descriptor
-      if (!fulfillment.state?.descriptor?.code && normalizedUsecaseId !== "HEALTH INSURANCE") {
-        testResults.failed.push(
-          `Fulfillment ${index} state descriptor code is missing`
-        );
+      const isMotorInsuranceUsecase = normalizedUsecaseId === "MOTOR INSURANCE";
+      const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
+      const isOnConfirmAction = action_id?.startsWith("on_confirm") || action_id === "on_confirm";
+      const isOnConfirmMotor = isOnConfirmAction && (isMotorInsuranceUsecase || isMotorInsuranceFlow);
+      if (!fulfillment.state?.descriptor?.code) {
+        if (normalizedUsecaseId === "HEALTH INSURANCE" || isOnConfirmMotor) {
+          testResults.passed.push(
+            `Fulfillment ${index} state descriptor code is optional for ${isOnConfirmMotor ? "motor insurance" : "health insurance"} on_confirm`
+          );
+        } else {
+          testResults.failed.push(
+            `Fulfillment ${index} state descriptor code is missing`
+          );
+        }
       } else {
-       return
+        testResults.passed.push(
+          `Fulfillment ${index} state descriptor code is present: ${fulfillment.state.descriptor.code}`
+        );
       }
     }
   });
@@ -7057,7 +7075,8 @@ export function createSelectValidator(...config: string[]) {
               message,
               testResults,
               usecaseId,
-              action_id
+              action_id,
+              flowId
             );
             break;
           case fis11Validators.fulfillments.validate_fulfillments:
@@ -7549,7 +7568,8 @@ export function createOnInitValidator(...config: string[]) {
               message,
               testResults,
               usecaseId,
-              action_id
+              action_id,
+              flowId
             );
             break;
           case fis12Validators.payments.validate_payments:
@@ -7613,7 +7633,8 @@ export function createOnConfirmValidator(...config: string[]) {
               message,
               testResults,
               usecaseId,
-              action_id
+              action_id,
+              flowId
             );
             break;
           case fis12Validators.payments.validate_payments:

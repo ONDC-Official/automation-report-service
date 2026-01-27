@@ -88,9 +88,28 @@ export const MOTOR_INSURANCE_FLOWS = [
   "Cancel_Motor_Insurance"
 ]
 
+export const MOTOR_INSURANCE_SELECT_ACTIONS = [
+  "select_motor",
+  "select2_motor",
+  "select3_motor"
+]
+
+export const MOTOR_INSURANCE_INIT_ACTIONS = [
+  "init_motor",
+  "init2_motor",
+  "init3_motor"
+]
+
+export const MOTOR_INSURANCE_CONFIRM_ACTIONS = [
+  "confirm_motor",
+  "confirm2_motor",
+  "confirm3_motor"
+]
 export const ITEM_PRICE_NOT_REQUIRED_FIS13 = [
 "on_search","on_search2","on_search3", "select", "select2","init","init2","init3"
 ]
+
+
 
 export const validCategoryMap: Record<string, string> = {
   GOLD_LOAN: "Gold Loan",
