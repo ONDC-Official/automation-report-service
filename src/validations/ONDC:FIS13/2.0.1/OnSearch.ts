@@ -3,7 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
+import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_search(
   element: Payload,
@@ -13,8 +13,9 @@ export default async function on_search(
 ): Promise<TestResult> {
   const result = await DomainValidators.fis13OnSearch(element, sessionID, flowId, actionId);
   
-  // Validate items consistency for health insurance flows
-  if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
+  // Validate items consistency for health insurance and motor insurance flows
+  const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
+  if (isInsuranceFlow) {
     try {
       const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
       if (txnId) {
@@ -47,7 +48,8 @@ export default async function on_search(
         }
         
         // Validate form ID consistency if xinput is present
-        await validateFormIdIfXinputPresent(onSearchMessage, sessionID, flowId, txnId, "on_search", result, HEALTH_INSURANCE_FLOWS);
+        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
+        await validateFormIdIfXinputPresent(onSearchMessage, sessionID, flowId, txnId, "on_search", result, insuranceFlows);
       }
     } catch (error: any) {
       // Silently fail if validation cannot be performed

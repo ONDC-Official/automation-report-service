@@ -3,7 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
+import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
 
 export default async function on_confirm(
@@ -65,8 +65,10 @@ export default async function on_confirm(
       }
       
       // Validate form ID consistency if xinput is present
-      if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-        await validateFormIdIfXinputPresent(onConfirmMsg, sessionID, flowId, txnId, "on_confirm", result, HEALTH_INSURANCE_FLOWS);
+      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
+      if (isInsuranceFlow) {
+        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
+        await validateFormIdIfXinputPresent(onConfirmMsg, sessionID, flowId, txnId, "on_confirm", result, insuranceFlows);
       }
     }
 
