@@ -1,6 +1,6 @@
 import { TestResult, Payload } from "../../../types/payload";
-import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
+import { validateIgm1IssueStatus, validateIgm2IssueStatus } from "../../shared/igmValidations";
 
 export default async function issue_status(
   element: Payload,
@@ -8,7 +8,15 @@ export default async function issue_status(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.igm1IssueStatus(element, sessionID, flowId, actionId);
+  const message = element?.jsonRequest?.message;
+  
+  // issue_status has identical payload for both versions (just issue_id)
+  // Initialize result directly
+  const result: TestResult = { response: {}, passed: [], failed: [] };
+  
+  // Validate - same logic for both versions
+  validateIgm1IssueStatus(message, result);
+  
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }

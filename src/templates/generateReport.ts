@@ -145,7 +145,8 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         padding: 0 5px;
       }
       .flow-content.expanded {
-        max-height: 10000px;
+        max-height: 999999px;
+        overflow: visible;
         padding: 15px 5px;
         transition: max-height 0.6s ease-in;
       }
