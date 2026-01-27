@@ -108,6 +108,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
   "ONDC:FIS12:2.2.1",
+  "ONDC:FIS12:2.2.0",
   "ONDC:FIS13:2.0.1",
   "ONDC:TRV10:2.1.0",
   "ONDC:TRV11:2.0.0",
