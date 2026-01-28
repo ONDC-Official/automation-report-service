@@ -2931,22 +2931,32 @@ domains:
               Motor_Insurance_Application:
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - status
                 - on_status
                 - select
                 - on_select
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
                 - confirm
                 - on_confirm
                 - on_update
@@ -2956,44 +2966,64 @@ domains:
               Motor_Insurance_Application(PRE-ORDER):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - status
                 - on_status
                 - select
                 - on_select
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
                 - confirm
                 - on_confirm
 
               Claim_Motor_Insurance:
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - status
                 - on_status
                 - select
                 - on_select
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
                 - confirm
                 - on_confirm
                 - on_update
@@ -3005,22 +3035,32 @@ domains:
               Cancel_Motor_Insurance:
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - status
                 - on_status
                 - select
                 - on_select
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
                 - confirm
                 - on_confirm
                 - on_update
