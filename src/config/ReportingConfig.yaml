@@ -3087,7 +3087,7 @@ domains:
             - status
             - on_status
 
-          Incremental Catalog Refresh (TTL Based):
+          Hotel Booking (ttl based) booking:
             - search
             - on_search
             - search
