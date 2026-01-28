@@ -108,7 +108,8 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS13:2.0.1",
   "ONDC:TRV10:2.1.0",
   "ONDC:TRV11:2.0.0",
-  "ONDC:TRV11:2.0.1"
+  "ONDC:TRV11:2.0.1",
+  "ONDC:TRV13:2.0.1"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
@@ -126,7 +127,8 @@ export const DOMAINS = {
   FIS11:"ONDC:FIS11",
   FIS12:"ONDC:FIS12",
   TRV10:"ONDC:TRV10",
-  TRV11: "ONDC:TRV11"
+  TRV11: "ONDC:TRV11",
+  TRV13: "ONDC:TRV13"
 };
 
 export const FLOW_MAPPINGS: Record<string, string> = {
