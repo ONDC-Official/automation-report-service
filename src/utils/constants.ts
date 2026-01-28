@@ -81,9 +81,35 @@ export const HEALTH_INSURANCE_FLOWS = [
   "Cancel_Health_Insurance(Family)"
 ]
 
+export const MOTOR_INSURANCE_FLOWS = [
+  "Motor_Insurance_Application",
+  "Motor_Insurance_Application(PRE-ORDER)",
+  "Claim_Motor_Insurance",
+  "Cancel_Motor_Insurance"
+]
+
+export const MOTOR_INSURANCE_SELECT_ACTIONS = [
+  "select_motor",
+  "select2_motor",
+  "select3_motor"
+]
+
+export const MOTOR_INSURANCE_INIT_ACTIONS = [
+  "init_motor",
+  "init2_motor",
+  "init3_motor"
+]
+
+export const MOTOR_INSURANCE_CONFIRM_ACTIONS = [
+  "confirm_motor",
+  "confirm2_motor",
+  "confirm3_motor"
+]
 export const ITEM_PRICE_NOT_REQUIRED_FIS13 = [
 "on_search","on_search2","on_search3", "select", "select2","init","init2","init3"
 ]
+
+
 
 export const validCategoryMap: Record<string, string> = {
   GOLD_LOAN: "Gold Loan",
@@ -105,6 +131,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
   "ONDC:FIS12:2.2.1",
+  "ONDC:FIS12:2.2.0",
   "ONDC:FIS13:2.0.1",
   "ONDC:TRV10:2.1.0",
   "ONDC:TRV11:2.0.0",
@@ -368,6 +395,13 @@ export const FLOW_ID_MAP: Record<
         "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow":"RET_6",
+        "Self_Pickup_Flow":"RET_ENH_002",
+        "Slotted_Delivery_Flow":"RET_ENH_003",
+        "Buyer_Delivery_Flow":"RET_ENH_004",
+        "Buyer_Instructions_And_Delivery_Update_Flow":"RET_ENH_011",
+        "Multi_Option_Fulfillment_Flow":"RET_ENH_01D",
+        "Forced_Cancellation_Flow":"RET_ENH_005"
       },
     },
   },

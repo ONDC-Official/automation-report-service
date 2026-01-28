@@ -4,7 +4,7 @@ import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { saveFromElement } from "../../../utils/specLoader";
-import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import { PURCHASE_FINANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_select(
   element: Payload,
@@ -13,7 +13,7 @@ export default async function on_select(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13OnSelect(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis12OnSelect(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -21,6 +21,7 @@ export default async function on_select(
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
+        // For TRV10, item price consistency is optional
         validateItemPriceConsistency: false,
         flowId,
       });
@@ -29,7 +30,7 @@ export default async function on_select(
     // Compare item ids and prices with prior SELECT request if available
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
-      const selectData = await getActionData(sessionID, flowId, txnId, "select");
+      const selectData = await getActionData(sessionID,flowId, txnId, "select");
       const selItems: any[] = selectData?.order?.items || selectData?.items || [];
       const onSelItems: any[] = message?.order?.items || [];
 
@@ -45,9 +46,8 @@ export default async function on_select(
         }
       }
 
-      // Validate items consistency for health insurance and motor insurance flows
-      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
-      if (isInsuranceFlow) {
+      // Validate items consistency for purchase finance flows
+      if (flowId && PURCHASE_FINANCE_FLOWS.includes(flowId)) {
         const onSelectItemIds = onSelItems.map(it => it?.id).filter(Boolean) as string[];
         const missingItems = selectItemIds.filter(id => !onSelectItemIds.includes(id));
         const extraItems = onSelectItemIds.filter(id => !selectItemIds.includes(id));
@@ -64,8 +64,7 @@ export default async function on_select(
         }
         
         // Validate form ID consistency if xinput is present
-        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_select", result, insuranceFlows);
+        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_select", result);
       }
 
       const missingInSelect: string[] = [];
@@ -100,7 +99,6 @@ export default async function on_select(
       }
     }
   } catch (_) {}
-  await saveFromElement(element, sessionID, flowId, "jsonRequest");
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
   return result;
 }
-

@@ -2,8 +2,8 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import { PURCHASE_FINANCE_FLOWS } from "../../../utils/constants";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_search(
   element: Payload,
@@ -11,11 +11,10 @@ export default async function on_search(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13OnSearch(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.fis12OnSearch(element, sessionID, flowId, actionId);
   
-  // Validate items consistency for health insurance and motor insurance flows
-  const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
-  if (isInsuranceFlow) {
+  // Validate items consistency for purchase finance flows
+  if (flowId && PURCHASE_FINANCE_FLOWS.includes(flowId)) {
     try {
       const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
       if (txnId) {
@@ -48,15 +47,13 @@ export default async function on_search(
         }
         
         // Validate form ID consistency if xinput is present
-        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(onSearchMessage, sessionID, flowId, txnId, "on_search", result, insuranceFlows);
+        await validateFormIdIfXinputPresent(onSearchMessage, sessionID, flowId, txnId, "on_search", result);
       }
     } catch (error: any) {
       // Silently fail if validation cannot be performed
     }
   }
   
-  await saveFromElement(element, sessionID, flowId, "jsonRequest");
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
   return result;
 }
-

@@ -2,8 +2,8 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
+import { validateErrorResponse } from "../../shared/validationFactory";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
 
 export default async function on_confirm(
@@ -13,10 +13,10 @@ export default async function on_confirm(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  // For error response scenarios, validate error first
+  // For error response scenarios (like on_confirm_driver_not_found), validate error first
 
   // For normal on_confirm, use domain validator
-  const result = await DomainValidators.fis13OnConfirm(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis12OnConfirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -24,6 +24,7 @@ export default async function on_confirm(
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
+        // For TRV10, item price consistency is optional
         validateItemPriceConsistency: false,
         flowId,
       });
@@ -32,7 +33,7 @@ export default async function on_confirm(
     // Compare against CONFIRM request when available
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
-      const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
+      const confirmData = await getActionData(sessionID,flowId, txnId, "confirm");
       const onConfirmMsg = element?.jsonRequest?.message;
 
       const onConfirmItems: any[] = onConfirmMsg?.order?.items || [];
@@ -65,39 +66,10 @@ export default async function on_confirm(
       }
       
       // Validate form ID consistency if xinput is present
-      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
-      if (isInsuranceFlow) {
-        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(onConfirmMsg, sessionID, flowId, txnId, "on_confirm", result, insuranceFlows);
-      }
+      await validateFormIdIfXinputPresent(onConfirmMsg, sessionID, flowId, txnId, "on_confirm", result);
     }
-
-    // Validate settlement amount calculation for health insurance flows
-    // if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-    //   const order = message?.order;
-    //   if (order?.payments && Array.isArray(order.payments)) {
-    //     order.payments.forEach((payment: any, paymentIndex: number) => {
-    //       // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
-    //       validateSettlementAmount(
-    //         payment,
-    //         paymentIndex,
-    //         order,
-    //         result,
-    //         "BAP_TERMS"
-    //       );
-    //       validateSettlementAmount(
-    //         payment,
-    //         paymentIndex,
-    //         order,
-    //         result,
-    //         "BPP_TERMS"
-    //       );
-    //     });
-    //   }
-    // }
   } catch (_) {}
-
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
+
   return result;
 }
-

@@ -4,7 +4,6 @@ import { validateOrderQuote } from "../../shared/quoteValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_init(
   element: Payload,
@@ -13,7 +12,7 @@ export default async function on_init(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13OnInit(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis12OnInit(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -21,6 +20,7 @@ export default async function on_init(
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
+        // For TRV10, item price consistency is optional
         validateItemPriceConsistency: false,
         flowId,
       });
@@ -28,7 +28,7 @@ export default async function on_init(
 
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
-      const initData = await getActionData(sessionID, flowId, txnId, "init");
+      const initData = await getActionData(sessionID,flowId, txnId, "init");
       // Compare item ids and prices w.r.t INIT request
       const onInitItems: any[] = message?.order?.items || [];
       const initItems: any[] = initData?.items || [];
@@ -60,15 +60,10 @@ export default async function on_init(
       }
 
       // Validate form ID consistency if xinput is present
-      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
-      if (isInsuranceFlow) {
-        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result, insuranceFlows);
-      }
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result);
     }
   } catch (_) {}
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
-

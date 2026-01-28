@@ -3,7 +3,6 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function confirm(
   element: Payload,
@@ -12,12 +11,12 @@ export default async function confirm(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13Confirm(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis12Confirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
-      const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");
+      const onInitData = await getActionData(sessionID,flowId, txnId, "on_init");
       const confirmMsg = element?.jsonRequest?.message;
 
       // Items present and price equals ON_INIT's item price
@@ -61,15 +60,9 @@ export default async function confirm(
       }
       
       // Validate form ID consistency if xinput is present
-      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
-      if (isInsuranceFlow) {
-        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(confirmMsg, sessionID, flowId, txnId, "confirm", result, insuranceFlows);
-      }
+      await validateFormIdIfXinputPresent(confirmMsg, sessionID, flowId, txnId, "confirm", result);
     }
   } catch (_) {}
-
-  await saveFromElement(element, sessionID, flowId, "jsonRequest");
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
   return result;
 }
-
