@@ -392,6 +392,7 @@ export const FLOW_ID_MAP: Record<
         "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out Of Stock Flow":"RET_6",
       },
     },
   },
