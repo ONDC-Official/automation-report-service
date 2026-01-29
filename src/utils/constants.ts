@@ -328,6 +328,18 @@ export const FLOW_ID_MAP: Record<
   >
 > = {
   "ONDC:TRV11": {
+    "2.0.0": {
+      "Bus": {
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION": "MBL_8",
+        "TECHNICAL_CANCELLATION_FLOW": "MBL_11",
+        "USER_CANCELLATION_FLOW": "MBL_12"
+      },
+      "Metro": {
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT": "MBL_2",
+        "USER_CANCELLATION_FLOW": "MBL_4",
+        "TECHNICAL_CANCELLATION_FLOW": "MBL_20",
+      }
+    },
     "2.0.1": {
       "Bus": {
         "IntraCity_Purchase_Journey_Flow_Code_Based": "MBL_8",
