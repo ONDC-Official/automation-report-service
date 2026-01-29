@@ -131,10 +131,12 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
   "ONDC:FIS12:2.2.1",
+  "ONDC:FIS12:2.2.0",
   "ONDC:FIS13:2.0.1",
   "ONDC:TRV10:2.1.0",
-  "ONDC:TRV11:2.0.0",
-  "ONDC:TRV11:2.0.1"
+  // "ONDC:TRV11:2.0.0",
+  "ONDC:TRV11:2.0.1",
+  "ONDC:TRV13:2.0.1"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
@@ -152,7 +154,8 @@ export const DOMAINS = {
   FIS11:"ONDC:FIS11",
   FIS12:"ONDC:FIS12",
   TRV10:"ONDC:TRV10",
-  TRV11: "ONDC:TRV11"
+  TRV11: "ONDC:TRV11",
+  TRV13: "ONDC:TRV13"
 };
 
 export const FLOW_MAPPINGS: Record<string, string> = {
@@ -325,6 +328,18 @@ export const FLOW_ID_MAP: Record<
   >
 > = {
   "ONDC:TRV11": {
+    "2.0.0": {
+      "Bus": {
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION": "MBL_8",
+        "TECHNICAL_CANCELLATION_FLOW": "MBL_11",
+        "USER_CANCELLATION_FLOW": "MBL_12"
+      },
+      "Metro": {
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT": "MBL_2",
+        "USER_CANCELLATION_FLOW": "MBL_4",
+        "TECHNICAL_CANCELLATION_FLOW": "MBL_20",
+      }
+    },
     "2.0.1": {
       "Bus": {
         "IntraCity_Purchase_Journey_Flow_Code_Based": "MBL_8",

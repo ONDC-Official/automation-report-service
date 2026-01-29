@@ -1328,7 +1328,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1428,7 +1429,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1464,7 +1466,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1500,7 +1503,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1536,7 +1540,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1579,7 +1584,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1721,7 +1727,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1759,7 +1766,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1797,7 +1805,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1859,7 +1868,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1932,7 +1942,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -1968,7 +1979,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -2004,7 +2016,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -2040,7 +2053,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -2083,7 +2097,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -2196,7 +2211,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -2234,7 +2250,8 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
@@ -3071,4 +3088,74 @@ domains:
               - Motor_Insurance_Application(PRE-ORDER)
             validationModules: "../validations/ONDC:FIS13/validator#validate"
       
+  ONDC:TRV13:
+    versions:
+      "2.0.1":
+        flows:
+          Order to Confirm to Fulfillment (GPS Based):
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+
+          Hotel Booking (ttl based) booking:
+            - search
+            - on_search
+            - search
+            - on_search
+
+          Hotel Booking Seller App Pagination Flow:
+            - search
+            - on_search
+            - on_search
+            - on_search
+            - on_search
+
+          Buyer Side Full Cancellation:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - cancel
+            - on_cancel
+
+          Merchant Side Full Cancellation:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_cancel
+
+          Order to Confirm to Fulfillment (Updates in Booking):
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - update
+            - on_update
+        validationModules: "../validations/ONDC:TRV13/validator#validate"
       
