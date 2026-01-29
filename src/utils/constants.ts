@@ -442,6 +442,7 @@ export const FLOW_ID_MAP: Record<
         "Cash_On_Delivery_Flow": "RET_1b",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow":"RET_6",
       },
     },
   },
