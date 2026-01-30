@@ -357,6 +357,7 @@ export const FLOW_ID_MAP: Record<
         "OnDemand_Assign_driver_on_onconfirm": "DEM_2A",
         "OnDemand_Assign_driver_post_onconfirm": "DEM_2B",
         "OnDemand_Assign_driver_post_onconfirmSelfPickup": "DEM_6",
+        "Technical_cancellation_flow": "DEM_4",
         // "OnDemand_Female_driver_flow": "TRV10_4",
         "OnDemand_Ride_cancellation_by_driver": "DEM_3",
         "OnDemand_Ride_cancellation_by_rider": "DEM_2",
