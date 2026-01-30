@@ -567,6 +567,7 @@ export const FLOW_ID_MAP: Record<
 export const typeMapping: Record<string, string> = {
   "Bus": "BUS",
   "Metro": "METRO",
+  "ride-hailing": "RIDE_HAILING",
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",
