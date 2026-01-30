@@ -353,7 +353,7 @@ export const FLOW_ID_MAP: Record<
   },
   "ONDC:TRV10": {
     "2.0.1": {
-      "ride-hailing": {
+      "Ride-hailing": {
         "OnDemand_Assign_driver_on_onconfirm": "DEM_2A",
         "OnDemand_Assign_driver_post_onconfirm": "DEM_2B",
         "OnDemand_Assign_driver_post_onconfirmSelfPickup": "DEM_6",
@@ -567,7 +567,7 @@ export const FLOW_ID_MAP: Record<
 export const typeMapping: Record<string, string> = {
   "Bus": "BUS",
   "Metro": "METRO",
-  "ride-hailing": "RIDE_HAILING",
+  "Ride-hailing": "RIDE_HAILING",
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",
