@@ -351,6 +351,21 @@ export const FLOW_ID_MAP: Record<
       }
     }
   },
+  "ONDC:TRV10": {
+    "2.0.1": {
+      "ride-hailing": {
+        "OnDemand_Assign_driver_on_onconfirm": "DEM_2A",
+        "OnDemand_Assign_driver_post_onconfirm": "DEM_2B",
+        "OnDemand_Assign_driver_post_onconfirmSelfPickup": "DEM_6",
+        // "OnDemand_Female_driver_flow": "TRV10_4",
+        "OnDemand_Ride_cancellation_by_driver": "DEM_3",
+        "OnDemand_Ride_cancellation_by_rider": "DEM_2",
+        "Driver_not_found_on_onconfirm": "DEM_1A",
+        "Driver_not_found_post_onconfirm": "DEM_1B",
+        // "OnDemand_Assign_driver_on_onconfirm_with_IGM(1.0.0)": "TRV10_9"
+      }
+    }
+  },
   "ONDC:TRV13": {
     "2.0.0": {
       "Hotel-Booking": {
