@@ -3092,7 +3092,7 @@ domains:
     versions:
       "2.0.1":
         flows:
-          Order to Confirm to Fulfillment (GPS Based):
+          Order to Confirm to Fulfillment (City Code):
             - search
             - on_search
             - select
