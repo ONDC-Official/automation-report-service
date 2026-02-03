@@ -21,6 +21,14 @@ export async function generateTestsFromPayloads(
     !FLOW_ID_MAP[domain][version] ||
     !FLOW_ID_MAP[domain][version][usecaseId]
   ) {
+    logger.error(`Cannot find FLOW_ID_MAP configuration`, {
+      domain,
+      version,
+      usecaseId,
+      availableDomains: Object.keys(FLOW_ID_MAP),
+      availableVersions: FLOW_ID_MAP[domain] ? Object.keys(FLOW_ID_MAP[domain]) : [],
+      availableUsecases: FLOW_ID_MAP[domain]?.[version] ? Object.keys(FLOW_ID_MAP[domain][version]) : []
+    });
     throw new Error("Cannot generate pramaan flows for this configuration");
   }
 

@@ -132,6 +132,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.0.3",
   "ONDC:FIS12:2.2.1",
   "ONDC:FIS12:2.2.0",
+  "ONDC:FIS12:2.0.1",
   "ONDC:FIS13:2.0.1",
   "ONDC:TRV10:2.1.0",
   // "ONDC:TRV11:2.0.0",
@@ -350,6 +351,22 @@ export const FLOW_ID_MAP: Record<
       }
     }
   },
+  "ONDC:TRV10": {
+    "2.0.1": {
+      "Ride-hailing": {
+        "OnDemand_Assign_driver_on_onconfirm": "DEM_2A",
+        "OnDemand_Assign_driver_post_onconfirm": "DEM_2B",
+        "OnDemand_Assign_driver_post_onconfirmSelfPickup": "DEM_6",
+        "Technical_cancellation_flow": "DEM_4",
+        // "OnDemand_Female_driver_flow": "TRV10_4",
+        "OnDemand_Ride_cancellation_by_driver": "DEM_3",
+        "OnDemand_Ride_cancellation_by_rider": "DEM_2",
+        "Driver_not_found_on_onconfirm": "DEM_1A",
+        "Driver_not_found_post_onconfirm": "DEM_1B",
+        // "OnDemand_Assign_driver_on_onconfirm_with_IGM(1.0.0)": "TRV10_9"
+      }
+    }
+  },
   "ONDC:TRV13": {
     "2.0.0": {
       "Hotel-Booking": {
@@ -559,6 +576,7 @@ export const FLOW_ID_MAP: Record<
 export const typeMapping: Record<string, string> = {
   "Bus": "BUS",
   "Metro": "METRO",
+  "Ride-hailing": "RIDE_HAILING",
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",
