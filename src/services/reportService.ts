@@ -55,7 +55,7 @@ export class ReportService {
       // Check if domain is not in enabled domains - use Pramaan report
       const domainVersionKey = `${sessionDetails.domain}:${sessionDetails.version}`;
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        return await this.checkPramaanReport(sessionDetails, sessionId);
+        return await this.checkPramaanReport(sessionDetails, sessionId,flowIdToPayloadIdsMap);
       }
 
       // Check usecase-level enabling
@@ -65,7 +65,7 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId);
+          return await this.checkPramaanReport(sessionDetails, sessionId,flowIdToPayloadIdsMap);
         }
       }
 
@@ -92,14 +92,16 @@ export class ReportService {
    */
   private async checkPramaanReport(
     sessionDetails: any,
-    sessionId: string
+    sessionId: string,
+    flowIdToPayloadIdsMap: Record<string, string[]>
   ): Promise<any> {
     const testId = `PW_${sessionId}`;
     const { tests, subscriber_id } = await generateTestsFromPayloads(
       sessionDetails.domain,
       sessionDetails.version,
       sessionDetails.usecaseId,
-      sessionId
+      sessionId,
+      flowIdToPayloadIdsMap
     );
 
     logger.info(
@@ -117,7 +119,6 @@ export class ReportService {
       tests,
       test_id: testId,
     };
-
     const pramaanUrl = process.env.PRAMAAN_URL;
     if (!pramaanUrl) {
       throw new Error("PRAMAAN_URL is not defined in environment variables");

@@ -1,46 +1,32 @@
-import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import { checkCommon } from "./commonChecks";
-import logger from "@ondc/automation-logger";
-import { updateApiMap } from "../../../utils/redisUtils";
+import { saveFromElement } from "../../../utils/specLoader";
+import { validateTrv11Status } from "../../shared/trv11Validations";
 
-export async function checkStatus(
+export default async function status(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId?: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-
   const testResults: TestResult = {
     response: {},
     passed: [],
     failed: [],
   };
 
-  const { jsonRequest, jsonResponse } = payload;
+  const { jsonRequest, jsonResponse } = element;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
-  const transactionId = jsonRequest.context?.transaction_id;
-  await updateApiMap(sessionID, transactionId, action);
-  const { fulfillments, message } = jsonRequest;
+  const message = jsonRequest?.message;
 
-  // Test: Fulfillments array length should be proportional to selected count where each fulfillment obj will refer to an individual TICKET
-  // try {
-  //   const selectedCount = message.selected_count;
-  //   assert.strictEqual(fulfillments.length, selectedCount, "Fulfillments array length should be proportional to selected count");
-  //   testResults.passed.push("Fulfillments array length is proportional to selected count");
-  // } catch (error: any) {
-  //   testResults.failed.push(`Fulfillments array length check: ${error.message}`);
-  // }
+  // Validate status - supports both order_id and ref_id
+  validateTrv11Status(message, testResults);
 
-  // Apply common checks for all versions
-  //   const commonResults = await checkCommon(payload, sessionID, flowId);
-  //   testResults.passed.push(...commonResults.passed);
-  //   testResults.failed.push(...commonResults.failed);
+  // Add default message if no validations ran
+  if (testResults.passed.length < 1 && testResults.failed.length < 1) {
+    testResults.passed.push(`Validated status`);
+  }
 
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
-    testResults.passed.push(`Validated ${action}`);
+  await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return testResults;
 }

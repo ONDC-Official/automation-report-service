@@ -4,7 +4,7 @@ import { validateOrderQuote } from "../../shared/quoteValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
+import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_init(
   element: Payload,
@@ -60,8 +60,10 @@ export default async function on_init(
       }
 
       // Validate form ID consistency if xinput is present
-      if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result, HEALTH_INSURANCE_FLOWS);
+      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
+      if (isInsuranceFlow) {
+        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
+        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result, insuranceFlows);
       }
     }
   } catch (_) {}

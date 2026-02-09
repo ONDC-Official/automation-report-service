@@ -15,6 +15,10 @@ export const actions: String[] = [
   "on_status",
   "track",
   "on_track",
+  "issue",
+  "on_issue",
+  "issue_status",
+  "on_issue_status",
 ];
 
 export const MANDATORY_FLOWS: String[] = [
@@ -77,9 +81,35 @@ export const HEALTH_INSURANCE_FLOWS = [
   "Cancel_Health_Insurance(Family)"
 ]
 
+export const MOTOR_INSURANCE_FLOWS = [
+  "Motor_Insurance_Application",
+  "Motor_Insurance_Application(PRE-ORDER)",
+  "Claim_Motor_Insurance",
+  "Cancel_Motor_Insurance"
+]
+
+export const MOTOR_INSURANCE_SELECT_ACTIONS = [
+  "select_motor",
+  "select2_motor",
+  "select3_motor"
+]
+
+export const MOTOR_INSURANCE_INIT_ACTIONS = [
+  "init_motor",
+  "init2_motor",
+  "init3_motor"
+]
+
+export const MOTOR_INSURANCE_CONFIRM_ACTIONS = [
+  "confirm_motor",
+  "confirm2_motor",
+  "confirm3_motor"
+]
 export const ITEM_PRICE_NOT_REQUIRED_FIS13 = [
 "on_search","on_search2","on_search3", "select", "select2","init","init2","init3"
 ]
+
+
 
 export const validCategoryMap: Record<string, string> = {
   GOLD_LOAN: "Gold Loan",
@@ -101,10 +131,13 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
   "ONDC:FIS12:2.2.1",
+  "ONDC:FIS12:2.2.0",
+  "ONDC:FIS12:2.0.1",
   "ONDC:FIS13:2.0.1",
   "ONDC:TRV10:2.1.0",
-  "ONDC:TRV11:2.0.0",
-  "ONDC:TRV11:2.0.1"
+  // "ONDC:TRV11:2.0.0",
+  "ONDC:TRV11:2.0.1",
+  "ONDC:TRV13:2.0.1"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
@@ -122,7 +155,8 @@ export const DOMAINS = {
   FIS11:"ONDC:FIS11",
   FIS12:"ONDC:FIS12",
   TRV10:"ONDC:TRV10",
-  TRV11: "ONDC:TRV11"
+  TRV11: "ONDC:TRV11",
+  TRV13: "ONDC:TRV13"
 };
 
 export const FLOW_MAPPINGS: Record<string, string> = {
@@ -295,6 +329,22 @@ export const FLOW_ID_MAP: Record<
   >
 > = {
   "ONDC:TRV11": {
+    "2.0.0": {
+      "Bus": {
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION": "MBL_8",
+        "TECHNICAL_CANCELLATION_FLOW": "MBL_11",
+        "USER_CANCELLATION_FLOW": "MBL_12"
+      },
+      "Metro": {
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT": "MBL_1",
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT": "MBL_2",
+        "ORDER_TO_CONFIRM_MONTHLY_PASS": "MBL_3",
+        "USER_CANCELLATION_FLOW": "MBL_4",
+        "TICKET_EXPIRY_CANCELLATION_FLOW": "MBL_5",
+        "MERCHANT_SIDE_CANCELLATION_FLOW": "MBL_6",
+        "TECHNICAL_CANCELLATION_FLOW": "MBL_20",
+      }
+    },
     "2.0.1": {
       "Bus": {
         "IntraCity_Purchase_Journey_Flow_Code_Based": "MBL_8",
@@ -302,6 +352,22 @@ export const FLOW_ID_MAP: Record<
         "IntraCity_Technical_Cancellation_Flow": "MBL_12",
         "IntraCity_Monthly_Passes_Flow_Code_Based": "MBL_10",
         "IntraCity_Merchant_Side_Cancellation": "MBL_13"
+      }
+    }
+  },
+  "ONDC:TRV10": {
+    "2.0.1": {
+      "Ride-hailing": {
+        "OnDemand_Assign_driver_on_onconfirm": "DEM_2A",
+        "OnDemand_Assign_driver_post_onconfirm": "DEM_2B",
+        "OnDemand_Assign_driver_post_onconfirmSelfPickup": "DEM_6",
+        "Technical_cancellation_flow": "DEM_4",
+        // "OnDemand_Female_driver_flow": "TRV10_4",
+        "OnDemand_Ride_cancellation_by_driver": "DEM_3",
+        "OnDemand_Ride_cancellation_by_rider": "DEM_2",
+        "Driver_not_found_on_onconfirm": "DEM_1A",
+        "Driver_not_found_post_onconfirm": "DEM_1B",
+        // "OnDemand_Assign_driver_on_onconfirm_with_IGM(1.0.0)": "TRV10_9"
       }
     }
   },
@@ -362,6 +428,14 @@ export const FLOW_ID_MAP: Record<
         "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        // "Self_Pickup_Flow":"RET_ENH_002",
+        // "Slotted_Delivery_Flow":"RET_ENH_003",
+        // "Buyer_Delivery_Flow":"RET_ENH_004",
+        // "Buyer_Instructions_And_Delivery_Update_Flow":"RET_ENH_011",
+        // "Multi_Option_Fulfillment_Flow":"RET_ENH_01D",
+        // "Forced_Cancellation_Flow":"RET_ENH_005"
       },
     },
     "1.2.0": {
@@ -387,6 +461,7 @@ export const FLOW_ID_MAP: Record<
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
         "DELIVERY_FLOW_WITH_IGM_1": "IGM_1",
         "DELIVERY_FLOW_WITH_IGM_2": "IGM_2",
+        "OUT_OF_STOCK(ERROR-CODE)":"RET_6",
       },
     },
     "1.2.0": {
@@ -412,6 +487,8 @@ export const FLOW_ID_MAP: Record<
         "Cash_On_Delivery_Flow": "RET_1b",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)":"RET_6",
       },
     },
   },
@@ -425,6 +502,7 @@ export const FLOW_ID_MAP: Record<
         "Cash_On_Delivery_Flow": "RET_1b",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow(Error-code)":"RET_6",
       },
     },
   },
@@ -437,6 +515,7 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow(Error-code)":"RET_6",
       },
     },
   },
@@ -449,6 +528,7 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow(Error-code)":"RET_6",
       },
     },
   },
@@ -461,6 +541,7 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow(Error-code)":"RET_6",
       },
     },
   },
@@ -474,6 +555,7 @@ export const FLOW_ID_MAP: Record<
         "Cash_On_Delivery_Flow": "RET_1b",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
+        "Out_Of_Stock_Flow(Error-code)":"RET_6",
       },
     },
   },
@@ -520,6 +602,7 @@ export const FLOW_ID_MAP: Record<
 export const typeMapping: Record<string, string> = {
   "Bus": "BUS",
   "Metro": "METRO",
+  "Ride-hailing": "RIDE_HAILING",
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",

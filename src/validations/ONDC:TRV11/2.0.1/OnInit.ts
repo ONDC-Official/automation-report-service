@@ -1,72 +1,65 @@
-import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
-import logger from "@ondc/automation-logger";
-import { updateApiMap } from "../../../utils/redisUtils";
+import { DomainValidators } from "../../shared/domainValidator";
+import { validateOrderQuote } from "../../shared/quoteValidations";
+import { saveFromElement } from "../../../utils/specLoader";
+import { getActionData } from "../../../services/actionDataService";
 
-export async function checkOnInit(
+export default async function on_init(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
+  const result = await DomainValidators.trv11OnInit(element, sessionID, flowId, actionId, usecaseId);
 
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
-
-  const { jsonRequest, jsonResponse } = payload;
-  const transactionId = jsonRequest.context?.transaction_id;
-  await updateApiMap(sessionID, transactionId, action);
-  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-  const { message } = jsonRequest;
-  const items = message?.order?.items;
-  let itemQuantity: number = 0;
-  for (const item of items) {
-    itemQuantity = item?.quantity?.selected?.count;
-  }
-  const fulfillments = message?.order?.fulfillments;
   try {
-    logger.info(`Checking number of fulfillments in ${action}`);
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const count = item?.quantity?.selected?.count;
-      const expectedLength = count + 1;
-
-      // Assertion: Check if fulfillment_ids.length matches count + 1
-      assert.ok(
-        item?.fulfillment_ids?.length === expectedLength,
-        `In /items, expected fulfillment_ids.length to be ${expectedLength}, but got ${item.fulfillment_ids.length}`
-      );
-      testResults.passed.push(
-        `Number of fulfillments are expected as per the selected quantity for item ${item?.id}`
-      );
-
-      // Assertion: Check if all fulfillment_ids exist in the fulfillments array
-      for (let j = 0; j < item.fulfillment_ids.length; j++) {
-        const id = item?.fulfillment_ids[j];
-        const fulfillmentExists = fulfillments.some(
-          (fulfillment: any) => fulfillment.id === id
-        );
-
-        assert.ok(
-          fulfillmentExists,
-          `In /items, Fulfillment ID '${id}' not found in fulfillments array`
-        );
-      }
-      testResults.passed.push(
-        `All fulfillment ids in /items for ${item?.id} are correctly mapped to the fulfillments array`
-      );
+    const message = element?.jsonRequest?.message;
+    if (message?.order?.quote) {
+      validateOrderQuote(message, result, {
+        validateDecimalPlaces: true,
+        validateTotalMatch: true,
+        // For TRV10, item price consistency is optional
+        validateItemPriceConsistency: false,
+        flowId,
+      });
     }
-  } catch (error: any) {
-    testResults.failed.push(`${error.message}`);
-  }
 
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
-    testResults.passed.push(`Validated ${action}`);
+    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    if (txnId) {
+      const initData = await getActionData(sessionID,flowId, txnId, "init");
+      // Compare item ids and prices w.r.t INIT request
+      const onInitItems: any[] = message?.order?.items || [];
+      const initItems: any[] = initData?.items || [];
+      const initPriceById = new Map<string, string>();
+      for (const it of initItems) if (it?.id && it?.price?.value !== undefined) initPriceById.set(it.id, String(it.price.value));
 
-  return testResults;
+      const missingFromInit: string[] = [];
+      const priceMismatches: Array<{ id: string; init: string; on_init: string }> = [];
+      for (const it of onInitItems) {
+        const id = it?.id;
+        if (!id) continue;
+        if (!initPriceById.has(id)) {
+          missingFromInit.push(id);
+          continue;
+        }
+        const ini = parseFloat(initPriceById.get(id) as string);
+        const onIni = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
+        if (!Number.isNaN(ini) && !Number.isNaN(onIni)) {
+          if (ini === onIni) result.passed.push(`Item '${id}' price matches INIT`);
+          else priceMismatches.push({ id, init: String(ini), on_init: String(onIni) });
+        }
+      }
+      if (priceMismatches.length) result.failed.push("Item price mismatches between INIT and on_init");
+      if (missingFromInit.length || priceMismatches.length) {
+        (result.response as any) = {
+          ...(result.response || {}),
+          on_init_vs_init: { missingFromInit, priceMismatches },
+        };
+      }
+    }
+  } catch (_) {}
+
+  await saveFromElement(element,sessionID,flowId, "jsonResponse");
+  return result;
 }
