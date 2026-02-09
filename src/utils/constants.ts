@@ -438,6 +438,17 @@ export const FLOW_ID_MAP: Record<
         // "Forced_Cancellation_Flow":"RET_ENH_005"
       },
     },
+    "1.2.0": {
+      "GROCERY": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Cancellation_Flow": "RET_3",
+        "RTO_And_Part_Cancellation_Flow": "RET_4b",
+        "Return_Flow": "RET_5",
+        "Out_of_Stock_Flow": "RET_6",
+      },
+    },
   },
   "ONDC:RET11": {
     "1.2.5": {
@@ -451,6 +462,17 @@ export const FLOW_ID_MAP: Record<
         "DELIVERY_FLOW_WITH_IGM_1": "IGM_1",
         "DELIVERY_FLOW_WITH_IGM_2": "IGM_2",
         "OUT_OF_STOCK(ERROR-CODE)":"RET_6",
+      },
+    },
+    "1.2.0": {
+      "F&B": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Cancellation_Flow": "RET_3",
+        "RTO_And_Part_Cancellation_Flow": "RET_4b",
+        "Return_Flow": "RET_5",
+        "Out_of_Stock_Flow": "RET_6",
       },
     },
   },
