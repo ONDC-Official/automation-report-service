@@ -138,6 +138,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV10:2.1.0",
   // "ONDC:TRV11:2.0.0",
   "ONDC:TRV11:2.0.1",
+  "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1"
 ];
 
@@ -147,6 +148,7 @@ export const ENABLED_DOMAINS: String[] = [
 export const ENABLED_USECASES: Record<string, string[]> = {
   "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
   "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
+  "ONDC:TRV11:2.1.0": ["metro"],  // Only Metro enabled for 2.1.0
 };
 
 export const DOMAINS = {
