@@ -336,8 +336,12 @@ export const FLOW_ID_MAP: Record<
         "USER_CANCELLATION_FLOW": "MBL_12"
       },
       "Metro": {
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT": "MBL_1",
         "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT": "MBL_2",
+        "ORDER_TO_CONFIRM_MONTHLY_PASS": "MBL_3",
         "USER_CANCELLATION_FLOW": "MBL_4",
+        "TICKET_EXPIRY_CANCELLATION_FLOW": "MBL_5",
+        "MERCHANT_SIDE_CANCELLATION_FLOW": "MBL_6",
         "TECHNICAL_CANCELLATION_FLOW": "MBL_20",
       }
     },
@@ -430,6 +434,17 @@ export const FLOW_ID_MAP: Record<
         "Forced_Cancellation_Flow":"RET_ENH_005" //need tp do //op
       },
     },
+    "1.2.0": {
+      "GROCERY": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Cancellation_Flow": "RET_3",
+        "RTO_And_Part_Cancellation_Flow": "RET_4b",
+        "Return_Flow": "RET_5",
+        "Out_of_Stock_Flow": "RET_6",
+      },
+    },
   },
   "ONDC:RET11": {
     "1.2.5": {
@@ -449,6 +464,17 @@ export const FLOW_ID_MAP: Record<
         "BUYER_DELIVERY":"RET_ENH_004",
         "BUYER INSTRUCTIONS AND ADDRESS UPDATE FLOW":"RET_ENH_011", //need too add from pramaan id
 
+      },
+    },
+    "1.2.0": {
+      "F&B": {
+        "Discovery_Flow_full_catalog": "RET_9",
+        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
+        "Delivery_Flow": "RET_1",
+        "Cancellation_Flow": "RET_3",
+        "RTO_And_Part_Cancellation_Flow": "RET_4b",
+        "Return_Flow": "RET_5",
+        "Out_of_Stock_Flow": "RET_6",
       },
     },
   },
