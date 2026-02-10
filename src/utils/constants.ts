@@ -26,7 +26,7 @@ export const MANDATORY_FLOWS: String[] = [
   "TECHNICAL_CANCELLATION_FLOW",
 ];
 
-export const GOLD_LOAN_FLOWS = ["Gold_Loan_With_Account_Aggregator","Gold_Loan_Without_Account_Aggregator","Gold_Loan_Foreclosure,Gold_Loan_Missed_EMI","Gold_Loan_Pre_Part_Payment"]
+export const GOLD_LOAN_FLOWS = ["Gold_Loan_With_Account_Aggregator", "Gold_Loan_Without_Account_Aggregator", "Gold_Loan_Foreclosure,Gold_Loan_Missed_EMI", "Gold_Loan_Pre_Part_Payment"]
 export const PAYMENT_COLLECTED_BY = ['BPP', 'BAP']
 export const PERSONAL_LOAN_FLOWS = [
   "Personal_Loan_With_AA_And_Monitoring_Consent",
@@ -106,7 +106,7 @@ export const MOTOR_INSURANCE_CONFIRM_ACTIONS = [
   "confirm3_motor"
 ]
 export const ITEM_PRICE_NOT_REQUIRED_FIS13 = [
-"on_search","on_search2","on_search3", "select", "select2","init","init2","init3"
+  "on_search", "on_search2", "on_search3", "select", "select2", "init", "init2", "init3"
 ]
 
 
@@ -127,6 +127,7 @@ export const ENABLED_DOMAINS: String[] = [
   "nic2004:60232:1.2.5",
   "ONDC:LOG10:1.2.5",
   "ONDC:LOG11:1.2.5",
+  "ONDC:FIS10:2.1.0",
   "ONDC:FIS11:2.0.0",
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
@@ -149,12 +150,12 @@ export const ENABLED_USECASES: Record<string, string[]> = {
 };
 
 export const DOMAINS = {
-  NIC:"nic2004:60232",
-  LOG10:"ONDC:LOG10",
-  LOG11:"ONDC:LOG11",
-  FIS11:"ONDC:FIS11",
-  FIS12:"ONDC:FIS12",
-  TRV10:"ONDC:TRV10",
+  NIC: "nic2004:60232",
+  LOG10: "ONDC:LOG10",
+  LOG11: "ONDC:LOG11",
+  FIS11: "ONDC:FIS11",
+  FIS12: "ONDC:FIS12",
+  TRV10: "ONDC:TRV10",
   TRV11: "ONDC:TRV11",
   TRV13: "ONDC:TRV13"
 };
@@ -390,11 +391,11 @@ export const FLOW_ID_MAP: Record<
       "unreserved-entry-pass": {
         "purchase_journey_with_form": "EP_1",
         "purchase_journey_without_form": "EP_2",
-        "purchase_journey_with_form_Multiple_Tickets":"EP_3",
-        "purchase_journey_without_form_Multiple_Tickets":"EP_4",
-        "technical_cancellation_with_form":"EP_5",
+        "purchase_journey_with_form_Multiple_Tickets": "EP_3",
+        "purchase_journey_without_form_Multiple_Tickets": "EP_4",
+        "technical_cancellation_with_form": "EP_5",
         "technical_cancellation": "EP_6",
-        "User_Cancellation_FULL_With_Form":"EP_7",
+        "User_Cancellation_FULL_With_Form": "EP_7",
         "User Cancellation (Full)": "EP_8"
       },
     },
@@ -428,8 +429,8 @@ export const FLOW_ID_MAP: Record<
         "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
-        "Out_Of_Stock_Flow":"RET_6",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow": "RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
         // "Self_Pickup_Flow":"RET_ENH_002",
         // "Slotted_Delivery_Flow":"RET_ENH_003",
         // "Buyer_Delivery_Flow":"RET_ENH_004",
@@ -461,7 +462,7 @@ export const FLOW_ID_MAP: Record<
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
         "DELIVERY_FLOW_WITH_IGM_1": "IGM_1",
         "DELIVERY_FLOW_WITH_IGM_2": "IGM_2",
-        "OUT_OF_STOCK(ERROR-CODE)":"RET_6",
+        "OUT_OF_STOCK(ERROR-CODE)": "RET_6",
       },
     },
     "1.2.0": {
@@ -487,8 +488,8 @@ export const FLOW_ID_MAP: Record<
         "Cash_On_Delivery_Flow": "RET_1b",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
-        "Out_Of_Stock_Flow":"RET_6",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow": "RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },
@@ -502,7 +503,7 @@ export const FLOW_ID_MAP: Record<
         "Cash_On_Delivery_Flow": "RET_1b",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },
@@ -515,7 +516,7 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },
@@ -528,7 +529,7 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },
@@ -541,7 +542,7 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },
@@ -555,7 +556,7 @@ export const FLOW_ID_MAP: Record<
         "Cash_On_Delivery_Flow": "RET_1b",
         "Delivery_Flow_With_IGM_1": "IGM_1",
         "Delivery_Flow_With_IGM_2": "IGM_2",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },

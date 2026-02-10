@@ -911,6 +911,88 @@ domains:
           - PICKUP_DELIVERY_ATTEMPT
           - FEATURE_DISCOVERY
         validationModules: "../validations/ONDC:LOG11/validator#validate"
+  ONDC:FIS10:
+    versions:
+      "2.1.0":
+        flows:
+          Seller_App_Fulfilling:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            
+          Buyer_App_Fulfilling_Code_On_Confirm:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+
+          Buyer_App_Fulfilling_Code_On_Update:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+          
+          Physical_Store_Based_Gift_Cards:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+
+          Seller_Cancellation:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_cancel
+
+          Update_Receiver_Info:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - update
+            - on_update
+        optional_flows:
+          - Seller_App_Fulfilling
+          - Buyer_App_Fulfilling_Code_On_Confirm
+          - Buyer_App_Fulfilling_Code_On_Update
+          - Physical_Store_Based_Gift_Cards
+          - Seller_Cancellation
+          - Update_Receiver_Info
+        validationModules: "../validations/ONDC:FIS10/validator#validate"
 
   ONDC:FIS11:
     versions:
