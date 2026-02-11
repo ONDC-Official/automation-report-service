@@ -135,8 +135,9 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.2.0",
   "ONDC:FIS12:2.0.1",
   "ONDC:FIS13:2.0.1",
+  "ONDC:FIS13:2.0.0:hospicash-insurance",
+  "ONDC:FIS13:2.0.0:accidental-insurance",
   "ONDC:TRV10:2.1.0",
-  // "ONDC:TRV11:2.0.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV13:2.0.1"
 ];
@@ -167,6 +168,11 @@ export const FLOW_MAPPINGS: Record<string, string> = {
   TECHNICAL_CANCELLATION_FLOW: "METRO_TECHNICAL_CANCEL",
 };
 
+export const DOMAINS_WITH_VERSION = {
+  FIS13: "ONDC:FIS13",
+  FIS13_VERSION: "2.0.0"
+};
+
 export const VALIDATION_URL: Record<string, string> = {
   "ONDC:TRV10": "https://log-validation.ondc.org/api/validate/trv",
   "ONDC:TRV11": "https://log-validation.ondc.org/api/validate/trv",
@@ -175,6 +181,8 @@ export const VALIDATION_URL: Record<string, string> = {
   "ONDC:RET12": "https://log-validation.ondc.org/api/validate",
   "ONDC:FIS12": "https://log-validation.ondc.org/api/validate/fis/fis12",
 };
+
+
 
 export function compareDates(
   dateString1: string | number | Date,
