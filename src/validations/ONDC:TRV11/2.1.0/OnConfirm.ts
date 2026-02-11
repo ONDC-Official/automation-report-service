@@ -34,7 +34,7 @@ export default async function on_confirm(
     return result;
   }
 
-  const result = await DomainValidators.trv11OnConfirm(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.trv11OnConfirm210(element, sessionID, flowId, actionId);
   return processOnConfirm(element, result, sessionID, flowId, actionId);
 }
 

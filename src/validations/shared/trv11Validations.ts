@@ -129,7 +129,7 @@ export function validateTrv11Intent(
 }
 
 // Additional Valid Values for OnSearch
-const VALID_FULFILLMENT_TYPES = ["ROUTE", "TRIP"];
+const VALID_FULFILLMENT_TYPES = ["ROUTE", "TRIP", "ONLINE"];
 const VALID_ON_SEARCH_STOP_TYPES = ["START", "END", "INTERMEDIATE_STOP", "TRANSIT_STOP"];
 
 export function validateTrv11OnSearch(
@@ -227,7 +227,7 @@ export function validateTrv11OnSearch(
 }
 
 // Valid fulfillment types for OnSelect
-const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET"];
+const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET", "ONLINE"];
 
 /**
  * Validates TRV11 Select request
@@ -376,7 +376,7 @@ export function validateTrv11OnSelect(
 
 // Valid payment statuses and types for TRV11
 const VALID_PAYMENT_STATUSES = ["PAID", "NOT-PAID"];
-const VALID_PAYMENT_TYPES = ["PRE-ORDER", "ON-FULFILLMENT", "POST-FULFILLMENT"];
+const VALID_PAYMENT_TYPES = ["PRE-ORDER", "ON-ORDER", "ON-FULFILLMENT", "POST-FULFILLMENT"];
 
 /**
  * Validates TRV11 Init request
