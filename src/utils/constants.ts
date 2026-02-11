@@ -81,6 +81,21 @@ export const HEALTH_INSURANCE_FLOWS = [
   "Cancel_Health_Insurance(Family)"
 ]
 
+export const SACHET_INSURANCE_FLOWS = [
+  "Discovery_of_Insurer_Providers_and_Master_Policies",
+  "Discovery_of_Products_from_Master_Policies (Accidental Insurance)",
+  "Purchase_Journey_Accidental_Insurance",
+  "CD_Balance_Error_Accidental_Insurance"
+]
+
+
+export const SACHET_INSURANCE_FLOWS_OBJ = {
+  Discovery_of_Insurer_Providers_and_Master_Policies: "Discovery_of_Insurer_Providers_and_Master_Policies",
+  Discovery_of_Products_from_Master_Policies: "Discovery_of_Products_from_Master_Policies (Accidental Insurance)",
+  Purchase_Journey_Accidental_Insurance: "Purchase_Journey_Accidental_Insurance",
+  CD_Balance_Error_Accidental_Insurance: "CD_Balance_Error_Accidental_Insurance"
+}
+
 export const MOTOR_INSURANCE_FLOWS = [
   "Motor_Insurance_Application",
   "Motor_Insurance_Application(PRE-ORDER)",
@@ -433,16 +448,16 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Cancellation_Flow": "RET_3",
-        "RTO_And_Part_Cancellation_Flow": "RET_MRGD_1", 
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Return_Flow": "RET_MRGD_2", 
-        "Cash_On_Delivery_Flow": "RET_1b", 
-        "Self_Pickup_Flow":"RET_ENH_002", //need tp do //op
-        "Slotted_Delivery_Flow":"RET_ENH_003",  //need tp do //op
-        "Buyer_Delivery_Flow":"RET_ENH_004", //need tp do //op
-        "Buyer_Instructions_And_Delivery_Update_Flow":"RET_ENH_011",  //op
+        "RTO_And_Part_Cancellation_Flow": "RET_MRGD_1",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Return_Flow": "RET_MRGD_2",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Self_Pickup_Flow": "RET_ENH_002", //need tp do //op
+        "Slotted_Delivery_Flow": "RET_ENH_003",  //need tp do //op
+        "Buyer_Delivery_Flow": "RET_ENH_004", //need tp do //op
+        "Buyer_Instructions_And_Delivery_Update_Flow": "RET_ENH_011",  //op
         "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",//op
-        "Forced_Cancellation_Flow":"RET_ENH_005" //need tp do //op
+        "Forced_Cancellation_Flow": "RET_ENH_005" //need tp do //op
       },
     },
     "1.2.0": {
@@ -463,17 +478,17 @@ export const FLOW_ID_MAP: Record<
         "FULL_CATALOG": "RET_9",
         "INCREMENTAL_CATALOG": "RET_9_INC_PUSH",
         "ORDER_FLOW": "RET_1",
-        "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1", 
-        "RETURN_FLOW": "RET_MRGD_2", 
+        "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1",
+        "RETURN_FLOW": "RET_MRGD_2",
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
-        "OUT_OF_STOCK(ERROR-CODE)":"RET_6",
-        "BUYER_CANCEL":"RET_3",
-        "FORCE_CANCEL":"RET_ENH_005", // pramaan 
-        "OFFERS_FLOW":"RET_ENH_009",// pramaan 
-        "SELF_PICKUP":"RET_ENH_002",// pramaan 
-        "Slotted_Delivery_Flow":"RET_ENH_003",// pramaan 
-        "BUYER_DELIVERY":"RET_ENH_004",
-        "BUYER INSTRUCTIONS AND ADDRESS UPDATE FLOW":"RET_ENH_011", //need too add from pramaan id
+        "OUT_OF_STOCK(ERROR-CODE)": "RET_6",
+        "BUYER_CANCEL": "RET_3",
+        "FORCE_CANCEL": "RET_ENH_005", // pramaan 
+        "OFFERS_FLOW": "RET_ENH_009",// pramaan 
+        "SELF_PICKUP": "RET_ENH_002",// pramaan 
+        "Slotted_Delivery_Flow": "RET_ENH_003",// pramaan 
+        "BUYER_DELIVERY": "RET_ENH_004",
+        "BUYER INSTRUCTIONS AND ADDRESS UPDATE FLOW": "RET_ENH_011", //need too add from pramaan id
 
       },
     },
@@ -496,14 +511,14 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cred_Flow":"RET_ENH_017",
+        "Seller_Cred_Flow": "RET_ENH_017",
         "Return_Flow": "RET_MRGD_2",
         "Cash_On_Delivery_Flow": "RET_1b",
-        "Replacement_Flow":"RET_ENH_00B",
-        "Cancel_Return_Request_Flow":"RET_ENH_00D",
-        "Force_Cancellation_Flow":"RET_ENH_005", // pramaan 
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Buyer_Instructions_And_Delivery_Update_Flow":"RET_ENH_011", //need too add pramaan id
+        "Replacement_Flow": "RET_ENH_00B",
+        "Cancel_Return_Request_Flow": "RET_ENH_00D",
+        "Force_Cancellation_Flow": "RET_ENH_005", // pramaan 
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Buyer_Instructions_And_Delivery_Update_Flow": "RET_ENH_011", //need too add pramaan id
       },
     },
   },
@@ -514,11 +529,11 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cred_Flow":"RET_ENH_017",
+        "Seller_Cred_Flow": "RET_ENH_017",
         "Cash_On_Delivery_Flow": "RET_1b",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Force_Cancellation_Flow":"RET_ENH_005", // pramaan 
-        "Offers_Flow":"RET_ENH_009",// pramaan 
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Force_Cancellation_Flow": "RET_ENH_005", // pramaan 
+        "Offers_Flow": "RET_ENH_009",// pramaan 
       },
     },
   },
@@ -529,9 +544,9 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Purchase_Finance_Flow":"RET_ENH_0099",// pramaan 
-        "Customization_Input_Text_Flow":"RET_ENH_016",// pramaan 
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Purchase_Finance_Flow": "RET_ENH_0099",// pramaan 
+        "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
       },
     },
   },
@@ -542,10 +557,10 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Purchase_Finance_Flow":"RET_ENH_0099",// pramaan 
-        "Customization_Input_Text_Flow":"RET_ENH_016",// pramaan 
-        "Force_Cancellation_Flow":"RET_ENH_005",// pramaan 
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Purchase_Finance_Flow": "RET_ENH_0099",// pramaan 
+        "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
+        "Force_Cancellation_Flow": "RET_ENH_005",// pramaan 
       },
     },
   },
@@ -556,10 +571,10 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Purchase_Finance_Flow":"RET_ENH_0099",// pramaan 
-        "Customization_Input_Text_Flow":"RET_ENH_016",// pramaan 
-        "Force_Cancellation_Flow":"RET_ENH_005",// pramaan 
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Purchase_Finance_Flow": "RET_ENH_0099",// pramaan 
+        "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
+        "Force_Cancellation_Flow": "RET_ENH_005",// pramaan 
       },
     },
   },
@@ -569,14 +584,14 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_full_catalog": "RET_9",
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
-        "Self_Pickup_Flow":"RET_ENH_002",// pramaan 
-        "Slotted_Delivery_Flow":"RET_ENH_003",// pramaan 
-        "Buyer_Instructions_And_Delivery_Update_Flow":"RET_ENH_011", //need to add pramaan id 
-        "Seller_Cred_Flow":"RET_ENH_017",
-        "Force_Cancellation_Flow":"RET_ENH_005", // pramaan 
+        "Self_Pickup_Flow": "RET_ENH_002",// pramaan 
+        "Slotted_Delivery_Flow": "RET_ENH_003",// pramaan 
+        "Buyer_Instructions_And_Delivery_Update_Flow": "RET_ENH_011", //need to add pramaan id 
+        "Seller_Cred_Flow": "RET_ENH_017",
+        "Force_Cancellation_Flow": "RET_ENH_005", // pramaan 
         "Buyer_Cancellation_Flow": "RET_3",
         "Cash_On_Delivery_Flow": "RET_1b",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },
