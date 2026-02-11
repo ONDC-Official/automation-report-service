@@ -10,7 +10,7 @@ export default async function confirm(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.trv11Confirm(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.trv11Confirm210(element, sessionID, flowId, actionId);
 
   try {
     const message = element?.jsonRequest?.message;

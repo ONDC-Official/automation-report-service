@@ -12,7 +12,7 @@ export default async function on_init(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.trv11OnInit(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.trv11OnInit210(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const message = element?.jsonRequest?.message;

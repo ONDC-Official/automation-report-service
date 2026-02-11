@@ -514,6 +514,9 @@ export const DomainValidators = {
   trv11Search: createSearchValidator(
     trv11Validators.search.validate_intent
   ),
+  // TRV11 2.1.0: tags moved from payment.tags to intent.tags (BAP_TERMS)
+  // Skip shared payment.tags validation; 2.1.0/search.ts handles BAP_TERMS
+  trv11Search210: createSearchValidator(),
   trv11OnSearch: createOnSearchValidator(
     trv11Validators.on_search.validate_catalog
   ),
@@ -526,15 +529,23 @@ export const DomainValidators = {
   trv11Init: createInitValidator(
     trv11Validators.init.validate_order
   ),
+  // TRV11 2.1.0: tags moved from payment[].tags to order.tags (BAP_TERMS)
+  trv11Init210: createInitValidator(),
   trv11OnInit: createOnInitValidator(
     trv11Validators.on_init.validate_order
   ),
+  // TRV11 2.1.0: tags moved from payment[].tags to order.tags (BPP_TERMS)
+  trv11OnInit210: createOnInitValidator(),
   trv11Confirm: createConfirmValidator(
     trv11Validators.confirm.validate_order
   ),
+  // TRV11 2.1.0: tags in order.tags (BAP_TERMS + BPP_TERMS)
+  trv11Confirm210: createConfirmValidator(),
   trv11OnConfirm: createOnConfirmValidator(
     trv11Validators.on_confirm.validate_order
   ),
+  // TRV11 2.1.0: tags in order.tags (BAP_TERMS + BPP_TERMS)
+  trv11OnConfirm210: createOnConfirmValidator(),
   trv11OnStatus: createOnStatusValidator(
     trv11Validators.on_status.validate_order
   ),
