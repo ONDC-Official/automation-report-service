@@ -4,12 +4,12 @@ import { validationModule } from "./validationModule";
 import { generateCustomHTMLReport } from "../templates/generateReport";
 import { CacheService } from "./cacheService";
 import logger from "@ondc/automation-logger";
-import { ENABLED_DOMAINS, ENABLED_USECASES, typeMapping } from "../utils/constants";
+import { DOMAINS_WITH_VERSION, ENABLED_DOMAINS, ENABLED_USECASES, typeMapping } from "../utils/constants";
 import axios from "axios";
 import { generateTestsFromPayloads } from "../utils/payloadUtils";
 
 export class ReportService {
-  async  generate(
+  async generate(
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>
   ): Promise<any> {
@@ -53,9 +53,11 @@ export class ReportService {
       const flows = sortPayloadsByCreatedAt(payloads);
 
       // Check if domain is not in enabled domains - use Pramaan report
-      const domainVersionKey = `${sessionDetails.domain}:${sessionDetails.version}`;
+      console.log("sessionDetails=>>>>>>>>>>>>>>>>>", sessionDetails);
+      const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
+
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        return await this.checkPramaanReport(sessionDetails, sessionId,flowIdToPayloadIdsMap);
+        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
       }
 
       // Check usecase-level enabling
@@ -65,7 +67,7 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId,flowIdToPayloadIdsMap);
+          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
         }
       }
 
@@ -78,8 +80,7 @@ export class ReportService {
         error
       );
       throw new Error(
-        `Failed to generate report: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to generate report: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
