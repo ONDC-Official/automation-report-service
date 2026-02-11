@@ -26,7 +26,7 @@ export const MANDATORY_FLOWS: String[] = [
   "TECHNICAL_CANCELLATION_FLOW",
 ];
 
-export const GOLD_LOAN_FLOWS = ["Gold_Loan_With_Account_Aggregator","Gold_Loan_Without_Account_Aggregator","Gold_Loan_Foreclosure,Gold_Loan_Missed_EMI","Gold_Loan_Pre_Part_Payment"]
+export const GOLD_LOAN_FLOWS = ["Gold_Loan_With_Account_Aggregator", "Gold_Loan_Without_Account_Aggregator", "Gold_Loan_Foreclosure,Gold_Loan_Missed_EMI", "Gold_Loan_Pre_Part_Payment"]
 export const PAYMENT_COLLECTED_BY = ['BPP', 'BAP']
 export const PERSONAL_LOAN_FLOWS = [
   "Personal_Loan_With_AA_And_Monitoring_Consent",
@@ -106,7 +106,7 @@ export const MOTOR_INSURANCE_CONFIRM_ACTIONS = [
   "confirm3_motor"
 ]
 export const ITEM_PRICE_NOT_REQUIRED_FIS13 = [
-"on_search","on_search2","on_search3", "select", "select2","init","init2","init3"
+  "on_search", "on_search2", "on_search3", "select", "select2", "init", "init2", "init3"
 ]
 
 
@@ -127,6 +127,7 @@ export const ENABLED_DOMAINS: String[] = [
   "nic2004:60232:1.2.5",
   "ONDC:LOG10:1.2.5",
   "ONDC:LOG11:1.2.5",
+  "ONDC:FIS10:2.1.0",
   "ONDC:FIS11:2.0.0",
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
@@ -137,6 +138,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV10:2.1.0",
   // "ONDC:TRV11:2.0.0",
   "ONDC:TRV11:2.0.1",
+  "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1"
 ];
 
@@ -146,15 +148,16 @@ export const ENABLED_DOMAINS: String[] = [
 export const ENABLED_USECASES: Record<string, string[]> = {
   "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
   "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
+  "ONDC:TRV11:2.1.0": ["metro"],  // Only Metro enabled for 2.1.0
 };
 
 export const DOMAINS = {
-  NIC:"nic2004:60232",
-  LOG10:"ONDC:LOG10",
-  LOG11:"ONDC:LOG11",
-  FIS11:"ONDC:FIS11",
-  FIS12:"ONDC:FIS12",
-  TRV10:"ONDC:TRV10",
+  NIC: "nic2004:60232",
+  LOG10: "ONDC:LOG10",
+  LOG11: "ONDC:LOG11",
+  FIS11: "ONDC:FIS11",
+  FIS12: "ONDC:FIS12",
+  TRV10: "ONDC:TRV10",
   TRV11: "ONDC:TRV11",
   TRV13: "ONDC:TRV13"
 };
@@ -390,11 +393,11 @@ export const FLOW_ID_MAP: Record<
       "unreserved-entry-pass": {
         "purchase_journey_with_form": "EP_1",
         "purchase_journey_without_form": "EP_2",
-        "purchase_journey_with_form_Multiple_Tickets":"EP_3",
-        "purchase_journey_without_form_Multiple_Tickets":"EP_4",
-        "technical_cancellation_with_form":"EP_5",
+        "purchase_journey_with_form_Multiple_Tickets": "EP_3",
+        "purchase_journey_without_form_Multiple_Tickets": "EP_4",
+        "technical_cancellation_with_form": "EP_5",
         "technical_cancellation": "EP_6",
-        "User_Cancellation_FULL_With_Form":"EP_7",
+        "User_Cancellation_FULL_With_Form": "EP_7",
         "User Cancellation (Full)": "EP_8"
       },
     },
@@ -436,13 +439,13 @@ export const FLOW_ID_MAP: Record<
     },
     "1.2.0": {
       "GROCERY": {
-        "Discovery_Flow_full_catalog": "RET_9",
-        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
-        "Delivery_Flow": "RET_1",
-        "Cancellation_Flow": "RET_3",
-        "RTO_And_Part_Cancellation_Flow": "RET_4b",
-        "Return_Flow": "RET_5",
-        "Out_of_Stock_Flow": "RET_6",
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_4b",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
@@ -468,13 +471,13 @@ export const FLOW_ID_MAP: Record<
     },
     "1.2.0": {
       "F&B": {
-        "Discovery_Flow_full_catalog": "RET_9",
-        "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
-        "Delivery_Flow": "RET_1",
-        "Cancellation_Flow": "RET_3",
-        "RTO_And_Part_Cancellation_Flow": "RET_4b",
-        "Return_Flow": "RET_5",
-        "Out_of_Stock_Flow": "RET_6",
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_4b",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
