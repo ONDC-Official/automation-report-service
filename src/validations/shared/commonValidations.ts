@@ -21,6 +21,7 @@ export function createBaseValidationSetup(payload: Payload): {
   jsonResponse: any;
   context: any;
   message: any;
+  error: any
 } {
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
@@ -34,7 +35,7 @@ export function createBaseValidationSetup(payload: Payload): {
   const { jsonRequest, jsonResponse } = payload;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
-  const { context, message } = jsonRequest;
+  const { context, message, error } = jsonRequest;
 
   return {
     testResults,
@@ -43,6 +44,7 @@ export function createBaseValidationSetup(payload: Payload): {
     jsonResponse,
     context,
     message,
+    error
   };
 }
 
@@ -964,7 +966,7 @@ export async function validateEpodProofs(
 
 export function validateP2H2PRequirements(
   context: any,
-  message:any,
+  message: any,
   testResults: TestResult,
   action: string
 ) {
@@ -972,7 +974,7 @@ export function validateP2H2PRequirements(
   const fulfillments = message?.order?.fulfillments || []
   try {
     assert.ok(
-      fulfillments.every((fulfillment:any) => fulfillment["@ondc/org/awb_no"]),
+      fulfillments.every((fulfillment: any) => fulfillment["@ondc/org/awb_no"]),
       "AWB no is required for P2H2P shipments"
     );
     testResults.passed.push("AWB number for P2H2P validation passed");
@@ -982,9 +984,9 @@ export function validateP2H2PRequirements(
   }
 
   try {
-    const hasShippingLabel = fulfillments.some((fulfillment:any) => {
+    const hasShippingLabel = fulfillments.some((fulfillment: any) => {
       const tags = fulfillment?.tags || [];
-      return tags.some((tag:any) => tag.code === "shipping_label");
+      return tags.some((tag: any) => tag.code === "shipping_label");
     });
 
     assert.ok(hasShippingLabel, "Shipping label is required for P2H2P shipments");
