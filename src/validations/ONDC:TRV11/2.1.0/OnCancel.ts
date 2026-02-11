@@ -21,7 +21,7 @@ export default async function on_cancel(
 
     // Validate order status
     if (order?.status) {
-      validateOrderStatus(order, result, ["SOFT_CANCEL", "CANCELLED"], "on_cancel");
+      validateOrderStatus(order, result, ["SOFT_CANCEL", "CANCELLED", "CANCELLATION_INITIATED"], "on_cancel");
     }
 
     // Validate cancellation terms
@@ -67,8 +67,11 @@ export default async function on_cancel(
     // Validate payments for refund
     if (order?.payments && Array.isArray(order.payments)) {
       for (const payment of order.payments) {
-        if (payment.status === "PAID" && payment.type === "POST-FULFILLMENT") {
-          result.passed.push("on_cancel: POST-FULFILLMENT refund payment present");
+        if (payment.type && !["PRE-ORDER", "POST-FULFILLMENT", "ON-FULFILLMENT"].includes(payment.type)) {
+          result.failed.push(`on_cancel: payment type '${payment.type}' is not valid`);
+        }
+        if (payment.status && !["PAID", "NOT-PAID"].includes(payment.status)) {
+          result.failed.push(`on_cancel: payment status '${payment.status}' is not valid`);
         }
       }
     }

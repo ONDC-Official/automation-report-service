@@ -51,7 +51,7 @@ async function processOnConfirm(
 
     // Validate order status
     if (order?.status) {
-      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE"], "on_confirm");
+      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "COMPLETED"], "on_confirm");
     }
 
     // Quote validation

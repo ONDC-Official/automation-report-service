@@ -22,7 +22,7 @@ export default async function on_update(
 
     // Validate order status
     if (order?.status) {
-      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "CANCELLED"], "on_update");
+      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "COMPLETED", "CANCELLED", "SOFT_UPDATE", "UPDATED"], "on_update");
     }
 
     // Validate quote (fare difference scenarios)
@@ -50,16 +50,14 @@ export default async function on_update(
       validateTermsTags(order.tags, result, "on_update");
     }
 
-    // Validate payments (fare difference with POST-FULFILLMENT)
+    // Validate payments
     if (order?.payments && Array.isArray(order.payments)) {
       for (const payment of order.payments) {
-        if (payment.type === "POST-FULFILLMENT") {
-          result.passed.push("on_update: POST-FULFILLMENT payment present (fare difference)");
-          if (payment.status === "PAID") {
-            result.passed.push("on_update: POST-FULFILLMENT payment status is PAID");
-          } else if (payment.status === "NOT-PAID") {
-            result.passed.push("on_update: POST-FULFILLMENT payment status is NOT-PAID");
-          }
+        if (payment.type && !["PRE-ORDER", "POST-FULFILLMENT", "ON-FULFILLMENT"].includes(payment.type)) {
+          result.failed.push(`on_update: payment type '${payment.type}' is not valid`);
+        }
+        if (payment.status && !["PAID", "NOT-PAID"].includes(payment.status)) {
+          result.failed.push(`on_update: payment status '${payment.status}' is not valid`);
         }
       }
     }
