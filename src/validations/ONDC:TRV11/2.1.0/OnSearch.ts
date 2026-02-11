@@ -37,10 +37,16 @@ export default async function on_search(
           }
         }
 
-        // Validate items have price
+        // Validate items have price (skip for PASS-linked items)
         if (provider.items && Array.isArray(provider.items)) {
+          const passFulfillmentIds = new Set(
+            (provider.fulfillments || [])
+              .filter((f: any) => f.type === "PASS" || f.type === "ONLINE")
+              .map((f: any) => f.id)
+          );
           for (const item of provider.items) {
-            if (!item?.price?.value && !item?.price?.minimum_value) {
+            const isPassItem = item?.fulfillment_ids?.some((id: string) => passFulfillmentIds.has(id));
+            if (!item?.price?.value && !item?.price?.minimum_value && !isPassItem) {
               result.failed.push(
                 `on_search: item ${item?.id} missing price`
               );
