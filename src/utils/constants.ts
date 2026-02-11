@@ -433,10 +433,10 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Cancellation_Flow": "RET_3",
-        "RTO_And_Part_Cancellation_Flow": "RET_4b", //pramman
+        "RTO_And_Part_Cancellation_Flow": "RET_MRGD_1", 
         "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Return_Flow": "RET_5", 
-        "Cash_On_Delivery_Flow": "RET_1b", //op
+        "Return_Flow": "RET_MRGD_2", 
+        "Cash_On_Delivery_Flow": "RET_1b", 
         "Self_Pickup_Flow":"RET_ENH_002", //need tp do //op
         "Slotted_Delivery_Flow":"RET_ENH_003",  //need tp do //op
         "Buyer_Delivery_Flow":"RET_ENH_004", //need tp do //op
@@ -451,8 +451,8 @@ export const FLOW_ID_MAP: Record<
         "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
         "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
         "Buyer_Side_Order_Cancellation": "RET_3",
-        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_4b",
-        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_5",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_2",
         "Out_of_Stock(Error_code)": "RET_6",
       },
     },
@@ -463,8 +463,8 @@ export const FLOW_ID_MAP: Record<
         "FULL_CATALOG": "RET_9",
         "INCREMENTAL_CATALOG": "RET_9_INC_PUSH",
         "ORDER_FLOW": "RET_1",
-        "RTO_PLUS_PART_CANCELLATION": "RET_4b", //pramman
-        "RETURN_FLOW": "RET_5", //pramman
+        "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1", 
+        "RETURN_FLOW": "RET_MRGD_2", 
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
         "OUT_OF_STOCK(ERROR-CODE)":"RET_6",
         "BUYER_CANCEL":"RET_3",
@@ -483,8 +483,8 @@ export const FLOW_ID_MAP: Record<
         "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
         "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
         "Buyer_Side_Order_Cancellation": "RET_3",
-        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_4b",
-        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_5",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_2",
         "Out_of_Stock(Error_code)": "RET_6",
       },
     },
@@ -497,7 +497,7 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
         "Seller_Cred_Flow":"RET_ENH_017",
-        "Return_Flow": "RET_5",
+        "Return_Flow": "RET_MRGD_2",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Replacement_Flow":"RET_ENH_00B",
         "Cancel_Return_Request_Flow":"RET_ENH_00D",
