@@ -20,8 +20,8 @@ export default async function on_search(
         // Validate fulfillments
         if (provider.fulfillments && Array.isArray(provider.fulfillments)) {
           for (const f of provider.fulfillments) {
-            // Validate TRIP type fulfillments have stops
-            if (f.type === "TRIP" && f.stops) {
+            // Validate TRIP and ROUTE type fulfillments have stops
+            if ((f.type === "TRIP" || f.type === "ROUTE") && f.stops) {
               validateStops(f.stops, result, `on_search.provider[${provider.id}].fulfillment[${f.id}]`);
             }
 
@@ -37,8 +37,10 @@ export default async function on_search(
           }
         }
 
-        // Validate items have price (skip for PASS-linked items)
+        // Validate items have price (skip for PASS-linked items and ROUTE-only catalogs)
         if (provider.items && Array.isArray(provider.items)) {
+          const hasRouteFulfillmentOnly = (provider.fulfillments || []).length > 0 &&
+            (provider.fulfillments || []).every((f: any) => f.type === "ROUTE");
           const passFulfillmentIds = new Set(
             (provider.fulfillments || [])
               .filter((f: any) => f.type === "PASS" || f.type === "ONLINE")
@@ -46,7 +48,7 @@ export default async function on_search(
           );
           for (const item of provider.items) {
             const isPassItem = item?.fulfillment_ids?.some((id: string) => passFulfillmentIds.has(id));
-            if (!item?.price?.value && !item?.price?.minimum_value && !isPassItem) {
+            if (!item?.price?.value && !item?.price?.minimum_value && !isPassItem && !hasRouteFulfillmentOnly) {
               result.failed.push(
                 `on_search: item ${item?.id} missing price`
               );

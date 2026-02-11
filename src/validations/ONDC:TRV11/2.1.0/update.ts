@@ -1,7 +1,7 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
 import { validateTrv11Update } from "../../shared/trv11Validations";
-import { validateStops } from "./commonChecks";
+import { validateStops, validateOrderStatus } from "./commonChecks";
 
 export default async function update(
   element: Payload,
@@ -28,8 +28,13 @@ export default async function update(
     testResults.passed.push(`update: update_target '${message.update_target}' specified`);
   }
 
-  // 2.1.0: Validate updated fulfillment stops (end stop update)
+  // 2.1.0: Validate order status for update flows
   const order = message?.order;
+  if (order?.status) {
+    validateOrderStatus(order, testResults, ["SOFT_UPDATE", "CONFIRM_UPDATE"], "update");
+  }
+
+  // 2.1.0: Validate updated fulfillment stops (end stop update)
   if (order?.fulfillments && Array.isArray(order.fulfillments)) {
     for (const f of order.fulfillments) {
       if (f.stops) {
