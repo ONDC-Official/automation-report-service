@@ -129,7 +129,7 @@ export function validateTrv11Intent(
 }
 
 // Additional Valid Values for OnSearch
-const VALID_FULFILLMENT_TYPES = ["ROUTE", "TRIP"];
+const VALID_FULFILLMENT_TYPES = ["ROUTE", "TRIP", "ONLINE", "PASS"];
 const VALID_ON_SEARCH_STOP_TYPES = ["START", "END", "INTERMEDIATE_STOP", "TRANSIT_STOP"];
 
 export function validateTrv11OnSearch(
@@ -166,52 +166,61 @@ export function validateTrv11OnSearch(
           testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex}: type should be one of ${VALID_FULFILLMENT_TYPES.join(", ")}, found: ${fulfillment.type}`);
         }
 
-        // Validate Stops
-        const stops = fulfillment.stops;
-        if (!stops || !Array.isArray(stops) || stops.length === 0) {
-            testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex}: stops array is missing or empty`);
-        } else {
-            // Check Stops Logic
-            stops.forEach((stop: any, sIndex: number) => {
-                // Type check
-                if (!stop.type) {
-                    testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: type is missing`);
-                } else if (!VALID_ON_SEARCH_STOP_TYPES.includes(stop.type)) {
-                    testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: type is invalid. Found: ${stop.type}`);
-                }
+        // Validate Stops — strict validation only for ROUTE and TRIP fulfillments
+        // PASS and ONLINE fulfillments have different/optional stop structures
+        if (fulfillment.type === "ROUTE" || fulfillment.type === "TRIP") {
+          const stops = fulfillment.stops;
+          if (!stops || !Array.isArray(stops) || stops.length === 0) {
+              testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex}: stops array is missing or empty`);
+          } else {
+              // Check Stops Logic
+              stops.forEach((stop: any, sIndex: number) => {
+                  // Type check
+                  if (!stop.type) {
+                      testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: type is missing`);
+                  } else if (!VALID_ON_SEARCH_STOP_TYPES.includes(stop.type)) {
+                      testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: type is invalid. Found: ${stop.type}`);
+                  }
 
-                // Location check (GPS + Descriptor)
-                if (!stop.location) {
-                    testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location is missing`);
-                } else {
-                    const gps = stop.location.gps;
-                    const code = stop.location.descriptor?.code;
-                    
-                    if (!gps && !code) {
-                        testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location must have gps or descriptor.code`);
-                    }
-                    if (gps && !GPS_REGEX.test(gps)) {
-                        testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: gps format invalid`);
-                    }
-                }
-            });
-            
-            const hasStart = stops.some((s: any) => s.type === "START");
-            const hasEnd = stops.some((s: any) => s.type === "END");
-             if (!hasStart) testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex}: Missing START stop`);
-             if (!hasEnd) testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex}: Missing END stop`);
+                  // Location check (GPS + Descriptor)
+                  if (!stop.location) {
+                      testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location is missing`);
+                  } else {
+                      const gps = stop.location.gps;
+                      const code = stop.location.descriptor?.code;
+                      
+                      if (!gps && !code) {
+                          testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location must have gps or descriptor.code`);
+                      }
+                      if (gps && !GPS_REGEX.test(gps)) {
+                          testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: gps format invalid`);
+                      }
+                  }
+              });
+              
+              const hasStart = stops.some((s: any) => s.type === "START");
+              const hasEnd = stops.some((s: any) => s.type === "END");
+               if (!hasStart) testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex}: Missing START stop`);
+               if (!hasEnd) testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex}: Missing END stop`);
+          }
         }
       });
     }
 
     // Validate Items (Optional for Route/Catalog flow)
+    // Item price is required for TRIP fulfillments but optional for PASS/ONLINE
     const items = provider.items;
+    const hasTripFulfillment = fulfillments?.some((f: any) => f.type === "TRIP");
+    const passFulfillmentIds = new Set(
+      (fulfillments || []).filter((f: any) => f.type === "PASS" || f.type === "ONLINE").map((f: any) => f.id)
+    );
     if (items && Array.isArray(items) && items.length > 0) {
         items.forEach((item: any, iIndex: number) => {
             if (!item.id) testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: id is missing`);
-            if (!item.price) {
+            const isPassOrOnlineItem = item.fulfillment_ids?.some((id: string) => passFulfillmentIds.has(id));
+            if (!item.price && !isPassOrOnlineItem) {
                 testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: price is missing`);
-            } else {
+            } else if (item.price) {
                 if (item.price.currency !== "INR") testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: price.currency should be INR`);
                 if (!item.price.value) testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: price.value is missing`);
             }
@@ -227,7 +236,7 @@ export function validateTrv11OnSearch(
 }
 
 // Valid fulfillment types for OnSelect
-const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET"];
+const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET", "ONLINE"];
 
 /**
  * Validates TRV11 Select request
@@ -376,7 +385,7 @@ export function validateTrv11OnSelect(
 
 // Valid payment statuses and types for TRV11
 const VALID_PAYMENT_STATUSES = ["PAID", "NOT-PAID"];
-const VALID_PAYMENT_TYPES = ["PRE-ORDER", "ON-FULFILLMENT", "POST-FULFILLMENT"];
+const VALID_PAYMENT_TYPES = ["PRE-ORDER", "ON-ORDER", "ON-FULFILLMENT", "POST-FULFILLMENT"];
 
 /**
  * Validates TRV11 Init request
