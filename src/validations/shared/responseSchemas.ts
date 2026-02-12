@@ -39,7 +39,7 @@ export const ackOnlySchema = Joi.object({
     ack: Joi.object({
       status: Joi.string().required(),
     }).required(),
-  }).required(),
+  }).optional(),
   error: Joi.when("message.ack.status", {
     is: "NACK",
     then: Joi.object({
