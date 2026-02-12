@@ -187,6 +187,26 @@ function validateActionSequence(
       // Check if we have enough payloads
       if (payloadIndex >= validationPayloads.length) {
         validSequence = false;
+        // Check for Early Success Termination
+        // If the flow ended, but the expected action is a user-initiated request (like 'update', 'status', 'track')
+        // And the last action was a valid response (like 'on_update', 'on_status', 'on_track')
+        // Then we can assume the user chose to stop the flow here.
+        if (i > 0) {
+          const lastAction = requiredSequence[i - 1].toLowerCase();
+          const currentExpectedAction = expectedAction.toLowerCase();
+          
+          if (
+            (currentExpectedAction === "update" || 
+             currentExpectedAction === "status" || 
+             currentExpectedAction === "track" ||
+             currentExpectedAction === "cancel") &&
+            (lastAction.startsWith("on_"))
+          ) {
+            logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
+            break; // Exit loop, considering validation successful so far
+          }
+        }
+
         errors.push(
           `Error: Expected '${expectedAction}' but no more payloads found. Sequence position: ${i + 1}`
         );
