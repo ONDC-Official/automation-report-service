@@ -195,6 +195,47 @@ function validateActionSequence(
 
       const actualAction = validationPayloads[payloadIndex]?.action?.toLowerCase();
 
+      // Skip duplicate on_ actions if they don't match expected (e.g. multiple on_search calls)
+      if (payloadIndex > 0) {
+        const prevPayloadAction = validationPayloads[
+          payloadIndex - 1
+        ]?.action?.toLowerCase();
+        if (
+          actualAction === prevPayloadAction &&
+          actualAction?.startsWith("on_") &&
+          actualAction !== expectedAction
+        ) {
+          logger.info(
+            `Skipping duplicate ${actualAction} at payload index ${payloadIndex} which is not expected here`
+          );
+          payloadIndex++;
+          i--; // Retry the current expectedAction against the next payload
+          continue;
+        }
+      }
+
+      // Skip unsolicited on_status if not expected
+      // This handles async status updates during flows (e.g. cancellation)
+      if (actualAction === "on_status" && expectedAction !== "on_status") {
+        logger.info(
+          `Skipping unsolicited ${actualAction} at payload index ${payloadIndex} which is not expected here`
+        );
+        payloadIndex++;
+        i--; // Retry the current expectedAction against the next payload
+        continue;
+      }
+
+      // Skip unsolicited on_update if not expected
+      // This handles async updates in delayed cancellation flows
+      if (actualAction === "on_update" && expectedAction !== "on_update") {
+        logger.info(
+          `Skipping unsolicited ${actualAction} at payload index ${payloadIndex} which is not expected here`
+        );
+        payloadIndex++;
+        i--; // Retry the current expectedAction against the next payload
+        continue;
+      }
+
       if (actualAction !== expectedAction) {
         // For better error message, check if this is a select/init ambiguity
         let displayExpectedAction = expectedAction;
