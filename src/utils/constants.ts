@@ -584,7 +584,8 @@ export const FLOW_ID_MAP: Record<
       "transit-insurance": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_20",
         "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_20",
-        "Purchase_Journey_Transit_Insurance": "INS_20"
+        "Purchase_Journey_Transit_Insurance": "INS_20",
+        "CD_Balance_Error_Transit_Insurance": "INS_23"
       },
       "accidental-insurance": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
@@ -594,7 +595,8 @@ export const FLOW_ID_MAP: Record<
       "hospicash-insurance": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_21",
         "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_21",
-        "Purchase_Journey_Hospicash_Insurance": "INS_21"
+        "Purchase_Journey_Hospicash_Insurance": "INS_21",
+        "CD_Balance_Error_Hospicash_Insurance": "INS_23"
       }
     }
   }
