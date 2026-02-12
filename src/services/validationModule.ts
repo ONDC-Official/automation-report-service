@@ -236,6 +236,31 @@ function validateActionSequence(
         continue;
       }
 
+      // Lookahead: Check if actual action matches a future expected action (skipped steps)
+      // This handles cases where optional steps are skipped in the flow (e.g. search -> on_search)
+      if (actualAction !== expectedAction) {
+        let foundFutureMatch = false;
+        let futureIndex = -1;
+        // Look ahead up to 5 steps
+        for (let k = i + 1; k < Math.min(i + 6, requiredSequence.length); k++) {
+          const futureAction = requiredSequence[k]?.toLowerCase();
+          // Skip checking against HTML_FORM/DYNAMIC_FORM as jump targets
+          if (futureAction === "html_form" || futureAction === "dynamic_form") continue;
+          
+          if (futureAction === actualAction) {
+            foundFutureMatch = true;
+            futureIndex = k;
+            break;
+          }
+        }
+
+        if (foundFutureMatch) {
+           logger.info(`Skipping expected steps from index ${i} to ${futureIndex-1} because actual action '${actualAction}' matches sequence at index ${futureIndex}`);
+           i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
+           continue; // Continue loop to match current payload against new expected action
+        }
+      }
+
       if (actualAction !== expectedAction) {
         // For better error message, check if this is a select/init ambiguity
         let displayExpectedAction = expectedAction;
