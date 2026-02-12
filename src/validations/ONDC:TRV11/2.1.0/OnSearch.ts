@@ -37,7 +37,7 @@ export default async function on_search(
           }
         }
 
-        // Validate items have price (skip for PASS-linked items and ROUTE-only catalogs)
+        // Validate items have price (skip for PASS-linked items and MASTER TRIP items with > 2 stops)
         if (provider.items && Array.isArray(provider.items)) {
           const hasRouteFulfillmentOnly = (provider.fulfillments || []).length > 0 &&
             (provider.fulfillments || []).every((f: any) => f.type === "ROUTE");
@@ -46,9 +46,40 @@ export default async function on_search(
               .filter((f: any) => f.type === "PASS" || f.type === "ONLINE")
               .map((f: any) => f.id)
           );
+
+          // Identify Master Trip fulfillments (TRIP type with more than 2 stops - implies network definition)
+          const masterTripFulfillmentIds = new Set(
+            (provider.fulfillments || [])
+              .filter((f: any) => f.type === "TRIP" && (f.stops || []).length > 2)
+              .map((f: any) => f.id)
+          );
+
+          // If this provider has Master Trip fulfillments, filter out shared validator errors for its items
+          if (masterTripFulfillmentIds.size > 0) {
+            provider.items.forEach((item: any, iIndex: number) => {
+              const isMasterItem = item?.fulfillment_ids?.some((id: string) => masterTripFulfillmentIds.has(id));
+              if (isMasterItem) {
+                // Filter shared validator error: "Provider ${pIndex} Item ${iIndex}: price is missing"
+                // We need the provider index (pIndex). Since `provider` is from `catalog.providers` loop...
+                // But the loop is `for (const provider of catalog.providers)`. We don't have index directly.
+                // Re-find index.
+                const pIndex = catalog.providers.indexOf(provider);
+                if (pIndex !== -1) {
+                   const sharedError = `Provider ${pIndex} Item ${iIndex}: price is missing`;
+                   const errIdx = result.failed.indexOf(sharedError);
+                   if (errIdx !== -1) {
+                     result.failed.splice(errIdx, 1);
+                   }
+                }
+              }
+            });
+          }
+
           for (const item of provider.items) {
             const isPassItem = item?.fulfillment_ids?.some((id: string) => passFulfillmentIds.has(id));
-            if (!item?.price?.value && !item?.price?.minimum_value && !isPassItem && !hasRouteFulfillmentOnly) {
+            const isMasterItem = item?.fulfillment_ids?.some((id: string) => masterTripFulfillmentIds.has(id));
+            
+            if (!item?.price?.value && !item?.price?.minimum_value && !isPassItem && !hasRouteFulfillmentOnly && !isMasterItem) {
               result.failed.push(
                 `on_search: item ${item?.id} missing price`
               );
