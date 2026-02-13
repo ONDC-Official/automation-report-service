@@ -4,6 +4,7 @@ save-data:
   provider: "$.message.order.provider"
   items: "$.message.order.items[*]"
   fulfillments: "$.message.order.fulfillments[*]"
+  payments: "$.message.order.payments[*]"
   quote: "$.message.order.quote"
   quote_breakup: "$.message.order.quote.breakup[*]"
   form_ids: "$.message.order.items[*].xinput.form.id"
