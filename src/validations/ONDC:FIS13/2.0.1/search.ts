@@ -18,21 +18,27 @@ export default async function search(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13Search(element, sessionID, flowId, actionId);
+  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  // Skip DomainValidators (required + enum) for Health Insurance flows
+  const result: TestResult = isHealthInsurance
+    ? { response: {}, passed: [], failed: [] }
+    : await DomainValidators.fis13Search(element, sessionID, flowId, actionId);
 
   const context = element?.jsonRequest?.context;
   const message = element?.jsonRequest?.message;
   const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
 
-  // Health insurance context validation
-  validateInsuranceContext(context, result, flowId);
+  // Skip required/enum validations for Health Insurance
+  if (!isHealthInsurance) {
+    validateInsuranceContext(context, result, flowId);
 
-  // Health insurance payment tags (BUYER_FINDER_FEES, SETTLEMENT_TERMS)
-  if (message) {
-    validateInsurancePaymentTags(message, result, flowId, "search");
+    if (message) {
+      validateInsurancePaymentTags(message, result, flowId, "search");
+    }
   }
 
-  // Validate form ID consistency if xinput is present
+  // Validate form ID consistency if xinput is present (keep for all flows)
   try {
     const txnId = context?.transaction_id as string | undefined;
     if (txnId && message && isInsuranceFlow) {

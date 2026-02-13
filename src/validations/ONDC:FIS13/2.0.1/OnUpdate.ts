@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
 import {
   validateInsuranceContext,
   validateInsuranceOrderStatus,
@@ -20,23 +21,28 @@ export default async function on_update(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13OnUpdate(element, sessionID, flowId, actionId);
+  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  // Skip DomainValidators (required + enum) for Health Insurance flows
+  const result: TestResult = isHealthInsurance
+    ? { response: {}, passed: [], failed: [] }
+    : await DomainValidators.fis13OnUpdate(element, sessionID, flowId, actionId);
 
   try {
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Health insurance context validation
-    validateInsuranceContext(context, result, flowId);
+    // Skip required/enum validations for Health Insurance
+    if (!isHealthInsurance) {
+      validateInsuranceContext(context, result, flowId);
 
-    // Health insurance order status enum
-    if (message) {
-      validateInsuranceOrderStatus(message, result, flowId);
-    }
+      if (message) {
+        validateInsuranceOrderStatus(message, result, flowId);
+      }
 
-    // Health insurance document types
-    if (message) {
-      validateInsuranceDocuments(message, result, flowId);
+      if (message) {
+        validateInsuranceDocuments(message, result, flowId);
+      }
     }
 
     // ── L2: Timestamps ──
