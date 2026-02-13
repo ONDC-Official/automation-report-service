@@ -28,14 +28,11 @@ export default async function cancel(
   const context = jsonRequest?.context;
   const message = jsonRequest?.message;
 
-  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  // Health insurance context validation
+  validateInsuranceContext(context, testResults, flowId);
 
-  // Skip required/enum validations for Health Insurance
-  if (!isHealthInsurance) {
-    validateInsuranceContext(context, testResults, flowId);
-
-    validateCancel(message, testResults, actionId, flowId);
-  }
+  // Validate cancel message based on action_id
+  validateCancel(message, testResults, actionId, flowId);
 
   // ── L2: Context integrity vs on_confirm ──
   try {

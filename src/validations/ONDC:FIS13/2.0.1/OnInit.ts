@@ -28,35 +28,30 @@ export default async function on_init(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
-
-  // Skip DomainValidators (required + enum) for Health Insurance flows
-  const result: TestResult = isHealthInsurance
-    ? { response: {}, passed: [], failed: [] }
-    : await DomainValidators.fis13OnInit(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis13OnInit(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Skip required/enum validations for Health Insurance
-    if (!isHealthInsurance) {
-      validateInsuranceContext(context, result, flowId);
+    // Health insurance context validation
+    validateInsuranceContext(context, result, flowId);
 
-      if (message) {
-        validateInsurancePaymentParams(message, result, flowId, actionId);
-      }
-
-      if (message) {
-        validateInsuranceFulfillments(message, result, flowId, actionId);
-      }
-
-      if (message) {
-        validateInsuranceOnInitExtras(message, result, flowId);
-      }
+    // Health insurance payment params (bank_account_number, bank_code, amount, currency, URL)
+    if (message) {
+      validateInsurancePaymentParams(message, result, flowId, actionId);
     }
 
-    // Quote math validation (keep — financial, not required/enum)
+    // Health insurance fulfillments validation (type, state enum)
+    if (message) {
+      validateInsuranceFulfillments(message, result, flowId, actionId);
+    }
+
+    // Health insurance on_init extras (cancellation_terms, timestamps)
+    if (message) {
+      validateInsuranceOnInitExtras(message, result, flowId);
+    }
+
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,

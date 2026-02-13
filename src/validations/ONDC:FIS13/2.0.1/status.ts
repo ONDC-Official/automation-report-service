@@ -26,16 +26,13 @@ export default async function status(
   const context = jsonRequest?.context;
   const message = jsonRequest?.message;
 
-  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
-
-  // Skip required/enum validations for Health Insurance
-  if (!isHealthInsurance) {
-    if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-      validateInsuranceContext(context, testResults, flowId);
-    }
-
-    validateStatusOrderId(message, testResults);
+  // Validate context for health insurance
+  if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
+    validateInsuranceContext(context, testResults, flowId);
   }
+
+  // Validate status message — spec requires order_id (not ref_id)
+  validateStatusOrderId(message, testResults);
 
   // ── L2: Context integrity vs on_confirm ──
   try {
