@@ -203,6 +203,7 @@ function validateActionSequence(
             (lastAction.startsWith("on_"))
           ) {
             logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
+            validSequence = true; // Restore validSequence to true for valid early termination
             break; // Exit loop, considering validation successful so far
           }
         }

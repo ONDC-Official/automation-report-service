@@ -610,7 +610,7 @@ export function validateTrv11OnInit(
 }
 
 // Valid order statuses for TRV11
-const VALID_ORDER_STATUSES = ["ACTIVE", "COMPLETE", "CANCELLED"];
+const VALID_ORDER_STATUSES = ["ACTIVE", "COMPLETE", "COMPLETED", "CANCELLED"];
 
 /**
  * Validates TRV11 Confirm request
