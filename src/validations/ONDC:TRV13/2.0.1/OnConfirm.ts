@@ -86,6 +86,7 @@ export default async function on_confirm(
     if (payments && Array.isArray(payments) && payments.length > 0) {
       const validStatuses = ["PAID", "NOT-PAID"];
       const paymentStatuses: string[] = [];
+      let totalPaymentAmount = 0;
       
       for (const payment of payments) {
         if (payment?.status) {
@@ -104,6 +105,46 @@ export default async function on_confirm(
         } else {
           result.failed.push(`Payment status is missing for payment type: ${payment.type || 'unknown'}`);
         }
+        
+        // Validate payment.params
+        const params = payment?.params;
+        if (!params) {
+          result.failed.push(`Payment params missing for payment type: ${payment.type || 'unknown'}`);
+          continue;
+        }
+        
+        // Validate params.amount
+        if (!params.amount) {
+          result.failed.push(`Payment params.amount missing for ${payment.type || 'unknown'} payment`);
+        } else {
+          const amount = parseFloat(params.amount);
+          if (isNaN(amount) || amount <= 0) {
+            result.failed.push(`Invalid payment amount: ${params.amount}. Must be a positive number`);
+          } else {
+            result.passed.push(`Payment ${payment.type} amount: ${params.currency || ''} ${params.amount}`);
+            totalPaymentAmount += amount;
+          }
+        }
+        
+        // Validate params.currency
+        if (!params.currency) {
+          result.failed.push(`Payment params.currency missing for ${payment.type || 'unknown'} payment`);
+        } else if (quote?.price?.currency && params.currency !== quote.price.currency) {
+          result.failed.push(
+            `Payment currency mismatch: expected ${quote.price.currency}, found ${params.currency}`
+          );
+        } else {
+          result.passed.push(`Payment currency: ${params.currency}`);
+        }
+        
+        // Validate transaction_id for PAID payments
+        if (payment.status === "PAID") {
+          if (!params.transaction_id) {
+            result.failed.push(`Transaction ID missing for PAID ${payment.type || 'unknown'} payment`);
+          } else {
+            result.passed.push(`Transaction ID present for PAID payment: ${params.transaction_id}`);
+          }
+        }
       }
       
       // Check for conflicting statuses (unless split payment)
@@ -119,6 +160,30 @@ export default async function on_confirm(
         result.passed.push(
           `Split payment detected: ${paymentStatuses.filter(s => s === "PAID").length} PAID, ${paymentStatuses.filter(s => s === "NOT-PAID").length} NOT-PAID`
         );
+      }
+      
+      // Validate total payment amount matches quote
+      if (quote?.price?.value) {
+        const quoteTotal = parseFloat(quote.price.value);
+        if (!isNaN(quoteTotal)) {
+          const paidPayments = payments.filter(p => p.status === "PAID");
+          
+          if (paidPayments.length === 1 && payments.length === 1) {
+            // Single full payment
+            if (Math.abs(totalPaymentAmount - quoteTotal) > 0.01) {
+              result.failed.push(
+                `Payment amount mismatch: quote total ${quoteTotal}, payment amount ${totalPaymentAmount.toFixed(2)}`
+              );
+            } else {
+              result.passed.push(`Payment amount matches quote total: ${quoteTotal}`);
+            }
+          } else if (payments.length > 1) {
+            // Split/partial payment - log audit trail
+            result.passed.push(
+              `Payment audit trail: Quote ${quoteTotal}, Total payment amount ${totalPaymentAmount.toFixed(2)} (${payments.length} payment(s))`
+            );
+          }
+        }
       }
     } else {
       result.failed.push("Payment information is missing in on_confirm");
