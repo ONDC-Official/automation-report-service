@@ -30,39 +30,35 @@ export default async function on_confirm(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
-
-  // Skip DomainValidators (required + enum) for Health Insurance flows
-  const result: TestResult = isHealthInsurance
-    ? { response: {}, passed: [], failed: [] }
-    : await DomainValidators.fis13OnConfirm(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis13OnConfirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Skip required/enum validations for Health Insurance
-    if (!isHealthInsurance) {
-      validateInsuranceContext(context, result, flowId);
+    // Health insurance context validation
+    validateInsuranceContext(context, result, flowId);
 
-      if (message) {
-        validateInsuranceOrderStatus(message, result, flowId);
-      }
-
-      if (message) {
-        validateInsuranceOrderId(message, result, flowId);
-      }
-
-      if (message) {
-        validateInsuranceDocuments(message, result, flowId);
-      }
-
-      if (message) {
-        validateInsurancePaymentParams(message, result, flowId, actionId);
-      }
+    // Health insurance order status (ACTIVE)
+    if (message) {
+      validateInsuranceOrderStatus(message, result, flowId);
     }
 
-    // Quote math validation (keep — financial, not required/enum)
+    // Health insurance order ID (Policy ID)
+    if (message) {
+      validateInsuranceOrderId(message, result, flowId);
+    }
+
+    // Health insurance document types (POLICY_DOC)
+    if (message) {
+      validateInsuranceDocuments(message, result, flowId);
+    }
+
+    // Health insurance payment params (transaction_id)
+    if (message) {
+      validateInsurancePaymentParams(message, result, flowId, actionId);
+    }
+
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,

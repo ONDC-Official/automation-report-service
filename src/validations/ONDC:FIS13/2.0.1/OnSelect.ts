@@ -26,31 +26,25 @@ export default async function on_select(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
-
-  // Skip DomainValidators (required + enum) for Health Insurance flows
-  const result: TestResult = isHealthInsurance
-    ? { response: {}, passed: [], failed: [] }
-    : await DomainValidators.fis13OnSelect(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis13OnSelect(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Skip required/enum validations for Health Insurance
-    if (!isHealthInsurance) {
-      validateInsuranceContext(context, result, flowId);
+    // Health insurance context validation
+    validateInsuranceContext(context, result, flowId);
 
-      if (message) {
-        validateBreakupTitleEnum(message, result, flowId);
-      }
-
-      if (message) {
-        validateInsuranceOnSelectXinput(message, result, flowId);
-      }
+    // Health insurance breakup title enum
+    if (message) {
+      validateBreakupTitleEnum(message, result, flowId);
     }
 
-    // Quote math validation (keep — financial, not required/enum)
+    // Health insurance on_select xinput (form.id, required, url, mime_type)
+    if (message) {
+      validateInsuranceOnSelectXinput(message, result, flowId);
+    }
+
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
