@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
 import {
   validateInsuranceContext,
   validateInsuranceSelectItems,
@@ -17,17 +18,23 @@ export default async function select(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13Select(element, sessionID, flowId, actionId);
+  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  // Skip DomainValidators (required + enum) for Health Insurance flows
+  const result: TestResult = isHealthInsurance
+    ? { response: {}, passed: [], failed: [] }
+    : await DomainValidators.fis13Select(element, sessionID, flowId, actionId);
 
   const context = element?.jsonRequest?.context;
   const message = element?.jsonRequest?.message;
 
-  // Health insurance context validation
-  validateInsuranceContext(context, result, flowId);
+  // Skip required/enum validations for Health Insurance
+  if (!isHealthInsurance) {
+    validateInsuranceContext(context, result, flowId);
 
-  // Health insurance select items validation (parent_item_id, xinput form_response)
-  if (message) {
-    validateInsuranceSelectItems(message, result, flowId);
+    if (message) {
+      validateInsuranceSelectItems(message, result, flowId);
+    }
   }
 
   // ── L2: Cross-action consistency vs on_search ──

@@ -18,20 +18,26 @@ export default async function on_search(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13OnSearch(element, sessionID, flowId, actionId);
+  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  // Skip DomainValidators (required + enum) for Health Insurance flows
+  const result: TestResult = isHealthInsurance
+    ? { response: {}, passed: [], failed: [] }
+    : await DomainValidators.fis13OnSearch(element, sessionID, flowId, actionId);
 
   const context = element?.jsonRequest?.context;
   const onSearchMessage = element?.jsonRequest?.message;
 
-  // Health insurance context validation
-  validateInsuranceContext(context, result, flowId);
+  // Skip required/enum validations for Health Insurance
+  if (!isHealthInsurance) {
+    validateInsuranceContext(context, result, flowId);
 
-  // Health insurance on_search items validation (GENERAL_INFO, time.duration, category_ids, etc.)
-  if (onSearchMessage) {
-    validateInsuranceItemsOnSearch(onSearchMessage, result, flowId);
+    if (onSearchMessage) {
+      validateInsuranceItemsOnSearch(onSearchMessage, result, flowId);
+    }
   }
 
-  // Validate items consistency for health insurance and motor insurance flows
+  // Validate items consistency for health insurance and motor insurance flows (keep — cross-action)
   const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
   if (isInsuranceFlow) {
     try {

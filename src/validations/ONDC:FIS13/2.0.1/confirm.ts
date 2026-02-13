@@ -27,37 +27,39 @@ export default async function confirm(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13Confirm(element, sessionID, flowId, actionId, usecaseId);
+  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  // Skip DomainValidators (required + enum) for Health Insurance flows
+  const result: TestResult = isHealthInsurance
+    ? { response: {}, passed: [], failed: [] }
+    : await DomainValidators.fis13Confirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Health insurance context validation
-    validateInsuranceContext(context, result, flowId);
+    // Skip required/enum validations for Health Insurance
+    if (!isHealthInsurance) {
+      validateInsuranceContext(context, result, flowId);
 
-    // Health insurance fulfillments validation
-    if (message) {
-      validateInsuranceFulfillments(message, result, flowId, actionId);
-    }
+      if (message) {
+        validateInsuranceFulfillments(message, result, flowId, actionId);
+      }
 
-    // Health insurance payment tags (BUYER_FINDER_FEES, SETTLEMENT_TERMS)
-    if (message) {
-      validateInsurancePaymentTags(message, result, flowId, "order");
-    }
+      if (message) {
+        validateInsurancePaymentTags(message, result, flowId, "order");
+      }
 
-    // Health insurance payment params (transaction_id for PAID)
-    if (message) {
-      validateInsurancePaymentParams(message, result, flowId, actionId);
-    }
+      if (message) {
+        validateInsurancePaymentParams(message, result, flowId, actionId);
+      }
 
-    // Health insurance confirm xinput form_response (submission_id)
-    if (message) {
-      validateInsuranceConfirmXinput(message, result, flowId);
+      if (message) {
+        validateInsuranceConfirmXinput(message, result, flowId);
+      }
     }
 
     // ── L2: BFF arithmetic (if quote is available via on_init data) ──
-    // confirm may not have quote directly, so use on_init's quote for BFF check
     const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
       const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");

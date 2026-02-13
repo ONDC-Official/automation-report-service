@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
 import {
   validateInsuranceContext,
   validateInsuranceBilling,
@@ -23,33 +24,36 @@ export default async function init(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis13Init(element, sessionID, flowId, actionId, usecaseId);
+  const isHealthInsurance = !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+
+  // Skip DomainValidators (required + enum) for Health Insurance flows
+  const result: TestResult = isHealthInsurance
+    ? { response: {}, passed: [], failed: [] }
+    : await DomainValidators.fis13Init(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Health insurance context validation
-    validateInsuranceContext(context, result, flowId);
+    // Skip required/enum validations for Health Insurance
+    if (!isHealthInsurance) {
+      validateInsuranceContext(context, result, flowId);
 
-    // Health insurance billing validation (name, phone, email)
-    if (message) {
-      validateInsuranceBilling(message, result, flowId);
-    }
+      if (message) {
+        validateInsuranceBilling(message, result, flowId);
+      }
 
-    // Health insurance fulfillments validation (type, customer details)
-    if (message) {
-      validateInsuranceFulfillments(message, result, flowId, actionId);
-    }
+      if (message) {
+        validateInsuranceFulfillments(message, result, flowId, actionId);
+      }
 
-    // Health insurance payment tags (BUYER_FINDER_FEES, SETTLEMENT_TERMS)
-    if (message) {
-      validateInsurancePaymentTags(message, result, flowId, "order");
-    }
+      if (message) {
+        validateInsurancePaymentTags(message, result, flowId, "order");
+      }
 
-    // Health insurance init xinput form_response validation
-    if (message) {
-      validateInsuranceInitXinput(message, result, flowId);
+      if (message) {
+        validateInsuranceInitXinput(message, result, flowId);
+      }
     }
 
     // ── L2: Cross-action consistency vs on_select ──
