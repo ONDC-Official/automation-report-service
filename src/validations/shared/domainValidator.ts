@@ -481,6 +481,9 @@ export const DomainValidators = {
     fis11Validators.quote.validate_quote,
     fis11Validators.provider.validate_provider,
     fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
     fis11Validators.order_status.validate_order_status
   ),
 

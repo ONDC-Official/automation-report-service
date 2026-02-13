@@ -5,6 +5,21 @@ import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateInsurancePaymentParams,
+  validateInsuranceFulfillments,
+  validateInsuranceOnInitExtras,
+} from "../../shared/healthInsuranceValidations";
+import {
+  validateAllFinancials,
+  validateProviderConsistency,
+  validateItemConsistency,
+  validateQuoteConsistency,
+  validatePaymentCollectedByConsistency,
+  validateSettlementTermsConsistency,
+  validateAllContext,
+} from "../../shared/healthInsuranceL2Validations";
 
 export default async function on_init(
   element: Payload,
@@ -16,7 +31,27 @@ export default async function on_init(
   const result = await DomainValidators.fis13OnInit(element, sessionID, flowId, actionId, usecaseId);
 
   try {
+    const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
+
+    // Health insurance context validation
+    validateInsuranceContext(context, result, flowId);
+
+    // Health insurance payment params (bank_account_number, bank_code, amount, currency, URL)
+    if (message) {
+      validateInsurancePaymentParams(message, result, flowId, actionId);
+    }
+
+    // Health insurance fulfillments validation (type, state enum)
+    if (message) {
+      validateInsuranceFulfillments(message, result, flowId, actionId);
+    }
+
+    // Health insurance on_init extras (cancellation_terms, timestamps)
+    if (message) {
+      validateInsuranceOnInitExtras(message, result, flowId);
+    }
+
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
@@ -26,37 +61,29 @@ export default async function on_init(
       });
     }
 
-    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
-    if (txnId) {
-      const initData = await getActionData(sessionID, flowId, txnId, "init");
-      // Compare item ids and prices w.r.t INIT request
-      const onInitItems: any[] = message?.order?.items || [];
-      const initItems: any[] = initData?.items || [];
-      const initPriceById = new Map<string, string>();
-      for (const it of initItems) if (it?.id && it?.price?.value !== undefined) initPriceById.set(it.id, String(it.price.value));
+    // ── L2: Financial validations ──
+    if (message) {
+      validateAllFinancials(message, result, flowId, "on_init");
+    }
 
-      const missingFromInit: string[] = [];
-      const priceMismatches: Array<{ id: string; init: string; on_init: string }> = [];
-      for (const it of onInitItems) {
-        const id = it?.id;
-        if (!id) continue;
-        if (!initPriceById.has(id)) {
-          missingFromInit.push(id);
-          continue;
-        }
-        const ini = parseFloat(initPriceById.get(id) as string);
-        const onIni = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
-        if (!Number.isNaN(ini) && !Number.isNaN(onIni)) {
-          if (ini === onIni) result.passed.push(`Item '${id}' price matches INIT`);
-          else priceMismatches.push({ id, init: String(ini), on_init: String(onIni) });
-        }
+    // ── L2: Cross-action consistency vs on_select ──
+    const txnId = context?.transaction_id as string | undefined;
+    if (txnId) {
+      const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
+      if (onSelectData) {
+        validateProviderConsistency(message, onSelectData, result, flowId, "on_init", "on_select");
+        validateItemConsistency(message, onSelectData, result, flowId, "on_init", "on_select");
+        validateQuoteConsistency(message, onSelectData, result, flowId, "on_init", "on_select");
+        validatePaymentCollectedByConsistency(message, onSelectData, result, flowId, "on_init", "on_select");
+        validateSettlementTermsConsistency(message, onSelectData, result, flowId, "on_init", "on_select");
+        validateAllContext(context, onSelectData, result, flowId, "on_init", "on_select");
       }
-      if (priceMismatches.length) result.failed.push("Item price mismatches between INIT and on_init");
-      if (missingFromInit.length || priceMismatches.length) {
-        (result.response as any) = {
-          ...(result.response || {}),
-          on_init_vs_init: { missingFromInit, priceMismatches },
-        };
+
+      // Also compare vs init
+      const initData = await getActionData(sessionID, flowId, txnId, "init");
+      if (initData) {
+        validateProviderConsistency(message, initData, result, flowId, "on_init", "init");
+        validateItemConsistency(message, initData, result, flowId, "on_init", "init");
       }
 
       // Validate form ID consistency if xinput is present
@@ -66,9 +93,8 @@ export default async function on_init(
         await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result, insuranceFlows);
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
-
