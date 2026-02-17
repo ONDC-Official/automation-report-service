@@ -6455,16 +6455,15 @@ function validateCancellation(
 
   // Validate cancellation object
   const cancellation = order.cancellation;
-  if (
-    !cancellation &&
-    (isInsuranceFlow ||
-
-      (action_id === "soft_on_cancel_purchase_finance" ||
-        action_id === "confirmed_on_cancel_purchase_finance"
-      ))
-  ) {
-    return;
-  } else {
+  if (!cancellation) {
+    if (
+      isInsuranceFlow ||
+      action_id === "soft_on_cancel_purchase_finance" ||
+      action_id === "confirmed_on_cancel_purchase_finance"
+    ) {
+      // Cancellation object is optional for insurance and purchase finance flows
+      return;
+    }
     testResults.failed.push("Cancellation information is missing in order");
     return;
   }

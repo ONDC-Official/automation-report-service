@@ -150,8 +150,8 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.2.0",
   "ONDC:FIS12:2.0.1",
   "ONDC:FIS13:2.0.1",
-  "ONDC:FIS13:2.0.0:hospicash-insurance",
-  "ONDC:FIS13:2.0.0:accidental-insurance",
+  // "ONDC:FIS13:2.0.0:hospicash-insurance",
+  // "ONDC:FIS13:2.0.0:accidental-insurance",
   "ONDC:TRV10:2.1.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
@@ -617,19 +617,21 @@ export const FLOW_ID_MAP: Record<
   "ONDC:FIS13": {
     "2.0.0": {
       "transit-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_20",
-        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_20",
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
+        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_SGRTD_2",
         "Purchase_Journey_Transit_Insurance": "INS_20",
         "CD_Balance_Error_Transit_Insurance": "INS_23"
       },
       "accidental-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
-        "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "FIS_13_2",
-        "Purchase_Journey_Accidental_Insurance": "FIS_13_3"
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
+        "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "INS_SGRTD_2",
+        "Purchase_Journey_Accidental_Insurance": "INS_SGRTD_3",
+        "CD_Balance_Error_Transit_Insurance": "INS_23"
+
       },
       "hospicash-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_21",
-        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_21",
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
+        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_SGRTD_2",
         "Purchase_Journey_Hospicash_Insurance": "INS_21",
         "CD_Balance_Error_Hospicash_Insurance": "INS_23"
       }
