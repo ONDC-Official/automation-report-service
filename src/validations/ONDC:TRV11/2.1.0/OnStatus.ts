@@ -22,7 +22,7 @@ export default async function on_status(
 
     // Validate order status
     if (order?.status) {
-      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "CANCELLED"], "on_status");
+      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "COMPLETED", "CANCELLED"], "on_status");
     }
 
     // 2.1.0: CHECKED_IN / CHECKED_OUT fulfillment states

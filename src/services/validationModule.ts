@@ -109,26 +109,61 @@ function checkMandatoryFlows(
 /**
  * Validates the action sequence for a flow
  * Handles HTML_FORM entries by skipping them in the sequence but maintaining position tracking
+ * Now includes payload deduplication to handle duplicate responses from multiple providers
  */
 function validateActionSequence(
   payloads: Payload[],
-  requiredSequence: string[]
+  requiredSequence: string[],
+  flowId?: string
 ): { validSequence: boolean; errors: string[] } {
   const errors: string[] = [];
   let validSequence = true;
 
   try {
+    // Enhanced payload deduplication logic
+    const deduplicatedPayloads = payloads.filter((payload, index, array) => {
+      const duplicateIndex = array.findIndex(p =>
+        p.action?.toLowerCase() === payload.action?.toLowerCase() &&
+        p.transactionId === payload.transactionId &&
+        Math.abs(new Date(p.createdAt).getTime() - new Date(payload.createdAt).getTime()) < 1000 // Within 1 second
+      );
+
+      // Keep the first occurrence of each duplicate
+      return duplicateIndex === index;
+    });
+
+    // Log duplicate detection results
+    if (deduplicatedPayloads.length !== payloads.length) {
+      const removedCount = payloads.length - deduplicatedPayloads.length;
+      logger.info("Duplicate payloads detected and removed", {
+        flowId: flowId || "unknown",
+        originalCount: payloads.length,
+        deduplicatedCount: deduplicatedPayloads.length,
+        removedCount,
+        removedPayloads: payloads.filter(p => !deduplicatedPayloads.includes(p)).map(p => ({
+          action: p.action,
+          transactionId: p.transactionId,
+          createdAt: p.createdAt
+        }))
+      });
+    }
+
+    // Use deduplicated payloads for validation
+    const validationPayloads = deduplicatedPayloads;
     let payloadIndex = 0; // Index for actual payloads (excluding HTML_FORM)
-    
-    // Log for debugging
+
+    // Enhanced debugging logs with deduplication info
     logger.info("Validating action sequence", {
+      flowId: flowId || "unknown",
       requiredSequenceLength: requiredSequence.length,
-      payloadsLength: payloads.length,
+      originalPayloadsLength: payloads.length,
+      deduplicatedPayloadsLength: validationPayloads.length,
       requiredSequence: requiredSequence,
-      payloadActions: payloads.map((p, idx) => ({
+      validationPayloadActions: validationPayloads.map((p, idx) => ({
         index: idx,
         action: p?.action?.toLowerCase(),
-        transactionId: p?.transactionId
+        transactionId: p?.transactionId,
+        createdAt: p?.createdAt
       }))
     });
     
@@ -150,15 +185,102 @@ function validateActionSequence(
       }
 
       // Check if we have enough payloads
-      if (payloadIndex >= payloads.length) {
+      if (payloadIndex >= validationPayloads.length) {
         validSequence = false;
+        // Check for Early Success Termination
+        // If the flow ended, but the expected action is a user-initiated request (like 'update', 'status', 'track')
+        // And the last action was a valid response (like 'on_update', 'on_status', 'on_track')
+        // Then we can assume the user chose to stop the flow here.
+        if (i > 0) {
+          const lastAction = requiredSequence[i - 1].toLowerCase();
+          const currentExpectedAction = expectedAction.toLowerCase();
+          
+          if (
+            (currentExpectedAction === "update" || 
+             currentExpectedAction === "status" || 
+             currentExpectedAction === "track" ||
+             currentExpectedAction === "cancel") &&
+            (lastAction.startsWith("on_"))
+          ) {
+            logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
+            validSequence = true; // Restore validSequence to true for valid early termination
+            break; // Exit loop, considering validation successful so far
+          }
+        }
+
         errors.push(
           `Error: Expected '${expectedAction}' but no more payloads found. Sequence position: ${i + 1}`
         );
         break;
       }
 
-      const actualAction = payloads[payloadIndex]?.action?.toLowerCase();
+      const actualAction = validationPayloads[payloadIndex]?.action?.toLowerCase();
+
+      // Skip duplicate on_ actions if they don't match expected (e.g. multiple on_search calls)
+      if (payloadIndex > 0) {
+        const prevPayloadAction = validationPayloads[
+          payloadIndex - 1
+        ]?.action?.toLowerCase();
+        if (
+          actualAction === prevPayloadAction &&
+          actualAction?.startsWith("on_") &&
+          actualAction !== expectedAction
+        ) {
+          logger.info(
+            `Skipping duplicate ${actualAction} at payload index ${payloadIndex} which is not expected here`
+          );
+          payloadIndex++;
+          i--; // Retry the current expectedAction against the next payload
+          continue;
+        }
+      }
+
+      // Skip unsolicited on_status if not expected
+      // This handles async status updates during flows (e.g. cancellation)
+      if (actualAction === "on_status" && expectedAction !== "on_status") {
+        logger.info(
+          `Skipping unsolicited ${actualAction} at payload index ${payloadIndex} which is not expected here`
+        );
+        payloadIndex++;
+        i--; // Retry the current expectedAction against the next payload
+        continue;
+      }
+
+      // Skip unsolicited on_update if not expected
+      // This handles async updates in delayed cancellation flows
+      if (actualAction === "on_update" && expectedAction !== "on_update") {
+        logger.info(
+          `Skipping unsolicited ${actualAction} at payload index ${payloadIndex} which is not expected here`
+        );
+        payloadIndex++;
+        i--; // Retry the current expectedAction against the next payload
+        continue;
+      }
+
+      // Lookahead: Check if actual action matches a future expected action (skipped steps)
+      // This handles cases where optional steps are skipped in the flow (e.g. search -> on_search)
+      if (actualAction !== expectedAction) {
+        let foundFutureMatch = false;
+        let futureIndex = -1;
+        // Look ahead up to 5 steps
+        for (let k = i + 1; k < Math.min(i + 6, requiredSequence.length); k++) {
+          const futureAction = requiredSequence[k]?.toLowerCase();
+          // Skip checking against HTML_FORM/DYNAMIC_FORM as jump targets
+          if (futureAction === "html_form" || futureAction === "dynamic_form") continue;
+          
+          if (futureAction === actualAction) {
+            foundFutureMatch = true;
+            futureIndex = k;
+            break;
+          }
+        }
+
+        if (foundFutureMatch) {
+           logger.info(`Skipping expected steps from index ${i} to ${futureIndex-1} because actual action '${actualAction}' matches sequence at index ${futureIndex}`);
+           i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
+           continue; // Continue loop to match current payload against new expected action
+        }
+      }
 
       if (actualAction !== expectedAction) {
         // For better error message, check if this is a select/init ambiguity
@@ -187,17 +309,17 @@ function validateActionSequence(
         // Look ahead to see if the expected action appears later
         let foundLater = false;
         let foundAtPosition = -1;
-        for (let k = payloadIndex + 1; k < payloads.length; k++) {
-          if (payloads[k]?.action?.toLowerCase() === expectedAction) {
+        for (let k = payloadIndex + 1; k < validationPayloads.length; k++) {
+          if (validationPayloads[k]?.action?.toLowerCase() === expectedAction) {
             foundLater = true;
             foundAtPosition = k;
             break;
           }
         }
-        
+
         // Build context for debugging
         const sequenceContext = requiredSequence.slice(Math.max(0, i - 3), Math.min(i + 4, requiredSequence.length));
-        const payloadContext = payloads.slice(Math.max(0, payloadIndex - 2), Math.min(payloadIndex + 3, payloads.length))
+        const payloadContext = validationPayloads.slice(Math.max(0, payloadIndex - 2), Math.min(payloadIndex + 3, validationPayloads.length))
           .map((p, idx) => ({
             relativeIndex: idx - Math.max(0, payloadIndex - 2),
             action: p?.action?.toLowerCase(),
@@ -220,7 +342,8 @@ function validateActionSequence(
           })),
           payloadContext,
           fullRequiredSequence: requiredSequence,
-          fullPayloadActions: payloads.map(p => p?.action?.toLowerCase())
+          originalPayloadActions: payloads.map(p => p?.action?.toLowerCase()),
+          deduplicatedPayloadActions: validationPayloads.map(p => p?.action?.toLowerCase())
         });
         
         let errorMessage = `Error: Expected '${displayExpectedAction}' after '${previousAction}'`;
@@ -441,10 +564,11 @@ export async function validationModule(
 
     logger.info(MESSAGES.validations.actionValidationStart(flowId), { flowId });
 
-    // Step 1: Validate action sequence
+    // Step 1: Validate action sequence with deduplication
     const { validSequence, errors } = validateActionSequence(
       payloads,
-      requiredSequence || []
+      requiredSequence || [],
+      flowId
     );
 
     logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });

@@ -2922,6 +2922,72 @@ domains:
 
   ONDC:FIS13:
     versions:
+      "2.0.0":
+        usecases:
+          hospicash-insurance:
+            flows:
+              Discovery_of_Insurer_Providers_and_Master_Policies:
+                - search
+                - on_search
+              Discovery_of_Products_from_Master_Policies:
+                - search
+                - on_search
+              Purchase_Journey_Hospicash_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+
+              CD_Balance_Error_Hospicash_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+            optional_flows:
+              - Discovery_of_Insurer_Providers_and_Master_Policies
+              - Discovery_of_Products_from_Master_Policies
+              - Purchase_Journey_Hospicash_Insurance
+              - CD_Balance_Error_Hospicash_Insurance
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
+          accidental-insurance:
+            flows:
+              Discovery_of_Insurer_Providers_and_Master_Policies:
+                - search
+                - on_search
+              Discovery_of_Products_from_Master_Policies (Accidental Insurance):
+                - search
+                - on_search
+              Purchase_Journey_Accidental_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+              CD_Balance_Error_Accidental_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+            optional_flows:
+              - Discovery_of_Insurer_Providers_and_Master_Policies
+              - Discovery_of_Products_from_Master_Policies (Accidental Insurance)
+              - Purchase_Journey_Accidental_Insurance
+              - CD_Balance_Error_Accidental_Insurance
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
+      
       "2.0.1":
         usecases:
           HEALTH INSURANCE:

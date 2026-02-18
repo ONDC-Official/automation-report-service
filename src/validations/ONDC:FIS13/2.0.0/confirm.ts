@@ -2,51 +2,29 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
-import { validateTermsTags } from "./commonChecks";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
+import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function confirm(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId: string
+  actionId: string,
+  usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.trv11Confirm210(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.fis13Confirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
-    const message = element?.jsonRequest?.message;
-    const order = message?.order;
-
-    // Validate payment params (transaction_id, amount)
-    if (order?.payments && Array.isArray(order.payments)) {
-      for (const payment of order.payments) {
-        if (payment.params?.transaction_id) {
-          result.passed.push("confirm: payment.params.transaction_id present");
-        }
-        if (payment.params?.amount) {
-          result.passed.push("confirm: payment.params.amount present");
-        }
-        if (payment.status) {
-          if (["PAID", "NOT-PAID"].includes(payment.status)) {
-            result.passed.push(`confirm: payment.status '${payment.status}' is valid`);
-          } else {
-            result.failed.push(`confirm: payment.status '${payment.status}' is invalid`);
-          }
-        }
-      }
-    }
-
-    // 2.1.0: BAP_TERMS in order.tags
-    if (order?.tags) {
-      validateTermsTags(order.tags, result, "confirm");
-    }
-
-    // Cross-check with ON_INIT
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
       const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");
-      const confirmItems: any[] = order?.items || [];
+      const confirmMsg = element?.jsonRequest?.message;
+
+      // Items present and price equals ON_INIT's item price
+      const confirmItems: any[] = confirmMsg?.order?.items || [];
       const onInitBreakup: any[] = onInitData?.quote_breakup || [];
 
+      // Build price map using ON_INIT breakup item.id when available, else items[]
       const onInitPriceById = new Map<string, string>();
       for (const b of onInitBreakup) {
         const id = b?.["@ondc/org/item_id"] || b?.item?.id;
@@ -58,10 +36,15 @@ export default async function confirm(
         for (const it of onInitItems) if (it?.id && it?.price?.value !== undefined) onInitPriceById.set(it.id, String(it.price.value));
       }
 
+      const missingFromOnInit: string[] = [];
       const priceMismatches: Array<{ id: string; on_init: string; confirm: string }> = [];
       for (const it of confirmItems) {
         const id = it?.id;
-        if (!id || !onInitPriceById.has(id)) continue;
+        if (!id) continue;
+        if (!onInitPriceById.has(id)) {
+          missingFromOnInit.push(id);
+          continue;
+        }
         const ini = parseFloat(onInitPriceById.get(id) as string);
         const cnf = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
         if (!Number.isNaN(ini) && !Number.isNaN(cnf)) {
@@ -69,12 +52,19 @@ export default async function confirm(
           else priceMismatches.push({ id, on_init: String(ini), confirm: String(cnf) });
         }
       }
-      if (priceMismatches.length) {
-        result.failed.push("Item price mismatches between ON_INIT and confirm");
+      if (priceMismatches.length) result.failed.push("Item price mismatches between ON_INIT and confirm");
+      if (missingFromOnInit.length || priceMismatches.length) {
         (result.response as any) = {
           ...(result.response || {}),
-          confirm_vs_on_init: { priceMismatches },
+          confirm_vs_on_init: { missingFromOnInit, priceMismatches },
         };
+      }
+      
+      // Validate form ID consistency if xinput is present
+      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
+      if (isInsuranceFlow) {
+        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
+        await validateFormIdIfXinputPresent(confirmMsg, sessionID, flowId, txnId, "confirm", result, insuranceFlows);
       }
     }
   } catch (_) {}
@@ -82,3 +72,4 @@ export default async function confirm(
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
+

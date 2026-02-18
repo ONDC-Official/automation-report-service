@@ -15,13 +15,35 @@ export default async function on_cancel(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11OnCancel(element, sessionID, flowId, actionId);
 
-  try {
-    const message = element?.jsonRequest?.message;
-    const order = message?.order;
+  // Filter out false positives from shared validator
+  // Issue 1: Shared validator requires only "CANCELLED" status, but TRV11 allows SOFT_CANCEL, CANCELLED, CANCELLATION_INITIATED
+  // Issue 2: Shared validator has inverted logic for cancellation object - fails when present
+  const message = element?.jsonRequest?.message;
+  const order = message?.order;
+  
+  if (result.failed.length > 0) {
+    const filteredErrors = result.failed.filter((error: string) => {
+      // Remove "Order status should be CANCELLED in on_cancel" - TRV11 allows multiple statuses
+      if (error === "Order status should be CANCELLED in on_cancel") {
+        return false;
+      }
+      
+      // Remove "Cancellation information is missing in order" if cancellation IS present
+      // This is due to inverted logic bug in shared validator (lines 6458-6470 in validationFactory.ts)
+      if (error === "Cancellation information is missing in order" && order?.cancellation) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    result.failed = filteredErrors;
+  }
 
+  try {
     // Validate order status
     if (order?.status) {
-      validateOrderStatus(order, result, ["SOFT_CANCEL", "CANCELLED"], "on_cancel");
+      validateOrderStatus(order, result, ["SOFT_CANCEL", "CANCELLED", "CANCELLATION_INITIATED"], "on_cancel");
     }
 
     // Validate cancellation terms
@@ -67,8 +89,11 @@ export default async function on_cancel(
     // Validate payments for refund
     if (order?.payments && Array.isArray(order.payments)) {
       for (const payment of order.payments) {
-        if (payment.status === "PAID" && payment.type === "POST-FULFILLMENT") {
-          result.passed.push("on_cancel: POST-FULFILLMENT refund payment present");
+        if (payment.type && !["PRE-ORDER", "POST-FULFILLMENT", "ON-FULFILLMENT"].includes(payment.type)) {
+          result.failed.push(`on_cancel: payment type '${payment.type}' is not valid`);
+        }
+        if (payment.status && !["PAID", "NOT-PAID"].includes(payment.status)) {
+          result.failed.push(`on_cancel: payment status '${payment.status}' is not valid`);
         }
       }
     }

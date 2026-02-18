@@ -5,6 +5,23 @@ import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
+import {
+  validateInsuranceContext,
+  validateInsuranceOrderStatus,
+  validateInsuranceDocuments,
+  validateInsurancePaymentParams,
+  validateInsuranceOrderId,
+} from "../../shared/healthInsuranceValidations";
+import {
+  validateAllFinancials,
+  validateProviderConsistency,
+  validateItemConsistency,
+  validateQuoteConsistency,
+  validateBillingConsistency,
+  validatePaymentCollectedByConsistency,
+  validateCreatedUpdatedAt,
+  validateAllContext,
+} from "../../shared/healthInsuranceL2Validations";
 
 export default async function on_confirm(
   element: Payload,
@@ -13,13 +30,35 @@ export default async function on_confirm(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  // For error response scenarios, validate error first
-
-  // For normal on_confirm, use domain validator
   const result = await DomainValidators.fis13OnConfirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
+    const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
+
+    // Health insurance context validation
+    validateInsuranceContext(context, result, flowId);
+
+    // Health insurance order status (ACTIVE)
+    if (message) {
+      validateInsuranceOrderStatus(message, result, flowId);
+    }
+
+    // Health insurance order ID (Policy ID)
+    if (message) {
+      validateInsuranceOrderId(message, result, flowId);
+    }
+
+    // Health insurance document types (POLICY_DOC)
+    if (message) {
+      validateInsuranceDocuments(message, result, flowId);
+    }
+
+    // Health insurance payment params (transaction_id)
+    if (message) {
+      validateInsurancePaymentParams(message, result, flowId, actionId);
+    }
+
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
@@ -29,75 +68,45 @@ export default async function on_confirm(
       });
     }
 
-    // Compare against CONFIRM request when available
-    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    // ── L2: Financial validations ──
+    if (message) {
+      validateAllFinancials(message, result, flowId, "on_confirm");
+    }
+
+    // ── L2: Timestamp validation ──
+    if (message) {
+      validateCreatedUpdatedAt(message, result, flowId, "on_confirm");
+    }
+
+    // ── L2: Cross-action consistency ──
+    const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
+      const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");
       const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
-      const onConfirmMsg = element?.jsonRequest?.message;
 
-      const onConfirmItems: any[] = onConfirmMsg?.order?.items || [];
-      const confirmItems: any[] = confirmData?.items || [];
-      const confirmPriceById = new Map<string, string>();
-      for (const it of confirmItems) if (it?.id && it?.price?.value !== undefined) confirmPriceById.set(it.id, String(it.price.value));
+      // vs on_init
+      if (onInitData) {
+        validateProviderConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
+        validateItemConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
+        validateQuoteConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
+        validatePaymentCollectedByConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
+      }
 
-      const missingFromConfirm: string[] = [];
-      const priceMismatches: Array<{ id: string; confirm: string; on_confirm: string }> = [];
-      for (const it of onConfirmItems) {
-        const id = it?.id;
-        if (!id) continue;
-        if (!confirmPriceById.has(id)) {
-          missingFromConfirm.push(id);
-          continue;
-        }
-        const cnf = parseFloat(confirmPriceById.get(id) as string);
-        const onCnf = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
-        if (!Number.isNaN(cnf) && !Number.isNaN(onCnf)) {
-          if (cnf === onCnf) result.passed.push(`Item '${id}' price matches CONFIRM`);
-          else priceMismatches.push({ id, confirm: String(cnf), on_confirm: String(onCnf) });
-        }
+      // vs confirm
+      if (confirmData) {
+        validateBillingConsistency(message, confirmData, result, flowId, "on_confirm", "confirm");
+        validateAllContext(context, confirmData, result, flowId, "on_confirm", "confirm");
       }
-      if (priceMismatches.length) result.failed.push("Item price mismatches between CONFIRM and on_confirm");
-      if (missingFromConfirm.length || priceMismatches.length) {
-        (result.response as any) = {
-          ...(result.response || {}),
-          on_confirm_vs_confirm: { missingFromConfirm, priceMismatches },
-        };
-      }
-      
+
       // Validate form ID consistency if xinput is present
       const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
       if (isInsuranceFlow) {
         const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(onConfirmMsg, sessionID, flowId, txnId, "on_confirm", result, insuranceFlows);
+        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_confirm", result, insuranceFlows);
       }
     }
-
-    // Validate settlement amount calculation for health insurance flows
-    // if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-    //   const order = message?.order;
-    //   if (order?.payments && Array.isArray(order.payments)) {
-    //     order.payments.forEach((payment: any, paymentIndex: number) => {
-    //       // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
-    //       validateSettlementAmount(
-    //         payment,
-    //         paymentIndex,
-    //         order,
-    //         result,
-    //         "BAP_TERMS"
-    //       );
-    //       validateSettlementAmount(
-    //         payment,
-    //         paymentIndex,
-    //         order,
-    //         result,
-    //         "BPP_TERMS"
-    //       );
-    //     });
-    //   }
-    // }
-  } catch (_) {}
+  } catch (_) { }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
-

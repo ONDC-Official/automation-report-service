@@ -81,6 +81,21 @@ export const HEALTH_INSURANCE_FLOWS = [
   "Cancel_Health_Insurance(Family)"
 ]
 
+export const SACHET_INSURANCE_FLOWS = [
+  "Discovery_of_Insurer_Providers_and_Master_Policies",
+  "Discovery_of_Products_from_Master_Policies (Accidental Insurance)",
+  "Purchase_Journey_Accidental_Insurance",
+  "CD_Balance_Error_Accidental_Insurance"
+]
+
+
+export const SACHET_INSURANCE_FLOWS_OBJ = {
+  Discovery_of_Insurer_Providers_and_Master_Policies: "Discovery_of_Insurer_Providers_and_Master_Policies",
+  Discovery_of_Products_from_Master_Policies: "Discovery_of_Products_from_Master_Policies (Accidental Insurance)",
+  Purchase_Journey_Accidental_Insurance: "Purchase_Journey_Accidental_Insurance",
+  CD_Balance_Error_Accidental_Insurance: "CD_Balance_Error_Accidental_Insurance"
+}
+
 export const MOTOR_INSURANCE_FLOWS = [
   "Motor_Insurance_Application",
   "Motor_Insurance_Application(PRE-ORDER)",
@@ -135,8 +150,9 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.2.0",
   "ONDC:FIS12:2.0.1",
   "ONDC:FIS13:2.0.1",
+  // "ONDC:FIS13:2.0.0:hospicash-insurance",
+  // "ONDC:FIS13:2.0.0:accidental-insurance",
   "ONDC:TRV10:2.1.0",
-  // "ONDC:TRV11:2.0.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1"
@@ -148,7 +164,7 @@ export const ENABLED_DOMAINS: String[] = [
 export const ENABLED_USECASES: Record<string, string[]> = {
   "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
   "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
-  "ONDC:TRV11:2.1.0": ["metro"],  // Only Metro enabled for 2.1.0
+  "ONDC:TRV11:2.1.0": ["metro", "bus"],  // Metro and Bus enabled for 2.1.0
 };
 
 export const DOMAINS = {
@@ -169,6 +185,11 @@ export const FLOW_MAPPINGS: Record<string, string> = {
   TECHNICAL_CANCELLATION_FLOW: "METRO_TECHNICAL_CANCEL",
 };
 
+export const DOMAINS_WITH_VERSION = {
+  FIS13: "ONDC:FIS13",
+  FIS13_VERSION: "2.0.0"
+};
+
 export const VALIDATION_URL: Record<string, string> = {
   "ONDC:TRV10": "https://log-validation.ondc.org/api/validate/trv",
   "ONDC:TRV11": "https://log-validation.ondc.org/api/validate/trv",
@@ -177,6 +198,8 @@ export const VALIDATION_URL: Record<string, string> = {
   "ONDC:RET12": "https://log-validation.ondc.org/api/validate",
   "ONDC:FIS12": "https://log-validation.ondc.org/api/validate/fis/fis12",
 };
+
+
 
 export function compareDates(
   dateString1: string | number | Date,
@@ -455,8 +478,8 @@ export const FLOW_ID_MAP: Record<
         "FULL_CATALOG": "RET_9",
         "INCREMENTAL_CATALOG": "RET_9_INC_PUSH",
         "ORDER_FLOW": "RET_1",
-        "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1", 
-        "RETURN_FLOW": "RET_MRGD_2", 
+        "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1",
+        "RETURN_FLOW": "RET_MRGD_2",
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
         "OUT_OF_STOCK(ERROR-CODE)":"RET_6",
         "BUYER_CANCEL":"RET_3",
@@ -487,7 +510,7 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cred_Flow":"RET_ENH_017",
+        "Seller_Cred_Flow": "RET_ENH_017",
         "Return_Flow": "RET_MRGD_2",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Replacement_Flow":"RET_ENH_00B",
@@ -505,7 +528,7 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cred_Flow":"RET_ENH_017",
+        "Seller_Cred_Flow": "RET_ENH_017",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Out_Of_Stock_Flow(Error-code)":"RET_6",
         "Force_Cancellation_Flow":"RET_ENH_005", 
@@ -567,7 +590,7 @@ export const FLOW_ID_MAP: Record<
         "Force_Cancellation_Flow":"RET_ENH_005", // pramaan 
         "Buyer_Cancellation_Flow": "RET_3",
         "Cash_On_Delivery_Flow": "RET_1b",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
   },
@@ -593,19 +616,23 @@ export const FLOW_ID_MAP: Record<
   "ONDC:FIS13": {
     "2.0.0": {
       "transit-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_20",
-        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_20",
-        "Purchase_Journey_Transit_Insurance": "INS_20"
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
+        "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_SGRTD_2",
+        "Purchase_Journey_Transit_Insurance": "INS_20",
+        "CD_Balance_Error_Transit_Insurance": "INS_23"
       },
       "accidental-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "FIS_13_1",
-        "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "FIS_13_2",
-        "Purchase_Journey_Accidental_Insurance": "FIS_13_3"
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
+        "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "INS_SGRTD_2",
+        "Purchase_Journey_Accidental_Insurance": "INS_SGRTD_3",
+        "CD_Balance_Error_Transit_Insurance": "INS_23"
+
       },
       "hospicash-insurance": {
-        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_21",
-        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_21",
-        "Purchase_Journey_Hospicash_Insurance": "INS_21"
+        "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
+        "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_SGRTD_2",
+        "Purchase_Journey_Hospicash_Insurance": "INS_21",
+        "CD_Balance_Error_Hospicash_Insurance": "INS_23"
       }
     }
   }

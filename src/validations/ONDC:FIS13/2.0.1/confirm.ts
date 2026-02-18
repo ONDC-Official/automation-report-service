@@ -4,6 +4,21 @@ import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateInsuranceFulfillments,
+  validateInsurancePaymentTags,
+  validateInsuranceConfirmXinput,
+  validateInsurancePaymentParams,
+} from "../../shared/healthInsuranceValidations";
+import {
+  validateProviderConsistency,
+  validateItemConsistency,
+  validateBillingConsistency,
+  validatePaymentCollectedByConsistency,
+  validateBuyerFinderFeeArithmetic,
+  validateAllContext,
+} from "../../shared/healthInsuranceL2Validations";
 
 export default async function confirm(
   element: Payload,
@@ -15,61 +30,72 @@ export default async function confirm(
   const result = await DomainValidators.fis13Confirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
-    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    const context = element?.jsonRequest?.context;
+    const message = element?.jsonRequest?.message;
+
+    // Health insurance context validation
+    validateInsuranceContext(context, result, flowId);
+
+    // Health insurance fulfillments validation
+    if (message) {
+      validateInsuranceFulfillments(message, result, flowId, actionId);
+    }
+
+    // Health insurance payment tags (BUYER_FINDER_FEES, SETTLEMENT_TERMS)
+    if (message) {
+      validateInsurancePaymentTags(message, result, flowId, "order");
+    }
+
+    // Health insurance payment params (transaction_id for PAID)
+    if (message) {
+      validateInsurancePaymentParams(message, result, flowId, actionId);
+    }
+
+    // Health insurance confirm xinput form_response (submission_id)
+    if (message) {
+      validateInsuranceConfirmXinput(message, result, flowId);
+    }
+
+    // ── L2: BFF arithmetic (if quote is available via on_init data) ──
+    // confirm may not have quote directly, so use on_init's quote for BFF check
+    const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
       const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");
-      const confirmMsg = element?.jsonRequest?.message;
+      const initData = await getActionData(sessionID, flowId, txnId, "init");
 
-      // Items present and price equals ON_INIT's item price
-      const confirmItems: any[] = confirmMsg?.order?.items || [];
-      const onInitBreakup: any[] = onInitData?.quote_breakup || [];
+      // L2: Cross-action vs on_init
+      if (onInitData) {
+        validateProviderConsistency(message, onInitData, result, flowId, "confirm", "on_init");
+        validateItemConsistency(message, onInitData, result, flowId, "confirm", "on_init");
+        validatePaymentCollectedByConsistency(message, onInitData, result, flowId, "confirm", "on_init");
+        validateAllContext(context, onInitData, result, flowId, "confirm", "on_init");
 
-      // Build price map using ON_INIT breakup item.id when available, else items[]
-      const onInitPriceById = new Map<string, string>();
-      for (const b of onInitBreakup) {
-        const id = b?.["@ondc/org/item_id"] || b?.item?.id;
-        const val = b?.price?.value ?? b?.item?.price?.value;
-        if (id && val !== undefined) onInitPriceById.set(String(id), String(val));
-      }
-      if (onInitPriceById.size === 0) {
-        const onInitItems: any[] = onInitData?.items || [];
-        for (const it of onInitItems) if (it?.id && it?.price?.value !== undefined) onInitPriceById.set(it.id, String(it.price.value));
-      }
-
-      const missingFromOnInit: string[] = [];
-      const priceMismatches: Array<{ id: string; on_init: string; confirm: string }> = [];
-      for (const it of confirmItems) {
-        const id = it?.id;
-        if (!id) continue;
-        if (!onInitPriceById.has(id)) {
-          missingFromOnInit.push(id);
-          continue;
-        }
-        const ini = parseFloat(onInitPriceById.get(id) as string);
-        const cnf = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
-        if (!Number.isNaN(ini) && !Number.isNaN(cnf)) {
-          if (ini === cnf) result.passed.push(`Item '${id}' price matches ON_INIT`);
-          else priceMismatches.push({ id, on_init: String(ini), confirm: String(cnf) });
+        // BFF check using on_init quote value against confirm payment BFF tags
+        if (onInitData.quote?.price?.value && message?.order?.payments) {
+          const syntheticMsg = {
+            order: {
+              quote: { price: { value: onInitData.quote.price.value } },
+              payments: message.order.payments,
+            },
+          };
+          validateBuyerFinderFeeArithmetic(syntheticMsg, result, flowId, "confirm");
         }
       }
-      if (priceMismatches.length) result.failed.push("Item price mismatches between ON_INIT and confirm");
-      if (missingFromOnInit.length || priceMismatches.length) {
-        (result.response as any) = {
-          ...(result.response || {}),
-          confirm_vs_on_init: { missingFromOnInit, priceMismatches },
-        };
+
+      // L2: Billing consistency vs init
+      if (initData) {
+        validateBillingConsistency(message, initData, result, flowId, "confirm", "init");
       }
-      
+
       // Validate form ID consistency if xinput is present
       const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
       if (isInsuranceFlow) {
         const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(confirmMsg, sessionID, flowId, txnId, "confirm", result, insuranceFlows);
+        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "confirm", result, insuranceFlows);
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
-

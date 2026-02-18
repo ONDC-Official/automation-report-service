@@ -3,7 +3,8 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
-import { validateQuoteBreakup, validateTermsTags, validateStops } from "./commonChecks";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
+import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 
 export default async function on_init(
   element: Payload,
@@ -12,61 +13,37 @@ export default async function on_init(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.trv11OnInit210(element, sessionID, flowId, actionId, usecaseId);
+  const result = await DomainValidators.fis13OnInit(element, sessionID, flowId, actionId, usecaseId);
 
   try {
     const message = element?.jsonRequest?.message;
-    const order = message?.order;
-
-    // Quote validation
-    if (order?.quote) {
+    if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
         validateItemPriceConsistency: false,
         flowId,
       });
-      validateQuoteBreakup(order.quote, result, "on_init");
     }
 
-    // Validate fulfillments with stops
-    if (order?.fulfillments && Array.isArray(order.fulfillments)) {
-      for (const f of order.fulfillments) {
-        if (f.stops) {
-          validateStops(f.stops, result, `on_init.fulfillment[${f.id}]`);
-        }
-      }
-    }
-
-    // 2.1.0: BPP_TERMS in order.tags
-    if (order?.tags) {
-      validateTermsTags(order.tags, result, "on_init");
-    }
-
-    // Validate payments with params
-    if (order?.payments && Array.isArray(order.payments)) {
-      for (const payment of order.payments) {
-        if (payment.params) {
-          if (payment.params.bank_code || payment.params.bank_account_number) {
-            result.passed.push("on_init: payment params contain bank details");
-          }
-        }
-      }
-    }
-
-    // Cross-check with INIT
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
       const initData = await getActionData(sessionID, flowId, txnId, "init");
-      const onInitItems: any[] = order?.items || [];
+      // Compare item ids and prices w.r.t INIT request
+      const onInitItems: any[] = message?.order?.items || [];
       const initItems: any[] = initData?.items || [];
       const initPriceById = new Map<string, string>();
       for (const it of initItems) if (it?.id && it?.price?.value !== undefined) initPriceById.set(it.id, String(it.price.value));
 
+      const missingFromInit: string[] = [];
       const priceMismatches: Array<{ id: string; init: string; on_init: string }> = [];
       for (const it of onInitItems) {
         const id = it?.id;
-        if (!id || !initPriceById.has(id)) continue;
+        if (!id) continue;
+        if (!initPriceById.has(id)) {
+          missingFromInit.push(id);
+          continue;
+        }
         const ini = parseFloat(initPriceById.get(id) as string);
         const onIni = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
         if (!Number.isNaN(ini) && !Number.isNaN(onIni)) {
@@ -74,16 +51,24 @@ export default async function on_init(
           else priceMismatches.push({ id, init: String(ini), on_init: String(onIni) });
         }
       }
-      if (priceMismatches.length) {
-        result.failed.push("Item price mismatches between INIT and on_init");
+      if (priceMismatches.length) result.failed.push("Item price mismatches between INIT and on_init");
+      if (missingFromInit.length || priceMismatches.length) {
         (result.response as any) = {
           ...(result.response || {}),
-          on_init_vs_init: { priceMismatches },
+          on_init_vs_init: { missingFromInit, priceMismatches },
         };
+      }
+
+      // Validate form ID consistency if xinput is present
+      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
+      if (isInsuranceFlow) {
+        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
+        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result, insuranceFlows);
       }
     }
   } catch (_) {}
 
-  await saveFromElement(element, sessionID, flowId, "jsonResponse");
+  await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
+

@@ -24,7 +24,7 @@ export default async function cancel(
 
   // 2.1.0: Validate cancellation_reason_id
   if (message?.cancellation_reason_id) {
-    const validReasons = ["001", "002", "003", "004", "005", "011", "012", "013", "014"];
+    const validReasons = ["0", "000", "001", "002", "003", "004", "005", "7", "011", "012", "013", "014"];
     if (validReasons.includes(message.cancellation_reason_id)) {
       testResults.passed.push(`cancel: cancellation_reason_id '${message.cancellation_reason_id}' is valid`);
     } else {
@@ -32,11 +32,13 @@ export default async function cancel(
     }
   }
 
-  // Validate descriptor.short_desc for cancel type (SOFT_CANCEL / CONFIRM_CANCEL)
-  if (message?.descriptor?.short_desc) {
-    const desc = message.descriptor.short_desc;
-    if (["SOFT_CANCEL", "CONFIRM_CANCEL"].includes(desc)) {
-      testResults.passed.push(`cancel: descriptor.short_desc '${desc}' is valid`);
+  // Validate descriptor.code for cancel type (SOFT_CANCEL / CONFIRM_CANCEL)
+  const cancelCode = message?.descriptor?.code || message?.descriptor?.short_desc;
+  if (cancelCode) {
+    if (["SOFT_CANCEL", "CONFIRM_CANCEL"].includes(cancelCode)) {
+      testResults.passed.push(`cancel: descriptor.code '${cancelCode}' is valid`);
+    } else {
+      testResults.failed.push(`cancel: descriptor.code '${cancelCode}' is not SOFT_CANCEL or CONFIRM_CANCEL`);
     }
   }
 

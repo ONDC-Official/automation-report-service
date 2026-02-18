@@ -10,7 +10,7 @@ export default async function init(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.trv11Init(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.trv11Init210(element, sessionID, flowId, actionId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -32,7 +32,7 @@ export default async function init(
         if (payment.collected_by && !["BAP", "BPP"].includes(payment.collected_by)) {
           result.failed.push(`init: payment.collected_by '${payment.collected_by}' must be BAP or BPP`);
         }
-        if (payment.type && !["PRE-ORDER", "ON-ORDER", "POST-FULFILLMENT", "PRE-FULFILLMENT"].includes(payment.type)) {
+        if (payment.type && !["PRE-ORDER", "ON-ORDER", "ON-FULFILLMENT", "POST-FULFILLMENT"].includes(payment.type)) {
           result.failed.push(`init: payment.type '${payment.type}' is invalid`);
         }
       }

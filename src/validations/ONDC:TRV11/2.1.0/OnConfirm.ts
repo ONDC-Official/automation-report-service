@@ -34,7 +34,7 @@ export default async function on_confirm(
     return result;
   }
 
-  const result = await DomainValidators.trv11OnConfirm(element, sessionID, flowId, actionId);
+  const result = await DomainValidators.trv11OnConfirm210(element, sessionID, flowId, actionId);
   return processOnConfirm(element, result, sessionID, flowId, actionId);
 }
 
@@ -51,7 +51,7 @@ async function processOnConfirm(
 
     // Validate order status
     if (order?.status) {
-      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE"], "on_confirm");
+      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "COMPLETED"], "on_confirm");
     }
 
     // Quote validation

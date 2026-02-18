@@ -127,7 +127,7 @@ export function validateTermsTags(
 }
 
 /**
- * Validate TICKET fulfillment structure (authorization with QR)
+ * Validate TICKET and PASS fulfillment structure (authorization with QR)
  */
 export function validateTicketFulfillment(
   fulfillments: any[] | undefined,
@@ -136,34 +136,36 @@ export function validateTicketFulfillment(
 ): void {
   if (!fulfillments || !Array.isArray(fulfillments)) return;
 
-  const ticketFulfillments = fulfillments.filter((f: any) => f?.type === "TICKET");
+  const ticketFulfillments = fulfillments.filter((f: any) => f?.type === "TICKET" || f?.type === "PASS");
   if (ticketFulfillments.length === 0) return;
 
   for (const ticket of ticketFulfillments) {
-    // Check authorization
-    const auth = ticket.authorization;
+    const fType = ticket.type; // TICKET or PASS
+    // Check authorization — contract places it at stops[0].authorization
+    const auth = ticket?.stops?.[0]?.authorization || ticket.authorization;
     if (!auth) {
-      result.failed.push(`${context}: TICKET fulfillment ${ticket.id} missing authorization`);
+      result.failed.push(`${context}: ${fType} fulfillment ${ticket.id} missing authorization`);
       continue;
     }
     if (auth.type !== "QR") {
-      result.failed.push(`${context}: TICKET fulfillment ${ticket.id} authorization type must be QR, got '${auth.type}'`);
+      result.failed.push(`${context}: ${fType} fulfillment ${ticket.id} authorization type must be QR, got '${auth.type}'`);
     } else {
-      result.passed.push(`${context}: TICKET fulfillment ${ticket.id} has QR authorization`);
+      result.passed.push(`${context}: ${fType} fulfillment ${ticket.id} has QR authorization`);
     }
     if (!auth.token) {
-      result.failed.push(`${context}: TICKET fulfillment ${ticket.id} missing authorization.token`);
+      result.failed.push(`${context}: ${fType} fulfillment ${ticket.id} missing authorization.token`);
     }
     if (!auth.valid_to) {
-      result.failed.push(`${context}: TICKET fulfillment ${ticket.id} missing authorization.valid_to`);
+      result.failed.push(`${context}: ${fType} fulfillment ${ticket.id} missing authorization.valid_to`);
     }
     if (auth.status && !["UNCLAIMED", "CLAIMED", "EXPIRED"].includes(auth.status)) {
       result.failed.push(
-        `${context}: TICKET fulfillment ${ticket.id} invalid authorization.status '${auth.status}'`
+        `${context}: ${fType} fulfillment ${ticket.id} invalid authorization.status '${auth.status}'`
       );
     }
 
-    // Check PARENT_ID tag linking to TRIP fulfillment
+    // Check PARENT_ID tag linking to TRIP fulfillment (TICKET only, not PASS)
+    if (fType === "TICKET") {
     const infoTag = ticket.tags?.find((t: any) => t?.descriptor?.code === "INFO");
     const parentIdEntry = infoTag?.list?.find(
       (l: any) => l?.descriptor?.code === "PARENT_ID"
@@ -179,6 +181,7 @@ export function validateTicketFulfillment(
           `${context}: TICKET ${ticket.id} PARENT_ID '${parentIdEntry.value}' not found in fulfillments`
         );
       }
+    }
     }
   }
 }

@@ -44,7 +44,20 @@ export function contextValidators(): Validation[] {
         const city = ctx?.city ?? ctx?.location?.city?.code;
         const missing: string[] = [];
         if (!country) missing.push('context.country|location.country.code');
-        if (!city) missing.push('context.city|location.city.code');
+
+        // City is optional for TRV11 master search (search without bpp_id)
+        // and GPS-based search where city may not be provided.
+        // Also optional for TRV11 on_search responding to master search.
+        const isTrv11 = ctx?.domain === 'ONDC:TRV11';
+        const action = ctx?.action;
+        const isSearchOrOnSearch = action === 'search' || action === 'on_search';
+        const hasBppId = !!ctx?.bpp_id;
+        const cityOptional = isTrv11 && (
+          (action === 'search' && !hasBppId) ||  // master/GPS search (no bpp_id)
+          (action === 'on_search')                // on_search may or may not have city
+        );
+
+        if (!city && !cityOptional) missing.push('context.city|location.city.code');
         return missing.length
           ? { valid: false, results: missing.map(f => ({ valid: false, description: `${f} is required`, code: 400 })) }
           : { valid: true, results: [] };
