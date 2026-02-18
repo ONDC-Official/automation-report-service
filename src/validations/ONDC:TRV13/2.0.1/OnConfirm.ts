@@ -178,10 +178,23 @@ export default async function on_confirm(
               result.passed.push(`Payment amount matches quote total: ${quoteTotal}`);
             }
           } else if (payments.length > 1) {
-            // Split/partial payment - log audit trail
-            result.passed.push(
-              `Payment audit trail: Quote ${quoteTotal}, Total payment amount ${totalPaymentAmount.toFixed(2)} (${payments.length} payment(s))`
+            // Split payment — validate sum of payment amounts equals quote total
+            const paymentsWithAmount = payments.filter(
+              (p: any) => p.params?.amount && !isNaN(parseFloat(p.params.amount))
             );
+            const sumOfAmounts = paymentsWithAmount.reduce(
+              (sum: number, p: any) => sum + parseFloat(p.params.amount), 0
+            );
+
+            if (Math.abs(sumOfAmounts - quoteTotal) > 0.01) {
+              result.failed.push(
+                `Split payment amount mismatch: sum of payments (${sumOfAmounts.toFixed(2)}) does not match quote total (${quoteTotal})`
+              );
+            } else {
+              result.passed.push(
+                `Split payment audit trail: ${paymentsWithAmount.length} payment(s) with amounts, total ${sumOfAmounts.toFixed(2)} matches quote ${quoteTotal}`
+              );
+            }
           }
         }
       }
