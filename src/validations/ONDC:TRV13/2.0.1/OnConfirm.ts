@@ -92,7 +92,7 @@ export default async function on_confirm(
         if (payment?.status) {
           // Validate status is valid
           if (validStatuses.includes(payment.status)) {
-            result.passed.push(`Payment ${payment.type || 'unknown'} status: ${payment.status}`);
+            result.passed.push(`Payment [${payment.id || 'unknown'}] (${payment.type || 'unknown'}) status: ${payment.status}`);
             paymentStatuses.push(payment.status);
           } else {
             result.failed.push(`Invalid payment status: ${payment.status}. Must be PAID or NOT-PAID`);
@@ -156,9 +156,17 @@ export default async function on_confirm(
           `Inconsistent payment status: Single payment cannot be both PAID and NOT-PAID`
         );
       } else if (hasPaid && hasNotPaid && payments.length > 1) {
-        // Split payment scenario - validate it's intentional
+        // Split payment scenario — show consolidated summary with payment IDs
+        const paidIds = payments
+          .filter((p: any) => p.status === "PAID")
+          .map((p: any) => p.id || 'unknown')
+          .join(', ');
+        const notPaidIds = payments
+          .filter((p: any) => p.status === "NOT-PAID")
+          .map((p: any) => p.id || 'unknown')
+          .join(', ');
         result.passed.push(
-          `Split payment detected: ${paymentStatuses.filter(s => s === "PAID").length} PAID, ${paymentStatuses.filter(s => s === "NOT-PAID").length} NOT-PAID`
+          `Split payment summary: PAID [${paidIds}], NOT-PAID [${notPaidIds}] — expected for split payment flows`
         );
       }
       
