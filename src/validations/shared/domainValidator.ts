@@ -24,6 +24,7 @@ import { validatorConstant } from "./validatorConstant";
  * Pre-configured validators for common domain patterns
  */
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
+const fis10Validators = validatorConstant.beckn.ondc.fis.fis10.v210;
 const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const logValidators = validatorConstant.beckn.ondc.log.v125;
@@ -316,6 +317,98 @@ export const DomainValidators = {
     fis11Validators.tags.validate_tags
   ),
 
+  fis10Search: createSearchValidator(
+    fis11Validators.intent.validate_intent,
+  ),
+
+  fis10OnSearch: createOnSearchValidator(
+    fis11Validators.catalog.validate_catalog,
+    fis11Validators.providers.validate_providers,
+    fis10Validators.items.validate_onsearch_items,
+    fis12Validators.catalog.providers.categories,
+  ),
+
+  fis10Select: createSelectValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+  ),
+
+  fis10OnSelect: createOnSelectValidator(
+    trv10Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    fis11Validators.items.validate_items,
+  ),
+  fis10Init: createInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments,
+  ),
+
+  fis10OnInit: createOnInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+  ),
+
+  fis10Confirm: createConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis12Validators.payments.validate_payments
+  ),
+
+  fis10OnConfirm: createOnConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis11Validators.order_status.validate_order_status,
+  ),
+
+  fis10OnStatus: createOnStatusValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis11Validators.order_status.validate_order_status
+  ),
+
+  fis10Update: createUpdateValidator(
+    trv10Validators.update_request_trv10.validate_update_request_trv10,
+    fis12Validators.update.validate_update_payments,
+    fis12Validators.update.validate_fulfillment_state
+  ),
+
+  fis10OnUpdate: createOnUpdateValidator(
+    trv10Validators.order.validate_order,
+    trv10Validators.quote_trv10.validate_quote_trv10,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    trv10Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
+    fis12Validators.update.validate_fulfillment_state
+  ),
+
+  fis10OnCancel: createOnCancelValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis12Validators.documents.validate_documents,
+    fis11Validators.order_status.validate_order_status
+  ),
+
   fis12OnSearch: createOnSearchValidator(
     fis11Validators.catalog.validate_catalog,
     fis11Validators.providers.validate_providers,
@@ -339,6 +432,7 @@ export const DomainValidators = {
     fis11Validators.items.validate_items,
     fis12Validators.items.validate_xinput
   ),
+
   fis12Init: createInitValidator(
     fis11Validators.order.validate_order,
     fis11Validators.provider.validate_provider,

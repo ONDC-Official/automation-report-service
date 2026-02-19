@@ -42,9 +42,11 @@ import {
   MOTOR_INSURANCE_CONFIRM_ACTIONS,
   SACHET_INSURANCE_FLOWS,
   SACHET_INSURANCE_FLOWS_OBJ,
+  GIFT_CARD_FLOWS,
 } from "../../utils/constants";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
+const fis10Validators = validatorConstant.beckn.ondc.fis.fis10.v210;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
@@ -487,7 +489,7 @@ function validateIntent(
     }
   }
 
-  if (flow_id && !CREDIT_CARD_FLOWS.includes(flow_id)) {
+  if (flow_id && !CREDIT_CARD_FLOWS.includes(flow_id) && !GIFT_CARD_FLOWS.includes(flow_id)) {
     if (intent.payment?.type !== "POST_FULFILLMENT") {
       if (!intent.payment?.collected_by) {
         testResults.failed.push("Payment collected_by is missing in intent");
@@ -4160,8 +4162,10 @@ function validateProvider(
     testResults.passed.push("Provider ID is present");
   }
   const isSachetInsuranceFlow = flowId && SACHET_INSURANCE_FLOWS.includes(flowId);
+  const isGiftCardFlow = flowId && GIFT_CARD_FLOWS.includes(flowId);
 
   if (
+    !isGiftCardFlow &&
     !isSachetInsuranceFlow &&
     usecaseId !== "GOLD LOAN" &&
     usecaseId !== "CREDIT CARD" &&
@@ -4225,8 +4229,7 @@ function validateItems(
   const items =
     message?.catalog?.providers?.[0]?.items || message?.order?.items;
   const isSachetInsuranceFlow = flowId && SACHET_INSURANCE_FLOWS.includes(flowId);
-
-
+  const isGiftCardFlow = flowId && GIFT_CARD_FLOWS.includes(flowId);
   if (flowId === SACHET_INSURANCE_FLOWS_OBJ.Discovery_of_Insurer_Providers_and_Master_Policies) {
     return;
   }
@@ -4267,6 +4270,7 @@ function validateItems(
   const isExcludedUsecase = excludedUsecases.has(usecaseId ?? "");
   const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
   const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
+
   const isPriceNotRequiredForFIS13 = action_id && ITEM_PRICE_NOT_REQUIRED_FIS13.includes(action_id);
 
   items.forEach((item, index) => {
@@ -4277,11 +4281,12 @@ function validateItems(
       testResults.passed.push(`Item ${index} ID is present`);
     }
     if (
-      usecaseId !== "GOLD LOAN" &&
-      usecaseId !== "PERSONAL LOAN" &&
-      usecaseId !== "PURCHASE FINANCE"
+      !["GOLD LOAN",
+        "PERSONAL LOAN",
+        "PURCHASE FINANCE"].includes(usecaseId ?? "")
     ) {
       if (
+        !isGiftCardFlow &&
         !isSachetInsuranceFlow &&
         action_id !== "select" &&
         action_id !== "select2" &&
@@ -4337,7 +4342,7 @@ function validateItems(
         !(flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId)))
       ) {
         // Skip price validation for motor insurance flows
-        if (isMotorInsuranceFlow) {
+        if (isMotorInsuranceFlow && isGiftCardFlow) {
           return;
         } else {
           testResults.failed.push(`Item ${index} price value is missing`);
@@ -4365,7 +4370,7 @@ function validateItems(
         }
 
         // Validate descriptor name (if action is not exempt)
-        if (!actionsExemptFromDescriptorName.has(action_id ?? "") && !isSachetInsuranceFlow) {
+        if (!actionsExemptFromDescriptorName.has(action_id ?? "") && !isSachetInsuranceFlow && !isGiftCardFlow) {
           if (!item.descriptor?.name) {
             testResults.failed.push(`Item ${index} descriptor name is missing`);
           } else {
@@ -4378,7 +4383,7 @@ function validateItems(
       const isPriceOptional = isPriceExempt || (isHealthInsuranceFlow && isPriceNotRequiredForFIS13) || isMotorInsuranceFlow;
       const hasPrice = !!item.price?.value;
 
-      if (!hasPrice && !isPriceOptional && !isSachetInsuranceFlow) {
+      if (!hasPrice && !isPriceOptional && !isSachetInsuranceFlow && !isGiftCardFlow) {
         testResults.failed.push(`Item ${index} price value is missing`);
       } else if (hasPrice) {
         testResults.passed.push(`Item ${index} price value is present`);
@@ -4598,7 +4603,7 @@ function validateFulfillmentsFIS12(
       }
     }
 
-    if (fulfillment.type !== "LOAN") {
+    if (fulfillment.type !== "LOAN" && fulfillment.type !== "BPP_ONLINE_EMAIL_SMS" && fulfillment.type !== "BAP") {
       // Validate customer info
       if (!fulfillment.customer) {
         testResults.failed.push(
@@ -4621,7 +4626,8 @@ function validateFulfillmentsFIS12(
       const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
       const isOnConfirmAction = action_id?.startsWith("on_confirm") || action_id === "on_confirm";
       const isOnConfirmMotor = isOnConfirmAction && (isMotorInsuranceUsecase || isMotorInsuranceFlow);
-      if (!fulfillment.state?.descriptor?.code) {
+      const isGiftCardFlow = flowId && GIFT_CARD_FLOWS.includes(flowId);
+      if (!fulfillment.state?.descriptor?.code && !isGiftCardFlow) {
         if (normalizedUsecaseId === "HEALTH INSURANCE" || isOnConfirmMotor) {
           testResults.passed.push(
             `Fulfillment ${index} state descriptor code is optional for ${isOnConfirmMotor ? "motor insurance" : "health insurance"} on_confirm`
@@ -5116,6 +5122,7 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
 
   // Check if this is a health insurance flow or motor insurance flow
   const isHealthInsuranceFlow = flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+  const isGiftCardFlow = flowId && GIFT_CARD_FLOWS.includes(flowId);
   const isSachetInsuranceFlow = flowId && SACHET_INSURANCE_FLOWS.includes(flowId);
   const isMotorInsuranceFlow = flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
   const isCreditCardFlow = flowId && CREDIT_CARD_FLOWS.includes(flowId);
@@ -5168,35 +5175,34 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
           MICRO_TRANSIT_INSURANCE: "Micro Transit Insurance",
           MICRO_ACCIDENTAL_INSURANCE: "Micro Accidental Insurance"
         }
-          : {
-            GOLD_LOAN: "Gold Loan",
-            BUREAU_LOAN: "Bureau Loan",
-            AA_LOAN: "Account Aggregator Loan",
-            PERSONAL_LOAN: "Personal Loan",
-            AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
-            PURCHASE_FINANCE: "Purchase Finance",
-            AGRI_PURCHASE_FINANCE: "Agri Purchase Finance",
-            ELECTRONICS_PURCHASE_FINANCE: "Electronics Purchase Finance",
-          };
+          : isGiftCardFlow ? {
+            CARD: "CARD",
+            PROMO: "PROMO",
+            E_PAY: "E_PAY",
+            E_RUPI: "E_RUPI"
+          }
+            : {
+              GOLD_LOAN: "Gold Loan",
+              BUREAU_LOAN: "Bureau Loan",
+              AA_LOAN: "Account Aggregator Loan",
+              PERSONAL_LOAN: "Personal Loan",
+              AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
+              PURCHASE_FINANCE: "Purchase Finance",
+              AGRI_PURCHASE_FINANCE: "Agri Purchase Finance",
+              ELECTRONICS_PURCHASE_FINANCE: "Electronics Purchase Finance",
+            }
 
   categories.forEach((cat) => {
     const code = cat?.descriptor?.code;
     const name = cat?.descriptor?.name;
 
-    if (!code || !name) {
+    if (!code) {
       testResults.failed.push("Category descriptor code or name is missing");
       return;
     }
 
     if (!validCategoryMap[code]) {
       testResults.failed.push(`Invalid category code: ${code}`);
-      return;
-    }
-
-    if (validCategoryMap[code] !== name) {
-      testResults.failed.push(
-        `Category name mismatch for code ${code}. Expected ${validCategoryMap[code]} but found ${name}`
-      );
       return;
     }
     testResults.passed.push(`Valid category: ${code} - ${name}`);
@@ -5374,13 +5380,13 @@ function validateOnSearchItemsFIS12(
       return;
     }
 
-    if (!item.descriptor?.code || !item.descriptor?.name) {
+    if (!item.descriptor?.code) {
       testResults.failed.push(`Item descriptor missing in item: ${item.id}`);
       return;
     }
 
     // Validate descriptor code - accept both "LOAN" and "PERSONAL_LOAN" or "GOLD_LOAN"
-    const validDescriptorCodes = ["LOAN", "PERSONAL_LOAN", "GOLD_LOAN", "CREDIT_CARD", "CARD"];
+    const validDescriptorCodes = ["LOAN", "PERSONAL_LOAN", "GOLD_LOAN", "CREDIT_CARD", "CARD", "PARENT", "ITEM"];
     if (!validDescriptorCodes.includes(item.descriptor.code)) {
       testResults.failed.push(
         `Item ${item.id}: descriptor.code should be one of ["LOAN", "PERSONAL_LOAN", "GOLD_LOAN"], but found "${item.descriptor.code}"`
@@ -5506,6 +5512,53 @@ function validateOnSearchItemsFIS12(
       );
     }
 
+    testResults.passed.push(`Valid item structure: ${item.id}`);
+  });
+}
+
+function validateOnSearchItemsFIS10(
+  message: any,
+  testResults: TestResult
+): void {
+  const items = message.catalog.providers[0].items;
+  const categories = message.catalog.providers[0].categories;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    testResults.failed.push("Items array is missing or empty");
+    return;
+  }
+
+
+  // Create a map of category codes by category id
+  const categoryCodeMap = new Map<string, string>();
+  categories.forEach((cat: any) => {
+    if (cat?.id && cat?.descriptor?.code) {
+      categoryCodeMap.set(cat.id, cat.descriptor.code);
+    }
+  });
+
+  items.forEach((item) => {
+    if (!item.id) {
+      testResults.failed.push("Item id is missing");
+      return;
+    }
+
+    if (!item.descriptor?.code) {
+      testResults.failed.push(`Item descriptor missing in item: ${item.id}`);
+      return;
+    }
+
+    // Validate descriptor code - accept both "LOAN" and "PERSONAL_LOAN" or "GOLD_LOAN"
+    const validDescriptorCodes = ["CARD", "PARENT", "ITEM"];
+    if (!validDescriptorCodes.includes(item.descriptor.code)) {
+      testResults.failed.push(
+        `Item ${item.id}: descriptor.code should be one of ["CARD", "PARENT", "ITEM"], but found "${item.descriptor.code}"`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: Valid descriptor.code "${item.descriptor.code}"`
+      );
+    }
     testResults.passed.push(`Valid item structure: ${item.id}`);
   });
 }
@@ -6159,10 +6212,8 @@ function validateQuote(
   } else {
     testResults.passed.push("Quote is present in order");
   }
-  if (!quote.id) {
+  if (!quote.id && !GIFT_CARD_FLOWS.includes(flowId)) {
     testResults.failed.push("Quote ID is missing");
-  } else {
-    testResults.passed.push("Quote ID is present");
   }
 
   if (!quote.price?.value) {
@@ -6235,7 +6286,11 @@ function validateOrderStatus(
     const validStatuses = [
       "CANCELLATION_INITIATED",
       "ACTIVE",
+      "IN_PROGRESS",
       "COMPLETE",
+      "ACCEPTED",
+      "ON_HOLD",
+      "COMPLETED",
       "CANCELLED",
       "INACTIVE",
       "SOFT_CANCEL",
@@ -6390,6 +6445,8 @@ function validateCancellation(
     flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
   const isMotorInsuranceFlow =
     flowId && MOTOR_INSURANCE_FLOWS.includes(flowId);
+  const isGiftCardFlow =
+    flowId && GIFT_CARD_FLOWS.includes(flowId);
   const isInsuranceFlow = isHealthInsuranceFlow || isMotorInsuranceFlow;
 
   if (isInsuranceFlow && order.status !== "CANCELLATION_INITIATED") {
@@ -6436,7 +6493,7 @@ function validateCancellation(
       }
     } else {
       // For non-purchase finance flows, status should be SOFT_CANCEL
-      if (order.status !== "SOFT_CANCEL" && !isInsuranceFlow) {
+      if (order.status !== "SOFT_CANCEL" && !isInsuranceFlow && !isGiftCardFlow) {
         testResults.failed.push(
           "Order status should be SOFT_CANCEL in on_cancel"
         );
@@ -6485,7 +6542,7 @@ function validateCancellation(
   if (!reason) {
     testResults.failed.push("Cancellation reason is missing");
   } else {
-    if (!reason.descriptor?.code) {
+    if (!reason.descriptor?.code && !reason?.id) {
       testResults.failed.push("Cancellation reason descriptor code is missing");
     } else {
       const validReasonCodes = [
@@ -6796,6 +6853,7 @@ export function validateUpdateRequestTRV10(
   const validUpdateTargets = [
     "order.quote.breakup",
     "order.fulfillments",
+    "fulfillments[0].stops",
     "payments",
     "fulfillment",
     "fulfillments",
@@ -7004,6 +7062,9 @@ export function createOnSearchValidator(...config: string[]) {
             break;
 
           //FIS12/FIS13
+          case fis10Validators.items.validate_onsearch_items:
+            validateOnSearchItemsFIS10(message, testResults);
+            break;
           case fis12Validators.catalog.providers.categories:
             validateCategoriesFIS12(message, testResults, flowId);
             break;

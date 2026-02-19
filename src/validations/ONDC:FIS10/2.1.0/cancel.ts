@@ -1,17 +1,16 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
-import { validateStatusRefId } from "../../shared/validationFactory";
+import { validateCancel } from "../../shared/validationFactory";
 import { getActionData } from "../../../services/actionDataService";
 import {
-  validateGcAllContext, validateGcMessageIdUniqueness,
   validateGcOrderIdConsistency,
 } from "../../shared/giftCardL2Validations";
 
-export default async function status(
+export default async function cancel(
   element: Payload,
   sessionID: string,
   flowId: string,
-  actionId?: string
+  actionId: string
 ): Promise<TestResult> {
   const testResults: TestResult = {
     response: {},
@@ -24,24 +23,21 @@ export default async function status(
 
   const message = jsonRequest?.message;
 
-  // Validate order_id
-  // validateStatusRefId(message, testResults);
+  // Validate cancel message based on action_id
+  validateCancel(message, testResults, actionId, flowId);
 
   try {
     const ctx = jsonRequest?.context;
     const txnId = ctx?.transaction_id as string | undefined;
     if (txnId) {
       const onConfirmData = await getActionData(sessionID, flowId, txnId, "on_confirm");
-      // GC-CTX-012,018
-      validateGcAllContext(ctx, onConfirmData, testResults, flowId, "status", "on_confirm");
-      validateGcMessageIdUniqueness(ctx, onConfirmData, testResults, flowId, "status", "on_confirm");
-      // GC-ORD-003: order_id consistency
-      validateGcOrderIdConsistency(message, onConfirmData, testResults, flowId, "status", "on_confirm");
+      // GC-ORD-003: order_id must match on_confirm
+      validateGcOrderIdConsistency(message, onConfirmData, testResults, flowId, "cancel", "on_confirm");
     }
   } catch (_) { }
 
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {
-    testResults.passed.push(`Validated status`);
+    testResults.passed.push(`Validated cancel`);
   }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");

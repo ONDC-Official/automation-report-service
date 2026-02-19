@@ -81,6 +81,15 @@ export const HEALTH_INSURANCE_FLOWS = [
   "Cancel_Health_Insurance(Family)"
 ]
 
+export const GIFT_CARD_FLOWS = [
+  "Seller_App_Fulfilling",
+  "Buyer_App_Fulfilling_Code_On_Confirm",
+  "Buyer_App_Fulfilling_Code_On_Update",
+  "Physical_Store_Based_Gift_Cards",
+  "Seller_Cancellation",
+  "Update_Receiver_Info"
+];
+
 export const SACHET_INSURANCE_FLOWS = [
   "Discovery_of_Insurer_Providers_and_Master_Policies",
   "Discovery_of_Products_from_Master_Policies (Accidental Insurance)",
