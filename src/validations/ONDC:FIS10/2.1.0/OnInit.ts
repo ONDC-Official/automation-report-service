@@ -1,6 +1,6 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
-import { validateOrderQuote } from "../../shared/quoteValidations";
+import { validateGiftCardQuote } from "../../shared/quoteValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import {
@@ -24,12 +24,7 @@ export default async function on_init(
     const message = element?.jsonRequest?.message;
 
     if (message?.order?.quote) {
-      validateOrderQuote(message, result, {
-        validateDecimalPlaces: true,
-        validateTotalMatch: true,
-        validateItemPriceConsistency: false,
-        flowId,
-      });
+      validateGiftCardQuote(message, result);
     }
 
     const txnId = ctx?.transaction_id as string | undefined;
