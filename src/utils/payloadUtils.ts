@@ -31,7 +31,6 @@ export async function generateTestsFromPayloads(
     });
     throw new Error("Cannot generate pramaan flows for this configuration");
   }
-
   const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
   const flowMap: Record<string, TestItem & { timestamp: string }> = {};
   const payloadIds = Object.values(flowIdToPayloadIdsMap).flat();
@@ -46,9 +45,26 @@ export async function generateTestsFromPayloads(
   );
 
   const payloads = response.data;
+  // let category_id = ""
+  // if (domain === "nic2004:60232") {
+  //   const searchJsonRequest = payloads.find(
+  //     (item: any) => item.payload?.action === "SEARCH"
+  //   )?.payload?.jsonRequest;
+
+  //   console.log("searchJsonRequest", JSON.stringify(searchJsonRequest));
+
+  //   category_id = searchJsonRequest?.message?.intent?.category?.id || "Immediate Delivery"
+  // }
+  // console.log("payloads in report service", JSON.stringify(payloads));
+
   if (!payloads.length) {
     return { tests: [], subscriber_id: "" };
   }
+
+  // const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
+  // const flowMap: Record<string, TestItem & { timestamp: string }> = {};
+  // const payloadIds = Object.values(flowIdToPayloadIdsMap).flat();
+  // const pramaanFlowIds = Object.keys(FLOW_ID_MAP[domain][version][usecaseId]);
 
   // Determine subscriber_id (consistent across payloads)
   const npType = payloads[0].npType;
@@ -59,7 +75,7 @@ export async function generateTestsFromPayloads(
     if (!payloadIds.includes(payload.payloadId)) {
       continue;
     }
-    if(!pramaanFlowIds.includes(payload.flowId)){
+    if (!pramaanFlowIds.includes(payload.flowId)) {
       continue;
     }
     if (!subscriber_id) {
@@ -70,8 +86,19 @@ export async function generateTestsFromPayloads(
       }
     }
 
+    // let mappedFlowId = flowMappings[payload.flowId];
     const mappedFlowId = flowMappings[payload.flowId];
     logger.info("Mapped Flow ID is", { flowId: mappedFlowId });
+    // if (
+    //   domain === "nic2004:60232" &&
+    //   version === "1.2.0" &&
+    //   payload.flowId === "ORDER_FLOW_BASELINE"
+    // ) {
+    //   mappedFlowId =
+    //     NIC_LOGISTICS_CATEGORY_FLOW_MAP[category_id] ??
+    //     "B2C_1A";
+    // }
+    console.log("mappedFlowId in report", mappedFlowId)
     if (!mappedFlowId) {
       throw new Error(
         `No flowId mapping found for ${payload.flowId} under ${domain} → ${version} → ${usecaseId}`
