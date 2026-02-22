@@ -89,6 +89,15 @@ export default async function on_confirm(
       let totalPaymentAmount = 0;
       
       for (const payment of payments) {
+        // PART-PAYMENT is a meta/aggregate envelope that links sub-payments via LINKED-PAYMENTS tags.
+        // Per the TRV13 2.0.1 API contract, it intentionally carries no params at any API stage.
+        if (payment.type === "PART-PAYMENT") {
+          result.passed.push(
+            `Payment [${payment.id || 'unknown'}] is PART-PAYMENT (aggregate envelope) — params validation skipped per contract`
+          );
+          continue;
+        }
+
         if (payment?.status) {
           // Validate status is valid
           if (validStatuses.includes(payment.status)) {
