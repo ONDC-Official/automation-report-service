@@ -1,0 +1,14 @@
+save-data:
+  message_id: $.context.message_id
+  transaction_id: $.context.transaction_id
+  bap_id: $.context.bap_id
+  bap_uri: $.context.bap_uri
+  bpp_id: $.context.bpp_id
+  bpp_uri: $.context.bpp_uri
+  timestamp: $.context.timestamp
+  domain: $.context.domain
+  version: $.context.version
+  city: $.context.city
+  action: $.context.action
+  tracking_url: $.message.tracking.url
+  tracking_status: $.message.tracking.status

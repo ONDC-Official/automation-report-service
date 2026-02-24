@@ -1,0 +1,21 @@
+save-data:
+  order_id: $.message.order.id
+  order_status: $.message.order.state
+  fulfillment_pickup_timestamp: $.message.order.fulfillments[?(@.type=='Delivery')].start.time.timestamp
+  fulfillments: $.message.order.fulfillments[*]
+  order_updated_at_timestamp: $.message.order.updated_at
+  payment: $.message.order.payment
+  linked_order: $.message.order["@ondc/org/linked_order"]
+  message_id: $.context.message_id
+  transaction_id: $.context.transaction_id
+  bap_id: $.context.bap_id
+  bap_uri: $.context.bap_uri
+  bpp_id: $.context.bpp_id
+  bpp_uri: $.context.bpp_uri
+  timestamp: $.context.timestamp
+  domain: $.context.domain
+  version: $.context.version
+  city: $.context.city
+  action: $.context.action
+  state: $.message.order.state
+  fulfillment_state: $.message.order.fulfillments[0].state.descriptor.code
