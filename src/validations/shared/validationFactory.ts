@@ -4077,13 +4077,16 @@ function validateCatalog(message: any, testResults: TestResult): void {
     return;
   }
 
-  if (!catalog.descriptor?.name) {
+  const descriptor_name = catalog.descriptor ? catalog.descriptor?.name : catalog['bpp/descriptor'] ? catalog['bpp/descriptor'].name : ""
+
+  if (!descriptor_name) {
     testResults.failed.push("Catalog descriptor name is missing");
   } else {
     testResults.passed.push("Catalog descriptor name is present");
   }
 
-  if (!catalog.providers || !Array.isArray(catalog.providers)) {
+  const providers = catalog.providers ? catalog.providers : catalog['bpp/providers'] ? catalog['bpp/providers'] : []
+  if (!providers || !Array.isArray(providers)) {
     testResults.failed.push("Catalog providers array is missing or invalid");
   } else {
     testResults.passed.push("Catalog providers array is present");

@@ -98,7 +98,6 @@ export async function generateTestsFromPayloads(
     //     NIC_LOGISTICS_CATEGORY_FLOW_MAP[category_id] ??
     //     "B2C_1A";
     // }
-    console.log("mappedFlowId in report", mappedFlowId)
     if (!mappedFlowId) {
       throw new Error(
         `No flowId mapping found for ${payload.flowId} under ${domain} → ${version} → ${usecaseId}`
