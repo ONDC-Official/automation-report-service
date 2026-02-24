@@ -4071,7 +4071,6 @@ function validateFulfillmentStopsInOrder(
 }
 
 function validateCatalog(message: any, testResults: TestResult): void {
-  console.log("messageeeeeeeeee", message);
   const catalog = message?.catalog;
   if (!catalog) {
     testResults.failed.push("Catalog is missing in on_search response");
@@ -6993,10 +6992,8 @@ export function createOnSearchValidator(...config: string[]) {
       }
     }
 
-    console.log("configggggggggggg", config)
     for (const validation of config) {
       if (validation) {
-        console.log("validationnnnnnnnnnn", validation)
         switch (validation) {
           // Logistics validations
           case log11Validators.lsp.validate_lsp:

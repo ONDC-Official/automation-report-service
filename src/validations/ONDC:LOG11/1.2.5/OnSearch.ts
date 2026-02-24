@@ -18,7 +18,6 @@ export async function checkOnSearch(
     action_id
   );
 
-  console.log("commonTestResults=>>>>>>>>>", JSON.stringify(commonTestResults));
   const testResults: TestResult = {
     response: commonTestResults.response,
     passed: [...commonTestResults.passed],

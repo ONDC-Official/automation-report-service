@@ -229,7 +229,6 @@ export function validateGiftCardQuote(
       testResults.failed.push(`Invalid price value '${raw}'`);
       continue;
     }
-    console.log("computedTotal", computedTotal, value);
     computedTotal += value;
   }
 
