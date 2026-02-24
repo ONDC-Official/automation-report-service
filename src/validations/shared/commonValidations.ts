@@ -609,7 +609,7 @@ export async function validateCodifiedStaticTerms(
   action: string
 ) {
   try {
-    const tags = action.toLowerCase() === "search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags || [];
+    const tags = action.toLowerCase() === "search" && action.toLowerCase() === "on_search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags;
     const bppTerms = tags.find(
       (tag: any) => tag.code === "bpp_terms"
     );
@@ -702,9 +702,9 @@ export async function validateCustomerContactDetails(
 
     // Determine which term to check based on flowId
     const tagCode =
-      action_id === "confirm_LOGISTICS_EXCHANGE"
+      ['confirm_LOGISTICS_EXCHANGE', 'confirm_LOGISTICS'].includes(action_id)
         ? "bap_terms"
-        : action_id === "on_confirm_LOGISTICS_EXCHANGE"
+        : ['on_confirm_LOGISTICS_EXCHANGE', 'on_confirm_LOGISTICS'].includes(action_id)
           ? "bpp_terms"
           : "bpp_terms";
 

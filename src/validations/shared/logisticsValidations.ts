@@ -191,15 +191,6 @@ export function validateFulfillmentStructure(
         }
     }
 
-    if (opts.requireTracking) {
-        try {
-            assert.strictEqual(fulfillment.tracking, true, "fulfillments/tracking must be true");
-            testResults.passed.push(`Tracking enabled validation passed in ${action}`);
-        } catch (error: any) {
-            logger.error(`Error during ${action} validation: ${error.message}`);
-            testResults.failed.push(error.message);
-        }
-    }
 
     if (opts.requireStateCode) {
         try {

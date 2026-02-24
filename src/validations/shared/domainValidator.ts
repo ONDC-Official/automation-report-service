@@ -175,8 +175,6 @@ export const DomainValidators = {
     logValidators.lbnp.validate_lbnp,
     logValidators.prepaid_payment.validate_prepaid_payment,
     logValidators.sla_metrics.validate_sla_metrics,
-    logValidators.exchange_customer_contact_details
-      .validate_customer_contact_details,
     logValidators.seller_creds.validate_seller_creds
   ),
 
@@ -187,8 +185,6 @@ export const DomainValidators = {
     logValidators.sla_metrics.validate_sla_metrics,
     logValidators.tax_type_rcm.validate_np_tax_type_rcm,
     logValidators.codified_static_terms.validate_codified_static_terms,
-    logValidators.exchange_customer_contact_details
-      .validate_customer_contact_details
   ),
 
   /**

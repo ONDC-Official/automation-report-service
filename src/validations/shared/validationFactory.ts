@@ -4071,19 +4071,23 @@ function validateFulfillmentStopsInOrder(
 }
 
 function validateCatalog(message: any, testResults: TestResult): void {
+  console.log("messageeeeeeeeee", message);
   const catalog = message?.catalog;
   if (!catalog) {
     testResults.failed.push("Catalog is missing in on_search response");
     return;
   }
 
-  if (!catalog.descriptor?.name) {
+  const descriptor_name = catalog.descriptor ? catalog.descriptor?.name : catalog['bpp/descriptor'] ? catalog['bpp/descriptor'].name : ""
+
+  if (!descriptor_name) {
     testResults.failed.push("Catalog descriptor name is missing");
   } else {
     testResults.passed.push("Catalog descriptor name is present");
   }
 
-  if (!catalog.providers || !Array.isArray(catalog.providers)) {
+  const providers = catalog.providers ? catalog.providers : catalog['bpp/providers'] ? catalog['bpp/providers'] : []
+  if (!providers || !Array.isArray(providers)) {
     testResults.failed.push("Catalog providers array is missing or invalid");
   } else {
     testResults.passed.push("Catalog providers array is present");
@@ -6989,8 +6993,10 @@ export function createOnSearchValidator(...config: string[]) {
       }
     }
 
+    console.log("configggggggggggg", config)
     for (const validation of config) {
       if (validation) {
+        console.log("validationnnnnnnnnnn", validation)
         switch (validation) {
           // Logistics validations
           case log11Validators.lsp.validate_lsp:
