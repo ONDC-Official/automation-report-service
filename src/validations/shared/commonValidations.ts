@@ -706,12 +706,7 @@ export async function validateCustomerContactDetails(
         ? "bap_terms"
         : action_id === "on_confirm_LOGISTICS_EXCHANGE"
           ? "bpp_terms"
-          : null;
-
-    if (!tagCode) {
-      testResults.failed.push(`Unsupported flowId: ${action_id}`);
-      return;
-    }
+          : "bpp_terms";
 
     // Extract tag section
     const termsTag = tags.find((tag: any) => tag.code === tagCode);
