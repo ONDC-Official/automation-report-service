@@ -148,7 +148,6 @@ export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
 export const SELLER_CANCEL_CODES: String[] = ["011", "012", "013", "014"];
 
 export const ENABLED_DOMAINS: String[] = [
-  "nic2004:60232:1.2.5",
   "ONDC:LOG10:1.2.5",
   "ONDC:LOG11:1.2.5",
   "ONDC:FIS10:2.1.0",
@@ -475,8 +474,8 @@ export const FLOW_ID_MAP: Record<
         "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
         "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
         "Buyer_Side_Order_Cancellation": "RET_3",
-        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1",
-        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_2",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
         "Out_of_Stock(Error_code)": "RET_6",
       },
     },
@@ -506,8 +505,8 @@ export const FLOW_ID_MAP: Record<
         "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
         "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
         "Buyer_Side_Order_Cancellation": "RET_3",
-        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1",
-        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_2",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
         "Out_of_Stock(Error_code)": "RET_6",
       },
     },
@@ -527,6 +526,17 @@ export const FLOW_ID_MAP: Record<
         "Force_Cancellation_Flow":"RET_ENH_005", 
         "Out_Of_Stock_Flow(Error-code)":"RET_6",
         "Buyer_Instructions_And_Delivery_Update_Flow":"RET_MRGD_3_OOF_011", 
+      },
+    },
+    "1.2.0": {
+      "FASHION": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
@@ -622,6 +632,16 @@ export const FLOW_ID_MAP: Record<
       },
     },
   },
+  "nic2004:60232":{
+    "1.2.0":{
+      "Logistics (NIC2004:60232)":{
+        "ORDER_FLOW_BASELINE":"B2C_1",
+        "ORDER_FLOW_BASELINE(without rts)":"B2C_1_WORTS",
+        "BUYER_SIDE_ORDER_CANCELLATION":"B2C_5",
+        "RTO_FLOW":"B2C_2"
+      }
+    }
+  },
   "ONDC:FIS13": {
     "2.0.0": {
       "transit-insurance": {
@@ -668,4 +688,13 @@ export const typeMapping: Record<string, string> = {
   "transit-insurance": "SACHET_INSURANCE",
   "accidental-insurance": "SACHET_INSURANCE",
   "hospicash-insurance": "SACHET_INSURANCE",
+  "Logistics (NIC2004:60232)":"LOGISTICS"
+};
+
+export const NIC_LOGISTICS_CATEGORY_FLOW_MAP: Record<string, string> = {
+  "Standard Delivery": "B2C_1A",
+  "Same Day Delivery": "B2C_1B",
+  "Next Day Delivery": "B2C_1C",
+  "Immediate Delivery": "B2C_1D",
+  "Express Delivery": "B2C_1E",
 };
