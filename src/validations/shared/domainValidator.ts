@@ -127,8 +127,6 @@ export const DomainValidators = {
     logValidators.cod.validate_cod,
     logValidators.tax_type_rcm.validate_np_tax_type_rcm,
     logValidators.codified_static_terms.validate_codified_static_terms,
-    logValidators.public_special_capabilities
-      .validate_public_special_capabilities
   ),
 
   nic2004Search: createSearchValidator(
