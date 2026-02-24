@@ -178,7 +178,7 @@ export function validateFulfillmentStructure(
     const ffState: string = fulfillment?.state?.descriptor?.code ?? "";
     const tags: any[] = fulfillment?.tags ?? [];
 
-    if (opts.requireAwb) {
+    if (opts.requireAwb && IN_TRANSIT_STATES.includes(ffState)) {
         try {
             assert.ok(
                 fulfillment["@ondc/org/awb_no"],
@@ -309,7 +309,7 @@ export function validateFulfillmentStructure(
         }
     }
 
-    if (opts.requireShippingLabel) {
+    if (opts.requireShippingLabel && IN_TRANSIT_STATES.includes(ffState)) {
         try {
             const tag = tags.find((t: any) => t.code === "shipping_label");
             assert.ok(tag, `fulfillments/tags must contain 'shipping_label' tag for P2H2P in ${action}`);

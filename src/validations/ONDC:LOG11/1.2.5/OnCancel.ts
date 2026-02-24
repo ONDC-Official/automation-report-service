@@ -71,8 +71,12 @@ export async function checkOnCancel(
 
   // 7. Order state must be Cancelled
   try {
-    assert.ok(orderState === "Cancelled", `Order state should be 'Cancelled', got '${orderState}'`);
-    testResults.passed.push("Order state is 'Cancelled' validation passed");
+    if (flowId === "RTO_FLOW") {
+      assert.ok(orderState === "Completed", `Order state should be 'Completed', got '${orderState}'`);
+    } else {
+      assert.ok(orderState === "Cancelled", `Order state should be 'Cancelled', got '${orderState}'`);
+    }
+    testResults.passed.push(`Order state is ${orderState} validation passed`);
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(error.message);
