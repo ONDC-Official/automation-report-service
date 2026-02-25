@@ -1080,10 +1080,8 @@ domains:
             - on_confirm
 
         optional_flows:
-          - FEATURE_DISCOVERY
           - IMMEDIATE_DELIVERY_FLOW
           - FIFO_FLOW
-          - RTO_FLOW
           - CASH_ON_DELIVERY_FLOW
           - PREPAID_PAYMENT_FLOW
           - QUICK_COMMERCE_FLOW
@@ -1094,7 +1092,6 @@ domains:
           - ORDER_FLOW_BASE_LINE_WITH_IGM(v-2.0.0)
           - ORDER_FLOW_BASE_LINE_WITH_IGM_REJECTION(v-2.0.0)
           - ORDER_FLOW_BASE_LINE_WITH_IGM_NO_ACTION(v-2.0.0)
-          - ORDER_FLOW_BASE_LINE_WITH_IGM(v-1.0.0)
           - ORDER_FLOW_EXCHANGE_CUSTOMER_SUPPORT_DETAILS
           - ORDER_FLOW_CODIFIED_STATIC_TERMS
           - ORDER_FLOW_RCM
@@ -1107,8 +1104,6 @@ domains:
           - E-POD
           - Call-Masking
           - RATE_CARD (P2P)
-          - BUYER_SIDE_ORDER_CANCELLATION
-          - SELLER_SIDE_ORDER_CANCELLATION
           - FEATURE_DISCOVERY_SEARCH_DEV_PORTAL
           - ORDER_FLOW_BASE_LINE_INIT_DEV_PORTAL
           - ORDER_FLOW_BASE_LINE_CONFIRM_DEV_PORTAL
@@ -2014,26 +2009,28 @@ domains:
             - on_cancel
 
         optional_flows:
-          - FEATURE_DISCOVERY
-          - RTO_FLOW
+          - WEIGHT_DIFFERENTIAL_FLOW
+          - PICKUP_DELIVERY_ATTEMPT
           - CASH_ON_DELIVERY_FLOW
           - PREPAID_PAYMENT_FLOW
           - CANCELLATION_TERMS_FLOW
-          - PICKUP_DELIVERY_ATTEMPT
           - STATIC_OTP_PICKUP_DELIVERY
-          - ORDER_FLOW_EXCHANGE
           - STATIC_OTP_RTO_DELIVERY
-          - CUSTOMER_SUPPORT_DETAILS
-          - ORDER_FLOW_RCM
+          - ORDER_FLOW_EXCHANGE_CUSTOMER_SUPPORT_DETAILS
           - ORDER_FLOW_CODIFIED_STATIC_TERMS
+          - ORDER_FLOW_RCM
           - ORDER_FLOW_BASE_LINE_PUBLIC_SPECIAL_CAPABILITIES
           - ORDER_FLOW_BASE_LINE_SLA_METRICS
+          - ORDER_FLOW_BASE_LINE_SELLER_CREDS
           - E-WAY_BILL
           - E-POD
           - Call-Masking
           - RATE_CARD (P2H2P)
           - REVERSE_QC
-          - WEIGHT_DIFFERENTIAL_FLOW
+          - ORDER_FLOW_BASE_LINE_WITH_IGM(v-2.0.0)
+          - ORDER_FLOW_BASE_LINE_WITH_IGM_REJECTION(v-2.0.0)
+          - ORDER_FLOW_BASE_LINE_WITH_IGM_NO_ACTION(v-2.0.0)
+          - B2B_ORDER_CANCELLATION
         validationModules: "../validations/ONDC:LOG11/validator#validate"
  
   ONDC:FIS11:
