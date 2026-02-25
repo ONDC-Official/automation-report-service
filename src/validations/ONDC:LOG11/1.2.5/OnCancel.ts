@@ -30,7 +30,8 @@ export async function checkOnCancel(
   const orderState: string = message?.order?.state ?? "";
   const orderQuote = message?.order?.quote;
 
-  logger.info(`Inside ${action} validations for LOG11`);
+  const isP2H2P = context.domain === "ONDC:LOG11";
+  logger.info(`Inside ${action} validations for ${context.domain}`);
 
   // 1. order_id: on_confirm → on_cancel
   await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
@@ -95,13 +96,13 @@ export async function checkOnCancel(
   for (const ff of fulfillments) {
     if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
       validateFulfillmentStructure(action, ff, testResults, {
-        requireAwb: true,
+        requireAwb: isP2H2P,               // LOG11 P2H2P only
         requireTracking: true,
         requireGps: true,
         requireContacts: true,
-        requireLinkedProvider: true,
-        requireLinkedOrder: true,
-        requireShippingLabel: true,
+        requireLinkedProvider: isP2H2P,    // LOG11 P2H2P only
+        requireLinkedOrder: isP2H2P,       // LOG11 P2H2P only
+        requireShippingLabel: isP2H2P,     // LOG11 P2H2P only
         requireNoPrePickupTimestamps: true,
       });
 

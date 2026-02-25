@@ -2,232 +2,113 @@ import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import logger from "@ondc/automation-logger";
 import { fetchData, saveData } from "../../../utils/redisUtils";
+import {
+  validatePaymentStatus,
+  validateAndSaveFulfillmentIds,
+  validateGpsConsistency,
+  validateFulfillmentStructure,
+  validateFulfillmentTimestamps,
+  validateTrackingTag,
+  validateOrderIdConsistency,
+  validateQuoteConsistency,
+} from "../../shared/logisticsValidations";
 
 export async function checkOnCancel(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
-
-  const { jsonRequest, jsonResponse } = payload;
+  const testResults: TestResult = { response: {}, passed: [], failed: [] };
+  const { jsonRequest, jsonResponse } = element;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-
   const { context, message } = jsonRequest;
+  const action = element?.action.toLowerCase();
   const transactionId = context?.transaction_id;
   const contextTimestamp = context?.timestamp;
-  const fulfillments = message?.order?.fulfillments;
-  const shipmentType = message?.order?.items?.[0]?.descriptor?.code;
-  const orderState = message?.order?.state;
-  const paymentStatus = message?.order?.payment?.status;
-  const paymentType = message?.order?.payment?.type;
-  const paymentTimestamp = message?.order?.payment?.time?.timestamp;
+  const fulfillments: any[] = message?.order?.fulfillments || [];
+  const orderState: string = message?.order?.state ?? "";
+  const orderQuote = message?.order?.quote;
 
-  if (orderState === "Complete" && paymentType === "ON-FULFILLMENT") {
-    try {
-      assert.ok(
-        paymentStatus == "PAID",
-        "Payment status should be 'PAID' once the order is complete for payment type 'ON-FULFILLMENT'"
-      );
-      testResults.passed.push("Payment status validation passed");
-    } catch (error: any) {
-      logger.error(`Error during ${action} validation: ${error.message}`);
-      testResults.failed.push(error.message);
-    }
-  }
-  if (
-    orderState === "Complete" &&
-    paymentType === "ON-FULFILLMENT" &&
-    paymentStatus === "PAID"
-  ) {
-    try {
-      assert.ok(
-        paymentTimestamp,
-        "Payment timestamp should be provided once the order is complete and payment has been made"
-      );
-      testResults.passed.push("Payment timestamp validation passed");
-    } catch (error: any) {
-      logger.error(`Error during ${action} validation: ${error.message}`);
-      testResults.failed.push(error.message);
-    }
-  } else if (paymentType === "POST-FULFILLMENT" && paymentStatus === "PAID") {
-    try {
-      assert.ok(
-        !paymentTimestamp,
-        "Payment timestamp should not be provided as payment type is 'POST-FULFILLMENT'"
-      );
-      testResults.passed.push("Payment timestamp validation passed");
-    } catch (error: any) {
-      logger.error(`Error during ${action} validation: ${error.message}`);
-      testResults.failed.push(error.message);
-    }
-  } else if (paymentStatus === "NOT-PAID") {
-    try {
-      assert.ok(
-        !paymentTimestamp,
-        "Payment timestamp should not be provided if the payment is yet not made"
-      );
-      testResults.passed.push("Payment timestamp validation passed");
-    } catch (error: any) {
-      logger.error(`Error during ${action} validation: ${error.message}`);
-      testResults.failed.push(error.message);
-    }
-  }
+  const isP2H2P = context.domain === "ONDC:LOG11";
+  logger.info(`Inside ${action} validations for ${context.domain}`);
 
+  // 1. order_id: on_confirm → on_cancel
+  await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
+
+  // 2. Quote price: on_confirm → on_cancel
+  await validateQuoteConsistency(action, orderQuote, sessionID, transactionId, "on_confirm_quote", testResults);
+
+  // 3. Fulfillment IDs: on_confirm → on_cancel
+  const deliveryFf = fulfillments.find((f) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
+  await validateAndSaveFulfillmentIds(
+    action, fulfillments, sessionID, transactionId,
+    "on_confirm_delivery_fulfillment_id", "on_confirm_rto_fulfillment_id",
+    "", "",
+    testResults
+  );
+
+  // 4. GPS consistency: search → on_cancel
+  await validateGpsConsistency(action, deliveryFf, sessionID, transactionId, testResults);
+
+  // 5. Cancellation object must be present
   try {
-    fulfillments.forEach(async (fulfillment: any) => {
-      if (fulfillment.type === "Delivery") {
-        const ffState = fulfillment?.state?.descriptor?.code;
-        const pickupTimestamp = fulfillment?.start?.time?.timestamp;
-        const deliveryTimestamp = fulfillment?.end?.time?.timestamp;
-        const trackingTag = fulfillment?.tags?.find(
-          (tag: { code: string }) => tag.code === "tracking"
-        );
-
-        if (shipmentType === "P2H2P") {
-          try {
-            assert.ok(
-              fulfillment["@ondc/org/awb_no"],
-              "AWB no is required for P2H2P shipments"
-            );
-            testResults.passed.push("AWB number validation passed");
-          } catch (error: any) {
-            logger.error(`Error during ${action} validation: ${error.message}`);
-            testResults.failed.push(error.message);
-          }
-        }
-
-        try {
-          const prePickupStates = [
-            "Pending",
-            "Agent-assigned",
-            "Searching-for-agent",
-            "At-pickup",
-          ].includes(ffState);
-          const hasTimestamps = pickupTimestamp || deliveryTimestamp;
-
-          assert.ok(
-            !(prePickupStates && hasTimestamps),
-            `Pickup/Delivery timestamp should not be provided when fulfillment state is '${ffState}'`
-          );
-
-          testResults.passed.push(
-            "Pickup/Delivery timestamp requirement validation passed"
-          );
-        } catch (error: any) {
-          logger.error(`Error during ${action} validation: ${error.message}`);
-          testResults.failed.push(error.message);
-        }
-
-        try {
-          assert.ok(
-            !(
-              [
-                "Agent-assigned",
-                "Order-picked-up",
-                "Out-for-delivery",
-              ].includes(ffState) && orderState !== "In-progress"
-            ),
-            "Order state should be 'In-progress'"
-          );
-          testResults.passed.push("Order state validation passed");
-        } catch (error: any) {
-          logger.error(`Error during ${action} validation: ${error.message}`);
-          testResults.failed.push(error.message);
-        }
-
-        if (ffState === "Order-picked-up" && pickupTimestamp) {
-          saveData(
-            sessionID,
-            transactionId,
-            "pickupTimestamp",
-            pickupTimestamp
-          );
-          try {
-            assert.ok(
-              contextTimestamp >= pickupTimestamp,
-              "Pickup timestamp cannot be future-dated w.r.t context timestamp"
-            );
-            testResults.passed.push("Pickup timestamp validation passed");
-          } catch (error: any) {
-            logger.error(`Error during ${action} validation: ${error.message}`);
-            testResults.failed.push(error.message);
-          }
-        }
-        const pickedTimestamp = await fetchData(
-          sessionID,
-          transactionId,
-          "pickupTimestamp"
-        );
-        if (
-          ["Out-for-delivery", "At-destination-hub", "In-transit"].includes(
-            ffState
-          ) &&
-          pickedTimestamp
-        ) {
-          try {
-            assert.ok(
-              pickupTimestamp === pickedTimestamp,
-              `Pickup timestamp cannot change once fulfillment state is '${ffState}'`
-            );
-            testResults.passed.push(
-              "Pickup timestamp immutability validation passed"
-            );
-          } catch (error: any) {
-            logger.error(`Error during ${action} validation: ${error.message}`);
-            testResults.failed.push(error.message);
-          }
-        }
-        if (ffState === "Order-delivered" && deliveryTimestamp) {
-          try {
-            assert.ok(
-              contextTimestamp >= deliveryTimestamp,
-              "Delivery timestamp cannot be future-dated w.r.t context timestamp"
-            );
-            testResults.passed.push("Delivery timestamp validation passed");
-          } catch (error: any) {
-            logger.error(`Error during ${action} validation: ${error.message}`);
-            testResults.failed.push(error.message);
-          }
-        }
-
-        const isOrderPickedUp =
-          ffState === "Order-picked-up" || ffState === "Out-for-delivery";
-        const isTrackingEnabled = Boolean(fulfillment.tracking); // Ensure boolean value
-        const isTrackingTagPresent =
-          trackingTag !== undefined && trackingTag !== null;
-        // Only check tracking tag if tracking is enabled
-        if (isOrderPickedUp && isTrackingEnabled) {
-          try {
-            assert.ok(
-              isTrackingTagPresent,
-              "Tracking tag must be provided once order is picked up and tracking is enabled"
-            );
-            testResults.passed.push("Tracking tag validation passed");
-          } catch (error: any) {
-            logger.error(`Error during ${action} validation: ${error.message}`);
-            testResults.failed.push(error.message);
-          }
-        } else {
-          testResults.failed.push(
-            `tracking should be enabled (true) in fulfillments/tracking`
-          );
-        }
-      } 
-    });
+    assert.ok(message?.order?.cancellation, "message.order.cancellation is required in on_cancel");
+    testResults.passed.push("Cancellation object presence validation passed");
   } catch (error: any) {
-    logger.error(
-      `Unexpected error during ${action} validation: ${error.message}`
+    testResults.failed.push(error.message);
+  }
+
+  // 6. precancel_state tag must be present in fulfillments
+  try {
+    const hasPreCancelState = fulfillments.some((f: any) =>
+      f.tags?.some((t: any) => t.code === "precancel_state")
     );
-    testResults.failed.push(`Unexpected error: ${error.message}`);
+    assert.ok(hasPreCancelState, "fulfillments/tags must contain 'precancel_state' tag in on_cancel");
+    testResults.passed.push("precancel_state tag validation passed in on_cancel");
+  } catch (error: any) {
+    testResults.failed.push(error.message);
+  }
+
+  // 7. Order state must be Cancelled
+  try {
+    if (flowId === "RTO_FLOW") {
+      assert.ok(orderState === "Completed", `Order state should be 'Completed', got '${orderState}'`);
+    } else {
+      assert.ok(orderState === "Cancelled", `Order state should be 'Cancelled', got '${orderState}'`);
+    }
+    testResults.passed.push(`Order state is ${orderState} validation passed`);
+  } catch (error: any) {
+    logger.error(`Error during ${action} validation: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+
+  // 8. Payment validations
+  validatePaymentStatus(
+    action, orderState,
+    message?.order?.payment?.type,
+    message?.order?.payment?.status,
+    message?.order?.payment?.time?.timestamp,
+    testResults
+  );
+
+  // 9. Per-fulfillment validations
+  for (const ff of fulfillments) {
+    if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
+      validateFulfillmentStructure(action, ff, testResults, {
+        requireAwb: isP2H2P,               // LOG11 P2H2P only
+        requireTracking: true,
+        requireGps: true,
+        requireContacts: true,
+        requireLinkedProvider: isP2H2P,    // LOG11 P2H2P only
+        requireLinkedOrder: isP2H2P,       // LOG11 P2H2P only
+        requireShippingLabel: isP2H2P,     // LOG11 P2H2P only
+        requireNoPrePickupTimestamps: true,
+      });
+
+      await validateFulfillmentTimestamps(action, ff, contextTimestamp, sessionID, transactionId, testResults);
+      validateTrackingTag(action, ff, testResults);
+    }
   }
 
   if (testResults.passed.length < 1 && testResults.failed.length < 1)

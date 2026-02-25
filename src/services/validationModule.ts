@@ -166,10 +166,10 @@ function validateActionSequence(
         createdAt: p?.createdAt
       }))
     });
-    
+
     for (let i = 0; i < requiredSequence.length; i++) {
       const expectedAction = requiredSequence[i].toLowerCase();
-      
+
       // Skip HTML_FORM entries in the required sequence - they don't have corresponding payloads
       if (expectedAction === "html_form") {
         logger.info(`Skipping HTML_FORM at sequence position ${i + 1}`);
@@ -185,6 +185,8 @@ function validateActionSequence(
       }
 
       // Check if we have enough payloads
+      console.log("payloadIndex", payloadIndex);
+      console.log("validationPayloads.length", validationPayloads.length);
       if (payloadIndex >= validationPayloads.length) {
         validSequence = false;
         // Check for Early Success Termination
@@ -194,12 +196,12 @@ function validateActionSequence(
         if (i > 0) {
           const lastAction = requiredSequence[i - 1].toLowerCase();
           const currentExpectedAction = expectedAction.toLowerCase();
-          
+
           if (
-            (currentExpectedAction === "update" || 
-             currentExpectedAction === "status" || 
-             currentExpectedAction === "track" ||
-             currentExpectedAction === "cancel") &&
+            (currentExpectedAction === "update" ||
+              currentExpectedAction === "status" ||
+              currentExpectedAction === "track" ||
+              currentExpectedAction === "cancel") &&
             (lastAction.startsWith("on_"))
           ) {
             logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
@@ -279,7 +281,7 @@ function validateActionSequence(
           const futureAction = requiredSequence[k]?.toLowerCase();
           // Skip checking against HTML_FORM/DYNAMIC_FORM as jump targets
           if (futureAction === "html_form" || futureAction === "dynamic_form") continue;
-          
+
           if (futureAction === actualAction) {
             foundFutureMatch = true;
             futureIndex = k;
@@ -288,9 +290,9 @@ function validateActionSequence(
         }
 
         if (foundFutureMatch) {
-           logger.info(`Skipping expected steps from index ${i} to ${futureIndex-1} because actual action '${actualAction}' matches sequence at index ${futureIndex}`);
-           i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
-           continue; // Continue loop to match current payload against new expected action
+          logger.info(`Skipping expected steps from index ${i} to ${futureIndex - 1} because actual action '${actualAction}' matches sequence at index ${futureIndex}`);
+          i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
+          continue; // Continue loop to match current payload against new expected action
         }
       }
 
@@ -300,9 +302,9 @@ function validateActionSequence(
         if (expectedAction === "select") {
           displayExpectedAction = "select or init";
         }
-        
+
         validSequence = false;
-        
+
         // Find the previous non-HTML_FORM/non-DYNAMIC_FORM action for better error message
         let previousAction = "start";
         for (let j = i - 1; j >= 0; j--) {
@@ -312,11 +314,11 @@ function validateActionSequence(
             break;
           }
         }
-        
+
         // Also check if there's an HTML_FORM or DYNAMIC_FORM right before this expected action
         const hasHtmlFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "html_form";
         const hasDynamicFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "dynamic_form";
-        
+
         // Check if we're ahead in payloads (missing action scenario)
         // Look ahead to see if the expected action appears later
         let foundLater = false;
@@ -337,7 +339,7 @@ function validateActionSequence(
             action: p?.action?.toLowerCase(),
             transactionId: p?.transactionId
           }));
-        
+
         logger.error("Action sequence mismatch - Detailed Debug", {
           sequencePosition: i + 1,
           expectedAction,
@@ -357,7 +359,7 @@ function validateActionSequence(
           originalPayloadActions: payloads.map(p => p?.action?.toLowerCase()),
           deduplicatedPayloadActions: validationPayloads.map(p => p?.action?.toLowerCase())
         });
-        
+
         let errorMessage = `Error: Expected '${displayExpectedAction}' after '${previousAction}'`;
         if (hasHtmlFormBefore) {
           errorMessage += ` (HTML_FORM was skipped)`;
@@ -369,7 +371,7 @@ function validateActionSequence(
           errorMessage += `. Note: '${expectedAction}' action found later at payload position ${foundAtPosition + 1}, suggesting a missing action in the sequence.`;
         }
         errorMessage += `, but found '${actualAction || "undefined"}'.`;
-        
+
         errors.push(errorMessage);
         break;
       }
@@ -407,18 +409,18 @@ async function processPayloads(
   // If we have a required sequence, process in sequence order
   if (requiredSequence && requiredSequence.length > 0) {
     const transactionId = payloads[0]?.transactionId || payloads[0]?.jsonRequest?.context?.transaction_id;
-    
+
     for (let seqIndex = 0; seqIndex < requiredSequence.length; seqIndex++) {
       const expectedAction = requiredSequence[seqIndex].toLowerCase();
-      
+
       // Handle HTML_FORM validation inline
       if (expectedAction === "html_form") {
         htmlFormCounter++;
-        
+
         try {
           const { validateHTMLForm } = await import("../validations/shared/formValidations");
           const htmlFormTestResults: TestResult = { response: {}, passed: [], failed: [] };
-          
+
           if (transactionId) {
             await validateHTMLForm(sessionID, transactionId, flowId, htmlFormTestResults);
             messages[`html_form_${htmlFormCounter}`] = JSON.stringify({
@@ -445,13 +447,13 @@ async function processPayloads(
       // Handle DYNAMIC_FORM validation inline (similar to HTML_FORM)
       if (expectedAction === "dynamic_form") {
         dynamicFormCounter++;
-        
+
         try {
           // For now, just mark dynamic forms as passed since there's no specific validation
           // This can be extended later if needed
           const dynamicFormTestResults: TestResult = { response: {}, passed: [], failed: [] };
           dynamicFormTestResults.passed.push(`Dynamic form ${dynamicFormCounter} processed successfully`);
-          
+
           messages[`dynamic_form_${dynamicFormCounter}`] = JSON.stringify({
             passed: dynamicFormTestResults.passed,
             failed: dynamicFormTestResults.failed,
@@ -469,7 +471,7 @@ async function processPayloads(
       // Process actual payload
       if (payloadIndex >= payloads.length) {
         logger.info(`No more payloads available at sequence position ${seqIndex + 1}`,
-          {meta: { flowId, seqIndex: seqIndex + 1 }}
+          { meta: { flowId, seqIndex: seqIndex + 1 } }
         );
         break;
       }
@@ -553,10 +555,10 @@ export async function validationModule(
   // Use optional chaining for usecaseId to avoid property access error
   const domainConfig: DomainConfig = sessionDetails
     ? loadConfig(
-        sessionDetails.domain,
-        sessionDetails.version,
-        (sessionDetails as any).usecaseId // fallback to 'any' for backwards compatibility
-      )
+      sessionDetails.domain,
+      sessionDetails.version,
+      (sessionDetails as any).usecaseId // fallback to 'any' for backwards compatibility
+    )
     : { flows: {} };
 
   // Check mandatory flows
@@ -587,8 +589,8 @@ export async function validationModule(
 
     // Step 2: Process payloads (HTML_FORM validations are now handled inline)
     // Try multiple possible keys for usecaseId
-    const usecaseId = (sessionDetails as any)?.usecaseId 
-      || (sessionDetails as any)?.usecase_id 
+    const usecaseId = (sessionDetails as any)?.usecaseId
+      || (sessionDetails as any)?.usecase_id
       || (sessionDetails as any)?.useCaseId;
     const messages = await processPayloads(
       payloads,

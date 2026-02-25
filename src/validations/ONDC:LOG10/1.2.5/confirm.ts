@@ -1,118 +1,102 @@
-import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import logger from "@ondc/automation-logger";
 import { saveData } from "../../../utils/redisUtils";
+import { DomainValidators } from "../../shared/domainValidator";
+import {
+  validateOrderTimestamps,
+  validateAndSaveFulfillmentIds,
+  validateGpsConsistency,
+  validateFulfillmentStructure,
+  validateOrderIdConsistency,
+  validateProviderIdConsistency,
+  validateItemIdsConsistency,
+} from "../../shared/logisticsValidations";
 
 export async function checkConfirm(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-
+  const commonTestResults = await DomainValidators.ondclogConfirm(element, sessionID, flowId, action_id);
   const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
+    response: commonTestResults.response,
+    passed: [...commonTestResults.passed],
+    failed: [...commonTestResults.failed],
   };
 
-  const { jsonRequest, jsonResponse } = payload;
+  const { jsonRequest, jsonResponse } = element;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-
   const { context, message } = jsonRequest;
-  const contextTimestamp = context?.timestamp;
-  const transactionId = context?.transactionId;
+  const action = element?.action.toLowerCase();
+  const transactionId = context?.transaction_id;
+  const fulfillments: any[] = message?.order?.fulfillments || [];
   const createdAt = message?.order?.created_at;
   const updatedAt = message?.order?.updated_at;
-  const fulfillments = message?.order?.fulfillments;
 
-  saveData(sessionID, transactionId, "createdAt", createdAt);
-  try {
-    assert.ok(
-      contextTimestamp > createdAt || contextTimestamp === createdAt,
-      "order.created_at timestamp cannot be future dated w.r.t context/timestamp"
-    );
-    testResults.passed.push("order.created_at timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
+  logger.info(`Inside ${action} validations for LOG11`);
 
-  try {
-    assert.ok(
-      contextTimestamp > updatedAt || contextTimestamp === updatedAt,
-      "order.updated_at cannot be future dated w.r.t context/timestamp"
-    );
-    testResults.passed.push("order.updated_at timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
+  // 1. Order timestamps
+  validateOrderTimestamps(action, context?.timestamp, createdAt, updatedAt, testResults);
 
-  try {
-    fulfillments.every(
-      (fulfillment: { type: string; id: string; tags?: any[] }) => {
-        if (
-          fulfillment.type === "Delivery" &&
-          Array.isArray(fulfillment.tags)
-        ) {
-          return fulfillment.tags.some((tag) => {
-            if (tag.code === "state" && Array.isArray(tag.list)) {
-              return tag.list.some((list: { code: string; value: any }) => {
-                if (list.code === "ready_to_ship") {
-                  const rts = list.value;
-                  saveData(
-                    sessionID,
-                    transactionId,
-                    `${fulfillment.id}:rts`,
-                    rts
-                  );
-                  return true;
-                }
-                return false;
-              });
-            }
-            return false;
-          });
-        }
-        return true; // Ensuring `every` can continue checking other fulfillments
-      }
-    );
-  } catch (error: any) {
-    logger.error(error.message);
-  }
-  if (flowId === "CASH_ON_DELIVERY_FLOW") {
-    try {
-      const fulfillments = message?.order?.fulfillments || [];
+  // 2. Cross-call ID comparisons
+  await validateProviderIdConsistency(action, message?.order?.provider?.id, sessionID, transactionId, "on_search_provider_id", testResults);
+  await validateItemIdsConsistency(action, message?.order?.items || [], sessionID, transactionId, "init_items", testResults);
 
-      let allFulfillmentsHaveTag = true;
+  // 3. Fulfillment IDs: on_search → confirm; save for on_confirm
+  const deliveryFf = fulfillments.find((f) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
+  await validateAndSaveFulfillmentIds(
+    action, fulfillments, sessionID, transactionId,
+    "on_search_delivery_fulfillment_id", "on_search_rto_fulfillment_id",
+    "confirm_delivery_fulfillment_id", "confirm_rto_fulfillment_id",
+    testResults
+  );
 
-      for (const fulfillment of fulfillments) {
-        const tags = fulfillment?.tags || [];
-        const hasCodSettlementTag = tags.some(
-          (tag: { code: string }) => tag.code === "cod_settlement_detail"
-        );
+  // 4. GPS consistency: search → confirm
+  await validateGpsConsistency(action, deliveryFf, sessionID, transactionId, testResults);
 
-        if (!hasCodSettlementTag) {
-          allFulfillmentsHaveTag = false;
-          break;
-        }
-      }
+  // 5. Save confirm data for on_confirm
+  const orderId = message?.order?.id;
+  if (orderId) saveData(sessionID, transactionId, "confirm_order_id", orderId);
+  if (createdAt) saveData(sessionID, transactionId, "confirm_created_at", createdAt);
+  if (message?.order?.quote) saveData(sessionID, transactionId, "confirm_quote", message.order.quote);
 
-      assert.ok(
-        allFulfillmentsHaveTag,
-        `message.order.fulfillments must have a tag with code "cod_settlement_detail"`
-      );
-
-      testResults.passed.push(
-        `fulfillments have the "cod_settlement_detail" tag`
-      );
-    } catch (error: any) {
-      testResults.failed.push(error.message);
+  // 6. Save ready_to_ship per fulfillment for on_confirm/on_update
+  for (const ff of fulfillments) {
+    if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
+      const stateTag = ff?.tags?.find((t: any) => t.code === "state");
+      const rts = stateTag?.list?.find((e: any) => e.code === "ready_to_ship")?.value;
+      if (rts !== undefined) saveData(sessionID, transactionId, `${ff.id}:rts`, rts);
     }
   }
+
+  // 7. Per-fulfillment structure validations
+  for (const ff of fulfillments) {
+    if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
+      validateFulfillmentStructure(action, ff, testResults, {
+        requireTracking: true,
+        requireGps: true,
+        requireContacts: true,
+        requireStartInstructions: true,
+        requireLinkedProvider: true,
+        requireLinkedOrder: true,
+        requireNoPrePickupTimestamps: true,
+      });
+    }
+  }
+
+  // 8. COD: cod_settlement_detail tag
+  if (flowId === "CASH_ON_DELIVERY_FLOW") {
+    const allHaveTag = fulfillments.every((f: any) =>
+      f.tags?.some((t: any) => t.code === "cod_settlement_detail")
+    );
+    if (!allHaveTag) {
+      testResults.failed.push(`fulfillments must have a "cod_settlement_detail" tag`);
+    } else {
+      testResults.passed.push(`"cod_settlement_detail" tag validation passed`);
+    }
+  }
+
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
