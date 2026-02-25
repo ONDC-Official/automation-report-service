@@ -1,131 +1,102 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import logger from "@ondc/automation-logger";
-import { fetchData } from "../../../utils/redisUtils";
+import { fetchData, saveData } from "../../../utils/redisUtils";
+import { DomainValidators } from "../../shared/domainValidator";
+import {
+  validateOrderTimestamps,
+  validateAndSaveFulfillmentIds,
+  validateGpsConsistency,
+  validateFulfillmentStructure,
+  validateOrderIdConsistency,
+  validateProviderIdConsistency,
+  validateItemIdsConsistency,
+  validateQuoteConsistency,
+} from "../../shared/logisticsValidations";
 
 export async function checkOnConfirm(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-
+  const commonTestResults = await DomainValidators.ondclogOnConfirm(element, sessionID, flowId, action_id);
   const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
+    response: commonTestResults.response,
+    passed: [...commonTestResults.passed],
+    failed: [...commonTestResults.failed],
   };
 
-  const { jsonRequest, jsonResponse } = payload;
+  const { jsonRequest, jsonResponse } = element;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-
   const { context, message } = jsonRequest;
-  const contextTimestamp = context?.timestamp;
-  const transactionId = context.transaction_id;
+  const action = element?.action.toLowerCase();
+  const transactionId = context?.transaction_id;
+  const fulfillments: any[] = message?.order?.fulfillments || [];
   const createdAt = message?.order?.created_at;
   const updatedAt = message?.order?.updated_at;
-  const fulfillments = message?.order?.fulfillments;
+  const onConfirmQuote = message?.order?.quote;
+  const onConfirmOrderId = message?.order?.id;
+
+  const isP2H2P = context.domain === "ONDC:LOG11";
+  logger.info(`Inside ${action} validations for ${context.domain}`);
+
+  // 1. Order timestamps
+  validateOrderTimestamps(action, context?.timestamp, createdAt, updatedAt, testResults);
+
+  // 2. updated_at must differ from confirm's created_at
   try {
-    assert.ok(
-      contextTimestamp > createdAt || contextTimestamp === createdAt,
-      "order.created_at timestamp cannot be future dated w.r.t context/timestamp"
-    );
-    testResults.passed.push("order.created_at timestamp validation passed");
+    const confirmCreatedAt = await fetchData(sessionID, transactionId, "confirm_created_at");
+    if (confirmCreatedAt) {
+      assert.ok(updatedAt !== confirmCreatedAt, "order.updated_at should be updated w.r.t /confirm created_at");
+      testResults.passed.push("order.updated_at is updated correctly from confirm");
+    }
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
+    testResults.failed.push(error.message);
   }
 
-  try {
-    assert.ok(
-      contextTimestamp > updatedAt || contextTimestamp === updatedAt,
-      "order.updated_at timestamp cannot be future dated w.r.t context/timestamp"
-    );
-    testResults.passed.push("order.updated_at timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
+  // 3. Cross-call ID comparisons
+  await validateOrderIdConsistency(action, onConfirmOrderId, sessionID, transactionId, "confirm_order_id", testResults);
+  await validateQuoteConsistency(action, onConfirmQuote, sessionID, transactionId, "confirm_quote", testResults);
+  await validateProviderIdConsistency(action, message?.order?.provider?.id, sessionID, transactionId, "on_search_provider_id", testResults);
+  await validateItemIdsConsistency(action, message?.order?.items || [], sessionID, transactionId, "init_items", testResults);
+
+  // 4. Fulfillment IDs: confirm → on_confirm; save for downstream
+  const deliveryFf = fulfillments.find((f) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
+  await validateAndSaveFulfillmentIds(
+    action, fulfillments, sessionID, transactionId,
+    "confirm_delivery_fulfillment_id", "confirm_rto_fulfillment_id",
+    "on_confirm_delivery_fulfillment_id", "on_confirm_rto_fulfillment_id",
+    testResults
+  );
+
+  // 5. GPS consistency: search → on_confirm
+  await validateGpsConsistency(action, deliveryFf, sessionID, transactionId, testResults);
+
+  // 6. Save on_confirm data for downstream
+  if (onConfirmOrderId) saveData(sessionID, transactionId, "order_id", onConfirmOrderId);
+  if (message?.order?.state) saveData(sessionID, transactionId, "on_confirm_order_state", message.order.state);
+  if (onConfirmQuote) saveData(sessionID, transactionId, "on_confirm_quote", onConfirmQuote);
+
+  // 7. Per-fulfillment structure validations
+  for (const ff of fulfillments) {
+    if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
+      validateFulfillmentStructure(action, ff, testResults, {
+        requireTracking: true,
+        requireStateCode: true,
+        requireGps: true,
+        requireContacts: true,
+        requireStartInstructions: isP2H2P, // LOG11 P2H2P only
+        requireTimeRange: true,
+        requireLinkedProvider: isP2H2P,    // LOG11 P2H2P only
+        requireLinkedOrder: isP2H2P,       // LOG11 P2H2P only
+        requireNoPrePickupTimestamps: true,
+      });
+    }
   }
 
-  try {
-    assert.ok(
-      createdAt < updatedAt,
-      "order/created_at` cannot be future dated w.r.t `order/updated_at"
-    );
-    testResults.passed.push(
-      "order.created_at is future dated w.r.t order.updated_at"
-    );
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
-
-  try {
-    const confirmCreatedAt = await fetchData(sessionID, transactionId, "createdAt");
-    assert.ok(
-      updatedAt !== confirmCreatedAt,
-      "order/updated_at` should be updated w.r.t context/timestamp"
-    );
-    testResults.passed.push("order.updated_at is updated correctly");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
-
-  try {
-    assert.ok(
-      fulfillments.every((fulillment: any) => {
-        if (fulillment.type === "Delivery") {
-          return !fulillment?.start?.time?.timestamp;
-        }
-      }),
-      "Pickup timestamp (fulfillments/start/time/timestamp cannot be provided before order is picked up"
-    );
-    testResults.passed.push(
-      "Timestamp check in fulfillments/start/time passed"
-    );
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
-
-  try {
-    assert.ok(
-      fulfillments.every((fulillment: any) => {
-        if (fulillment.type === "Delivery") {
-          return !fulillment?.end?.time?.timestamp;
-        }
-      }),
-      "Delivery timestamp (fulfillments/end/time/timestamp cannot be provided before order is picked up"
-    );
-    testResults.passed.push("Timestamp (not required) check in fulfillments/end/time passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
-
-  try {
-    assert.ok(
-      fulfillments.every(async (fulillment: any) => {
-        const rts = await fetchData(
-          sessionID,
-          transactionId,
-          `${fulillment.id}:rts`
-        );
-        if (fulillment.type === "Delivery" && rts?.value === "yes") {
-          return fulillment?.start?.time?.range;
-        }
-      }),
-      `Pickup time range (fulfillments/start/time/range) should be provided if ready_to_ship = yes in /confirm`
-    );
-    testResults.passed.push("Pickup time range (not required) validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(`${error.message}`);
-  }
-  if (testResults.passed.length < 1 && testResults.failed.length<1)
+  if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;
 }

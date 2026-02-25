@@ -72,7 +72,6 @@ export function validateLBNPFeatures(
 ): void {
   if (LBNPfeatureFlow.includes(flowId)) {
     const intentTags = message?.intent?.tags ? message?.intent?.tags : message?.order?.tags
-      ("intentTags=>>>", intentTags)
     const isValid = validateLBNPFeaturesForFlows(flowId, rules, intentTags);
     try {
       assert.ok(
