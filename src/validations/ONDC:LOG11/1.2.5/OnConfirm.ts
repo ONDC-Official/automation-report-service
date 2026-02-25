@@ -38,8 +38,7 @@ export async function checkOnConfirm(
   const onConfirmQuote = message?.order?.quote;
   const onConfirmOrderId = message?.order?.id;
 
-  const isP2H2P = context.domain === "ONDC:LOG11";
-  logger.info(`Inside ${action} validations for ${context.domain}`);
+  logger.info(`Inside ${action} validations for LOG11`);
 
   // 1. Order timestamps
   validateOrderTimestamps(action, context?.timestamp, createdAt, updatedAt, testResults);
@@ -87,10 +86,10 @@ export async function checkOnConfirm(
         requireStateCode: true,
         requireGps: true,
         requireContacts: true,
-        requireStartInstructions: isP2H2P, // LOG11 P2H2P only
+        requireStartInstructions: true,
         requireTimeRange: true,
-        requireLinkedProvider: isP2H2P,    // LOG11 P2H2P only
-        requireLinkedOrder: isP2H2P,       // LOG11 P2H2P only
+        requireLinkedProvider: true,
+        requireLinkedOrder: true,
         requireNoPrePickupTimestamps: true,
       });
     }

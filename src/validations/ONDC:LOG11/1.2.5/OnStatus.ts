@@ -32,8 +32,7 @@ export async function checkOnStatus(
   const orderState: string = message?.order?.state ?? "";
   const orderQuote = message?.order?.quote;
 
-  const isP2H2P = context.domain === "ONDC:LOG11";
-  logger.info(`Inside ${action} validations for ${context.domain}`);
+  logger.info(`Inside ${action} validations for LOG11`);
 
   // 1. Cross-call: order_id (on_confirm → on_status)
   await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
@@ -72,13 +71,13 @@ export async function checkOnStatus(
 
       // Structure checks
       validateFulfillmentStructure(action, ff, testResults, {
-        requireAwb: isP2H2P,               // LOG11 P2H2P only
+        requireAwb: true,          // LOG11 P2H2P
         requireTracking: true,
         requireGps: true,
         requireContacts: true,
-        requireLinkedProvider: isP2H2P,    // LOG11 P2H2P only
-        requireLinkedOrder: isP2H2P,       // LOG11 P2H2P only
-        requireShippingLabel: isP2H2P,     // LOG11 P2H2P only
+        requireLinkedProvider: true,
+        requireLinkedOrder: true,
+        requireShippingLabel: true, // LOG11 P2H2P
         requireTimeRange: true,
         requireNoPrePickupTimestamps: true,
       });
@@ -100,8 +99,8 @@ export async function checkOnStatus(
         }
       }
 
-      // Pickup instructions images at pickup — P2H2P (LOG11) only
-      if (ffState === "Order-picked-up" && isP2H2P) {
+      // Pickup instructions images at pickup
+      if (ffState === "Order-picked-up") {
         try {
           const images = ff?.start?.instructions?.images;
           assert.ok(images && images.length > 0, "fulfillments/start/instructions/images (shipping label) required at pickup");
