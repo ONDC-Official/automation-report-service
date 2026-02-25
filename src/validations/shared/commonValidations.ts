@@ -71,7 +71,8 @@ export function validateLBNPFeatures(
   testResults: TestResult
 ): void {
   if (LBNPfeatureFlow.includes(flowId)) {
-    const intentTags = message?.intent?.tags;
+    const intentTags = message?.intent?.tags ? message?.intent?.tags : message?.order?.tags
+      ("intentTags=>>>", intentTags)
     const isValid = validateLBNPFeaturesForFlows(flowId, rules, intentTags);
     try {
       assert.ok(
@@ -85,6 +86,8 @@ export function validateLBNPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
@@ -97,7 +100,7 @@ export function validateLSPFeatures(
   testResults: TestResult
 ): void {
   if (LSPfeatureFlow.includes(flowId)) {
-    const catalogTags = message?.catalog?.tags;
+    const catalogTags = message?.catalog?.tags ? message?.catalog?.tags : message?.order?.tags
     const isValid = validateLSPFeaturesForFlows(flowId, rules, catalogTags);
     try {
       assert.ok(
@@ -110,6 +113,8 @@ export function validateLSPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
