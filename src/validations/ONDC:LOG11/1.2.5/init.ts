@@ -17,7 +17,6 @@ export async function checkInit(
     flowId,
     action_id
   );
-
   const testResults: TestResult = {
     response: commonTestResults.response,
     passed: [...commonTestResults.passed],
