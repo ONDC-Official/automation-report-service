@@ -1,155 +1,130 @@
 import assert from "assert";
 import { TestResult, Payload } from "../../../types/payload";
 import logger from "@ondc/automation-logger";
-import { fetchData } from "../../../utils/redisUtils";
-import { validateEpodProofs } from "../../shared";
+import { fetchData, saveData } from "../../../utils/redisUtils";
+import {
+  validateAndSaveFulfillmentIds,
+  validateGpsConsistency,
+  validateFulfillmentStructure,
+  validateOrderIdConsistency,
+} from "../../shared/logisticsValidations";
 
 export async function checkOnUpdate(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
-
-  const { jsonRequest, jsonResponse } = payload;
+  const testResults: TestResult = { response: {}, passed: [], failed: [] };
+  const { jsonRequest, jsonResponse } = element;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-
   const { context, message } = jsonRequest;
+  const action = element?.action.toLowerCase();
   const transactionId = context?.transaction_id;
-  const contextTimestamp = context?.timestamp;
-  const fulfillments = message?.order?.fulfillments;
+  const fulfillments: any[] = message?.order?.fulfillments || [];
   const quote = message?.order?.quote;
 
-  if (context?.domain === "ONDC:LOG11") {
-    try {
-      assert.ok(
-        fulfillments.every(
-          (fulfillment: any) => fulfillment["@ondc/org/awb_no"]
-        ),
-        "AWB no is required for P2H2P shipments"
-      );
-      testResults.passed.push("AWB number for P2H2P validation passed");
-    } catch (error: any) {
-      logger.error(`Error during ${action} validation: ${error.message}`);
-      testResults.failed.push(error.message);
-    }
-    let shippingLabel;
-    fulfillments.every((fulfillment: any) => {
-      const tags = fulfillment?.tags;
-      shippingLabel = tags?.find((tag: any) => tag.code === "shipping_label");
-    });
+  logger.info(`Inside ${action} validations for LOG11`);
 
-    try {
-      assert.ok(
-        shippingLabel,
-        "Shipping label is required for P2H2P shipments"
-      );
-      testResults.passed.push("Shipping label for P2H2P validation passed");
-    } catch (error: any) {
-      logger.error(`Error during ${action} validation: ${error.message}`);
-      testResults.failed.push(error.message);
-    }
-  }
-  try {
-    assert.ok(
-      fulfillments.every(async (fulfillment: any) => {
-        const rts = await fetchData(
-          sessionID,
-          transactionId,
-          `${fulfillment?.id}:rts`
-        );
-        return rts?.value === "yes" && fulfillment?.start?.time?.range;
-      }),
-      "Pickup time range (fulfillments/start/time/range) to be provided if ready_to_ship = yes in /update"
-    );
-    testResults.passed.push("Pickup time range validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
+  // 1. order_id: on_confirm → on_update
+  await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
 
-  try {
-    assert.ok(
-      fulfillments.every(async (fulfillment: any) => {
-        const ffState = ["Pending", "Agent-assigned", "Searching-for-agent"];
-        return (
-          ffState.includes(fulfillment?.state?.descriptor?.code) &&
-          (fulfillment?.start?.time?.timestamp ||
-            fulfillment?.end?.time?.timestamp)
-        );
-      }),
-      "Pickup timestamp (fulfillments/start/time/timestamp) or Delivery timestamp (fulfillments/end/time/timestamp) cannot be provided as the order has not been picked up"
-    );
-    testResults.passed.push("Pickup/Delivery timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
-  if (flowId === "WEIGHT_DIFFERENTIAL_FLOW") {
-    let diffTagsPresent = false;
+  // 2. Fulfillment IDs: on_confirm → on_update
+  const deliveryFf = fulfillments.find((f) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
+  await validateAndSaveFulfillmentIds(
+    action, fulfillments, sessionID, transactionId,
+    "on_confirm_delivery_fulfillment_id", "on_confirm_rto_fulfillment_id",
+    "", "",
+    testResults
+  );
 
-    for (const fulfillment of fulfillments) {
-      const ffState = fulfillment?.state?.descriptor?.code;
-      // Validate presence of 'linked_order_diff'
-      const hasDiffTag = fulfillment.tags.some(
-        (tag: { code: string }) => tag.code === "linked_order_diff"
-      );
+  // 3. GPS consistency: search → on_update
+  await validateGpsConsistency(action, deliveryFf, sessionID, transactionId, testResults);
 
-      // Validate presence of 'linked_order_diff_proof'
-      const hasDiffProofTag = fulfillment.tags.some(
-        (tag: { code: string }) => tag.code === "linked_order_diff_proof"
-      );
+  // 4. Per-fulfillment structure validations
+  for (const ff of fulfillments) {
+    if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
+      const ffState: string = ff?.state?.descriptor?.code ?? "";
+      const tags: any[] = ff?.tags ?? [];
 
-      if (hasDiffTag) diffTagsPresent = true;
-      if (ffState === "Out-for-pickup" ||ffState === "At-destination-hub" ) {
+      validateFulfillmentStructure(action, ff, testResults, {
+        requireAwb: true,
+        requireTracking: true,
+        requireGps: true,
+        requireContacts: true,
+        requireLinkedProvider: true,
+        requireLinkedOrder: true,
+        requireShippingLabel: true,
+        requireTimeRange: true,
+        requireNoPrePickupTimestamps: true,
+      });
+
+      // Agent required for in-transit states
+      if (["Agent-assigned", "Order-picked-up", "Out-for-delivery", "At-destination-hub", "In-transit"].includes(ffState)) {
         try {
           assert.ok(
-            hasDiffProofTag && hasDiffTag,
-            `'linked_order_diff' and 'linked_order_diff_proof' tags are missing in fulfillment.tags`
+            ff?.agent?.name || ff?.agent?.phone,
+            "fulfillments/agent must be present when agent is assigned in on_update"
           );
-          testResults.passed.push("diff tags validation passed");
+          testResults.passed.push("Agent details validation passed in on_update");
+        } catch (error: any) {
+          logger.error(`Error during ${action} validation: ${error.message}`);
+          testResults.failed.push(error.message);
+        }
+      }
+
+      // ready_to_ship → pickup time range
+      const rtsRaw = await fetchData(sessionID, transactionId, `${ff?.id}:rts`);
+      const rtsValue = typeof rtsRaw === "string" ? rtsRaw : (rtsRaw as any)?.value;
+      if (rtsValue === "yes") {
+        try {
+          assert.ok(ff?.start?.time?.range, "fulfillments/start/time/range required if ready_to_ship=yes in /on_update");
+          testResults.passed.push("Pickup time range validation passed");
         } catch (error: any) {
           logger.error(`Error during ${action} validation: ${error.message}`);
           testResults.failed.push(error.message);
         }
       }
     }
-    if (diffTagsPresent) {
-      // Validate presence of 'diff' entry
-      const hasDiffBreakup = quote.breakup.some(
-        (b: { [x: string]: string }) => b["@ondc/org/title_type"] === "diff"
-      );
+  }
 
-      // Validate presence of 'tax_diff' entry
-      const hasTaxDiffBreakup = quote.breakup.some(
-        (b: { [x: string]: string }) => b["@ondc/org/title_type"] === "tax_diff"
-      );
-
+  // 5. WEIGHT_DIFFERENTIAL_FLOW: diff and tax_diff in quote breakup
+  if (flowId === "WEIGHT_DIFFERENTIAL_FLOW") {
+    let diffTagsPresent = false;
+    for (const ff of fulfillments) {
+      const ffState: string = ff?.state?.descriptor?.code ?? "";
+      const hasDiff = ff.tags?.some((t: any) => t.code === "linked_order_diff");
+      const hasDiffProof = ff.tags?.some((t: any) => t.code === "linked_order_diff_proof");
+      if (hasDiff) diffTagsPresent = true;
+      if (["Out-for-pickup", "At-destination-hub"].includes(ffState)) {
+        try {
+          assert.ok(hasDiff && hasDiffProof, "'linked_order_diff' and 'linked_order_diff_proof' tags are missing");
+          testResults.passed.push("Diff tags validation passed");
+        } catch (error: any) {
+          logger.error(`Error during ${action} validation: ${error.message}`);
+          testResults.failed.push(error.message);
+        }
+      }
+    }
+    if (diffTagsPresent && quote) {
       try {
-        assert.ok(
-          hasDiffBreakup && hasTaxDiffBreakup,
-          `'diff' and 'tax_diff' titles are missing in quote.breakup`
-        );
-        testResults.passed.push(
-          "diff items in quote breakup validation passed"
-        );
+        const hasDiffBreakup = quote.breakup?.some((b: any) => b["@ondc/org/title_type"] === "diff");
+        const hasTaxDiff = quote.breakup?.some((b: any) => b["@ondc/org/title_type"] === "tax_diff");
+        assert.ok(hasDiffBreakup && hasTaxDiff, "'diff' and 'tax_diff' titles are missing in quote.breakup");
+        testResults.passed.push("Diff items in quote breakup validation passed");
       } catch (error: any) {
         logger.error(`Error during ${action} validation: ${error.message}`);
         testResults.failed.push(error.message);
       }
     }
   }
-  if(flowId === "E-POD"){
-      validateEpodProofs(flowId,message,testResults)
-    }
+
+  // 6. E-POD flow
+  if (flowId === "E-POD") {
+    const { validateEpodProofs } = await import("../../shared");
+    validateEpodProofs(flowId, message, testResults);
+  }
+
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
   return testResults;

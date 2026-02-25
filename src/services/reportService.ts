@@ -53,7 +53,6 @@ export class ReportService {
       const flows = sortPayloadsByCreatedAt(payloads);
 
       // Check if domain is not in enabled domains - use Pramaan report
-      console.log("sessionDetails=>>>>>>>>>>>>>>>>>", sessionDetails);
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {

@@ -71,7 +71,8 @@ export function validateLBNPFeatures(
   testResults: TestResult
 ): void {
   if (LBNPfeatureFlow.includes(flowId)) {
-    const intentTags = message?.intent?.tags;
+    const intentTags = message?.intent?.tags ? message?.intent?.tags : message?.order?.tags
+      ("intentTags=>>>", intentTags)
     const isValid = validateLBNPFeaturesForFlows(flowId, rules, intentTags);
     try {
       assert.ok(
@@ -85,6 +86,8 @@ export function validateLBNPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
@@ -97,7 +100,7 @@ export function validateLSPFeatures(
   testResults: TestResult
 ): void {
   if (LSPfeatureFlow.includes(flowId)) {
-    const catalogTags = message?.catalog?.tags;
+    const catalogTags = message?.catalog?.tags ? message?.catalog?.tags : message?.order?.tags
     const isValid = validateLSPFeaturesForFlows(flowId, rules, catalogTags);
     try {
       assert.ok(
@@ -110,6 +113,8 @@ export function validateLSPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
@@ -609,7 +614,7 @@ export async function validateCodifiedStaticTerms(
   action: string
 ) {
   try {
-    const tags = action.toLowerCase() === "search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags || [];
+    const tags = action.toLowerCase() === "search" && action.toLowerCase() === "on_search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags;
     const bppTerms = tags.find(
       (tag: any) => tag.code === "bpp_terms"
     );
@@ -702,16 +707,11 @@ export async function validateCustomerContactDetails(
 
     // Determine which term to check based on flowId
     const tagCode =
-      action_id === "confirm_LOGISTICS_EXCHANGE"
+      ['confirm_LOGISTICS_EXCHANGE', 'confirm_LOGISTICS'].includes(action_id)
         ? "bap_terms"
-        : action_id === "on_confirm_LOGISTICS_EXCHANGE"
+        : ['on_confirm_LOGISTICS_EXCHANGE', 'on_confirm_LOGISTICS'].includes(action_id)
           ? "bpp_terms"
-          : null;
-
-    if (!tagCode) {
-      testResults.failed.push(`Unsupported flowId: ${action_id}`);
-      return;
-    }
+          : "bpp_terms";
 
     // Extract tag section
     const termsTag = tags.find((tag: any) => tag.code === tagCode);

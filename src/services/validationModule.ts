@@ -206,6 +206,18 @@ function validateActionSequence(
             validSequence = true; // Restore validSequence to true for valid early termination
             break; // Exit loop, considering validation successful so far
           }
+
+          // Allow early termination when a second 'search' is expected after 'on_search'
+          // This handles TTL-based flows (e.g. Hotel Booking ttl based) where the second
+          // incremental search is optional — if the BAP didn't send it, the flow is still valid.
+          if (
+            currentExpectedAction === "search" &&
+            lastAction === "on_search"
+          ) {
+            logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}' after 'on_search'). Treating repeat search as optional.`);
+            validSequence = true;
+            break;
+          }
         }
 
         errors.push(

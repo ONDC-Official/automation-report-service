@@ -5,11 +5,12 @@ import logger from "@ondc/automation-logger";
 export async function checkOnTrack(
   element: Payload,
   sessionID: string,
-  flowId: string
+  flowId: string,
+  action_id: string
 ): Promise<TestResult> {
   const payload = element;
   const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
+  logger.info(`Inside ${action} validations for LOG11`);
 
   const testResults: TestResult = {
     response: {},
@@ -26,10 +27,11 @@ export async function checkOnTrack(
   const locationTimestamp = new Date(message?.tracking?.location?.time?.timestamp || "");
   const updatedTimestamp = new Date(message?.tracking?.location?.updated_at || "");
 
+  // Location timestamp <= context timestamp and updated_at
   try {
     assert.ok(
       locationTimestamp <= contextTimestamp && locationTimestamp <= updatedTimestamp,
-      "Location timestamp should not be future dated w.r.t context timestamp and updated timestamp"
+      "Location timestamp should not be future dated w.r.t context timestamp and updated_at"
     );
     testResults.passed.push("Location timestamp validation passed");
   } catch (error: any) {
@@ -37,12 +39,26 @@ export async function checkOnTrack(
     testResults.failed.push(error.message);
   }
 
+  // updated_at <= context timestamp
   try {
     assert.ok(
       updatedTimestamp <= contextTimestamp,
       "Updated timestamp should not be future dated w.r.t context timestamp"
     );
     testResults.passed.push("Updated timestamp validation passed");
+  } catch (error: any) {
+    logger.error(`Error during ${action} validation: ${error.message}`);
+    testResults.failed.push(error.message);
+  }
+
+  // tracking status must be present
+  try {
+    const trackingStatus = message?.tracking?.status;
+    assert.ok(
+      trackingStatus,
+      "message.tracking.status must be present in on_track response"
+    );
+    testResults.passed.push("Tracking status presence validation passed");
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(error.message);
