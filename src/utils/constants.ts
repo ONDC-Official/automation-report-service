@@ -372,10 +372,10 @@ export const FLOW_ID_MAP: Record<
       "Metro": {
         "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT": "MBL_1",
         "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT": "MBL_2",
-        "ORDER_TO_CONFIRM_MONTHLY_PASS": "MBL_3",
         "USER_CANCELLATION_FLOW": "MBL_4",
-        "TICKET_EXPIRY_CANCELLATION_FLOW": "MBL_5",
-        "MERCHANT_SIDE_CANCELLATION_FLOW": "MBL_6",
+        // "TICKET_EXPIRY_CANCELLATION_FLOW": "MBL_5",
+        // "MERCHANT_SIDE_CANCELLATION_FLOW": "MBL_6",
+        // "ORDER_TO_CONFIRM_MONTHLY_PASS": "MBL_3",
         "TECHNICAL_CANCELLATION_FLOW": "MBL_20",
       }
     },
@@ -552,6 +552,17 @@ export const FLOW_ID_MAP: Record<
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Force_Cancellation_Flow": "RET_ENH_005",
         "Offers_Flow": "RET_ENH_009",
+      },
+    },
+    "1.2.0": {
+      "BPC": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
