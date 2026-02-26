@@ -38,7 +38,7 @@ export async function checkOnStatus(
   await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
 
   // 2. Cross-call: quote price (on_confirm → on_status, unless WEIGHT_DIFFERENTIAL_FLOW)
-  if (flowId !== "WEIGHT_DIFFERENTIAL_FLOW") {
+  if (flowId !== "WEIGHT_DIFFERENTIAL_FLOW" && action_id !== "on_status_4_LOGISTICS") {
     await validateQuoteConsistency(action, orderQuote, sessionID, transactionId, "on_confirm_quote", testResults);
   }
 
