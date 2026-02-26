@@ -202,11 +202,13 @@ function validateActionSequence(
               currentExpectedAction === "status" ||
               currentExpectedAction === "track" ||
               currentExpectedAction === "cancel" ||
-              // Also treat trailing on_status/on_update as optional terminal actions —
-              // mock payloads may not include the final ride-status/tip-update response.
               currentExpectedAction === "on_status" ||
               currentExpectedAction === "on_update") &&
-            (lastAction.startsWith("on_"))
+            // Allow when previous was an on_ response (e.g. on_confirm → on_status)
+            // OR when previous was the matching request (e.g. update → on_update, status → on_status)
+            (lastAction.startsWith("on_") ||
+              (currentExpectedAction === "on_update" && lastAction === "update") ||
+              (currentExpectedAction === "on_status" && lastAction === "status"))
           ) {
             logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
             validSequence = true; // Restore validSequence to true for valid early termination
