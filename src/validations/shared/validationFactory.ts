@@ -3991,10 +3991,13 @@ function validateFulfillmentStopsInOrder(
       }
 
       // ---------------------- GPS validation exceptions ------------------
+      // Use prefix match for on_update so numbered variants (on_update_1 etc.) are also skipped.
+      // Also skip GPS validation for Schedule_Rental on on_status_* steps where END stop GPS is absent.
       const skipGPSValidation =
         flowId === "OnDemand_Rental" ||
         action_id === "init" ||
-        action_id === "on_update";
+        action_id?.startsWith("on_update") ||
+        (flowId === "Schedule_Rental" && action_id?.startsWith("on_status"));
 
       if (skipGPSValidation) return;
 
