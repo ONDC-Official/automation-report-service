@@ -36,7 +36,11 @@ export async function checkOnCancel(
   await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
 
   // 2. Quote price: on_confirm → on_cancel
-  await validateQuoteConsistency(action, orderQuote, sessionID, transactionId, "on_confirm_quote", testResults);
+  // Skip for RTO_FLOW: quote changes to include RTO return charges from on_search
+  // Skip for BUYER_SIDE_ORDER_CANCELLATION: quote can be 0 (no charges if cancelled pre-pickup)
+  if (flowId !== "RTO_FLOW" && flowId !== "BUYER_SIDE_ORDER_CANCELLATION") {
+    await validateQuoteConsistency(action, orderQuote, sessionID, transactionId, "on_confirm_quote", testResults);
+  }
 
   // 3. Fulfillment IDs: on_confirm → on_cancel
   const deliveryFf = fulfillments.find((f) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
@@ -72,7 +76,7 @@ export async function checkOnCancel(
   // 7. Order state must be Cancelled
   try {
     if (flowId === "RTO_FLOW") {
-      assert.ok(orderState === "Completed", `Order state should be 'Completed', got '${orderState}'`);
+      assert.ok(orderState === "In-progress", `Order state should be 'In-progress', got '${orderState}'`);
     } else {
       assert.ok(orderState === "Cancelled", `Order state should be 'Cancelled', got '${orderState}'`);
     }
@@ -94,14 +98,26 @@ export async function checkOnCancel(
   // 9. Per-fulfillment validations
   for (const ff of fulfillments) {
     if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
+      // Determine precancel_state to decide which checks are applicable
+      const preCancelTag = ff.tags?.find((t: any) => t.code === "precancel_state");
+      const preCancelStateCode: string = preCancelTag?.list?.find(
+        (l: any) => l.code === "fulfillment_state"
+      )?.value ?? preCancelTag?.list?.[0]?.value ?? "";
+
+      // AWB and shipping label are only present once agent is assigned and shipment label is generated
+      const agentAssignedOrLater = [
+        "Agent-assigned", "Order-picked-up", "Out-for-delivery",
+        "At-destination-hub", "In-transit", "Order-delivered",
+      ].includes(preCancelStateCode);
+
       validateFulfillmentStructure(action, ff, testResults, {
-        requireAwb: true,
+        requireAwb: agentAssignedOrLater,           // AWB only if agent was assigned before cancel
         requireTracking: true,
         requireGps: true,
         requireContacts: true,
         requireLinkedProvider: true,
         requireLinkedOrder: true,
-        requireShippingLabel: true,
+        requireShippingLabel: agentAssignedOrLater, // shipping_label only if agent was assigned
         requireNoPrePickupTimestamps: true,
       });
 

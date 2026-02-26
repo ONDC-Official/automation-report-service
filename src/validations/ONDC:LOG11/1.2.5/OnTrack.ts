@@ -23,34 +23,35 @@ export async function checkOnTrack(
 
   const { context, message } = jsonRequest;
 
-  const contextTimestamp = new Date(context?.timestamp || "");
-  const locationTimestamp = new Date(message?.tracking?.location?.time?.timestamp || "");
-  const updatedTimestamp = new Date(message?.tracking?.location?.updated_at || "");
+  if (!message?.tracking?.url) {
+    const contextTimestamp = new Date(context?.timestamp || "");
+    const locationTimestamp = new Date(message?.tracking?.location?.time?.timestamp || "");
+    const updatedTimestamp = new Date(message?.tracking?.location?.updated_at || "");
 
-  // Location timestamp <= context timestamp and updated_at
-  try {
-    assert.ok(
-      locationTimestamp <= contextTimestamp && locationTimestamp <= updatedTimestamp,
-      "Location timestamp should not be future dated w.r.t context timestamp and updated_at"
-    );
-    testResults.passed.push("Location timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
+    // Location timestamp <= context timestamp and updated_at
+    try {
+      assert.ok(
+        locationTimestamp <= contextTimestamp && locationTimestamp <= updatedTimestamp,
+        "Location timestamp should not be future dated w.r.t context timestamp and updated_at"
+      );
+      testResults.passed.push("Location timestamp validation passed");
+    } catch (error: any) {
+      logger.error(`Error during ${action} validation: ${error.message}`);
+      testResults.failed.push(error.message);
+    }
+
+    // updated_at <= context timestamp
+    try {
+      assert.ok(
+        updatedTimestamp <= contextTimestamp,
+        "Updated timestamp should not be future dated w.r.t context timestamp"
+      );
+      testResults.passed.push("Updated timestamp validation passed");
+    } catch (error: any) {
+      logger.error(`Error during ${action} validation: ${error.message}`);
+      testResults.failed.push(error.message);
+    }
   }
-
-  // updated_at <= context timestamp
-  try {
-    assert.ok(
-      updatedTimestamp <= contextTimestamp,
-      "Updated timestamp should not be future dated w.r.t context timestamp"
-    );
-    testResults.passed.push("Updated timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
-
   // tracking status must be present
   try {
     const trackingStatus = message?.tracking?.status;

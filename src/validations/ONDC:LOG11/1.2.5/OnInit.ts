@@ -293,15 +293,17 @@ export async function checkOnInit(
     }
 
     // Validate cancellation_terms are present in on_init (LOG11 specific)
-    const cancellationTerms = message?.order?.cancellation_terms || [];
-    try {
-      assert.ok(
-        cancellationTerms.length > 0,
-        "message.order.cancellation_terms must be present in on_init"
-      );
-      testResults.passed.push("Cancellation terms presence validation passed in on_init");
-    } catch (error: any) {
-      testResults.failed.push(error.message);
+    if (flowId === "CANCELLATION_TERMS_FLOW") {
+      const cancellationTerms = message?.order?.cancellation_terms || [];
+      try {
+        assert.ok(
+          cancellationTerms.length > 0,
+          "message.order.cancellation_terms must be present in on_init"
+        );
+        testResults.passed.push("Cancellation terms presence validation passed in on_init");
+      } catch (error: any) {
+        testResults.failed.push(error.message);
+      }
     }
   } catch (error: any) {
     logger.error(`Error during ${action} cross-call comparison: ${error.message}`);

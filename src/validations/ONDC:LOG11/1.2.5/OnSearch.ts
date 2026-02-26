@@ -102,6 +102,75 @@ export async function checkOnSearch(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+
+    // ── parent_item_id validation ───────────────────────────────────────────
+    // Rules:
+    //   • Delivery/FTL/PTL items  → parent_item_id must be empty or null
+    //   • RTO items               → parent_item_id must reference the ID of a Delivery item
+
+    // Build IDs sets for fast lookup
+    const deliveryFulfillmentIds = new Set<string>(
+      fulfillments
+        .filter((f: any) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL")
+        .map((f: any) => f.id)
+    );
+    const rtoFulfillmentIds = new Set<string>(
+      fulfillments
+        .filter((f: any) => f.type === "RTO")
+        .map((f: any) => f.id)
+    );
+    // Valid parent_item_id values for RTO items = IDs of all Delivery items
+    const deliveryItemIds = new Set<string>(
+      items
+        .filter((item: any) => deliveryFulfillmentIds.has(item.fulfillment_id))
+        .map((item: any) => item.id)
+    );
+
+    for (const item of items) {
+      const itemId = item.id ?? "(unknown)";
+      const parentItemId = item.parent_item_id;
+      const fulfillmentId = item.fulfillment_id;
+      const isEmpty = parentItemId === null || parentItemId === undefined || parentItemId === "";
+
+      if (deliveryFulfillmentIds.has(fulfillmentId)) {
+        // Delivery item → parent_item_id must be empty / null
+        try {
+          assert.ok(
+            isEmpty,
+            `Item '${itemId}' is linked to a Delivery fulfillment ('${fulfillmentId}') —` +
+            ` parent_item_id must be empty/null but got '${parentItemId}'`
+          );
+          testResults.passed.push(
+            `parent_item_id is correctly empty for Delivery item '${itemId}'`
+          );
+        } catch (error: any) {
+          logger.error(`Error during ${action} validation: ${error.message}`);
+          testResults.failed.push(error.message);
+        }
+      } else if (rtoFulfillmentIds.has(fulfillmentId)) {
+        // RTO item → parent_item_id must reference an existing Delivery item ID
+        try {
+          assert.ok(
+            !isEmpty,
+            `Item '${itemId}' is linked to an RTO fulfillment ('${fulfillmentId}') —` +
+            ` parent_item_id must not be empty; it should reference the corresponding Delivery item ID`
+          );
+          assert.ok(
+            deliveryItemIds.has(parentItemId),
+            `Item '${itemId}' (RTO) has parent_item_id '${parentItemId}' which does not match` +
+            ` any Delivery item ID [${[...deliveryItemIds].join(", ")}]`
+          );
+          testResults.passed.push(
+            `parent_item_id '${parentItemId}' correctly references a Delivery item for RTO item '${itemId}'`
+          );
+        } catch (error: any) {
+          logger.error(`Error during ${action} validation: ${error.message}`);
+          testResults.failed.push(error.message);
+        }
+      }
+    }
+    // ── end parent_item_id validation ───────────────────────────────────────
+
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(error.message);

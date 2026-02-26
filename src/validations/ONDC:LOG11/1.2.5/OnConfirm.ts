@@ -81,17 +81,117 @@ export async function checkOnConfirm(
   // 7. Per-fulfillment structure validations
   for (const ff of fulfillments) {
     if (ff.type === "Delivery" || ff.type === "FTL" || ff.type === "PTL") {
+      const tags: any[] = ff?.tags ?? [];
+
+      // Read ready_to_ship from the state tag sent back by LSP
+      const stateTag = tags.find((t: any) => t.code === "state");
+      const rts: string | undefined = stateTag?.list?.find((e: any) => e.code === "ready_to_ship")?.value;
+
+      // ── a. Core structure checks ─────────────────────────────────────────
       validateFulfillmentStructure(action, ff, testResults, {
         requireTracking: true,
         requireStateCode: true,
         requireGps: true,
         requireContacts: true,
-        requireStartInstructions: true,
+        // start.instructions (shipment label) is only needed when ready_to_ship = "yes"
+        requireStartInstructions: rts === "yes",
         requireTimeRange: true,
-        requireLinkedProvider: true,
-        requireLinkedOrder: true,
         requireNoPrePickupTimestamps: true,
       });
+
+      // ── b. linked_order tag: presence + required fields ──────────────────
+      const linkedOrderTag = tags.find((t: any) => t.code === "linked_order");
+      try {
+        assert.ok(linkedOrderTag, `fulfillments/tags must contain 'linked_order' tag in ${action}`);
+        testResults.passed.push(`linked_order tag present in ${action}`);
+      } catch (error: any) {
+        testResults.failed.push(error.message);
+      }
+      if (linkedOrderTag) {
+        const list: { code: string; value: string }[] = linkedOrderTag.list ?? [];
+        for (const field of ["id", "currency", "declared_value", "weight_unit", "weight_value"]) {
+          try {
+            assert.ok(list.some((l) => l.code === field), `linked_order tag must have '${field}' in ${action}`);
+            testResults.passed.push(`linked_order.${field} validation passed in ${action}`);
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
+        }
+      }
+
+      // ── c. linked_order_item tags ────────────────────────────────────────
+      const linkedOrderItems = tags.filter((t: any) => t.code === "linked_order_item");
+      try {
+        assert.ok(linkedOrderItems.length > 0, `At least one 'linked_order_item' tag must be present in ${action}`);
+        testResults.passed.push(`linked_order_item presence validation passed in ${action}`);
+      } catch (error: any) {
+        testResults.failed.push(error.message);
+      }
+      for (const item of linkedOrderItems) {
+        const list: { code: string; value: string }[] = item.list ?? [];
+        const itemName = list.find((l) => l.code === "name")?.value ?? "(unknown)";
+        for (const field of ["category", "name", "currency", "value", "quantity"]) {
+          try {
+            assert.ok(list.some((l) => l.code === field), `linked_order_item '${itemName}' must have '${field}' in ${action}`);
+            testResults.passed.push(`linked_order_item '${itemName}'.${field} validation passed in ${action}`);
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
+        }
+      }
+
+      // ── d. state tag: ready_to_ship must be "yes" or "no" ───────────────
+      if (stateTag) {
+        try {
+          assert.ok(
+            rts === "yes" || rts === "no",
+            `fulfillments/tags/state/ready_to_ship must be "yes" or "no", got '${rts}' in ${action}`
+          );
+          testResults.passed.push(`state.ready_to_ship ('${rts}') validation passed in ${action}`);
+        } catch (error: any) {
+          logger.error(`Error during ${action} validation: ${error.message}`);
+          testResults.failed.push(error.message);
+        }
+      }
+
+      // ── e. rto_action tag (optional) ────────────────────────────────────
+      const rtoActionTag = tags.find((t: any) => t.code === "rto_action");
+      if (rtoActionTag) {
+        const rtoVal = rtoActionTag?.list?.find((e: any) => e.code === "return_to_origin")?.value;
+        try {
+          assert.ok(
+            rtoVal === "yes" || rtoVal === "no",
+            `fulfillments/tags/rto_action/return_to_origin must be "yes" or "no", got '${rtoVal}' in ${action}`
+          );
+          testResults.passed.push(`rto_action.return_to_origin ('${rtoVal}') validation passed in ${action}`);
+        } catch (error: any) {
+          logger.error(`Error during ${action} validation: ${error.message}`);
+          testResults.failed.push(error.message);
+        }
+      }
+
+      // ── f. linked_provider tag: presence + required fields ───────────────
+      const linkedProviderTag = tags.find((t: any) => t.code === "linked_provider");
+      try {
+        assert.ok(linkedProviderTag, `fulfillments/tags must contain 'linked_provider' tag in ${action}`);
+        testResults.passed.push(`linked_provider tag present in ${action}`);
+      } catch (error: any) {
+        testResults.failed.push(error.message);
+      }
+      if (linkedProviderTag) {
+        const list: { code: string; value: string }[] = linkedProviderTag.list ?? [];
+        for (const field of ["id", "name"]) {
+          try {
+            assert.ok(list.some((l) => l.code === field), `linked_provider tag must have '${field}' in ${action}`);
+            testResults.passed.push(`linked_provider.${field} validation passed in ${action}`);
+          } catch (error: any) {
+            logger.error(`Error during ${action} validation: ${error.message}`);
+            testResults.failed.push(error.message);
+          }
+        }
+      }
     }
   }
 
