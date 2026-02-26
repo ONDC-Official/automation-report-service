@@ -4415,16 +4415,16 @@ function validateItemsTRV10(
     return;
   }
 
-  const actionsExemptFromDescriptorName = new Set([
-    "select",
-    "select2",
-    "select_rental",
-    "select_preorder_bid",
-    "init",
-    "confirm",
-    "confirm_card_balance_faliure",
-    "confirm_card_balance_success",
-  ]);
+  // Use prefix-based check so numbered variants (init_1, select_1, confirm_1, etc.)
+  // are also exempt from descriptor name validation
+  const isExemptFromDescriptorName = (id?: string): boolean => {
+    if (!id) return false;
+    return (
+      id.startsWith("select") ||
+      id.startsWith("init") ||
+      id.startsWith("confirm")
+    );
+  };
 
   items.forEach((item, index) => {
     if (!item.id) {
@@ -4433,7 +4433,7 @@ function validateItemsTRV10(
       testResults.passed.push(`Item ${index} ID is present`);
     }
 
-    if (action_id && !actionsExemptFromDescriptorName.has(action_id)) {
+    if (action_id && !isExemptFromDescriptorName(action_id)) {
       if (!item.descriptor?.name) {
         testResults.failed.push(`Item ${index} descriptor name is missing`);
       } else {
