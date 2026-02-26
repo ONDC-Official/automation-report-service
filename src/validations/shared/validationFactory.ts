@@ -4515,15 +4515,14 @@ function validateFulfillmentsTRV10(
       testResults.passed.push(`Fulfillment ${index} ID is present`);
     }
 
-    // For TRV10, fulfillment type is optional in select and init actions
-    if (
-      action_id === "select" ||
-      action_id === "select_rental" ||
-      action_id === "init" ||
-      action_id === "update" ||
-      action_id === "update_hard" ||
-      action_id === "select_preorder_bid"
-    ) {
+    // For TRV10, fulfillment type is optional in select, init, and update actions.
+    // Use prefix-based check so numbered variants (select_1, init_1, update_1 etc.) are also exempt.
+    const exemptFromFulfillmentType =
+      action_id?.startsWith("select") ||
+      action_id?.startsWith("init") ||
+      action_id?.startsWith("update");
+
+    if (exemptFromFulfillmentType) {
       if (fulfillment.type) {
         testResults.passed.push(`Fulfillment ${index} type is present`);
       }
