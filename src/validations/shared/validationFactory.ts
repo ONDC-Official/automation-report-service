@@ -6303,13 +6303,13 @@ function validateOrderStatus(
     ];
     if (validStatuses.includes(order.status)) {
       if (action_id === "on_status_solicited") {
-        if (order.status !== "COMPLETE") {
+        if (order.status !== "COMPLETED") {
           testResults.failed.push(
-            "Order status should be COMPLETE for on_status_solicited"
+            "Order status should be COMPLETED for on_status_solicited"
           );
         } else {
           testResults.passed.push(
-            "Order status is COMPLETE for on_status_solicited"
+            "Order status is COMPLETED for on_status_solicited"
           );
         }
       }
