@@ -154,7 +154,7 @@ export const DomainValidators = {
    */
   ondclogInit: createInitValidator(
     logValidators.holidays.validate_holidays,
-    logValidators.lbnp.validate_lbnp,
+    // logValidators.lbnp.validate_lbnp,
     logValidators.prepaid_payment.validate_prepaid_payment,
     logValidators.cod.validate_cod
   ),
@@ -163,21 +163,21 @@ export const DomainValidators = {
    * ONDC LOG10/LOG11 on_init validator with comprehensive validations
    */
   ondclogOnInit: createOnInitValidator(
-    logValidators.lsp.validate_lsp,
+    // logValidators.lsp.validate_lsp,
     logValidators.tat.validate_tat,
     logValidators.shipment_types.validate_shipment_types
   ),
 
   ondclogConfirm: createConfirmValidator(
     logValidators.holidays.validate_holidays,
-    logValidators.lbnp.validate_lbnp,
+    // logValidators.lbnp.validate_lbnp,
     logValidators.prepaid_payment.validate_prepaid_payment,
     logValidators.sla_metrics.validate_sla_metrics,
     logValidators.seller_creds.validate_seller_creds
   ),
 
   ondclogOnConfirm: createOnConfirmValidator(
-    logValidators.lsp.validate_lsp,
+    // logValidators.lsp.validate_lsp,
     logValidators.tat.validate_tat,
     logValidators.shipment_types.validate_shipment_types,
     logValidators.sla_metrics.validate_sla_metrics,
