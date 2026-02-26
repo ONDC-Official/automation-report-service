@@ -5,7 +5,7 @@ import { getRuntimeExtension } from "../../utils/getRuntimeExtension";
 import { getFileName } from "./validationFactory";
 
 import logger from "@ondc/automation-logger";
-type CheckJsonResponseFn = (jsonResponse: any, testResults: TestResult) => void;
+type CheckJsonResponseFn = (jsonResponse: any, testResults: TestResult, action_id?: string, flowId?: string) => void;
 
 type VersionResolver = (element: Payload) => string | undefined;
 
@@ -32,7 +32,9 @@ export function createDomainValidator(
     try {
       const { jsonResponse, action_id, action } = element;
       if (jsonResponse) {
-        checkJsonResponse(jsonResponse, testResults);
+        // Pass action_id and flowId so domain validators can conditionally adjust schema.
+        // action_id may be null (Payload type), coerce to undefined for type safety.
+        checkJsonResponse(jsonResponse, testResults, action_id ?? undefined, flowId);
       }
 
       try {
