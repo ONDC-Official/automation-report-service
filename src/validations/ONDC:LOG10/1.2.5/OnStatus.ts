@@ -32,7 +32,7 @@ export async function checkOnStatus(
   const orderState: string = message?.order?.state ?? "";
   const orderQuote = message?.order?.quote;
 
-  logger.info(`Inside ${action} validations for LOG11`);
+  logger.info(`Inside ${action} validations for LOG10`);
 
   // 1. Cross-call: order_id (on_confirm → on_status)
   await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
@@ -71,13 +71,12 @@ export async function checkOnStatus(
 
       // Structure checks
       validateFulfillmentStructure(action, ff, testResults, {
-        requireAwb: true,          // LOG11 P2H2P
+        // NOTE: requireAwb and requireShippingLabel are LOG11 (P2H2P) only — not applicable for LOG10 (P2P)
         requireTracking: true,
         requireGps: true,
         requireContacts: true,
         requireLinkedProvider: true,
         requireLinkedOrder: true,
-        requireShippingLabel: true, // LOG11 P2H2P
         requireTimeRange: true,
         requireNoPrePickupTimestamps: true,
       });
@@ -99,17 +98,6 @@ export async function checkOnStatus(
         }
       }
 
-      // Pickup instructions images at pickup
-      if (ffState === "Order-picked-up") {
-        try {
-          const images = ff?.start?.instructions?.images;
-          assert.ok(images && images.length > 0, "fulfillments/start/instructions/images (shipping label) required at pickup");
-          testResults.passed.push("Pickup instructions images validation passed");
-        } catch (error: any) {
-          logger.error(`Error during ${action} validation: ${error.message}`);
-          testResults.failed.push(error.message);
-        }
-      }
 
       // Pickup / delivery timestamps
       await validateFulfillmentTimestamps(action, ff, contextTimestamp, sessionID, transactionId, testResults);

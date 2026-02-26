@@ -24,7 +24,7 @@ export async function checkOnUpdate(
   const fulfillments: any[] = message?.order?.fulfillments || [];
   const quote = message?.order?.quote;
 
-  logger.info(`Inside ${action} validations for LOG11`);
+  logger.info(`Inside ${action} validations for LOG10`);
 
   // 1. order_id: on_confirm → on_update
   await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
@@ -48,13 +48,12 @@ export async function checkOnUpdate(
       const tags: any[] = ff?.tags ?? [];
 
       validateFulfillmentStructure(action, ff, testResults, {
-        requireAwb: true,
+        // NOTE: requireAwb and requireShippingLabel are LOG11 (P2H2P) only — not applicable for LOG10 (P2P)
         requireTracking: true,
         requireGps: true,
         requireContacts: true,
         requireLinkedProvider: true,
         requireLinkedOrder: true,
-        requireShippingLabel: true,
         requireTimeRange: true,
         requireNoPrePickupTimestamps: true,
       });
