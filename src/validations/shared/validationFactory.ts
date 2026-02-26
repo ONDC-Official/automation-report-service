@@ -4028,6 +4028,7 @@ function validateFulfillmentStopsInOrder(
       "Schedule_Trip",
       "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present",
       "No_Acceptance_SoftUpdate",
+      "OnDemand_Rental", // END stop not required for rental flows (open-ended destination)
     ];
 
     const starttopExemptFlows = [
@@ -4035,12 +4036,13 @@ function validateFulfillmentStopsInOrder(
       "OnDemand_Update_Stop",
     ];
 
-    const startActionIds = ["update", "on_update"];
+    // Use prefix match so numbered variants (update_1, on_update_1 etc.) are also covered
+    const isStartExemptAction = action_id?.startsWith("update") || action_id?.startsWith("on_update");
 
     if (
       !hasStart &&
       !starttopExemptFlows.includes(flowId || "") &&
-      !startActionIds.includes(action_id || "")
+      !isStartExemptAction
     ) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one START stop`
@@ -4051,7 +4053,7 @@ function validateFulfillmentStopsInOrder(
     if (
       !hasEnd &&
       !endStopExemptFlows.includes(flowId || "") &&
-      action_id !== "on_update"
+      !action_id?.startsWith("on_update")
     ) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one END stop`
