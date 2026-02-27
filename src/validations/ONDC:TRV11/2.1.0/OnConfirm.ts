@@ -47,6 +47,8 @@ async function processOnConfirm(
 ): Promise<TestResult> {
   // Metro Card flows use a different fulfillment structure and have no fixed item prices
   const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+  // Bus agent flows issue TICKET authorization at on_update (vehicle confirmation), not at on_confirm
+  const isBusAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
   try {
     const message = element?.jsonRequest?.message;
     const order = message?.order;
@@ -67,8 +69,8 @@ async function processOnConfirm(
       validateQuoteBreakup(order.quote, result, "on_confirm");
     }
 
-    // 2.1.0: TICKET fulfillments with QR authorization — skip for Metro Card flows
-    if (order?.fulfillments && !isCardFlow) {
+    // 2.1.0: TICKET fulfillments with QR authorization — skip for Metro Card and Bus agent flows
+    if (order?.fulfillments && !isCardFlow && !isBusAgentFlow) {
       validateTicketFulfillment(order.fulfillments, result, "on_confirm");
     }
 
