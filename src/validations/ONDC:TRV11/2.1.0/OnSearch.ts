@@ -46,6 +46,12 @@ export default async function on_search(
               .filter((f: any) => f.type === "PASS" || f.type === "ONLINE")
               .map((f: any) => f.id)
           );
+          // Bus: TICKET and AGENT_TICKETING items don't have a price in catalog context
+          const ticketFulfillmentIds = new Set(
+            (provider.fulfillments || [])
+              .filter((f: any) => f.type === "TICKET" || f.type === "AGENT_TICKETING")
+              .map((f: any) => f.id)
+          );
 
           // Identify Master Trip fulfillments (TRIP type with more than 2 stops - implies network definition)
           const masterTripFulfillmentIds = new Set(
@@ -77,9 +83,10 @@ export default async function on_search(
 
           for (const item of provider.items) {
             const isPassItem = item?.fulfillment_ids?.some((id: string) => passFulfillmentIds.has(id));
+            const isTicketItem = item?.fulfillment_ids?.some((id: string) => ticketFulfillmentIds.has(id));
             const isMasterItem = item?.fulfillment_ids?.some((id: string) => masterTripFulfillmentIds.has(id));
             
-            if (!item?.price?.value && !item?.price?.minimum_value && !isPassItem && !hasRouteFulfillmentOnly && !isMasterItem) {
+            if (!item?.price?.value && !item?.price?.minimum_value && !isPassItem && !isTicketItem && !hasRouteFulfillmentOnly && !isMasterItem) {
               result.failed.push(
                 `on_search: item ${item?.id} missing price`
               );

@@ -129,7 +129,8 @@ export function validateTrv11Intent(
 }
 
 // Additional Valid Values for OnSearch
-const VALID_FULFILLMENT_TYPES = ["ROUTE", "TRIP", "ONLINE", "PASS"];
+// Bus catalog also uses TICKET (preloaded tickets), STOPS (stop-only catalog), AGENT_TICKETING (agent login item)
+const VALID_FULFILLMENT_TYPES = ["ROUTE", "TRIP", "ONLINE", "PASS", "TICKET", "STOPS", "AGENT_TICKETING"];
 const VALID_ON_SEARCH_STOP_TYPES = ["START", "END", "INTERMEDIATE_STOP", "TRANSIT_STOP"];
 
 export function validateTrv11OnSearch(
@@ -183,19 +184,23 @@ export function validateTrv11OnSearch(
                   }
 
                   // Location check (GPS + Descriptor)
-                  if (!stop.location) {
-                      testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location is missing`);
-                  } else {
-                      const gps = stop.location.gps;
-                      const code = stop.location.descriptor?.code;
-                      
-                      if (!gps && !code) {
-                          testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location must have gps or descriptor.code`);
-                      }
-                      if (gps && !GPS_REGEX.test(gps)) {
-                          testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: gps format invalid`);
-                      }
-                  }
+                  // For Bus ROUTE/STOPS pagination, stops only carry id+type — location is optional
+                   if (!stop.location) {
+                       // Only enforce location on START/END stops for TRIP fulfillments
+                       if (fulfillment.type === "TRIP" && (stop.type === "START" || stop.type === "END")) {
+                           testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location is missing`);
+                       }
+                   } else {
+                       const gps = stop.location.gps;
+                       const code = stop.location.descriptor?.code;
+                       
+                       if (!gps && !code) {
+                           testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: location must have gps or descriptor.code`);
+                       }
+                       if (gps && !GPS_REGEX.test(gps)) {
+                           testResults.failed.push(`Provider ${pIndex} Fulfillment ${fIndex} Stop ${sIndex}: gps format invalid`);
+                       }
+                   }
               });
               
               const hasStart = stops.some((s: any) => s.type === "START");
@@ -211,8 +216,9 @@ export function validateTrv11OnSearch(
     // Item price is required for TRIP fulfillments but optional for PASS/ONLINE
     const items = provider.items;
     const hasTripFulfillment = fulfillments?.some((f: any) => f.type === "TRIP");
+    // Exempt PASS, ONLINE, TICKET, ROUTE, and AGENT_TICKETING-linked items from price/fulfillment_ids requirements
     const passFulfillmentIds = new Set(
-      (fulfillments || []).filter((f: any) => f.type === "PASS" || f.type === "ONLINE").map((f: any) => f.id)
+      (fulfillments || []).filter((f: any) => ["PASS", "ONLINE", "TICKET", "ROUTE", "AGENT_TICKETING"].includes(f.type)).map((f: any) => f.id)
     );
     if (items && Array.isArray(items) && items.length > 0) {
         items.forEach((item: any, iIndex: number) => {
@@ -224,8 +230,11 @@ export function validateTrv11OnSearch(
                 if (item.price.currency !== "INR") testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: price.currency should be INR`);
                 if (!item.price.value) testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: price.value is missing`);
             }
+            // AGENT_TICKETING items (Bus Agent Login) don't have fulfillment_ids — only enforce for priced items
             if(!item.fulfillment_ids || item.fulfillment_ids.length === 0){
-                 testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: fulfillment_ids missing`);
+                if (item.price && parseFloat(item.price.value || "0") > 0) {
+                    testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: fulfillment_ids missing`);
+                }
             }
         });
         testResults.passed.push(`Provider ${pIndex}: items validated (${items.length} items)`);
@@ -236,7 +245,8 @@ export function validateTrv11OnSearch(
 }
 
 // Valid fulfillment types for OnSelect
-const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET", "ONLINE", "PASS"];
+// Bus on_select also uses ROUTE (route selection) and AGENT_TICKETING (agent login)
+const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET", "ONLINE", "PASS", "ROUTE", "AGENT_TICKETING"];
 
 /**
  * Validates TRV11 Select request
@@ -1255,9 +1265,10 @@ export function validateTrv11OnCancel(
 }
 
 // Valid update targets for TRV11
-const VALID_UPDATE_TARGETS = ["order.fulfillments", "payments"];
-// Valid update statuses
-const VALID_UPDATE_STATUSES = ["SOFT_UPDATE", "CONFIRM_UPDATE", "UPDATED", "CANCELLED", "CANCELLATION_INITIATED"];
+// Bus also uses order.billing (billing update) and order.quote (quote update)
+const VALID_UPDATE_TARGETS = ["order.fulfillments", "payments", "order.billing", "order.quote"];
+// Bus on_update uses ACTIVE (vehicle confirmation flows) and COMPLETED (journey completion)
+const VALID_UPDATE_STATUSES = ["SOFT_UPDATE", "CONFIRM_UPDATE", "UPDATED", "CANCELLED", "CANCELLATION_INITIATED", "ACTIVE", "COMPLETED", "COMPLETE"];
 
 /**
  * Validates TRV11 Update request

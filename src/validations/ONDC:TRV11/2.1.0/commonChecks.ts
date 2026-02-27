@@ -147,8 +147,8 @@ export function validateTicketFulfillment(
       result.failed.push(`${context}: ${fType} fulfillment ${ticket.id} missing authorization`);
       continue;
     }
-    if (auth.type !== "QR") {
-      result.failed.push(`${context}: ${fType} fulfillment ${ticket.id} authorization type must be QR, got '${auth.type}'`);
+    if (auth.type !== "QR" && auth.type !== "QR_AND_VEHICLE_NUMBER") {
+      result.failed.push(`${context}: ${fType} fulfillment ${ticket.id} authorization type must be QR or QR_AND_VEHICLE_NUMBER, got '${auth.type}'`);
     } else {
       result.passed.push(`${context}: ${fType} fulfillment ${ticket.id} has QR authorization`);
     }
