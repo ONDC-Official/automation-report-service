@@ -56,8 +56,8 @@ async function processOnConfirm(
       validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "COMPLETED"], "on_confirm");
     }
 
-    // Quote validation
-    if (order?.quote) {
+    // Quote validation — skip for Metro Card flows (card breakup structure differs)
+    if (order?.quote && !isCardFlow) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
