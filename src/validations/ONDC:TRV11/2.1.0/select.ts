@@ -12,9 +12,12 @@ export default async function select(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11Select(element, sessionID, flowId, actionId, usecaseId);
 
+  // Metro Card flows do not have a journey on_search catalog — skip cross-check
+  const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
-    if (txnId) {
+    if (txnId && !isCardFlow) {
       const onSearchData = await getActionData(sessionID, flowId, txnId, "on_search");
       (result.response as any) = { ...(result.response || {}), on_search: onSearchData };
 
@@ -26,17 +29,19 @@ export default async function select(
       }
     }
 
-    // 2.1.0 specific: validate item quantity
-    const message = element?.jsonRequest?.message;
-    const items = message?.order?.items;
-    if (items && Array.isArray(items)) {
-      for (const item of items) {
-        if (item?.quantity?.selected?.count) {
-          const count = parseInt(item.quantity.selected.count);
-          if (count > 0) {
-            result.passed.push(`select: item ${item.id} quantity ${count} is valid`);
-          } else {
-            result.failed.push(`select: item ${item.id} quantity must be > 0`);
+    // 2.1.0 specific: validate item quantity (not applicable for Metro Card flows)
+    if (!isCardFlow) {
+      const message = element?.jsonRequest?.message;
+      const items = message?.order?.items;
+      if (items && Array.isArray(items)) {
+        for (const item of items) {
+          if (item?.quantity?.selected?.count) {
+            const count = parseInt(item.quantity.selected.count);
+            if (count > 0) {
+              result.passed.push(`select: item ${item.id} quantity ${count} is valid`);
+            } else {
+              result.failed.push(`select: item ${item.id} quantity must be > 0`);
+            }
           }
         }
       }
