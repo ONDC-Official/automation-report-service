@@ -21,22 +21,29 @@ export default async function on_cancel(
   const message = element?.jsonRequest?.message;
   const order = message?.order;
   
+  const isDelayedCancel =
+    flowId === "DELAYED_CANCELLATION_FLOW_ACCEPTED" ||
+    flowId === "DELAYED_CANCELLATION_FLOW_REJECTED";
+
   if (result.failed.length > 0) {
     const filteredErrors = result.failed.filter((error: string) => {
-      // Remove "Order status should be CANCELLED in on_cancel" - TRV11 allows multiple statuses
-      if (error === "Order status should be CANCELLED in on_cancel") {
+      const lower = error.toLowerCase();
+
+      // For delayed cancellation flows, remove any order-status error from the
+      // base validator — we re-apply validateOrderStatus ourselves below
+      if (isDelayedCancel && (lower.includes("order status") || lower.includes("order.status"))) {
         return false;
       }
-      
-      // Remove "Cancellation information is missing in order" if cancellation IS present
-      // This is due to inverted logic bug in shared validator (lines 6458-6470 in validationFactory.ts)
-      if (error === "Cancellation information is missing in order" && order?.cancellation) {
+
+      // Remove "Cancellation information is missing" when cancellation IS present
+      // (inverted logic bug in shared validator)
+      if (lower.includes("cancellation information is missing") && order?.cancellation) {
         return false;
       }
-      
+
       return true;
     });
-    
+
     result.failed = filteredErrors;
   }
 
