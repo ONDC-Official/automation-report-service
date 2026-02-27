@@ -49,6 +49,13 @@ async function processOnConfirm(
   const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
   // Bus agent flows issue TICKET authorization at on_update (vehicle confirmation), not at on_confirm
   const isBusAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
+
+  // Filter txnId false positives for Bus Agent flows (no search step precedes their confirm)
+  if (isBusAgentFlow && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) => !err.toLowerCase().includes("no transaction ids found")
+    );
+  }
   try {
     const message = element?.jsonRequest?.message;
     const order = message?.order;
