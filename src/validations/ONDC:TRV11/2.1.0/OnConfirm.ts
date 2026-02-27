@@ -45,6 +45,8 @@ async function processOnConfirm(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
+  // Metro Card flows use a different fulfillment structure and have no fixed item prices
+  const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
   try {
     const message = element?.jsonRequest?.message;
     const order = message?.order;
@@ -65,8 +67,8 @@ async function processOnConfirm(
       validateQuoteBreakup(order.quote, result, "on_confirm");
     }
 
-    // 2.1.0: TICKET fulfillments with QR authorization
-    if (order?.fulfillments) {
+    // 2.1.0: TICKET fulfillments with QR authorization — skip for Metro Card flows
+    if (order?.fulfillments && !isCardFlow) {
       validateTicketFulfillment(order.fulfillments, result, "on_confirm");
     }
 
@@ -75,9 +77,9 @@ async function processOnConfirm(
       validateTermsTags(order.tags, result, "on_confirm");
     }
 
-    // Compare with CONFIRM
+    // Compare with CONFIRM — skip for Metro Card flows (no fixed item price in confirm)
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
-    if (txnId) {
+    if (txnId && !isCardFlow) {
       const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
       const onConfirmItems: any[] = order?.items || [];
       const confirmItems: any[] = confirmData?.items || [];
