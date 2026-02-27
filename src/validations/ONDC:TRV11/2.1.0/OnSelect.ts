@@ -13,11 +13,14 @@ export default async function on_select(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11OnSelect(element, sessionID, flowId, actionId);
 
+  // Metro Card flows have a simplified quote and no fixed item prices in select
+  const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+
   try {
     const message = element?.jsonRequest?.message;
 
-    // Quote validation
-    if (message?.order?.quote) {
+    // Quote validation — skip for Metro Card flows (simplified quote structure)
+    if (message?.order?.quote && !isCardFlow) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
@@ -42,9 +45,9 @@ export default async function on_select(
       result.passed.push(`on_select: cancellation_terms present with ${message.order.cancellation_terms.length} entries`);
     }
 
-    // Compare with SELECT request
+    // Compare with SELECT request — skip for Metro Card flows (no fixed item price in select)
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
-    if (txnId) {
+    if (txnId && !isCardFlow) {
       const selectData = await getActionData(sessionID, flowId, txnId, "select");
       const selItems: any[] = selectData?.order?.items || [];
       const onSelItems: any[] = message?.order?.items || [];

@@ -14,6 +14,9 @@ export default async function on_init(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11OnInit210(element, sessionID, flowId, actionId, usecaseId);
 
+  // Metro Card flows have no transit stops and no fixed item prices
+  const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+
   try {
     const message = element?.jsonRequest?.message;
     const order = message?.order;
@@ -29,8 +32,8 @@ export default async function on_init(
       validateQuoteBreakup(order.quote, result, "on_init");
     }
 
-    // Validate fulfillments with stops
-    if (order?.fulfillments && Array.isArray(order.fulfillments)) {
+    // Validate fulfillments with stops — skip for Metro Card flows (no transit stops)
+    if (order?.fulfillments && Array.isArray(order.fulfillments) && !isCardFlow) {
       for (const f of order.fulfillments) {
         if (f.stops) {
           validateStops(f.stops, result, `on_init.fulfillment[${f.id}]`);
@@ -54,9 +57,9 @@ export default async function on_init(
       }
     }
 
-    // Cross-check with INIT
+    // Cross-check with INIT — skip for Metro Card flows (no fixed item price in init)
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
-    if (txnId) {
+    if (txnId && !isCardFlow) {
       const initData = await getActionData(sessionID, flowId, txnId, "init");
       const onInitItems: any[] = order?.items || [];
       const initItems: any[] = initData?.items || [];
