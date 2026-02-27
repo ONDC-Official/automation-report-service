@@ -3,8 +3,14 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
+import {
+  validateInsuranceContext,
+  validateInsuranceOrderStatus,
+  validateInsuranceDocuments,
+  validateInsurancePaymentParams,
+  validateInsuranceOrderId,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function on_confirm(
   element: Payload,
@@ -13,13 +19,20 @@ export default async function on_confirm(
   actionId: string,
   usecaseId?: string
 ): Promise<TestResult> {
-  // For error response scenarios, validate error first
-
-  // For normal on_confirm, use domain validator
   const result = await DomainValidators.fis13OnConfirm(element, sessionID, flowId, actionId, usecaseId);
 
   try {
+    const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
+
+    // Health insurance domain checks
+    validateInsuranceContext(context, result, flowId);
+    if (message) validateInsuranceOrderStatus(message, result, flowId);
+    if (message) validateInsuranceOrderId(message, result, flowId);
+    if (message) validateInsuranceDocuments(message, result, flowId);
+    if (message) validateInsurancePaymentParams(message, result, flowId, actionId);
+
+    // Quote calculation check
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
@@ -29,26 +42,23 @@ export default async function on_confirm(
       });
     }
 
-    // Compare against CONFIRM request when available
-    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
+      // Price comparison: confirm → on_confirm
       const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
-      const onConfirmMsg = element?.jsonRequest?.message;
-
-      const onConfirmItems: any[] = onConfirmMsg?.order?.items || [];
+      const onConfirmItems: any[] = message?.order?.items || [];
       const confirmItems: any[] = confirmData?.items || [];
       const confirmPriceById = new Map<string, string>();
-      for (const it of confirmItems) if (it?.id && it?.price?.value !== undefined) confirmPriceById.set(it.id, String(it.price.value));
+      for (const it of confirmItems) {
+        if (it?.id && it?.price?.value !== undefined) confirmPriceById.set(it.id, String(it.price.value));
+      }
 
       const missingFromConfirm: string[] = [];
       const priceMismatches: Array<{ id: string; confirm: string; on_confirm: string }> = [];
       for (const it of onConfirmItems) {
         const id = it?.id;
         if (!id) continue;
-        if (!confirmPriceById.has(id)) {
-          missingFromConfirm.push(id);
-          continue;
-        }
+        if (!confirmPriceById.has(id)) { missingFromConfirm.push(id); continue; }
         const cnf = parseFloat(confirmPriceById.get(id) as string);
         const onCnf = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
         if (!Number.isNaN(cnf) && !Number.isNaN(onCnf)) {
@@ -58,44 +68,14 @@ export default async function on_confirm(
       }
       if (priceMismatches.length) result.failed.push("Item price mismatches between CONFIRM and on_confirm");
       if (missingFromConfirm.length || priceMismatches.length) {
-        (result.response as any) = {
-          ...(result.response || {}),
-          on_confirm_vs_confirm: { missingFromConfirm, priceMismatches },
-        };
+        (result.response as any) = { ...(result.response || {}), on_confirm_vs_confirm: { missingFromConfirm, priceMismatches } };
       }
-      
-      // Validate form ID consistency if xinput is present
-      if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-        await validateFormIdIfXinputPresent(onConfirmMsg, sessionID, flowId, txnId, "on_confirm", result, HEALTH_INSURANCE_FLOWS);
-      }
-    }
 
-    // Validate settlement amount calculation for health insurance flows
-    // if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-    //   const order = message?.order;
-    //   if (order?.payments && Array.isArray(order.payments)) {
-    //     order.payments.forEach((payment: any, paymentIndex: number) => {
-    //       // Validate SETTLEMENT_AMOUNT calculation for BAP_TERMS and BPP_TERMS
-    //       validateSettlementAmount(
-    //         payment,
-    //         paymentIndex,
-    //         order,
-    //         result,
-    //         "BAP_TERMS"
-    //       );
-    //       validateSettlementAmount(
-    //         payment,
-    //         paymentIndex,
-    //         order,
-    //         result,
-    //         "BPP_TERMS"
-    //       );
-    //     });
-    //   }
-    // }
-  } catch (_) {}
+      // Form ID (xinput) check
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_confirm", result);
+    }
+  } catch (_) { }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
-

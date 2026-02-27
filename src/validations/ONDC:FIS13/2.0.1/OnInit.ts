@@ -4,7 +4,12 @@ import { validateOrderQuote } from "../../shared/quoteValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateInsurancePaymentParams,
+  validateInsuranceFulfillments,
+  validateInsuranceOnInitExtras,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function on_init(
   element: Payload,
@@ -16,7 +21,16 @@ export default async function on_init(
   const result = await DomainValidators.fis13OnInit(element, sessionID, flowId, actionId, usecaseId);
 
   try {
+    const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
+
+    // Health insurance domain checks
+    validateInsuranceContext(context, result, flowId);
+    if (message) validateInsurancePaymentParams(message, result, flowId, actionId);
+    if (message) validateInsuranceFulfillments(message, result, flowId, actionId);
+    if (message) validateInsuranceOnInitExtras(message, result, flowId);
+
+    // Quote calculation check
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
@@ -26,24 +40,23 @@ export default async function on_init(
       });
     }
 
-    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
+      // Price comparison: init → on_init
       const initData = await getActionData(sessionID, flowId, txnId, "init");
-      // Compare item ids and prices w.r.t INIT request
       const onInitItems: any[] = message?.order?.items || [];
       const initItems: any[] = initData?.items || [];
       const initPriceById = new Map<string, string>();
-      for (const it of initItems) if (it?.id && it?.price?.value !== undefined) initPriceById.set(it.id, String(it.price.value));
+      for (const it of initItems) {
+        if (it?.id && it?.price?.value !== undefined) initPriceById.set(it.id, String(it.price.value));
+      }
 
       const missingFromInit: string[] = [];
       const priceMismatches: Array<{ id: string; init: string; on_init: string }> = [];
       for (const it of onInitItems) {
         const id = it?.id;
         if (!id) continue;
-        if (!initPriceById.has(id)) {
-          missingFromInit.push(id);
-          continue;
-        }
+        if (!initPriceById.has(id)) { missingFromInit.push(id); continue; }
         const ini = parseFloat(initPriceById.get(id) as string);
         const onIni = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
         if (!Number.isNaN(ini) && !Number.isNaN(onIni)) {
@@ -53,20 +66,14 @@ export default async function on_init(
       }
       if (priceMismatches.length) result.failed.push("Item price mismatches between INIT and on_init");
       if (missingFromInit.length || priceMismatches.length) {
-        (result.response as any) = {
-          ...(result.response || {}),
-          on_init_vs_init: { missingFromInit, priceMismatches },
-        };
+        (result.response as any) = { ...(result.response || {}), on_init_vs_init: { missingFromInit, priceMismatches } };
       }
 
-      // Validate form ID consistency if xinput is present
-      if (flowId && HEALTH_INSURANCE_FLOWS.includes(flowId)) {
-        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result, HEALTH_INSURANCE_FLOWS);
-      }
+      // Form ID (xinput) check
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result);
     }
-  } catch (_) {}
+  } catch (_) { }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
-

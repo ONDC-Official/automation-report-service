@@ -11,6 +11,7 @@ save-data:
   payments: "$.message.order.payments[*]"
   tags: "$.message.order.tags[*]"
   billing: "$.message.order.billing"
+  documents: "$.message.order.documents[*]"
   created_at: "$.message.order.created_at"
   updated_at: "$.message.order.updated_at"
 

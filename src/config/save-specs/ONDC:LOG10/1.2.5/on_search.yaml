@@ -1,0 +1,27 @@
+save-data:
+  provider_id: $.message.catalog["bpp/providers"][0].id
+  location_id: $.message.catalog["bpp/providers"][0].locations[0].id
+  bpp_id: $.context.bpp_id
+  bpp_uri: $.context.bpp_uri
+  rto_id: $.message.catalog["bpp/providers"][*].fulfillments[?(@.type=="RTO")].id
+  on_seach_categories: $.message.catalog["bpp/providers"][*].categories
+  on_search_items: $.message.catalog["bpp/providers"][*].items[*]
+  on_search_fulfillment: $.message.catalog["bpp/providers"][*].fulfillments[?(@.type=="Delivery"
+    || @.type=="FTL" || @.type=="PTL")]
+  on_search_batch_fulfillment: $.message.catalog["bpp/providers"][*].fulfillments[?(@.type=="Batch")]
+  on_search_return_fulfillment: $.message.catalog["bpp/providers"][*].fulfillments[?(@.type=="Return")]
+  feature_surge_fee: $.message.catalog.tags[?(@.code=="lsp_features")].list[?(@.code=="017")].value
+  feature_cancellation_terms: $.message.catalog.tags[?(@.code=="lsp_features")].list[?(@.code=="01A")].value
+  rider_count: $.message.catalog["bpp/providers"][*].fulfillments[?(@.type=="Batch")].tags[?(@.code=="fulfill_response")].list[?(@.code=="rider_count")].value
+  order_count: $.message.catalog["bpp/providers"][*].fulfillments[?(@.type=="Batch")].tags[?(@.code=="fulfill_response")].list[?(@.code=="order_count")].value
+  message_id: $.context.message_id
+  transaction_id: $.context.transaction_id
+  bap_id: $.context.bap_id
+  bap_uri: $.context.bap_uri
+  timestamp: $.context.timestamp
+  domain: $.context.domain
+  version: $.context.version
+  city: $.context.city
+  action: $.context.action
+  item_id: $.message.catalog['bpp/providers'][0].items[0].id
+  fulfillment_id: $.message.catalog['bpp/providers'][0].fulfillments[0].id

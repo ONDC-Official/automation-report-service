@@ -50,7 +50,7 @@ export function validateQuote(
   testResults: TestResult,
   config: QuoteValidationConfig = {}
 ): void {
-  
+
   const getBreakupLabel = (b: QuoteBreakupItem): string => {
     const raw = b["@ondc/org/title_type"] || b.title || "";
     return typeof raw === "string" ? raw.toLowerCase() : "";
@@ -61,7 +61,7 @@ export function validateQuote(
     }
     return b.price?.value ?? b.item?.price?.value;
   };
-  
+
 
   if (config.validateDecimalPlaces) {
     try {
@@ -198,3 +198,52 @@ export function validateOrderQuote(
     }
   }
 }
+
+export function validateGiftCardQuote(
+  message: any,
+  testResults: TestResult
+): void {
+  const quote = message?.order?.quote;
+  const breakup = quote?.breakup || [];
+
+  if (!quote || !breakup.length) {
+    testResults.failed.push("Quote or breakup missing");
+    return;
+  }
+
+  let computedTotal = 0;
+
+  for (const line of breakup) {
+    let raw = line?.price?.value;
+
+    if (raw === undefined || raw === null) continue;
+
+    // normalize value safely
+    raw = String(raw)
+      .replace("−", "-")     // unicode minus fix
+      .replace(/\s+/g, "")   // remove whitespace
+
+    const value = Number(raw);
+
+    if (!Number.isFinite(value)) {
+      testResults.failed.push(`Invalid price value '${raw}'`);
+      continue;
+    }
+    computedTotal += value;
+  }
+
+  const quoteTotal = Number(
+    String(quote?.price?.value || "0").replace("−", "-").replace(/\s+/g, "")
+  );
+
+  if (Math.abs(computedTotal - quoteTotal) < 0.01) {
+    testResults.passed.push("Quote total matches breakup sum");
+  } else {
+    testResults.failed.push(
+      `Quote total mismatch. Expected ${computedTotal}, got ${quoteTotal}`
+    );
+  }
+}
+
+
+
