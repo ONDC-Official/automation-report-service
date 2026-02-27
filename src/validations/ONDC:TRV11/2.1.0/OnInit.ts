@@ -21,8 +21,8 @@ export default async function on_init(
     const message = element?.jsonRequest?.message;
     const order = message?.order;
 
-    // Quote validation
-    if (order?.quote) {
+    // Quote validation — skip for Metro Card flows (card breakup structure differs)
+    if (order?.quote && !isCardFlow) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,

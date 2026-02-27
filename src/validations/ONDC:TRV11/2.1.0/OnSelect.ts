@@ -16,6 +16,14 @@ export default async function on_select(
   // Metro Card flows have a simplified quote and no fixed item prices in select
   const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
 
+  // Filter base validator false positives for Metro Card flows
+  // (card items don't carry quantity.selected.count)
+  if (isCardFlow && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) => !err.toLowerCase().includes("quantity.selected.count")
+    );
+  }
+
   try {
     const message = element?.jsonRequest?.message;
 
