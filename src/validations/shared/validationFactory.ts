@@ -6486,7 +6486,7 @@ function validateCancellation(
     } else {
       testResults.passed.push("Order status is CANCELLED in on_cancel_hard");
     }
-  } else if (action_id === "on_cancel") {
+  } else if (action_id === "on_cancel" || action_id?.startsWith("on_cancel_")) {
     // For purchase finance flows, allow both SOFT_CANCEL and CANCELLED
     if (isPurchaseFinanceFlow) {
       if (order.status === "SOFT_CANCEL" || order.status === "CANCELLED") {
