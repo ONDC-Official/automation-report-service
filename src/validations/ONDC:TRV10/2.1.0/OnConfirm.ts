@@ -10,8 +10,14 @@ export default async function on_confirm(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  // For error response scenarios (like on_confirm_driver_not_found), validate error first
-  if (actionId === "on_confirm_driver_not_found") {
+  // For error response scenarios, validate error first and return early.
+  // - on_confirm_driver_not_found: driver not found error response
+  // - on_confirm_1 in Technical Cancellation flow: sync response message is not an object
+  const isErrorResponseScenario =
+    actionId === "on_confirm_driver_not_found" ||
+    (actionId === "on_confirm_1" && flowId === "OnDemand_Ride_Technical_Cancellation_Flow");
+
+  if (isErrorResponseScenario) {
     const result: TestResult = {
       response: {},
       passed: [],

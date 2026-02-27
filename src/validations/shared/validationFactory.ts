@@ -3991,10 +3991,13 @@ function validateFulfillmentStopsInOrder(
       }
 
       // ---------------------- GPS validation exceptions ------------------
+      // Use prefix match for on_update so numbered variants (on_update_1 etc.) are also skipped.
+      // Also skip GPS validation for Schedule_Rental on on_status_* steps where END stop GPS is absent.
       const skipGPSValidation =
         flowId === "OnDemand_Rental" ||
         action_id === "init" ||
-        action_id === "on_update";
+        action_id?.startsWith("on_update") ||
+        (flowId === "Schedule_Rental" && action_id?.startsWith("on_status"));
 
       if (skipGPSValidation) return;
 
@@ -4025,6 +4028,7 @@ function validateFulfillmentStopsInOrder(
       "Schedule_Trip",
       "OnDemand_Rentalwhen_end_stop_gps_coordinate_is_present",
       "No_Acceptance_SoftUpdate",
+      "OnDemand_Rental", // END stop not required for rental flows (open-ended destination)
     ];
 
     const starttopExemptFlows = [
@@ -4032,12 +4036,13 @@ function validateFulfillmentStopsInOrder(
       "OnDemand_Update_Stop",
     ];
 
-    const startActionIds = ["update", "on_update"];
+    // Use prefix match so numbered variants (update_1, on_update_1 etc.) are also covered
+    const isStartExemptAction = action_id?.startsWith("update") || action_id?.startsWith("on_update");
 
     if (
       !hasStart &&
       !starttopExemptFlows.includes(flowId || "") &&
-      !startActionIds.includes(action_id || "")
+      !isStartExemptAction
     ) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one START stop`
@@ -4048,7 +4053,7 @@ function validateFulfillmentStopsInOrder(
     if (
       !hasEnd &&
       !endStopExemptFlows.includes(flowId || "") &&
-      action_id !== "on_update"
+      !action_id?.startsWith("on_update")
     ) {
       testResults.failed.push(
         `Fulfillment ${fIndex}: must include at least one END stop`
@@ -4415,16 +4420,16 @@ function validateItemsTRV10(
     return;
   }
 
-  const actionsExemptFromDescriptorName = new Set([
-    "select",
-    "select2",
-    "select_rental",
-    "select_preorder_bid",
-    "init",
-    "confirm",
-    "confirm_card_balance_faliure",
-    "confirm_card_balance_success",
-  ]);
+  // Use prefix-based check so numbered variants (init_1, select_1, confirm_1, etc.)
+  // are also exempt from descriptor name validation
+  const isExemptFromDescriptorName = (id?: string): boolean => {
+    if (!id) return false;
+    return (
+      id.startsWith("select") ||
+      id.startsWith("init") ||
+      id.startsWith("confirm")
+    );
+  };
 
   items.forEach((item, index) => {
     if (!item.id) {
@@ -4433,7 +4438,7 @@ function validateItemsTRV10(
       testResults.passed.push(`Item ${index} ID is present`);
     }
 
-    if (action_id && !actionsExemptFromDescriptorName.has(action_id)) {
+    if (action_id && !isExemptFromDescriptorName(action_id)) {
       if (!item.descriptor?.name) {
         testResults.failed.push(`Item ${index} descriptor name is missing`);
       } else {
@@ -4515,15 +4520,14 @@ function validateFulfillmentsTRV10(
       testResults.passed.push(`Fulfillment ${index} ID is present`);
     }
 
-    // For TRV10, fulfillment type is optional in select and init actions
-    if (
-      action_id === "select" ||
-      action_id === "select_rental" ||
-      action_id === "init" ||
-      action_id === "update" ||
-      action_id === "update_hard" ||
-      action_id === "select_preorder_bid"
-    ) {
+    // For TRV10, fulfillment type is optional in select, init, and update actions.
+    // Use prefix-based check so numbered variants (select_1, init_1, update_1 etc.) are also exempt.
+    const exemptFromFulfillmentType =
+      action_id?.startsWith("select") ||
+      action_id?.startsWith("init") ||
+      action_id?.startsWith("update");
+
+    if (exemptFromFulfillmentType) {
       if (fulfillment.type) {
         testResults.passed.push(`Fulfillment ${index} type is present`);
       }
