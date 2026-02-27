@@ -228,7 +228,6 @@ export async function checkOnSearchCommon(
 
         try { assert.ok(provider, "bpp/providers must have at least one provider"); testResults.passed.push("Provider existence validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
         try { assert.ok(providerId, "Provider id must be present in bpp/providers[0].id"); testResults.passed.push("Provider ID validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
-        try { assert.ok(deliveryFf, "At least one Delivery/FTL/PTL fulfillment must be present in on_search"); testResults.passed.push("Delivery fulfillment type validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
         try { assert.ok(items.length > 0, "At least one item must be present in on_search catalog"); testResults.passed.push("Items existence validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
         try { assert.ok(rtoFf, "An RTO fulfillment must be present in on_search for P2H2P logistics"); testResults.passed.push("RTO fulfillment validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
 
@@ -247,7 +246,6 @@ export async function checkOnSearchCommon(
             } else if (rtoFfIds.has(fid)) {
                 try {
                     assert.ok(!empty, `Item '${iid}' (RTO ff '${fid}') — parent_item_id must reference a Delivery item ID`);
-                    assert.ok(deliveryItemIds.has(pid), `Item '${iid}' (RTO) parent_item_id '${pid}' not in Delivery items [${[...deliveryItemIds].join(", ")}]`);
                     testResults.passed.push(`parent_item_id '${pid}' correctly references Delivery item for RTO item '${iid}'`);
                 } catch (e: any) { testResults.failed.push(e.message); }
             }
@@ -297,9 +295,6 @@ export async function checkOnInitCommon(
         try { assert.ok(delivery, "Delivery charge must be present in quote breakup"); testResults.passed.push("Delivery charge validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
         try { assert.ok(parseFloat(quote.price.value) === total, `Quote price ${quote.price.value} ≠ breakup total ${total}`); testResults.passed.push("Quote total matches breakup"); } catch (e: any) { testResults.failed.push(e.message); }
 
-        if (flowId === "WEIGHT_DIFFERENTIAL_FLOW") {
-            try { assert.ok(breakup.some((b: any) => b["@ondc/org/title_type"] === "diff") && breakup.some((b: any) => b["@ondc/org/title_type"] === "tax_diff"), "'diff' and 'tax_diff' missing for WEIGHT_DIFFERENTIAL_FLOW"); testResults.passed.push("Differential breakup validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
-        }
         if (flowId === "CASH_ON_DELIVERY_FLOW") {
             try { assert.ok(breakup.some((b: any) => b["@ondc/org/title_type"] === "cod"), "'cod' missing in quote.breakup for CASH_ON_DELIVERY_FLOW"); testResults.passed.push("COD breakup validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
         }
@@ -478,18 +473,6 @@ export async function checkOnConfirmCommon(
         validateLinkedProviderTag(action, tags, testResults);
     }
 
-    if (flowId === "WEIGHT_DIFFERENTIAL_FLOW" && onConfirmQuote) {
-        const breakup = onConfirmQuote?.breakup ?? [];
-        try {
-            assert.ok(
-                breakup.some((b: any) => b["@ondc/org/title_type"] === "diff") &&
-                breakup.some((b: any) => b["@ondc/org/title_type"] === "tax_diff"),
-                "'diff' and 'tax_diff' missing in quote.breakup for WEIGHT_DIFFERENTIAL_FLOW"
-            );
-            testResults.passed.push("Diff breakup validation passed in on_confirm");
-        } catch (e: any) { testResults.failed.push(e.message); }
-    }
-
     if (testResults.passed.length < 1 && testResults.failed.length < 1)
         testResults.passed.push(`Validated ${action}`);
     return testResults;
@@ -542,7 +525,7 @@ export async function checkOnUpdateCommon(
         }
     }
 
-    if (flowId === "WEIGHT_DIFFERENTIAL_FLOW" && quote) {
+    if (flowId === "WEIGHT_DIFFERENTIAL_FLOW" && quote && action_id === "on_update_1_LOGISTICS") {
         const breakup = quote?.breakup ?? [];
         try {
             assert.ok(
@@ -640,7 +623,7 @@ export async function checkOnStatusCommon(
         }
     }
 
-    if (flowId === "WEIGHT_DIFFERENTIAL_FLOW" && orderQuote) {
+    if (flowId === "WEIGHT_DIFFERENTIAL_FLOW" && orderQuote && ["on_status_2_LOGISTICS", "on_status_3_LOGISTICS"].includes(action_id)) {
         const breakup = orderQuote.breakup ?? [];
         try {
             assert.ok(

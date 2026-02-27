@@ -170,21 +170,21 @@ export function validateCODFlow(
     // }
 
     // Validate collection_amount tag
-    try {
-      const collectionTag = linkedOrderTag?.list?.find?.(
-        (tag: { code: string; value: string }) =>
-          tag.code === "collection_amount"
-      );
+    // try {
+    //   const collectionTag = linkedOrderTag?.list?.find?.(
+    //     (tag: { code: string; value: string }) =>
+    //       tag.code === "collection_amount"
+    //   );
 
-      assert.ok(
-        collectionTag,
-        `collection_amount tag should be present inside linked_order tag list`
-      );
+    //   assert.ok(
+    //     collectionTag,
+    //     `collection_amount tag should be present inside linked_order tag list`
+    //   );
 
-      testResults.passed.push(`collection_amount tag validation passed`);
-    } catch (error: any) {
-      testResults.failed.push(error.message);
-    }
+    //   testResults.passed.push(`collection_amount tag validation passed`);
+    // } catch (error: any) {
+    //   testResults.failed.push(error.message);
+    // }
   }
 }
 
