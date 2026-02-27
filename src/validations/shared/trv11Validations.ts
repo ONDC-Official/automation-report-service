@@ -236,7 +236,7 @@ export function validateTrv11OnSearch(
 }
 
 // Valid fulfillment types for OnSelect
-const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET", "ONLINE"];
+const VALID_ON_SELECT_FULFILLMENT_TYPES = ["TRIP", "TICKET", "ONLINE", "PASS"];
 
 /**
  * Validates TRV11 Select request
