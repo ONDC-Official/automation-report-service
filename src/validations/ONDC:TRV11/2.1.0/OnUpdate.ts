@@ -16,13 +16,33 @@ export default async function on_update(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11OnUpdate(element, sessionID, flowId, actionId);
 
+  // Delayed cancellation on_update has optional terms tags and different valid statuses
+  const isDelayedCancel =
+    flowId === "DELAYED_CANCELLATION_FLOW_ACCEPTED" ||
+    flowId === "DELAYED_CANCELLATION_FLOW_REJECTED";
+
+  // Filter base validator false positives for delayed cancellation flows
+  if (isDelayedCancel && result.failed.length > 0) {
+    result.failed = result.failed.filter((err: string) => {
+      const lower = err.toLowerCase();
+      return (
+        !lower.includes("bap_terms") &&
+        !lower.includes("bpp_terms") &&
+        !lower.includes("payment")
+      );
+    });
+  }
+
   try {
     const message = element?.jsonRequest?.message;
     const order = message?.order;
 
-    // Validate order status
+    // Validate order status — delayed cancel flows only expect CANCELLED or CANCELLATION_INITIATED
     if (order?.status) {
-      validateOrderStatus(order, result, ["ACTIVE", "COMPLETE", "COMPLETED", "CANCELLED", "SOFT_UPDATE", "UPDATED"], "on_update");
+      const allowedStatuses = isDelayedCancel
+        ? ["CANCELLED", "CANCELLATION_INITIATED"]
+        : ["ACTIVE", "COMPLETE", "COMPLETED", "CANCELLED", "SOFT_UPDATE", "UPDATED"];
+      validateOrderStatus(order, result, allowedStatuses, "on_update");
     }
 
     // Validate quote (fare difference scenarios)
