@@ -224,7 +224,8 @@ export function validateTrv11OnSearch(
         items.forEach((item: any, iIndex: number) => {
             if (!item.id) testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: id is missing`);
             const isPassOrOnlineItem = item.fulfillment_ids?.some((id: string) => passFulfillmentIds.has(id));
-            if (!item.price && !isPassOrOnlineItem) {
+            // Price is only required when the provider has TRIP fulfillments (not catalog-only/paginated on_search)
+            if (!item.price && !isPassOrOnlineItem && hasTripFulfillment) {
                 testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: price is missing`);
             } else if (item.price) {
                 if (item.price.currency !== "INR") testResults.failed.push(`Provider ${pIndex} Item ${iIndex}: price.currency should be INR`);

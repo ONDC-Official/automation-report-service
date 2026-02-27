@@ -39,8 +39,9 @@ export default async function on_search(
 
         // Validate items have price (skip for PASS-linked items and MASTER TRIP items with > 2 stops)
         if (provider.items && Array.isArray(provider.items)) {
+          // True when provider has no TRIP fulfillments (catalog-only: ROUTE/TICKET/STOPS/AGENT_TICKETING mixed)
           const hasRouteFulfillmentOnly = (provider.fulfillments || []).length > 0 &&
-            (provider.fulfillments || []).every((f: any) => f.type === "ROUTE");
+            !(provider.fulfillments || []).some((f: any) => f.type === "TRIP");
           const passFulfillmentIds = new Set(
             (provider.fulfillments || [])
               .filter((f: any) => f.type === "PASS" || f.type === "ONLINE")
