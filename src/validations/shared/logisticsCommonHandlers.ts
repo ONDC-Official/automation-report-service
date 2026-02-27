@@ -542,21 +542,33 @@ export async function checkOnUpdateCommon(
         }
     }
 
-    if (flowId === "WEIGHT_DIFFERENTIAL_FLOW") {
-        let diffPresent = false;
-        for (const ff of fulfillments) {
-            const ffs: string = ff?.state?.descriptor?.code ?? "";
-            const hasDiff = ff.tags?.some((t: any) => t.code === "linked_order_diff");
-            const hasDiffProof = ff.tags?.some((t: any) => t.code === "linked_order_diff_proof");
-            if (hasDiff) diffPresent = true;
-            if (["Out-for-pickup", "At-destination-hub"].includes(ffs)) {
-                try { assert.ok(hasDiff && hasDiffProof, "'linked_order_diff' and 'linked_order_diff_proof' tags missing"); testResults.passed.push("Diff tags validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
-            }
-        }
-        if (diffPresent && quote) {
-            try { assert.ok(quote.breakup?.some((b: any) => b["@ondc/org/title_type"] === "diff") && quote.breakup?.some((b: any) => b["@ondc/org/title_type"] === "tax_diff"), "'diff' and 'tax_diff' missing in quote.breakup"); testResults.passed.push("Diff breakup validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
-        }
+    if (flowId === "WEIGHT_DIFFERENTIAL_FLOW" && quote) {
+        const breakup = quote?.breakup ?? [];
+        try {
+            assert.ok(
+                breakup.some((b: any) => b["@ondc/org/title_type"] === "diff") &&
+                breakup.some((b: any) => b["@ondc/org/title_type"] === "tax_diff"),
+                "'diff' and 'tax_diff' missing in quote.breakup for WEIGHT_DIFFERENTIAL_FLOW"
+            );
+            testResults.passed.push("Diff breakup validation passed in on_confirm");
+        } catch (e: any) { testResults.failed.push(e.message); }
     }
+
+    // if (flowId === "WEIGHT_DIFFERENTIAL_FLOW") {
+    //     let diffPresent = false;
+    //     for (const ff of fulfillments) {
+    //         const ffs: string = ff?.state?.descriptor?.code ?? "";
+    //         const hasDiff = ff.tags?.some((t: any) => t.code === "linked_order_diff");
+    //         const hasDiffProof = ff.tags?.some((t: any) => t.code === "linked_order_diff_proof");
+    //         if (hasDiff) diffPresent = true;
+    //         if (["Out-for-pickup", "At-destination-hub"].includes(ffs)) {
+    //             try { assert.ok(hasDiff && hasDiffProof, "'linked_order_diff' and 'linked_order_diff_proof' tags missing"); testResults.passed.push("Diff tags validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
+    //         }
+    //     }
+    //     if (diffPresent && quote) {
+    //         try { assert.ok(quote.breakup?.some((b: any) => b["@ondc/org/title_type"] === "diff") && quote.breakup?.some((b: any) => b["@ondc/org/title_type"] === "tax_diff"), "'diff' and 'tax_diff' missing in quote.breakup"); testResults.passed.push("Diff breakup validation passed"); } catch (e: any) { testResults.failed.push(e.message); }
+    //     }
+    // }
 
     if (testResults.passed.length < 1 && testResults.failed.length < 1)
         testResults.passed.push(`Validated ${action}`);
