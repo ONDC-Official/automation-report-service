@@ -15,12 +15,24 @@ export default async function on_select(
 
   // Metro Card flows have a simplified quote and no fixed item prices in select
   const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+  // Bus Agent flows start at select (no search step) — no txnId, no quantity, no quote
+  const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
 
-  // Filter base validator false positives for Metro Card flows
-  // (card items don't carry quantity.selected.count)
-  if (isCardFlow && result.failed.length > 0) {
+  // Filter base validator false positives for Metro Card / Bus Agent flows
+  if ((isCardFlow || isAgentFlow) && result.failed.length > 0) {
     result.failed = result.failed.filter(
-      (err: string) => !err.toLowerCase().includes("quantity.selected.count")
+      (err: string) =>
+        !err.toLowerCase().includes("quantity.selected.count") &&
+        !err.toLowerCase().includes("no transaction ids found")
+    );
+  }
+
+  // Agent flows: also filter fulfillment_ids and quote errors (items are catalog stubs, no price yet)
+  if (isAgentFlow && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) =>
+        !err.toLowerCase().includes("fulfillment_ids") &&
+        !err.toLowerCase().includes("quote")
     );
   }
 

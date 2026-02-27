@@ -14,12 +14,15 @@ export default async function select(
 
   // Metro Card flows do not have a journey on_search catalog — skip cross-check
   const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+  // Bus Agent flows start at select (no search step) — no stored txnId, no quantity count
+  const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
 
-  // Filter base validator false positives for Metro Card flows
-  // (card items don't carry quantity.selected.count)
-  if (isCardFlow && result.failed.length > 0) {
+  // Filter base validator false positives for Metro Card / Bus Agent flows
+  if ((isCardFlow || isAgentFlow) && result.failed.length > 0) {
     result.failed = result.failed.filter(
-      (err: string) => !err.toLowerCase().includes("quantity.selected.count")
+      (err: string) =>
+        !err.toLowerCase().includes("quantity.selected.count") &&
+        !err.toLowerCase().includes("no transaction ids found")
     );
   }
 
