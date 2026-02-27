@@ -1257,7 +1257,7 @@ export function validateTrv11OnCancel(
 // Valid update targets for TRV11
 const VALID_UPDATE_TARGETS = ["order.fulfillments", "payments"];
 // Valid update statuses
-const VALID_UPDATE_STATUSES = ["SOFT_UPDATE", "CONFIRM_UPDATE", "UPDATED"];
+const VALID_UPDATE_STATUSES = ["SOFT_UPDATE", "CONFIRM_UPDATE", "UPDATED", "CANCELLED", "CANCELLATION_INITIATED"];
 
 /**
  * Validates TRV11 Update request
