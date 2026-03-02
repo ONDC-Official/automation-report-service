@@ -44,7 +44,8 @@ export default async function on_update(
       return (
         !lower.includes("no transaction ids found") &&
         !lower.includes("quantity.selected.count") &&
-        !lower.includes("billing is missing")
+        !lower.includes("billing is missing") &&
+        !lower.includes("payments array is missing")
       );
     });
   }
