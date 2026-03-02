@@ -21,6 +21,10 @@ export default async function on_update(
     flowId === "DELAYED_CANCELLATION_FLOW_ACCEPTED" ||
     flowId === "DELAYED_CANCELLATION_FLOW_REJECTED";
 
+  // IntraCity_Base_Order_Update_Journey starts at update/on_update directly (no prior
+  // search/confirm) — suppress false positives from the shared on_update validator
+  const isBaseOrderUpdateFlow = flowId === "IntraCity_Base_Order_Update_Journey";
+
   // Filter base validator false positives for delayed cancellation flows
   if (isDelayedCancel && result.failed.length > 0) {
     result.failed = result.failed.filter((err: string) => {
@@ -29,6 +33,18 @@ export default async function on_update(
         !lower.includes("bap_terms") &&
         !lower.includes("bpp_terms") &&
         !lower.includes("payment")
+      );
+    });
+  }
+
+  // Filter false positives for base order update flow (standalone, no prior txn)
+  if (isBaseOrderUpdateFlow && result.failed.length > 0) {
+    result.failed = result.failed.filter((err: string) => {
+      const lower = err.toLowerCase();
+      return (
+        !lower.includes("no transaction ids found") &&
+        !lower.includes("quantity.selected.count") &&
+        !lower.includes("billing is missing")
       );
     });
   }
