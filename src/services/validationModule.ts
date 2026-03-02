@@ -36,6 +36,10 @@ const INITIAL_ACTION_COUNTERS: Record<ValidationAction, number> = {
   status: 1,
   track: 1,
   on_track: 1,
+  issue: 1,
+  on_issue: 1,
+  issue_status: 1,
+  on_issue_status: 1,
 };
 
 // Interface for session details
@@ -105,32 +109,67 @@ function checkMandatoryFlows(
 /**
  * Validates the action sequence for a flow
  * Handles HTML_FORM entries by skipping them in the sequence but maintaining position tracking
+ * Now includes payload deduplication to handle duplicate responses from multiple providers
  */
 function validateActionSequence(
   payloads: Payload[],
-  requiredSequence: string[]
+  requiredSequence: string[],
+  flowId?: string
 ): { validSequence: boolean; errors: string[] } {
   const errors: string[] = [];
   let validSequence = true;
 
   try {
+    // Enhanced payload deduplication logic
+    const deduplicatedPayloads = payloads.filter((payload, index, array) => {
+      const duplicateIndex = array.findIndex(p =>
+        p.action?.toLowerCase() === payload.action?.toLowerCase() &&
+        p.transactionId === payload.transactionId &&
+        Math.abs(new Date(p.createdAt).getTime() - new Date(payload.createdAt).getTime()) < 1000 // Within 1 second
+      );
+
+      // Keep the first occurrence of each duplicate
+      return duplicateIndex === index;
+    });
+
+    // Log duplicate detection results
+    if (deduplicatedPayloads.length !== payloads.length) {
+      const removedCount = payloads.length - deduplicatedPayloads.length;
+      logger.info("Duplicate payloads detected and removed", {
+        flowId: flowId || "unknown",
+        originalCount: payloads.length,
+        deduplicatedCount: deduplicatedPayloads.length,
+        removedCount,
+        removedPayloads: payloads.filter(p => !deduplicatedPayloads.includes(p)).map(p => ({
+          action: p.action,
+          transactionId: p.transactionId,
+          createdAt: p.createdAt
+        }))
+      });
+    }
+
+    // Use deduplicated payloads for validation
+    const validationPayloads = deduplicatedPayloads;
     let payloadIndex = 0; // Index for actual payloads (excluding HTML_FORM)
-    
-    // Log for debugging
+
+    // Enhanced debugging logs with deduplication info
     logger.info("Validating action sequence", {
+      flowId: flowId || "unknown",
       requiredSequenceLength: requiredSequence.length,
-      payloadsLength: payloads.length,
+      originalPayloadsLength: payloads.length,
+      deduplicatedPayloadsLength: validationPayloads.length,
       requiredSequence: requiredSequence,
-      payloadActions: payloads.map((p, idx) => ({
+      validationPayloadActions: validationPayloads.map((p, idx) => ({
         index: idx,
         action: p?.action?.toLowerCase(),
-        transactionId: p?.transactionId
+        transactionId: p?.transactionId,
+        createdAt: p?.createdAt
       }))
     });
-    
+
     for (let i = 0; i < requiredSequence.length; i++) {
       const expectedAction = requiredSequence[i].toLowerCase();
-      
+
       // Skip HTML_FORM entries in the required sequence - they don't have corresponding payloads
       if (expectedAction === "html_form") {
         logger.info(`Skipping HTML_FORM at sequence position ${i + 1}`);
@@ -146,15 +185,132 @@ function validateActionSequence(
       }
 
       // Check if we have enough payloads
-      if (payloadIndex >= payloads.length) {
+      console.log("payloadIndex", payloadIndex);
+      console.log("validationPayloads.length", validationPayloads.length);
+      if (payloadIndex >= validationPayloads.length) {
         validSequence = false;
+        // Check for Early Success Termination
+        // If the flow ended, but the expected action is a user-initiated request (like 'update', 'status', 'track')
+        // And the last action was a valid response (like 'on_update', 'on_status', 'on_track')
+        // Then we can assume the user chose to stop the flow here.
+        if (i > 0) {
+          const lastAction = requiredSequence[i - 1].toLowerCase();
+          const currentExpectedAction = expectedAction.toLowerCase();
+
+        if (
+            (currentExpectedAction === "update" ||
+              currentExpectedAction === "status" ||
+              currentExpectedAction === "track" ||
+              currentExpectedAction === "cancel" ||
+              currentExpectedAction === "on_status" ||
+              currentExpectedAction === "on_update") &&
+            // Allow when previous was an on_ response (e.g. on_confirm → on_status)
+            // OR when previous was the matching request (e.g. update → on_update, status → on_status)
+            (lastAction.startsWith("on_") ||
+              (currentExpectedAction === "on_update" && lastAction === "update") ||
+              (currentExpectedAction === "on_status" && lastAction === "status"))
+          ) {
+            logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
+            validSequence = true; // Restore validSequence to true for valid early termination
+            break; // Exit loop, considering validation successful so far
+          }
+
+          // Allow early termination when a second 'search' is expected after 'on_search'
+          // This handles TTL-based flows (e.g. Hotel Booking ttl based) where the second
+          // incremental search is optional — if the BAP didn't send it, the flow is still valid.
+          if (
+            currentExpectedAction === "search" &&
+            lastAction === "on_search"
+          ) {
+            logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}' after 'on_search'). Treating repeat search as optional.`);
+            validSequence = true;
+            break;
+          }
+        }
+
         errors.push(
           `Error: Expected '${expectedAction}' but no more payloads found. Sequence position: ${i + 1}`
         );
         break;
       }
 
-      const actualAction = payloads[payloadIndex]?.action?.toLowerCase();
+      const actualAction = validationPayloads[payloadIndex]?.action?.toLowerCase();
+
+      // Skip duplicate on_ actions if they don't match expected (e.g. multiple on_search calls)
+      if (payloadIndex > 0) {
+        const prevPayloadAction = validationPayloads[
+          payloadIndex - 1
+        ]?.action?.toLowerCase();
+        if (
+          actualAction === prevPayloadAction &&
+          actualAction?.startsWith("on_") &&
+          actualAction !== expectedAction
+        ) {
+          logger.info(
+            `Skipping duplicate ${actualAction} at payload index ${payloadIndex} which is not expected here`
+          );
+          payloadIndex++;
+          i--; // Retry the current expectedAction against the next payload
+          continue;
+        }
+      }
+
+      // Skip unsolicited on_status if not expected
+      // This handles async status updates during flows (e.g. cancellation)
+      if (actualAction === "on_status" && expectedAction !== "on_status") {
+        logger.info(
+          `Skipping unsolicited ${actualAction} at payload index ${payloadIndex} which is not expected here`
+        );
+        payloadIndex++;
+        i--; // Retry the current expectedAction against the next payload
+        continue;
+      }
+
+      // Skip unsolicited on_update if not expected
+      // This handles async updates in delayed cancellation flows
+      if (actualAction === "on_update" && expectedAction !== "on_update") {
+        logger.info(
+          `Skipping unsolicited ${actualAction} at payload index ${payloadIndex} which is not expected here`
+        );
+        payloadIndex++;
+        i--; // Retry the current expectedAction against the next payload
+        continue;
+      }
+
+      // Lookahead: Check if actual action matches a future expected action (skipped steps)
+      // This handles cases where optional steps are skipped in the flow (e.g. search -> on_search)
+      if (actualAction !== expectedAction) {
+        let foundFutureMatch = false;
+        let futureIndex = -1;
+        // Look ahead up to 5 steps
+        for (let k = i + 1; k < Math.min(i + 6, requiredSequence.length); k++) {
+          const futureAction = requiredSequence[k]?.toLowerCase();
+          // Skip checking against HTML_FORM/DYNAMIC_FORM as jump targets
+          if (futureAction === "html_form" || futureAction === "dynamic_form") continue;
+
+          if (futureAction === actualAction) {
+            foundFutureMatch = true;
+            futureIndex = k;
+            break;
+          }
+        }
+
+        if (foundFutureMatch) {
+          logger.info(`Skipping expected steps from index ${i} to ${futureIndex - 1} because actual action '${actualAction}' matches sequence at index ${futureIndex}`);
+          i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
+          continue; // Continue loop to match current payload against new expected action
+        }
+      }
+
+      // If the expected action is on_status but the actual payload is a BAP-initiated
+      // 'status' request (e.g. Technical Cancellation flow ordering), skip this payload
+      // and retry the same expected action against the next payload.
+      if (expectedAction === "on_status" && actualAction === "status") {
+        logger.info(`Expected 'on_status' but found 'status' payload; skipping and retrying`);
+        payloadIndex++;
+        i--; // Retry current expected action (on_status) against next payload
+        continue;
+      }
 
       if (actualAction !== expectedAction) {
         // For better error message, check if this is a select/init ambiguity
@@ -162,9 +318,9 @@ function validateActionSequence(
         if (expectedAction === "select") {
           displayExpectedAction = "select or init";
         }
-        
+
         validSequence = false;
-        
+
         // Find the previous non-HTML_FORM/non-DYNAMIC_FORM action for better error message
         let previousAction = "start";
         for (let j = i - 1; j >= 0; j--) {
@@ -174,32 +330,32 @@ function validateActionSequence(
             break;
           }
         }
-        
+
         // Also check if there's an HTML_FORM or DYNAMIC_FORM right before this expected action
         const hasHtmlFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "html_form";
         const hasDynamicFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "dynamic_form";
-        
+
         // Check if we're ahead in payloads (missing action scenario)
         // Look ahead to see if the expected action appears later
         let foundLater = false;
         let foundAtPosition = -1;
-        for (let k = payloadIndex + 1; k < payloads.length; k++) {
-          if (payloads[k]?.action?.toLowerCase() === expectedAction) {
+        for (let k = payloadIndex + 1; k < validationPayloads.length; k++) {
+          if (validationPayloads[k]?.action?.toLowerCase() === expectedAction) {
             foundLater = true;
             foundAtPosition = k;
             break;
           }
         }
-        
+
         // Build context for debugging
         const sequenceContext = requiredSequence.slice(Math.max(0, i - 3), Math.min(i + 4, requiredSequence.length));
-        const payloadContext = payloads.slice(Math.max(0, payloadIndex - 2), Math.min(payloadIndex + 3, payloads.length))
+        const payloadContext = validationPayloads.slice(Math.max(0, payloadIndex - 2), Math.min(payloadIndex + 3, validationPayloads.length))
           .map((p, idx) => ({
             relativeIndex: idx - Math.max(0, payloadIndex - 2),
             action: p?.action?.toLowerCase(),
             transactionId: p?.transactionId
           }));
-        
+
         logger.error("Action sequence mismatch - Detailed Debug", {
           sequencePosition: i + 1,
           expectedAction,
@@ -216,9 +372,10 @@ function validateActionSequence(
           })),
           payloadContext,
           fullRequiredSequence: requiredSequence,
-          fullPayloadActions: payloads.map(p => p?.action?.toLowerCase())
+          originalPayloadActions: payloads.map(p => p?.action?.toLowerCase()),
+          deduplicatedPayloadActions: validationPayloads.map(p => p?.action?.toLowerCase())
         });
-        
+
         let errorMessage = `Error: Expected '${displayExpectedAction}' after '${previousAction}'`;
         if (hasHtmlFormBefore) {
           errorMessage += ` (HTML_FORM was skipped)`;
@@ -230,7 +387,7 @@ function validateActionSequence(
           errorMessage += `. Note: '${expectedAction}' action found later at payload position ${foundAtPosition + 1}, suggesting a missing action in the sequence.`;
         }
         errorMessage += `, but found '${actualAction || "undefined"}'.`;
-        
+
         errors.push(errorMessage);
         break;
       }
@@ -268,18 +425,18 @@ async function processPayloads(
   // If we have a required sequence, process in sequence order
   if (requiredSequence && requiredSequence.length > 0) {
     const transactionId = payloads[0]?.transactionId || payloads[0]?.jsonRequest?.context?.transaction_id;
-    
+
     for (let seqIndex = 0; seqIndex < requiredSequence.length; seqIndex++) {
       const expectedAction = requiredSequence[seqIndex].toLowerCase();
-      
+
       // Handle HTML_FORM validation inline
       if (expectedAction === "html_form") {
         htmlFormCounter++;
-        
+
         try {
           const { validateHTMLForm } = await import("../validations/shared/formValidations");
           const htmlFormTestResults: TestResult = { response: {}, passed: [], failed: [] };
-          
+
           if (transactionId) {
             await validateHTMLForm(sessionID, transactionId, flowId, htmlFormTestResults);
             messages[`html_form_${htmlFormCounter}`] = JSON.stringify({
@@ -306,13 +463,13 @@ async function processPayloads(
       // Handle DYNAMIC_FORM validation inline (similar to HTML_FORM)
       if (expectedAction === "dynamic_form") {
         dynamicFormCounter++;
-        
+
         try {
           // For now, just mark dynamic forms as passed since there's no specific validation
           // This can be extended later if needed
           const dynamicFormTestResults: TestResult = { response: {}, passed: [], failed: [] };
           dynamicFormTestResults.passed.push(`Dynamic form ${dynamicFormCounter} processed successfully`);
-          
+
           messages[`dynamic_form_${dynamicFormCounter}`] = JSON.stringify({
             passed: dynamicFormTestResults.passed,
             failed: dynamicFormTestResults.failed,
@@ -330,7 +487,7 @@ async function processPayloads(
       // Process actual payload
       if (payloadIndex >= payloads.length) {
         logger.info(`No more payloads available at sequence position ${seqIndex + 1}`,
-          {meta: { flowId, seqIndex: seqIndex + 1 }}
+          { meta: { flowId, seqIndex: seqIndex + 1 } }
         );
         break;
       }
@@ -414,10 +571,10 @@ export async function validationModule(
   // Use optional chaining for usecaseId to avoid property access error
   const domainConfig: DomainConfig = sessionDetails
     ? loadConfig(
-        sessionDetails.domain,
-        sessionDetails.version,
-        (sessionDetails as any).usecaseId // fallback to 'any' for backwards compatibility
-      )
+      sessionDetails.domain,
+      sessionDetails.version,
+      (sessionDetails as any).usecaseId // fallback to 'any' for backwards compatibility
+    )
     : { flows: {} };
 
   // Check mandatory flows
@@ -437,18 +594,19 @@ export async function validationModule(
 
     logger.info(MESSAGES.validations.actionValidationStart(flowId), { flowId });
 
-    // Step 1: Validate action sequence
+    // Step 1: Validate action sequence with deduplication
     const { validSequence, errors } = validateActionSequence(
       payloads,
-      requiredSequence || []
+      requiredSequence || [],
+      flowId
     );
 
     logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });
 
     // Step 2: Process payloads (HTML_FORM validations are now handled inline)
     // Try multiple possible keys for usecaseId
-    const usecaseId = (sessionDetails as any)?.usecaseId 
-      || (sessionDetails as any)?.usecase_id 
+    const usecaseId = (sessionDetails as any)?.usecaseId
+      || (sessionDetails as any)?.usecase_id
       || (sessionDetails as any)?.useCaseId;
     const messages = await processPayloads(
       payloads,

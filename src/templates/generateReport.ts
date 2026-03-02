@@ -145,7 +145,8 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         padding: 0 5px;
       }
       .flow-content.expanded {
-        max-height: 10000px;
+        max-height: 999999px;
+        overflow: visible;
         padding: 15px 5px;
         transition: max-height 0.6s ease-in;
       }
@@ -301,18 +302,42 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
           arrow.textContent = '▼';
         });
       }
+      function downloadReport() {
+        const contents = document.querySelectorAll('.flow-content');
+        const arrows = document.querySelectorAll('.arrow-icon');
+
+        contents.forEach(content => content.classList.add('expanded'));
+        arrows.forEach(arrow => {
+          arrow.classList.add('expanded');
+          arrow.textContent = '▲';
+        });
+
+        const htmlContent = document.documentElement.outerHTML;
+
+        const blob = new Blob([htmlContent], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Flow_Validation_Report.html";
+        document.body.appendChild(a);
+        a.click();
+
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     </script>
   `;
 
   // Generate final report summary section
   const finalReportHtml = Object.entries(data?.finalReport || {}).length
     ? `<ul class="result-list">${Object.entries(data?.finalReport)
-        .map(([key, value]) =>
-          key.length > 0
-            ? `<li class="result-item failed"><span class="icon fail">✘</span>${value}</li>`
-            : ""
-        )
-        .join("")}</ul>`
+      .map(([key, value]) =>
+        key.length > 0
+          ? `<li class="result-item failed"><span class="icon fail">✘</span>${value}</li>`
+          : ""
+      )
+      .join("")}</ul>`
     : "<p>All flows have been tested</p>";
 
   // Generate flow cards HTML
@@ -348,11 +373,11 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
       // Generate errors list
       const errorsHtml = errors.length
         ? `<ul class="result-list">${errors
-            .map(
-              (err) =>
-                `<li class="result-item failed"><span class="icon fail">✘</span>${err}</li>`
-            )
-            .join("")}</ul>`
+          .map(
+            (err) =>
+              `<li class="result-item failed"><span class="icon fail">✘</span>${err}</li>`
+          )
+          .join("")}</ul>`
         : "<p>No errors found.</p>";
 
       // Generate API validations HTML
@@ -411,6 +436,7 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
       
       <!-- Control Buttons -->
       <div class="controls">
+        <button class="control-btn" onclick="downloadReport()">⬇ Download Report</button>
         <button class="control-btn" onclick="expandAll()">▼ Expand All</button>
         <button class="control-btn" onclick="collapseAll()">▲ Collapse All</button>
       </div>

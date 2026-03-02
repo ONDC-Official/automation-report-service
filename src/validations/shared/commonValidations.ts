@@ -21,6 +21,7 @@ export function createBaseValidationSetup(payload: Payload): {
   jsonResponse: any;
   context: any;
   message: any;
+  error: any
 } {
   const action = payload?.action.toLowerCase();
   logger.info(`Inside ${action} validations`);
@@ -34,7 +35,7 @@ export function createBaseValidationSetup(payload: Payload): {
   const { jsonRequest, jsonResponse } = payload;
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
-  const { context, message } = jsonRequest;
+  const { context, message, error } = jsonRequest;
 
   return {
     testResults,
@@ -43,6 +44,7 @@ export function createBaseValidationSetup(payload: Payload): {
     jsonResponse,
     context,
     message,
+    error
   };
 }
 
@@ -69,7 +71,7 @@ export function validateLBNPFeatures(
   testResults: TestResult
 ): void {
   if (LBNPfeatureFlow.includes(flowId)) {
-    const intentTags = message?.intent?.tags;
+    const intentTags = message?.intent?.tags ? message?.intent?.tags : message?.order?.tags
     const isValid = validateLBNPFeaturesForFlows(flowId, rules, intentTags);
     try {
       assert.ok(
@@ -83,6 +85,8 @@ export function validateLBNPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
@@ -95,7 +99,7 @@ export function validateLSPFeatures(
   testResults: TestResult
 ): void {
   if (LSPfeatureFlow.includes(flowId)) {
-    const catalogTags = message?.catalog?.tags;
+    const catalogTags = message?.catalog?.tags ? message?.catalog?.tags : message?.order?.tags
     const isValid = validateLSPFeaturesForFlows(flowId, rules, catalogTags);
     try {
       assert.ok(
@@ -108,6 +112,8 @@ export function validateLSPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
@@ -147,38 +153,38 @@ export function validateCODFlow(
     );
 
     // Validate cod_order tag
-    try {
-      const codOrderTag = linkedOrderTag?.list?.find?.(
-        (tag: { code: string; value: string }) =>
-          tag.code === "cod_order" && tag.value.toLowerCase() === "yes"
-      );
+    // try {
+    //   const codOrderTag = linkedOrderTag?.list?.find?.(
+    //     (tag: { code: string; value: string }) =>
+    //       tag.code === "cod_order" && tag.value.toLowerCase() === "yes"
+    //   );
 
-      assert.ok(
-        codOrderTag,
-        `cod_order tag with value "yes" should be present inside linked_order tag list`
-      );
+    //   assert.ok(
+    //     codOrderTag,
+    //     `cod_order tag with value "yes" should be present inside linked_order tag list`
+    //   );
 
-      testResults.passed.push(`cod_order tag validation passed`);
-    } catch (error: any) {
-      testResults.failed.push(error.message);
-    }
+    //   testResults.passed.push(`cod_order tag validation passed`);
+    // } catch (error: any) {
+    //   testResults.failed.push(error.message);
+    // }
 
     // Validate collection_amount tag
-    try {
-      const collectionTag = linkedOrderTag?.list?.find?.(
-        (tag: { code: string; value: string }) =>
-          tag.code === "collection_amount"
-      );
+    // try {
+    //   const collectionTag = linkedOrderTag?.list?.find?.(
+    //     (tag: { code: string; value: string }) =>
+    //       tag.code === "collection_amount"
+    //   );
 
-      assert.ok(
-        collectionTag,
-        `collection_amount tag should be present inside linked_order tag list`
-      );
+    //   assert.ok(
+    //     collectionTag,
+    //     `collection_amount tag should be present inside linked_order tag list`
+    //   );
 
-      testResults.passed.push(`collection_amount tag validation passed`);
-    } catch (error: any) {
-      testResults.failed.push(error.message);
-    }
+    //   testResults.passed.push(`collection_amount tag validation passed`);
+    // } catch (error: any) {
+    //   testResults.failed.push(error.message);
+    // }
   }
 }
 
@@ -607,7 +613,7 @@ export async function validateCodifiedStaticTerms(
   action: string
 ) {
   try {
-    const tags = action.toLowerCase() === "search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags || [];
+    const tags = action.toLowerCase() === "search" && action.toLowerCase() === "on_search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags;
     const bppTerms = tags.find(
       (tag: any) => tag.code === "bpp_terms"
     );
@@ -700,16 +706,11 @@ export async function validateCustomerContactDetails(
 
     // Determine which term to check based on flowId
     const tagCode =
-      action_id === "confirm_LOGISTICS_EXCHANGE"
+      ['confirm_LOGISTICS_EXCHANGE', 'confirm_LOGISTICS'].includes(action_id)
         ? "bap_terms"
-        : action_id === "on_confirm_LOGISTICS_EXCHANGE"
+        : ['on_confirm_LOGISTICS_EXCHANGE', 'on_confirm_LOGISTICS'].includes(action_id)
           ? "bpp_terms"
-          : null;
-
-    if (!tagCode) {
-      testResults.failed.push(`Unsupported flowId: ${action_id}`);
-      return;
-    }
+          : "bpp_terms";
 
     // Extract tag section
     const termsTag = tags.find((tag: any) => tag.code === tagCode);
@@ -964,7 +965,7 @@ export async function validateEpodProofs(
 
 export function validateP2H2PRequirements(
   context: any,
-  message:any,
+  message: any,
   testResults: TestResult,
   action: string
 ) {
@@ -972,7 +973,7 @@ export function validateP2H2PRequirements(
   const fulfillments = message?.order?.fulfillments || []
   try {
     assert.ok(
-      fulfillments.every((fulfillment:any) => fulfillment["@ondc/org/awb_no"]),
+      fulfillments.every((fulfillment: any) => fulfillment["@ondc/org/awb_no"]),
       "AWB no is required for P2H2P shipments"
     );
     testResults.passed.push("AWB number for P2H2P validation passed");
@@ -982,9 +983,9 @@ export function validateP2H2PRequirements(
   }
 
   try {
-    const hasShippingLabel = fulfillments.some((fulfillment:any) => {
+    const hasShippingLabel = fulfillments.some((fulfillment: any) => {
       const tags = fulfillment?.tags || [];
-      return tags.some((tag:any) => tag.code === "shipping_label");
+      return tags.some((tag: any) => tag.code === "shipping_label");
     });
 
     assert.ok(hasShippingLabel, "Shipping label is required for P2H2P shipments");

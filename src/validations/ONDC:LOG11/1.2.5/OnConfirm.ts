@@ -1,14 +1,9 @@
-import assert from "assert";
-import { TestResult, Payload } from "../../../types/payload";
-import { fetchData } from "../../../utils/redisUtils";
-import { DomainValidators } from "../../shared/domainValidator";
-import { deepCompareObjects } from "../../shared";
+import { Payload, TestResult } from "../../../types/payload";
+import { checkOnConfirmCommon } from "../../shared/logisticsCommonHandlers";
 
+/** LOG11 (P2H2P) — isP2H2P = true */
 export async function checkOnConfirm(
-  element: Payload,
-  sessionID: string,
-  flowId: string,
-  action_id:string
+  element: Payload, sessionID: string, flowId: string, action_id: string
 ): Promise<TestResult> {
-  return await DomainValidators.ondclogOnConfirm(element, sessionID, flowId,action_id)
+  return checkOnConfirmCommon(element, sessionID, flowId, action_id, true);
 }
