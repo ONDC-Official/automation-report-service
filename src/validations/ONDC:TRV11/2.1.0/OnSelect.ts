@@ -17,9 +17,11 @@ export default async function on_select(
   const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
   // Bus Agent flows start at select (no search step) — no txnId, no quantity, no quote
   const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
+  // Unlimited Passes flow starts at select (no search step) — no stored txnId
+  const isPassesFlow = flowId === "IntraCity_Unlimited_Passes_Flow(Code Based)";
 
-  // Filter base validator false positives for Metro Card / Bus Agent flows
-  if ((isCardFlow || isAgentFlow) && result.failed.length > 0) {
+  // Filter base validator false positives for Metro Card / Bus Agent / Passes flows
+  if ((isCardFlow || isAgentFlow || isPassesFlow) && result.failed.length > 0) {
     result.failed = result.failed.filter(
       (err: string) =>
         !err.toLowerCase().includes("quantity.selected.count") &&
