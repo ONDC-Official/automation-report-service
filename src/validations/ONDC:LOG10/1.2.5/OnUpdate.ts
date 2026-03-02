@@ -1,70 +1,9 @@
-import assert from "assert";
-import { TestResult, Payload } from "../../../types/payload";
-import logger from "@ondc/automation-logger";
-import { fetchData } from "../../../utils/redisUtils";
+import { Payload, TestResult } from "../../../types/payload";
+import { checkOnUpdateCommon } from "../../shared/logisticsCommonHandlers";
 
+/** LOG10 (P2P) — isP2H2P = false → no AWB, no shipping label */
 export async function checkOnUpdate(
-  element: Payload,
-  sessionID: string,
-  flowId: string
+  element: Payload, sessionID: string, flowId: string, action_id: string
 ): Promise<TestResult> {
-  const payload = element;
-  const action = payload?.action.toLowerCase();
-  logger.info(`Inside ${action} validations`);
-
-  const testResults: TestResult = {
-    response: {},
-    passed: [],
-    failed: [],
-  };
-
-  const { jsonRequest, jsonResponse } = payload;
-  if (jsonResponse?.response) testResults.response = jsonResponse?.response;
-
-  const { context, message } = jsonRequest;
-  const transactionId = context?.transaction_id;
-  const contextTimestamp = context?.timestamp;
-  const fulfillments = message?.order?.fulfillments;
-
-
-
-  try {
-    assert.ok(
-      fulfillments.every(async (fulfillment: any) => {
-        const rts = await fetchData(
-          sessionID,
-          transactionId,
-          `${fulfillment?.id}:rts`
-        );
-        return rts?.value === "yes" && fulfillment?.start?.time?.range;
-      }),
-      "Pickup time range (fulfillments/start/time/range) to be provided if ready_to_ship = yes in /update"
-    );
-    testResults.passed.push("Pickup time range validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
-
-  try {
-    assert.ok(
-      fulfillments.every(async (fulfillment: any) => {
-        const ffState = ["Pending", "Agent-assigned", "Searching-for-agent"];
-        return (
-          ffState.includes(fulfillment?.state?.descriptor?.code) &&
-          (fulfillment?.start?.time?.timestamp ||
-            fulfillment?.end?.time?.timestamp)
-        );
-      }),
-      "Pickup timestamp (fulfillments/start/time/timestamp) or Delivery timestamp (fulfillments/end/time/timestamp) cannot be provided as the order has not been picked up"
-    );
-    testResults.passed.push("Pickup/Delivery timestamp validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
-
-  if (testResults.passed.length < 1 && testResults.failed.length < 1)
-    testResults.passed.push(`Validated ${action}`);
-  return testResults;
+  return checkOnUpdateCommon(element, sessionID, flowId, action_id, false);
 }

@@ -1,0 +1,18 @@
+save-data:
+  latest_issue_payload: $.message.issue
+  last_action: $.context.action
+  issue_action: $.message.issue.actions[*]
+  issue_resolution: $.message.issue.resolutions[*]
+  last_actions_id: $.message.issue.actions[*]
+  on_issue_actions: $.message.issue.issue_actions
+  message_id: $.context.message_id
+  transaction_id: $.context.transaction_id
+  bap_id: $.context.bap_id
+  bap_uri: $.context.bap_uri
+  bpp_id: $.context.bpp_id
+  bpp_uri: $.context.bpp_uri
+  timestamp: $.context.timestamp
+  domain: $.context.domain
+  version: $.context.version
+  city: $.context.city
+  action: $.context.action

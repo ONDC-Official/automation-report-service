@@ -1,0 +1,25 @@
+save-data:
+  order_status: $.message.order.state
+  fulfillment_status: $.message.order.fulfillments[0].state.descriptor.code
+  fulfillments: $.message.order.fulfillments[*]
+  order_updated_at_timestamp: $.message.order.updated_at
+  payment: $.message.order.payment
+  quote: $.message.order.quote
+  items: $.message.order.items[*]
+  on_confirm_tags: $.message.order.tags[*]
+  message_id: $.context.message_id
+  transaction_id: $.context.transaction_id
+  bap_id: $.context.bap_id
+  bap_uri: $.context.bap_uri
+  bpp_id: $.context.bpp_id
+  bpp_uri: $.context.bpp_uri
+  timestamp: $.context.timestamp
+  domain: $.context.domain
+  version: $.context.version
+  city: $.context.city
+  action: $.context.action
+  order_id: $.message.order.id
+  state: $.message.order.state
+  provider_id: $.message.order.provider.id
+  item_id: $.message.order.items[0].id
+  fulfillment_id: $.message.order.fulfillments[0].id

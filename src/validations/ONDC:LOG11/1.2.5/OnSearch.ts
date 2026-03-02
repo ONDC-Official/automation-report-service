@@ -1,11 +1,8 @@
-import { TestResult, Payload } from "../../../types/payload";
-import { DomainValidators } from "../../shared/domainValidator";
+import { Payload, TestResult } from "../../../types/payload";
+import { checkOnSearchCommon } from "../../shared/logisticsCommonHandlers";
 
 export async function checkOnSearch(
-  element: Payload,
-  sessionID: string,
-  flowId: string,
-  action_id:string
+  element: Payload, sessionID: string, flowId: string, action_id: string
 ): Promise<TestResult> {
-  return await DomainValidators.ondclogOnSearch(element, sessionID, flowId,action_id);
+  return checkOnSearchCommon(element, sessionID, flowId, action_id);
 }

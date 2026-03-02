@@ -53,16 +53,16 @@ export const validatorConstant = {
             },
             items: {
               validate_items: "validateItemsFIS12",
-              validate_onsearch_items :"validateOnSearchItemsFIS12",
+              validate_onsearch_items: "validateOnSearchItemsFIS12",
               validate_xinput: "validateXinputFIS12",
-              select_validate_xinput:"validateXInputStatusFIS12",
+              select_validate_xinput: "validateXInputStatusFIS12",
               loan_info_oninit: "validateGoldLoanOnInitFIS12"
             },
             payments: {
               validate_payments: "validatePaymentsFIS12",
             },
-            catalog:{
-              providers:{
+            catalog: {
+              providers: {
                 categories: "validateCategoriesFIS12"
               }
             },
@@ -109,6 +109,13 @@ export const validatorConstant = {
               validate_update_payments: "validateUpdatePaymentsFIS12",
               validate_fulfillment_state: "validateFulfillmentStateOnUpdateFIS12"
             }
+          },
+        },
+        fis10: {
+          v210: {
+            items: {
+              validate_onsearch_items: "validateOnSearchItemsFIS10",
+            },
           },
         },
       },
@@ -283,29 +290,29 @@ export const validatorConstant = {
           shipment_types: {
             validate_shipment_types: "validateShipmentTypes",
           },
-          sla_metrics:{
+          sla_metrics: {
             validate_sla_metrics: "validateSlaMetrics"
           },
-          tax_type_rcm:{
+          tax_type_rcm: {
             validate_np_tax_type_rcm: "validateNpTaxTypeRCM"
           },
-          codified_static_terms:{
+          codified_static_terms: {
             validate_codified_static_terms: "validateCodifiedStaticTerms"
           },
-          exchange_customer_contact_details:{
-            validate_customer_contact_details:"validateCustomerContactDetails"
+          exchange_customer_contact_details: {
+            validate_customer_contact_details: "validateCustomerContactDetails"
           },
-          public_special_capabilities:{
-            validate_public_special_capabilities:"validatePublicSpecialCapabilities"
+          public_special_capabilities: {
+            validate_public_special_capabilities: "validatePublicSpecialCapabilities"
           },
-          seller_creds:{
-            validate_seller_creds:"validateSellerCreds"
+          seller_creds: {
+            validate_seller_creds: "validateSellerCreds"
           },
-          e_pod:{
-            validate_e_pod:"validateEPOD"
+          e_pod: {
+            validate_e_pod: "validateEPOD"
           },
-          awb_shipping_label:{
-            validate_awb_shipping_label:"validateAWB_Shipping_Label"
+          awb_shipping_label: {
+            validate_awb_shipping_label: "validateAWB_Shipping_Label"
           }
         },
       },

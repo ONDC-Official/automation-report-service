@@ -1,6 +1,149 @@
 domains:
   ONDC:TRV11:
     versions:
+      "2.1.0":
+        flows:
+          METRO_MASTER_SEARCH_FLOW:
+            - search
+            - on_search
+
+          PURCHASE_JOURNEY_STATION_CODE_BASED_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - on_status
+
+          TECHNICAL_CANCELLATION_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - cancel
+            - on_cancel
+            - cancel
+            - on_cancel
+
+          USER_CANCELLATION_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+            - cancel
+            - on_cancel
+
+          DELAYED_CANCELLATION_FLOW_ACCEPTED:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+            - on_update
+
+          DELAYED_CANCELLATION_FLOW_REJECTED:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+            - on_status
+
+          END_STOP_UPDATE_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - update
+            - on_update
+            - update
+            - on_update
+
+          METRO_CARD_PURCHASE:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
+          METRO_CARD_RECHARGE:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
+          PURCHASE_JOURNEY_STATION_CODE_BASED_FLOW_WITH_IGM(v-1.0.0):
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+
+        optional_flows:
+          - DELAYED_CANCELLATION_FLOW_REJECTED
+        validationModules: "../validations/ONDC:TRV11/validator#validate"
       "2.0.1":
         flows:
           STATION_CODE_FLOW_CATALOG:
@@ -152,9 +295,6 @@ domains:
             - on_issue
             - issue
             - on_issue
-            - on_issue
-            - issue
-            - on_issue
             - issue
 
           STATION_CODE_FLOW_ORDER_IGM_No_Action(v-2.0.0):
@@ -192,7 +332,6 @@ domains:
             - on_status
             - issue
             - on_issue
-            - issue_status
             - on_issue_status
             - issue
         optional_flows:
@@ -448,12 +587,540 @@ domains:
             - on_track
             - on_status
             - on_status
+          FIFO_FLOW:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          SURGE_FEE_FLOW:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          CANCELLATION_TERMS_FLOW:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          STATIC_OTP_PICKUP_DELIVERY:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          STATIC_OTP_RTO_DELIVERY:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_cancel
+            - on_status
+          ORDER_FLOW_BASE_LINE_WITH_IGM(v-2.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+            - on_update
+          ORDER_FLOW_BASE_LINE_WITH_IGM_REJECTION(v-2.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+            - on_update
+          ORDER_FLOW_BASE_LINE_WITH_IGM_NO_ACTION(v-2.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_status
+            - on_status
+            - issue
+          ORDER_FLOW_BASE_LINE_WITH_IGM(v-1.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+          ORDER_FLOW_EXCHANGE_CUSTOMER_SUPPORT_DETAILS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_CODIFIED_STATIC_TERMS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_RCM:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_BASE_LINE_PUBLIC_SPECIAL_CAPABILITIES:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_BASE_LINE_SLA_METRICS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_BASE_LINE_SELLER_CREDS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          UPDATE_DELIVERY_ADDRESS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          SELLER_BUYER_INSTRUCTIONS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          E-WAY_BILL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          E-POD:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_update
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_update
+            - on_status
+          Call-Masking:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          RATE_CARD (P2P):
+            - search
+            - on_search
+          BUYER_SIDE_ORDER_CANCELLATION:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - cancel
+            - on_cancel
+          SELLER_SIDE_ORDER_CANCELLATION:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_cancel
+          FEATURE_DISCOVERY_SEARCH_DEV_PORTAL:
+            - search
+            - on_search
+          ORDER_FLOW_BASE_LINE_INIT_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+          ORDER_FLOW_BASE_LINE_CONFIRM_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+          ORDER_FLOW_BASE_LINE_UPDATE_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+          ORDER_FLOW_BASE_LINE_TRACK_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+          ORDER_FLOW_BASE_LINE_STATUS_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          CASH_ON_DELIVERY_FLOW_SEARCH_DEV_PORTAL:
+            - search
+            - on_search
+          CASH_ON_DELIVERY_FLOW_INIT_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+          CASH_ON_DELIVERY_FLOW_CONFIRM_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+          CANCELLATION_TERMS_FLOW_INIT_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+          STATIC_OTP_PICKUP_DELIVERY_CONFIRM_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+          IMMEDIATE_DELIVERY_FLOW_CONFIRM_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+          STATIC_OTP_RTO_DELIVERY_SEARCB_DEV_PORTAL:
+            - search
+            - on_search
+          STATIC_OTP_RTO_DELIVERY_INIT_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+          STATIC_OTP_RTO_DELIVERY_CONFIRM_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+          SURGE_FEE_FLOW_SEARCB_DEV_PORTAL:
+            - search
+            - on_search
+          SURGE_FEE_FLOW_CONFIRM_DEV_PORTAL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
 
         optional_flows:
+          - IMMEDIATE_DELIVERY_FLOW
+          - FIFO_FLOW
           - CASH_ON_DELIVERY_FLOW
           - PREPAID_PAYMENT_FLOW
           - QUICK_COMMERCE_FLOW
-          - FEATURE_DISCOVERY
+          - SURGE_FEE_FLOW
+          - CANCELLATION_TERMS_FLOW
+          - STATIC_OTP_PICKUP_DELIVERY
+          - STATIC_OTP_RTO_DELIVERY
+          - ORDER_FLOW_BASE_LINE_WITH_IGM(v-2.0.0)
+          - ORDER_FLOW_BASE_LINE_WITH_IGM_REJECTION(v-2.0.0)
+          - ORDER_FLOW_BASE_LINE_WITH_IGM_NO_ACTION(v-2.0.0)
+          - ORDER_FLOW_EXCHANGE_CUSTOMER_SUPPORT_DETAILS
+          - ORDER_FLOW_CODIFIED_STATIC_TERMS
+          - ORDER_FLOW_RCM
+          - ORDER_FLOW_BASE_LINE_PUBLIC_SPECIAL_CAPABILITIES
+          - ORDER_FLOW_BASE_LINE_SLA_METRICS
+          - ORDER_FLOW_BASE_LINE_SELLER_CREDS
+          - UPDATE_DELIVERY_ADDRESS
+          - SELLER_BUYER_INSTRUCTIONS
+          - E-WAY_BILL
+          - E-POD
+          - Call-Masking
+          - RATE_CARD (P2P)
+          - FEATURE_DISCOVERY_SEARCH_DEV_PORTAL
+          - ORDER_FLOW_BASE_LINE_INIT_DEV_PORTAL
+          - ORDER_FLOW_BASE_LINE_CONFIRM_DEV_PORTAL
+          - ORDER_FLOW_BASE_LINE_UPDATE_DEV_PORTAL
+          - ORDER_FLOW_BASE_LINE_TRACK_DEV_PORTAL
+          - ORDER_FLOW_BASE_LINE_STATUS_DEV_PORTAL
+          - CASH_ON_DELIVERY_FLOW_SEARCH_DEV_PORTAL
+          - CASH_ON_DELIVERY_FLOW_INIT_DEV_PORTAL
+          - CASH_ON_DELIVERY_FLOW_CONFIRM_DEV_PORTAL
+          - CANCELLATION_TERMS_FLOW_INIT_DEV_PORTAL
+          - STATIC_OTP_PICKUP_DELIVERY_CONFIRM_DEV_PORTAL
+          - IMMEDIATE_DELIVERY_FLOW_CONFIRM_DEV_PORTAL
+          - STATIC_OTP_RTO_DELIVERY_SEARCB_DEV_PORTAL
+          - STATIC_OTP_RTO_DELIVERY_INIT_DEV_PORTAL
+          - STATIC_OTP_RTO_DELIVERY_CONFIRM_DEV_PORTAL
+          - SURGE_FEE_FLOW_SEARCB_DEV_PORTAL
+          - SURGE_FEE_FLOW_CONFIRM_DEV_PORTAL
         validationModules: "../validations/ONDC:LOG10/validator#validate"
 
   ONDC:TRV10:
@@ -798,6 +1465,88 @@ domains:
           - No_Acceptance_SoftUpdate
 
         validationModules: "../validations/ONDC:TRV10/validator#validate"
+  ONDC:FIS10:
+    versions:
+      "2.1.0":
+        flows:
+          Seller_App_Fulfilling:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            
+          Buyer_App_Fulfilling_Code_On_Confirm:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+
+          Buyer_App_Fulfilling_Code_On_Update:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+          
+          Physical_Store_Based_Gift_Cards:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+
+          Seller_Cancellation:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_cancel
+
+          Update_Receiver_Info:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - update
+            - on_update
+        optional_flows:
+          - Seller_App_Fulfilling
+          - Buyer_App_Fulfilling_Code_On_Confirm
+          - Buyer_App_Fulfilling_Code_On_Update
+          - Physical_Store_Based_Gift_Cards
+          - Seller_Cancellation
+          - Update_Receiver_Info
+        validationModules: "../validations/ONDC:FIS10/validator#validate"
   ONDC:LOG11:
     versions:
       "1.2.5":
@@ -817,11 +1566,30 @@ domains:
             - on_status
             - on_status
             - on_status
+            - track
+            - on_track
             - on_status
             - on_status
             - on_status
             - on_status
-
+          ORDER_FLOW_B2B:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_status
+            - on_status
           RTO_FLOW:
             - search
             - on_search
@@ -838,39 +1606,6 @@ domains:
             - on_status
             - on_status
             - on_cancel
-            - on_status
-
-          CASH_ON_DELIVERY_FLOW:
-            - search
-            - on_search
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - update
-            - on_update
-            - on_status
-            - on_status
-            - on_status
-            - on_status
-            - on_status
-            - on_status
-            - on_status
-          PREPAID_PAYMENT_FLOW:
-            - search
-            - on_search
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - update
-            - on_update
-            - on_status
-            - on_status
-            - on_status
-            - on_status
-            - on_status
-            - on_status
             - on_status
           WEIGHT_DIFFERENTIAL_FLOW:
             - search
@@ -907,15 +1642,397 @@ domains:
             - on_status
             - on_status
             - on_status
+          CASH_ON_DELIVERY_FLOW:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+          PREPAID_PAYMENT_FLOW:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+          CANCELLATION_TERMS_FLOW:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+          STATIC_OTP_PICKUP_DELIVERY:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+          STATIC_OTP_RTO_DELIVERY:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_cancel
+            - on_status
+          ORDER_FLOW_EXCHANGE_CUSTOMER_SUPPORT_DETAILS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_CODIFIED_STATIC_TERMS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_RCM:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_BASE_LINE_PUBLIC_SPECIAL_CAPABILITIES:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_BASE_LINE_SLA_METRICS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          ORDER_FLOW_BASE_LINE_SELLER_CREDS:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          E-WAY_BILL:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          E-POD:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_update
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_update
+            - on_status
+          Call-Masking:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+          RATE_CARD (P2H2P):
+            - search
+            - on_search
+          REVERSE_QC:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+          ORDER_FLOW_BASE_LINE_WITH_IGM(v-2.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+            - on_update
+          ORDER_FLOW_BASE_LINE_WITH_IGM_REJECTION(v-2.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - issue
+            - on_update
+          ORDER_FLOW_BASE_LINE_WITH_IGM_NO_ACTION(v-2.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - issue
+            - on_issue
+            - on_issue
+            - issue
+            - on_issue
+            - on_status
+            - on_status
+            - issue
+          ORDER_FLOW_BASE_LINE_WITH_IGM(v-1.0.0):
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+          BUYER_SIDE_ORDER_CANCELLATION:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - cancel
+            - on_cancel
+          SELLER_SIDE_ORDER_CANCELLATION:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_status
+            - on_status
+            - on_cancel
+          B2B_ORDER_CANCELLATION:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - cancel
+            - on_cancel
 
         optional_flows:
-          - CASH_ON_DELIVERY_FLOW
-          - PREPAID_PAYMENT_FLOW
           - WEIGHT_DIFFERENTIAL_FLOW
           - PICKUP_DELIVERY_ATTEMPT
-          - FEATURE_DISCOVERY
+          - CASH_ON_DELIVERY_FLOW
+          - PREPAID_PAYMENT_FLOW
+          - CANCELLATION_TERMS_FLOW
+          - STATIC_OTP_PICKUP_DELIVERY
+          - STATIC_OTP_RTO_DELIVERY
+          - ORDER_FLOW_EXCHANGE_CUSTOMER_SUPPORT_DETAILS
+          - ORDER_FLOW_CODIFIED_STATIC_TERMS
+          - ORDER_FLOW_RCM
+          - ORDER_FLOW_BASE_LINE_PUBLIC_SPECIAL_CAPABILITIES
+          - ORDER_FLOW_BASE_LINE_SLA_METRICS
+          - ORDER_FLOW_BASE_LINE_SELLER_CREDS
+          - E-WAY_BILL
+          - E-POD
+          - Call-Masking
+          - RATE_CARD (P2H2P)
+          - REVERSE_QC
+          - ORDER_FLOW_BASE_LINE_WITH_IGM(v-2.0.0)
+          - ORDER_FLOW_BASE_LINE_WITH_IGM_REJECTION(v-2.0.0)
+          - ORDER_FLOW_BASE_LINE_WITH_IGM_NO_ACTION(v-2.0.0)
+          - B2B_ORDER_CANCELLATION
         validationModules: "../validations/ONDC:LOG11/validator#validate"
-
+ 
   ONDC:FIS11:
     versions:
       "2.0.0":
@@ -1326,19 +2443,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1362,8 +2480,8 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
@@ -1391,8 +2509,8 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
@@ -1401,8 +2519,8 @@ domains:
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1426,19 +2544,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1462,19 +2581,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1498,19 +2618,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1534,19 +2655,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1577,19 +2699,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1615,8 +2738,8 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
@@ -1644,8 +2767,8 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
@@ -1654,8 +2777,8 @@ domains:
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1681,8 +2804,8 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
@@ -1692,8 +2815,8 @@ domains:
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1719,19 +2842,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1757,19 +2881,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1795,19 +2920,20 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - select
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - DYNAMIC_FORM
+                - on_status
                 - init
                 - on_init
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
+                # - status
+                # - on_status
                 - init
                 - on_init
                 - confirm
@@ -1837,6 +2963,488 @@ domains:
               - Purchase_Finance_With_AA_Pre_Part_Payment
               - Purchase_Finance_With_AA_Cancellation
             validationModules: "../validations/ONDC:FIS12/validator#validate"
+      "2.2.0":
+        usecases:
+          PURCHASE FINANCE:
+            flows:
+              Purchase_Finance_Without_AA:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_Without_AA_Multiple_Offer:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_Without_AA_Loan_Foreclosure:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_Without_AA_Missed_EMI_Payment:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_Without_AA_Pre_Part_Payment:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_Without_AA_Cancellation:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+                - cancel
+                - on_cancel
+                - cancel
+                - on_cancel
+                - on_update
+              Purchase_Finance_With_AA:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_With_AA_Multiple_Offer:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_With_AA_Loan_Foreclosure:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_With_AA_Missed_EMI_Payment:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_With_AA_Pre_Part_Payment:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+              Purchase_Finance_With_AA_Cancellation:  
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                # - status
+                # - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+                - cancel
+                - on_cancel
+                - cancel
+                - on_cancel
+                - on_update
+
+            optional_flows:
+              - Purchase_Finance_Without_AA
+              - Purchase_Finance_Without_AA_Multiple_Offer
+              - Purchase_Finance_Without_AA_Loan_Foreclosure
+              - Purchase_Finance_Without_AA_Missed_EMI_Payment
+              - Purchase_Finance_Without_AA_Pre_Part_Payment
+              - Purchase_Finance_Without_AA_Cancellation
+              - Purchase_Finance_With_AA
+              - Purchase_Finance_With_AA_Multiple_Offer
+              - Purchase_Finance_With_AA_Loan_Foreclosure
+              - Purchase_Finance_With_AA_Missed_EMI_Payment
+              - Purchase_Finance_With_AA_Pre_Part_Payment
+              - Purchase_Finance_With_AA_Cancellation
+            validationModules: "../validations/ONDC:FIS12/validator#validate"
+      
       "2.0.3":
         usecases:
           GOLD LOAN:
@@ -2210,6 +3818,72 @@ domains:
 
   ONDC:FIS13:
     versions:
+      "2.0.0":
+        usecases:
+          hospicash-insurance:
+            flows:
+              Discovery_of_Insurer_Providers_and_Master_Policies:
+                - search
+                - on_search
+              Discovery_of_Products_from_Master_Policies:
+                - search
+                - on_search
+              Purchase_Journey_Hospicash_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+
+              CD_Balance_Error_Hospicash_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+            optional_flows:
+              - Discovery_of_Insurer_Providers_and_Master_Policies
+              - Discovery_of_Products_from_Master_Policies
+              - Purchase_Journey_Hospicash_Insurance
+              - CD_Balance_Error_Hospicash_Insurance
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
+          accidental-insurance:
+            flows:
+              Discovery_of_Insurer_Providers_and_Master_Policies:
+                - search
+                - on_search
+              Discovery_of_Products_from_Master_Policies (Accidental Insurance):
+                - search
+                - on_search
+              Purchase_Journey_Accidental_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+              CD_Balance_Error_Accidental_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+            optional_flows:
+              - Discovery_of_Insurer_Providers_and_Master_Policies
+              - Discovery_of_Products_from_Master_Policies (Accidental Insurance)
+              - Purchase_Journey_Accidental_Insurance
+              - CD_Balance_Error_Accidental_Insurance
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
+      
       "2.0.1":
         usecases:
           HEALTH INSURANCE:
@@ -2455,5 +4129,220 @@ domains:
               - Health_Insurance_Application(PRE-ORDER-Individual)
               - Health_Insurance_Application(PRE-ORDER-Family)
             validationModules: "../validations/ONDC:FIS13/validator#validate"
+
+          MOTOR INSURANCE:
+            flows:
+              Motor_Insurance_Application:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - status
+                - on_status
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+
+              Motor_Insurance_Application(PRE-ORDER):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - status
+                - on_status
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+
+              Claim_Motor_Insurance:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - status
+                - on_status
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - on_update
+                - on_update
+                - on_status
+                - on_update
+
+              Cancel_Motor_Insurance:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - status
+                - on_status
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - on_update
+                - cancel
+                - on_cancel
+                - on_update
+            optional_flows:
+              - Motor_Insurance_Application(PRE-ORDER)
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
       
+  ONDC:TRV13:
+    versions:
+      "2.0.1":
+        flows:
+          Order to Confirm to Fulfillment (City Code):
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+
+          Hotel Booking (ttl based) booking:
+            - search
+            - on_search
+            - search
+            - on_search
+
+          Hotel Booking Seller App Pagination Flow:
+            - search
+            - on_search
+            - on_search
+            - on_search
+            - on_search
+
+          Buyer Side Full Cancellation:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - cancel
+            - on_cancel
+
+          Merchant Side Full Cancellation:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_cancel
+
+          Order to Confirm to Fulfillment (Updates in Booking):
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - update
+            - on_update
+        validationModules: "../validations/ONDC:TRV13/validator#validate"
       

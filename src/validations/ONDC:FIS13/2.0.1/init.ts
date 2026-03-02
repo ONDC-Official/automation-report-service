@@ -2,6 +2,14 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
+import {
+  validateInsuranceContext,
+  validateInsuranceBilling,
+  validateInsuranceFulfillments,
+  validateInsurancePaymentTags,
+  validateInsuranceInitXinput,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function init(
   element: Payload,
@@ -13,52 +21,44 @@ export default async function init(
   const result = await DomainValidators.fis13Init(element, sessionID, flowId, actionId, usecaseId);
 
   try {
-    const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
+    const context = element?.jsonRequest?.context;
+    const message = element?.jsonRequest?.message;
+
+    // Health insurance context validation
+    validateInsuranceContext(context, result, flowId);
+    if (message) validateInsuranceBilling(message, result, flowId);
+    if (message) validateInsuranceFulfillments(message, result, flowId, actionId);
+    if (message) validateInsurancePaymentTags(message, result, flowId, "order");
+    if (message) validateInsuranceInitXinput(message, result, flowId);
+
+    const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
-      const selectData = await getActionData(sessionID, flowId, txnId, "select");
-      const initMsg = element?.jsonRequest?.message;
-      // Basic consistency checks w.r.t. SELECT
-      const initProviderId = initMsg?.order?.provider?.id;
-      const selectProviderId = selectData?.order?.provider?.id || selectData?.provider?.id;
-      if (initProviderId && selectProviderId && initProviderId === selectProviderId) {
-        result.passed.push("Provider id matches SELECT");
-      } else if (initProviderId && selectProviderId) {
-        result.failed.push("Provider id mismatch with SELECT");
-      }
-      // If either is missing, don't fail (optional check)
-
-      const initItems: any[] = initMsg?.order?.items || [];
-      const selectItems: any[] = selectData?.order?.items || selectData?.items || [];
-      const selectPriceById = new Map<string, string>();
-      for (const it of selectItems) if (it?.id && it?.price?.value !== undefined) selectPriceById.set(it.id, String(it.price.value));
-
-      const missingFromSelect: string[] = [];
-      const priceMismatches: Array<{ id: string; select: string; init: string }> = [];
-      for (const it of initItems) {
-        const id = it?.id;
-        if (!id) continue;
-        if (!selectPriceById.has(id)) {
-          missingFromSelect.push(id);
-          continue;
+      // Provider + item ID comparison: on_select → init
+      const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
+      if (onSelectData) {
+        const initProviderId = message?.order?.provider?.id;
+        const selectProviderId = onSelectData?.order?.provider?.id || onSelectData?.provider?.id;
+        if (initProviderId && selectProviderId) {
+          if (initProviderId === selectProviderId) result.passed.push("Provider id matches on_select");
+          else result.failed.push("Provider id mismatch with on_select");
         }
-        const sel = parseFloat(selectPriceById.get(id) as string);
-        const ini = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
-        if (!Number.isNaN(sel) && !Number.isNaN(ini)) {
-          if (sel === ini) result.passed.push(`Item '${id}' price matches SELECT`);
-          else priceMismatches.push({ id, select: String(sel), init: String(ini) });
+
+        const initItems: any[] = message?.order?.items || [];
+        const selItems: any[] = onSelectData?.order?.items || onSelectData?.items || [];
+        const selIds = selItems.map((it: any) => it?.id).filter(Boolean) as string[];
+        const iniIds = initItems.map((it: any) => it?.id).filter(Boolean) as string[];
+        const missing = selIds.filter(id => !iniIds.includes(id));
+        if (selIds.length > 0) {
+          if (missing.length === 0) result.passed.push(`Item IDs consistent between on_select and init (${selIds.length} items)`);
+          else result.failed.push(`Items from on_select missing in init: ${missing.join(", ")}`);
         }
       }
-      if (priceMismatches.length) result.failed.push("Item price mismatches between SELECT and init");
-      if (missingFromSelect.length || priceMismatches.length) {
-        (result.response as any) = {
-          ...(result.response || {}),
-          init_vs_select: { missingFromSelect, priceMismatches },
-        };
-      }
+
+      // Form ID (xinput) check
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "init", result);
     }
-  } catch (_) {}
+  } catch (_) { }
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
-

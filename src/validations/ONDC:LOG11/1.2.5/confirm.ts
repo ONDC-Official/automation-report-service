@@ -1,11 +1,8 @@
-import { TestResult, Payload } from "../../../types/payload";
-import { DomainValidators } from "../../shared/domainValidator";
+import { Payload, TestResult } from "../../../types/payload";
+import { checkConfirmCommon } from "../../shared/logisticsCommonHandlers";
 
 export async function checkConfirm(
-  element: Payload,
-  sessionID: string,
-  flowId: string,
-  action_id: string
+  element: Payload, sessionID: string, flowId: string, action_id: string
 ): Promise<TestResult> {
-  return await DomainValidators.ondclogConfirm(element, sessionID, flowId,action_id,);
+  return checkConfirmCommon(element, sessionID, flowId, action_id);
 }

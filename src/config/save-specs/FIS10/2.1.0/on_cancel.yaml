@@ -1,0 +1,12 @@
+save-data:
+  message_id: "$.context.message_id"
+  transaction_id: "$.context.transaction_id"
+  timestamp: "$.context.timestamp"
+  order_id: "$.message.order.id"
+  order_status: "$.message.order.status"
+  provider: "$.message.order.provider"
+  items: "$.message.order.items[*]"
+  fulfillments: "$.message.order.fulfillments[*]"
+  payments: "$.message.order.payments[*]"
+  billing: "$.message.order.billing"
+  cancellation: "$.message.order.cancellation"

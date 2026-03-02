@@ -8,3 +8,4 @@ export * from "./holidayChecks";
 export * from "./payloadValidationFactory";
 export * from "./responseSchemas";
 export * from "./schemaValidator";
+export * from "./logisticsValidations";
