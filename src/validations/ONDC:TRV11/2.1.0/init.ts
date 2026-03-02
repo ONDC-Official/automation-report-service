@@ -12,9 +12,10 @@ export default async function init(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11Init210(element, sessionID, flowId, actionId);
 
-  // Unlimited Passes flow starts at select (no search step) — suppress txnId false positive
+  // Agent flows (no search step) and Passes flow (starts at select) — suppress txnId false positive
+  const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
   const isPassesFlow = flowId === "IntraCity_Unlimited_Passes_Flow(Code Based)";
-  if (isPassesFlow && result.failed.length > 0) {
+  if ((isAgentFlow || isPassesFlow) && result.failed.length > 0) {
     result.failed = result.failed.filter(
       (err: string) => !err.toLowerCase().includes("no transaction ids found")
     );
