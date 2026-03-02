@@ -141,8 +141,160 @@ domains:
             - on_issue_status
             - issue
 
+          IntraCity_Search_Pagination_FlowCode_Based:
+            - search
+            - on_search
+
+          IntraCity_Purchase_Journey_Flow_Code_Based:
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+
+          IntraCity_User_Cancellation_Flow:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+            - cancel
+            - on_cancel
+
+          "IntraCity_Vehicle_Based_Confirmation_flow(With Update Call)":
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+
+          "IntraCity_Vehicle_Based_Confirmation_flow(Without Update Call)":
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
+          IntraCity_User_Based_Confirmation_flow:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+
+          IntraCity_Technical_Cancellation_Flow:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - cancel
+            - on_cancel
+            - cancel
+            - on_cancel
+
+          "IntraCity_Purchase_Journey_FlowCode_Based_Flow_With_IGM(v-1.0.0)":
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+
+          "IntraCity_Agent_Activation(Route Selection by Agent)":
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
+          "IntraCity_Agent_Login(Route allotment by Seller)":
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
+          "IntraCity_Purchase_Journey(Agent Based)":
+            - confirm
+            - on_confirm
+
+          IntraCity_Base_Order_Update_Journey:
+            - update
+            - on_update
+
+          "IntraCity_Unlimited_Passes_Flow(Code Based)":
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+
         optional_flows:
           - DELAYED_CANCELLATION_FLOW_REJECTED
+          # Metro flows — optional for bus-only certification runs
+          - METRO_MASTER_SEARCH_FLOW
+          - PURCHASE_JOURNEY_STATION_CODE_BASED_FLOW
+          - TECHNICAL_CANCELLATION_FLOW
+          - USER_CANCELLATION_FLOW
+          - DELAYED_CANCELLATION_FLOW_ACCEPTED
+          - END_STOP_UPDATE_FLOW
+          - METRO_CARD_PURCHASE
+          - METRO_CARD_RECHARGE
+          - "PURCHASE_JOURNEY_STATION_CODE_BASED_FLOW_WITH_IGM(v-1.0.0)"
+          # Bus OPTIONAL flows
+          - IntraCity_Search_Pagination_FlowCode_Based
+          - "IntraCity_Vehicle_Based_Confirmation_flow(With Update Call)"
+          - "IntraCity_Vehicle_Based_Confirmation_flow(Without Update Call)"
+          - IntraCity_User_Based_Confirmation_flow
+          - "IntraCity_Purchase_Journey_FlowCode_Based_Flow_With_IGM(v-1.0.0)"
         validationModules: "../validations/ONDC:TRV11/validator#validate"
       "2.0.1":
         flows:
