@@ -87,6 +87,9 @@ export default async function on_confirm(
       const validStatuses = ["PAID", "NOT-PAID"];
       const paymentStatuses: string[] = [];
       let totalPaymentAmount = 0;
+      // In split-payment flows, PART-PAYMENT is the aggregate envelope.
+      // Sub-payments (PRE-ORDER, ON-FULFILLMENT) may be NOT-PAID or carry amount=0
+      const hasPartPayment = payments.some((p: any) => p.type === "PART-PAYMENT");
       
       for (const payment of payments) {
         // PART-PAYMENT is a meta/aggregate envelope that links sub-payments via LINKED-PAYMENTS tags.
@@ -107,8 +110,8 @@ export default async function on_confirm(
             result.failed.push(`Invalid payment status: ${payment.status}. Must be PAID or NOT-PAID`);
           }
           
-          // Validate payment type consistency with status
-          if (payment.type === "PRE-ORDER" && payment.status === "NOT-PAID") {
+          // Only enforce PRE-ORDER = PAID when not in a split-payment (PART-PAYMENT) flow
+          if (payment.type === "PRE-ORDER" && payment.status === "NOT-PAID" && !hasPartPayment) {
             result.failed.push(`PRE-ORDER payment should be PAID in on_confirm, found NOT-PAID`);
           }
         } else {
@@ -127,7 +130,8 @@ export default async function on_confirm(
           result.failed.push(`Payment params.amount missing for ${payment.type || 'unknown'} payment`);
         } else {
           const amount = parseFloat(params.amount);
-          if (isNaN(amount) || amount <= 0) {
+          // In split-payment flows, ON-FULFILLMENT sub-payments carry amount=0 (split tracked in PART-PAYMENT tags)
+          if (isNaN(amount) || (amount <= 0 && !hasPartPayment)) {
             result.failed.push(`Invalid payment amount: ${params.amount}. Must be a positive number`);
           } else {
             result.passed.push(`Payment ${payment.type} amount: ${params.currency || ''} ${params.amount}`);
