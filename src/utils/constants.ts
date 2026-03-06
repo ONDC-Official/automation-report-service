@@ -603,6 +603,17 @@ export const FLOW_ID_MAP: Record<
         "Force_Cancellation_Flow": "RET_ENH_005",
       },
     },
+    "1.2.0": {
+      "APPLIANCES": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
+      },
+    },
   },
   "ONDC:RET16": {
     "1.2.5": {
@@ -615,6 +626,17 @@ export const FLOW_ID_MAP: Record<
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
         "Force_Cancellation_Flow": "RET_ENH_005",
+      },
+    },
+    "1.2.0": {
+      "HOME&KITCHEN": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
