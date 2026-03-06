@@ -130,8 +130,9 @@ export default async function on_confirm(
           result.failed.push(`Payment params.amount missing for ${payment.type || 'unknown'} payment`);
         } else {
           const amount = parseFloat(params.amount);
-          // In split-payment flows, ON-FULFILLMENT sub-payments carry amount=0 (split tracked in PART-PAYMENT tags)
-          if (isNaN(amount) || (amount <= 0 && !hasPartPayment)) {
+          // ON-FULFILLMENT payments collected at hotel checkout — amount can be 0 at on_confirm stage.
+          // In split-payment flows, amount is tracked in PART-PAYMENT tags, not on the sub-payment.
+          if (isNaN(amount) || (amount <= 0 && !hasPartPayment && payment.type !== "ON-FULFILLMENT")) {
             result.failed.push(`Invalid payment amount: ${params.amount}. Must be a positive number`);
           } else {
             result.passed.push(`Payment ${payment.type} amount: ${params.currency || ''} ${params.amount}`);
