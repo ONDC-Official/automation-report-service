@@ -14,12 +14,28 @@ export default async function on_init(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11OnInit210(element, sessionID, flowId, actionId, usecaseId);
 
+  // Metro Card flows have no transit stops and no fixed item prices
+  const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+  // Bus Agent flows start at select (no search step) — no txnId, no monetary quote
+  const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
+  // Unlimited Passes flow starts at select (no search step) — no stored txnId
+  const isPassesFlow = flowId === "IntraCity_Unlimited_Passes_Flow(Code Based)";
+
+  // Filter false positives for Bus Agent / Passes flows (no prior search step)
+  if ((isAgentFlow || isPassesFlow) && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) =>
+        !err.toLowerCase().includes("no transaction ids found") &&
+        !err.toLowerCase().includes("quote")
+    );
+  }
+
   try {
     const message = element?.jsonRequest?.message;
     const order = message?.order;
 
-    // Quote validation
-    if (order?.quote) {
+    // Quote validation — skip for Metro Card flows (card breakup structure differs)
+    if (order?.quote && !isCardFlow) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
@@ -29,8 +45,8 @@ export default async function on_init(
       validateQuoteBreakup(order.quote, result, "on_init");
     }
 
-    // Validate fulfillments with stops
-    if (order?.fulfillments && Array.isArray(order.fulfillments)) {
+    // Validate fulfillments with stops — skip for Metro Card flows (no transit stops)
+    if (order?.fulfillments && Array.isArray(order.fulfillments) && !isCardFlow) {
       for (const f of order.fulfillments) {
         if (f.stops) {
           validateStops(f.stops, result, `on_init.fulfillment[${f.id}]`);
@@ -54,9 +70,9 @@ export default async function on_init(
       }
     }
 
-    // Cross-check with INIT
+    // Cross-check with INIT — skip for Metro Card flows (no fixed item price in init)
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
-    if (txnId) {
+    if (txnId && !isCardFlow) {
       const initData = await getActionData(sessionID, flowId, txnId, "init");
       const onInitItems: any[] = order?.items || [];
       const initItems: any[] = initData?.items || [];

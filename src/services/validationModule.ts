@@ -197,12 +197,18 @@ function validateActionSequence(
           const lastAction = requiredSequence[i - 1].toLowerCase();
           const currentExpectedAction = expectedAction.toLowerCase();
 
-          if (
+        if (
             (currentExpectedAction === "update" ||
               currentExpectedAction === "status" ||
               currentExpectedAction === "track" ||
-              currentExpectedAction === "cancel") &&
-            (lastAction.startsWith("on_"))
+              currentExpectedAction === "cancel" ||
+              currentExpectedAction === "on_status" ||
+              currentExpectedAction === "on_update") &&
+            // Allow when previous was an on_ response (e.g. on_confirm → on_status)
+            // OR when previous was the matching request (e.g. update → on_update, status → on_status)
+            (lastAction.startsWith("on_") ||
+              (currentExpectedAction === "on_update" && lastAction === "update") ||
+              (currentExpectedAction === "on_status" && lastAction === "status"))
           ) {
             logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
             validSequence = true; // Restore validSequence to true for valid early termination
@@ -294,6 +300,16 @@ function validateActionSequence(
           i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
           continue; // Continue loop to match current payload against new expected action
         }
+      }
+
+      // If the expected action is on_status but the actual payload is a BAP-initiated
+      // 'status' request (e.g. Technical Cancellation flow ordering), skip this payload
+      // and retry the same expected action against the next payload.
+      if (expectedAction === "on_status" && actualAction === "status") {
+        logger.info(`Expected 'on_status' but found 'status' payload; skipping and retrying`);
+        payloadIndex++;
+        i--; // Retry current expected action (on_status) against next payload
+        continue;
       }
 
       if (actualAction !== expectedAction) {

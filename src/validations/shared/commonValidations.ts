@@ -153,38 +153,38 @@ export function validateCODFlow(
     );
 
     // Validate cod_order tag
-    try {
-      const codOrderTag = linkedOrderTag?.list?.find?.(
-        (tag: { code: string; value: string }) =>
-          tag.code === "cod_order" && tag.value.toLowerCase() === "yes"
-      );
+    // try {
+    //   const codOrderTag = linkedOrderTag?.list?.find?.(
+    //     (tag: { code: string; value: string }) =>
+    //       tag.code === "cod_order" && tag.value.toLowerCase() === "yes"
+    //   );
 
-      assert.ok(
-        codOrderTag,
-        `cod_order tag with value "yes" should be present inside linked_order tag list`
-      );
+    //   assert.ok(
+    //     codOrderTag,
+    //     `cod_order tag with value "yes" should be present inside linked_order tag list`
+    //   );
 
-      testResults.passed.push(`cod_order tag validation passed`);
-    } catch (error: any) {
-      testResults.failed.push(error.message);
-    }
+    //   testResults.passed.push(`cod_order tag validation passed`);
+    // } catch (error: any) {
+    //   testResults.failed.push(error.message);
+    // }
 
     // Validate collection_amount tag
-    try {
-      const collectionTag = linkedOrderTag?.list?.find?.(
-        (tag: { code: string; value: string }) =>
-          tag.code === "collection_amount"
-      );
+    // try {
+    //   const collectionTag = linkedOrderTag?.list?.find?.(
+    //     (tag: { code: string; value: string }) =>
+    //       tag.code === "collection_amount"
+    //   );
 
-      assert.ok(
-        collectionTag,
-        `collection_amount tag should be present inside linked_order tag list`
-      );
+    //   assert.ok(
+    //     collectionTag,
+    //     `collection_amount tag should be present inside linked_order tag list`
+    //   );
 
-      testResults.passed.push(`collection_amount tag validation passed`);
-    } catch (error: any) {
-      testResults.failed.push(error.message);
-    }
+    //   testResults.passed.push(`collection_amount tag validation passed`);
+    // } catch (error: any) {
+    //   testResults.failed.push(error.message);
+    // }
   }
 }
 

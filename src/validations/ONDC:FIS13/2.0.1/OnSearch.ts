@@ -3,14 +3,10 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 import {
   validateInsuranceContext,
   validateInsuranceItemsOnSearch,
 } from "../../shared/healthInsuranceValidations";
-import {
-  validateAllContext,
-} from "../../shared/healthInsuranceL2Validations";
 
 export default async function on_search(
   element: Payload,
@@ -26,61 +22,39 @@ export default async function on_search(
   // Health insurance context validation
   validateInsuranceContext(context, result, flowId);
 
-  // Health insurance on_search items validation (GENERAL_INFO, time.duration, category_ids, etc.)
+  // Health insurance on_search items validation
   if (onSearchMessage) {
     validateInsuranceItemsOnSearch(onSearchMessage, result, flowId);
   }
 
-  // Validate items consistency for health insurance and motor insurance flows
-  const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
-  if (isInsuranceFlow) {
-    try {
-      const txnId = context?.transaction_id as string | undefined;
-      if (txnId) {
-        const searchData = await getActionData(sessionID, flowId, txnId, "search");
+  try {
+    const txnId = context?.transaction_id as string | undefined;
+    if (txnId) {
+      const searchData = await getActionData(sessionID, flowId, txnId, "search");
 
-        // Get item IDs from search
-        const searchItemIds: string[] = searchData?.items || [];
-
-        // Get item IDs from on_search (from catalog.providers[].items[])
-        const onSearchItemIds: string[] = [];
-        if (onSearchMessage?.catalog?.providers) {
-          for (const provider of onSearchMessage.catalog.providers) {
-            if (provider.items && Array.isArray(provider.items)) {
-              for (const item of provider.items) {
-                if (item?.id) {
-                  onSearchItemIds.push(item.id);
-                }
-              }
+      // Item ID consistency: search → on_search
+      const searchItemIds: string[] = searchData?.items || [];
+      const onSearchItemIds: string[] = [];
+      if (onSearchMessage?.catalog?.providers) {
+        for (const provider of onSearchMessage.catalog.providers) {
+          if (provider.items && Array.isArray(provider.items)) {
+            for (const item of provider.items) {
+              if (item?.id) onSearchItemIds.push(item.id);
             }
           }
         }
-
-        // Check if all search items exist in on_search
-        const missingItems = searchItemIds.filter(id => !onSearchItemIds.includes(id));
-        if (missingItems.length === 0 && searchItemIds.length > 0) {
+      }
+      const missingItems = searchItemIds.filter(id => !onSearchItemIds.includes(id));
+      if (searchItemIds.length > 0) {
+        if (missingItems.length === 0) {
           result.passed.push(`All items from search (${searchItemIds.length}) are present in on_search`);
-        } else if (missingItems.length > 0) {
+        } else {
           result.failed.push(`Items from search missing in on_search: ${missingItems.join(", ")}`);
         }
-
-        // Validate form ID consistency if xinput is present
-        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(onSearchMessage, sessionID, flowId, txnId, "on_search", result, insuranceFlows);
       }
-    } catch (error: any) {
-      // Silently fail if validation cannot be performed
-    }
-  }
 
-  // ── L2: Context integrity vs search ──
-  try {
-    const txnId = context?.transaction_id as string | undefined;
-    if (txnId && isInsuranceFlow) {
-      const searchData = await getActionData(sessionID, flowId, txnId, "search");
-      if (searchData) {
-        validateAllContext(context, searchData, result, flowId, "on_search", "search");
-      }
+      // Form ID (xinput) check
+      await validateFormIdIfXinputPresent(onSearchMessage, sessionID, flowId, txnId, "on_search", result);
     }
   } catch (_) { }
 

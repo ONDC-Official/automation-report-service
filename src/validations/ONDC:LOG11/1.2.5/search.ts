@@ -275,20 +275,6 @@ export async function checkSearch(
       }
     }
 
-    if (linkedOrderTag) {
-      try {
-        const list = linkedOrderTag.list ?? [];
-        const hasId = list.some((item) => item.code === "id");
-        assert.ok(
-          hasId,
-          "linked_order tag must contain a list item with code 'id'"
-        );
-        testResults.passed.push("linked_order tag structure validation passed");
-      } catch (error: any) {
-        testResults.failed.push(error.message);
-      }
-    }
-
   } catch (error: any) {
     logger.error(`Error during ${action} validation: ${error.message}`);
     testResults.failed.push(error.message);

@@ -1,6 +1,8 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
-import { validateStatusOrderId } from "../../shared/validationFactory";
+import { validateStatusOrderId, validateStatusRefId } from "../../shared/validationFactory";
+
+const TECHNICAL_CANCELLATION_FLOW = "OnDemand_Ride_Technical_Cancellation_Flow";
 
 export default async function status(
   element: Payload,
@@ -19,8 +21,12 @@ export default async function status(
 
   const message = jsonRequest?.message;
 
-  // Validate order_id
-  validateStatusOrderId(message, testResults);
+  // For Technical Cancellation flow, validate ref_id instead of order_id
+  if (flowId === TECHNICAL_CANCELLATION_FLOW) {
+    validateStatusRefId(message, testResults);
+  } else {
+    validateStatusOrderId(message, testResults);
+  }
 
   // Add default message if no validations ran
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {

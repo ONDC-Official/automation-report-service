@@ -725,7 +725,7 @@ export async function validateItemIdsConsistency(
             const currentIds = currentItems.map((i: any) => i.id).sort();
             assert.deepStrictEqual(
                 currentIds, savedIds,
-                `Item IDs in ${action} [${currentIds}] do not match saved [${savedIds}]`
+                `Item IDs in ${action} [${currentIds}] do not match`
             );
             testResults.passed.push(`Item IDs match in ${action}`);
         } catch (error: any) {

@@ -13,11 +13,36 @@ export default async function on_select(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11OnSelect(element, sessionID, flowId, actionId);
 
+  // Metro Card flows have a simplified quote and no fixed item prices in select
+  const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+  // Bus Agent flows start at select (no search step) — no txnId, no quantity, no quote
+  const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
+  // Unlimited Passes flow starts at select (no search step) — no stored txnId
+  const isPassesFlow = flowId === "IntraCity_Unlimited_Passes_Flow(Code Based)";
+
+  // Filter base validator false positives for Metro Card / Bus Agent / Passes flows
+  if ((isCardFlow || isAgentFlow || isPassesFlow) && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) =>
+        !err.toLowerCase().includes("quantity.selected.count") &&
+        !err.toLowerCase().includes("no transaction ids found")
+    );
+  }
+
+  // Agent flows: also filter fulfillment_ids and quote errors (items are catalog stubs, no price yet)
+  if (isAgentFlow && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) =>
+        !err.toLowerCase().includes("fulfillment_ids") &&
+        !err.toLowerCase().includes("quote")
+    );
+  }
+
   try {
     const message = element?.jsonRequest?.message;
 
-    // Quote validation
-    if (message?.order?.quote) {
+    // Quote validation — skip for Metro Card flows (simplified quote structure)
+    if (message?.order?.quote && !isCardFlow) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
         validateTotalMatch: true,
@@ -42,9 +67,9 @@ export default async function on_select(
       result.passed.push(`on_select: cancellation_terms present with ${message.order.cancellation_terms.length} entries`);
     }
 
-    // Compare with SELECT request
+    // Compare with SELECT request — skip for Metro Card flows (no fixed item price in select)
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
-    if (txnId) {
+    if (txnId && !isCardFlow) {
       const selectData = await getActionData(sessionID, flowId, txnId, "select");
       const selItems: any[] = selectData?.order?.items || [];
       const onSelItems: any[] = message?.order?.items || [];
