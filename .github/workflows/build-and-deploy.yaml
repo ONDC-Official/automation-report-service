@@ -3,7 +3,7 @@ name: Build and Deploy to EKS
 on:
   push:
     branches:
-      - main
+      - test-versioning
 
 jobs:
   build-and-push-image:
