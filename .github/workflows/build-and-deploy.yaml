@@ -26,22 +26,22 @@ jobs:
         id: vars
         run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
 
-        - name: Auto-increment patch version
-          run: |
-            current_version=$(cat version.txt)
-            echo "CURRENT_VERSION=$current_version" >> $GITHUB_ENV
-            IFS='.' read -r -a version_parts <<< "$current_version"
-            major="${version_parts[0]}"
-            minor="${version_parts[1]}"
-            patch="${version_parts[2]}"
-            patch=$((patch + 1))
-            next_version="$major.$minor.$patch"
-            echo "Next version: $next_version"
-            echo "$next_version" > version.txt
-            echo "VERSION=$next_version" >> $GITHUB_ENV
-            git add version.txt
-            git commit -m "Auto-increment version.txt to $next_version" || echo "No changes to commit"
-            git push || echo "No remote to push"
+      - name: Auto-increment patch version
+        run: |
+          current_version=$(cat version.txt)
+          echo "CURRENT_VERSION=$current_version" >> $GITHUB_ENV
+          IFS='.' read -r -a version_parts <<< "$current_version"
+          major="${version_parts[0]}"
+          minor="${version_parts[1]}"
+          patch="${version_parts[2]}"
+          patch=$((patch + 1))
+          next_version="$major.$minor.$patch"
+          echo "Next version: $next_version"
+          echo "$next_version" > version.txt
+          echo "VERSION=$next_version" >> $GITHUB_ENV
+          git add version.txt
+          git commit -m "Auto-increment version.txt to $next_version" || echo "No changes to commit"
+          git push || echo "No remote to push"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
