@@ -5,32 +5,35 @@ on:
     branches:
       - test-versioning
 
+permissions:
+  contents: write
+
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set repository name to lowercase
         run: echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract version/tag
-        id: vars
-        run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
-
       - name: Auto-increment patch version
         run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           current_version=$(cat version.txt)
           echo "CURRENT_VERSION=$current_version" >> $GITHUB_ENV
           IFS='.' read -r -a version_parts <<< "$current_version"
@@ -43,36 +46,42 @@ jobs:
           echo "$next_version" > version.txt
           echo "VERSION=$next_version" >> $GITHUB_ENV
           git add version.txt
-          git commit -m "Auto-increment version.txt to $next_version" || echo "No changes to commit"
-          git push || echo "No remote to push"
+          git commit -m "ci: auto-increment version to $next_version [skip ci]"
+          git push
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}:${{ env.tag }}
+          tags: |
+            ghcr.io/${{ env.REPO_LOWER }}:${{ env.VERSION }}
+            ghcr.io/${{ env.REPO_LOWER }}:latest
 
       - name: Clone automation-iac repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          repository: your-org/automation-iac
+          repository: ONDC-Official/automation-iac
           token: ${{ secrets.IAC_REPO_TOKEN }}
           path: automation-iac
 
       - name: Update image tag in deployment workflow
         run: |
-          sed -i "s|ghcr.io/.*/automation-report-service:.*|ghcr.io/${{ env.REPO_LOWER }}:${{ env.tag }}|" automation-iac/.github/workflows/deployment-dev.yaml
+          sed -i "s|ghcr.io/.*/automation-report-service:.*|ghcr.io/${{ env.REPO_LOWER }}:${{ env.VERSION }}|" automation-iac/.github/workflows/deployment-dev.yaml
 
       - name: Commit changes and create PR
         run: |
           cd automation-iac
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git checkout -b update-image-tag-${{ env.tag }}
+          git checkout -b update-image-tag-${{ env.VERSION }}
           git add .github/workflows/deployment-dev.yaml
-          git commit -m "Update image tag to ${{ env.tag }}"
-          git push origin update-image-tag-${{ env.tag }}
-          gh pr create --title "Update image tag to ${{ env.tag }}" --body "Automated update of image tag for automation-report-service" --base main --head update-image-tag-${{ env.tag }}
+          git commit -m "ci: update automation-report-service image tag to ${{ env.VERSION }}"
+          git push origin update-image-tag-${{ env.VERSION }}
+          gh pr create \
+            --title "Update automation-report-service image tag to ${{ env.VERSION }}" \
+            --body "Automated update of image tag for automation-report-service to version ${{ env.VERSION }}" \
+            --base main \
+            --head update-image-tag-${{ env.VERSION }}
         env:
           GH_TOKEN: ${{ secrets.IAC_REPO_TOKEN }}
