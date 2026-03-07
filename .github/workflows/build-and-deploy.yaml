@@ -12,6 +12,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set repository name to lowercase
+        run: echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -48,7 +51,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ env.tag }}
+          tags: ghcr.io/${{ env.REPO_LOWER }}:${{ env.tag }}
 
       - name: Clone automation-iac repo
         uses: actions/checkout@v3
@@ -59,7 +62,7 @@ jobs:
 
       - name: Update image tag in deployment workflow
         run: |
-          sed -i "s|ghcr.io/.*/automation-report-service:.*|ghcr.io/${{ github.repository }}:${{ env.tag }}|" automation-iac/.github/workflows/deployment-dev.yaml
+          sed -i "s|ghcr.io/.*/automation-report-service:.*|ghcr.io/${{ env.REPO_LOWER }}:${{ env.tag }}|" automation-iac/.github/workflows/deployment-dev.yaml
 
       - name: Commit changes and create PR
         run: |
