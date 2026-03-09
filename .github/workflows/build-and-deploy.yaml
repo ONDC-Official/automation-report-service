@@ -102,6 +102,7 @@ jobs:
           git commit -m "ci: update automation-report-service image tag to ${{ env.IMAGE_TAG }} (${{ env.ENVIRONMENT }})"
           git push origin update-report-service-tag-${{ env.IMAGE_TAG }}
           gh pr create \
+            --repo ONDC-Official/automation-iac \
             --title "[${{ env.ENVIRONMENT }}] Update automation-report-service image tag to ${{ env.IMAGE_TAG }}" \
             --body "Automated update of image tag for automation-report-service to **${{ env.IMAGE_TAG }}** for **${{ env.ENVIRONMENT }}** environment." \
             --base main \
