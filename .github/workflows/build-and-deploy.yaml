@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ONDC-Official/automation-iac
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.IAC_REPO_TOKEN }}
           path: automation-iac
 
       - name: Update image tag in Helm values file
@@ -99,4 +99,4 @@ jobs:
             --base main \
             --head update-report-service-tag-${{ env.IMAGE_TAG }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.IAC_REPO_TOKEN }}
