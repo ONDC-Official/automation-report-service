@@ -90,7 +90,31 @@ jobs:
 
       - name: Update image tag in Helm values file
         run: |
-          sed -i "/reportService:/,/[a-zA-Z]*Service:/ s|tag: .*|tag: ${{ env.IMAGE_TAG }}|" "automation-iac/${{ env.TARGET_FILE }}"
+          python3 << 'PYEOF'
+          import re, os
+
+          target = f"automation-iac/{os.environ['TARGET_FILE']}"
+          image_tag = os.environ['IMAGE_TAG']
+
+          with open(target, 'r') as f:
+              lines = f.readlines()
+
+          in_report_service = False
+          result = []
+          for line in lines:
+              # Top-level keys have no leading whitespace — use them as section boundaries
+              if re.match(r'^[a-zA-Z]', line):
+                  in_report_service = line.strip().startswith('reportService:')
+              if in_report_service and re.match(r'^\s+tag:\s', line):
+                  line = re.sub(r'(tag:\s).*', rf'\g<1>{image_tag}', line)
+              result.append(line)
+
+          with open(target, 'w') as f:
+              f.writelines(result)
+          PYEOF
+        env:
+          TARGET_FILE: ${{ env.TARGET_FILE }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
 
       - name: Commit changes and create PR
         run: |
