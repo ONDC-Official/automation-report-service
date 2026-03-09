@@ -73,11 +73,19 @@ jobs:
             ghcr.io/${{ env.REPO_LOWER }}:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.REPO_LOWER }}:latest
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: automation-iac
+
       - name: Clone automation-iac repo
         uses: actions/checkout@v4
         with:
           repository: ONDC-Official/automation-iac
-          token: ${{ secrets.IAC_REPO_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           path: automation-iac
 
       - name: Update image tag in Helm values file
@@ -87,8 +95,8 @@ jobs:
       - name: Commit changes and create PR
         run: |
           cd automation-iac
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b update-report-service-tag-${{ env.IMAGE_TAG }}
           git add "${{ env.TARGET_FILE }}"
           git commit -m "ci: update automation-report-service image tag to ${{ env.IMAGE_TAG }} (${{ env.ENVIRONMENT }})"
@@ -99,4 +107,4 @@ jobs:
             --base main \
             --head update-report-service-tag-${{ env.IMAGE_TAG }}
         env:
-          GH_TOKEN: ${{ secrets.IAC_REPO_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
