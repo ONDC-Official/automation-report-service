@@ -101,6 +101,7 @@ jobs:
           git add "${{ env.TARGET_FILE }}"
           git commit -m "ci: update automation-report-service image tag to ${{ env.IMAGE_TAG }} (${{ env.ENVIRONMENT }})"
           git push origin update-report-service-tag-${{ env.IMAGE_TAG }}
+          sleep 5
           gh pr create \
             --repo ONDC-Official/automation-iac \
             --title "[${{ env.ENVIRONMENT }}] Update automation-report-service image tag to ${{ env.IMAGE_TAG }}" \
