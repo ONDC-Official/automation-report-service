@@ -3,10 +3,12 @@ name: Build and Deploy to EKS
 on:
   push:
     branches:
+      - main
       - test-versioning
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   build-and-push-image:
@@ -49,13 +51,27 @@ jobs:
           git commit -m "ci: auto-increment version to $next_version [skip ci]"
           git push
 
+      - name: Determine environment and image tag
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+            echo "IMAGE_TAG=prod-$next_version" >> $GITHUB_ENV
+            echo "TARGET_FILE=k8/aws/helm/service-layer/values-preprod.yaml" >> $GITHUB_ENV
+          else
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+            echo "IMAGE_TAG=dev-$next_version" >> $GITHUB_ENV
+            echo "TARGET_FILE=k8/aws/helm/service-layer/values.yaml" >> $GITHUB_ENV
+          fi
+        env:
+          next_version: ${{ env.VERSION }}
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ env.REPO_LOWER }}:${{ env.VERSION }}
+            ghcr.io/${{ env.REPO_LOWER }}:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.REPO_LOWER }}:latest
 
       - name: Clone automation-iac repo
@@ -65,23 +81,23 @@ jobs:
           token: ${{ secrets.IAC_REPO_TOKEN }}
           path: automation-iac
 
-      - name: Update image tag in deployment workflow
+      - name: Update image tag in Helm values file
         run: |
-          sed -i "s|ghcr.io/.*/automation-report-service:.*|ghcr.io/${{ env.REPO_LOWER }}:${{ env.VERSION }}|" automation-iac/.github/workflows/deployment-dev.yaml
+          sed -i "/reportService:/,/[a-zA-Z]*Service:/ s|tag: .*|tag: ${{ env.IMAGE_TAG }}|" "automation-iac/${{ env.TARGET_FILE }}"
 
       - name: Commit changes and create PR
         run: |
           cd automation-iac
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git checkout -b update-image-tag-${{ env.VERSION }}
-          git add .github/workflows/deployment-dev.yaml
-          git commit -m "ci: update automation-report-service image tag to ${{ env.VERSION }}"
-          git push origin update-image-tag-${{ env.VERSION }}
+          git checkout -b update-report-service-tag-${{ env.IMAGE_TAG }}
+          git add "${{ env.TARGET_FILE }}"
+          git commit -m "ci: update automation-report-service image tag to ${{ env.IMAGE_TAG }} (${{ env.ENVIRONMENT }})"
+          git push origin update-report-service-tag-${{ env.IMAGE_TAG }}
           gh pr create \
-            --title "Update automation-report-service image tag to ${{ env.VERSION }}" \
-            --body "Automated update of image tag for automation-report-service to version ${{ env.VERSION }}" \
+            --title "[${{ env.ENVIRONMENT }}] Update automation-report-service image tag to ${{ env.IMAGE_TAG }}" \
+            --body "Automated update of image tag for automation-report-service to **${{ env.IMAGE_TAG }}** for **${{ env.ENVIRONMENT }}** environment." \
             --base main \
-            --head update-image-tag-${{ env.VERSION }}
+            --head update-report-service-tag-${{ env.IMAGE_TAG }}
         env:
           GH_TOKEN: ${{ secrets.IAC_REPO_TOKEN }}
