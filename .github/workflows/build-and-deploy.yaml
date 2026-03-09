@@ -126,24 +126,12 @@ jobs:
           git commit -m "ci: update automation-report-service image tag to ${{ env.IMAGE_TAG }} (${{ env.ENVIRONMENT }})"
           git push origin update-report-service-tag-${{ env.IMAGE_TAG }}
 
-          echo "Waiting for branch to be indexed on GitHub..."
-          for i in $(seq 1 12); do
-            BRANCH_SHA=$(gh api "repos/ONDC-Official/automation-iac/branches/update-report-service-tag-${{ env.IMAGE_TAG }}" \
-              --jq '.commit.sha' 2>/dev/null || echo "")
-            if [ -n "$BRANCH_SHA" ]; then
-              echo "Branch is ready (SHA: $BRANCH_SHA), creating PR..."
-              gh api \
-                --method POST \
-                -H "Accept: application/vnd.github+json" \
-                /repos/ONDC-Official/automation-iac/pulls \
-                -f title="[${{ env.ENVIRONMENT }}] Update automation-report-service image tag to ${{ env.IMAGE_TAG }}" \
-                -f body="Automated update of image tag for automation-report-service to **${{ env.IMAGE_TAG }}** for **${{ env.ENVIRONMENT }}** environment." \
-                -f head="update-report-service-tag-${{ env.IMAGE_TAG }}" \
-                -f base="main"
-              break
-            fi
-            echo "Attempt $i/12: branch not yet available, retrying in 5s..."
-            sleep 5
-          done
+          sleep 5
+          gh pr create \
+            --repo ONDC-Official/automation-iac \
+            --title "[${{ env.ENVIRONMENT }}] Update automation-report-service image tag to ${{ env.IMAGE_TAG }}" \
+            --body "Automated update of image tag for automation-report-service to **${{ env.IMAGE_TAG }}** for **${{ env.ENVIRONMENT }}** environment." \
+            --base master \
+            --head update-report-service-tag-${{ env.IMAGE_TAG }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
