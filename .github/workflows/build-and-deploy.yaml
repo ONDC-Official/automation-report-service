@@ -56,7 +56,7 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "ENVIRONMENT=prod" >> $GITHUB_ENV
             echo "IMAGE_TAG=prod-$next_version" >> $GITHUB_ENV
-            echo "TARGET_FILE=k8/aws/helm/service-layer/values-preprod.yaml" >> $GITHUB_ENV
+            echo "TARGET_FILE=k8/aws/helm/service-layer/values-prod.yaml" >> $GITHUB_ENV
           else
             echo "ENVIRONMENT=dev" >> $GITHUB_ENV
             echo "IMAGE_TAG=dev-$next_version" >> $GITHUB_ENV
@@ -124,6 +124,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${{ env.TARGET_FILE }}"
           git commit -m "ci: update automation-report-service image tag to ${{ env.IMAGE_TAG }} (${{ env.ENVIRONMENT }})"
-          git push origin HEAD:master
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          git push
