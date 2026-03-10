@@ -3,7 +3,8 @@ name: Build and Deploy to EKS
 on:
   push:
     branches:
-      - test-versioning
+      - main
+      - dev
 
 permissions:
   contents: write
@@ -116,22 +117,13 @@ jobs:
           TARGET_FILE: ${{ env.TARGET_FILE }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
 
-      - name: Commit changes and create PR
+      - name: Commit and push tag update to IaC repo
         run: |
           cd automation-iac
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b update-report-service-tag-${{ env.IMAGE_TAG }}
           git add "${{ env.TARGET_FILE }}"
           git commit -m "ci: update automation-report-service image tag to ${{ env.IMAGE_TAG }} (${{ env.ENVIRONMENT }})"
-          git push origin update-report-service-tag-${{ env.IMAGE_TAG }}
-
-          sleep 5
-          gh pr create \
-            --repo ONDC-Official/automation-iac \
-            --title "[${{ env.ENVIRONMENT }}] Update automation-report-service image tag to ${{ env.IMAGE_TAG }}" \
-            --body "Automated update of image tag for automation-report-service to **${{ env.IMAGE_TAG }}** for **${{ env.ENVIRONMENT }}** environment." \
-            --base master \
-            --head update-report-service-tag-${{ env.IMAGE_TAG }}
+          git push origin HEAD:master
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
