@@ -71,7 +71,7 @@ export class ReportService {
       }
 
       const result = await validationModule(flows, sessionId);
-      return generateCustomHTMLReport(result);
+      return generateCustomHTMLReport(result, sessionId, flowMap);
     } catch (error) {
       logger.error(
         `Error generating report for session ${sessionId}:`,
