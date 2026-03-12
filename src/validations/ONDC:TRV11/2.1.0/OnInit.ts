@@ -16,6 +16,19 @@ export default async function on_init(
 
   // Metro Card flows have no transit stops and no fixed item prices
   const isCardFlow = flowId === "METRO_CARD_PURCHASE" || flowId === "METRO_CARD_RECHARGE";
+  // Bus Agent flows start at select (no search step) — no txnId, no monetary quote
+  const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
+  // Unlimited Passes flow starts at select (no search step) — no stored txnId
+  const isPassesFlow = flowId === "IntraCity_Unlimited_Passes_Flow(Code Based)";
+
+  // Filter false positives for Bus Agent / Passes flows (no prior search step)
+  if ((isAgentFlow || isPassesFlow) && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) =>
+        !err.toLowerCase().includes("no transaction ids found") &&
+        !err.toLowerCase().includes("quote")
+    );
+  }
 
   try {
     const message = element?.jsonRequest?.message;

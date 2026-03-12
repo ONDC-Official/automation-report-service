@@ -6486,7 +6486,7 @@ function validateCancellation(
     } else {
       testResults.passed.push("Order status is CANCELLED in on_cancel_hard");
     }
-  } else if (action_id === "on_cancel") {
+  } else if (action_id === "on_cancel" || action_id?.startsWith("on_cancel_")) {
     // For purchase finance flows, allow both SOFT_CANCEL and CANCELLED
     if (isPurchaseFinanceFlow) {
       if (order.status === "SOFT_CANCEL" || order.status === "CANCELLED") {
@@ -6499,10 +6499,11 @@ function validateCancellation(
         );
       }
     } else {
-      // For non-purchase finance flows, status should be SOFT_CANCEL
-      if (order.status !== "SOFT_CANCEL" && !isInsuranceFlow && !isGiftCardFlow) {
+      // For non-purchase finance flows, accept SOFT_CANCEL or CANCELLED
+      // (on_cancel_1 sends SOFT_CANCEL, on_cancel_2 sends CANCELLED)
+      if (order.status !== "SOFT_CANCEL" && order.status !== "CANCELLED" && !isInsuranceFlow && !isGiftCardFlow) {
         testResults.failed.push(
-          "Order status should be SOFT_CANCEL in on_cancel"
+          "Order status should be SOFT_CANCEL or CANCELLED in on_cancel"
         );
       } else {
         testResults.passed.push(`Order status is ${order.status} in on_cancel`);
