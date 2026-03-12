@@ -57,7 +57,7 @@ function generateApiValidationHtml(
 }
 
 // Generate the HTML report
-export function generateCustomHTMLReport(data: Report): { html: string } {
+export function generateCustomHTMLReport(data: Report, sessionId: string, flowMap: Record<string, string>): { html: string } {
   const styles = `
     <style>
       body {
@@ -113,6 +113,12 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         overflow: hidden;
         white-space: normal;
         display: block;
+      }
+      .txn-id {
+      	font-size: 14px;
+      	color: #666;
+      	font-weight: normal;
+      	margin-left: 8px;
       }
       .arrow-icon {
         font-size: 18px;
@@ -257,11 +263,46 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
       .control-btn:hover {
         background-color: #003d7a;
       }
+      .session-id-header {
+      	text-align: center;
+      	color: #555;
+      	font-size: 16px;
+      	margin-bottom: 30px;
+      }
+      .copy-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px 6px;
+        margin-left: 6px;
+        border-radius: 4px;
+        color: #666;
+        transition: background-color 0.2s, color 0.2s;
+        font-size: 14px;
+      }
+      .copy-btn:hover {
+        background-color: #e0e0e0;
+        color: #333;
+      }
     </style>
   `;
 
   const script = `
     <script>
+      function copyToClipboard(buttonElement, textToCopy, event) {
+          // Prevent event from bubbling up to the accordion header click
+          event.stopPropagation();
+          
+          navigator.clipboard.writeText(textToCopy).then(() => {
+              const originalText = buttonElement.innerHTML;
+              buttonElement.innerHTML = '✅';
+              setTimeout(() => {
+                  buttonElement.innerHTML = originalText;
+              }, 2000);
+          }).catch(err => {
+              console.error('Failed to copy text: ', err);
+          });
+      }
       function toggleAccordion(id) {
         const content = document.getElementById(id);
         const arrow = document.getElementById('arrow-' + id);
@@ -394,12 +435,17 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         )
         .join("");
 
+      const txnId = flowMap[flowId] || 'N/A';
       return `
         <div class="flow-card">
           <div class="flow-header" onclick="toggleAccordion('flow-${index}')">
             <div class="flow-header-left">
               <span class="arrow-icon" id="arrow-flow-${index}">▼</span>
-              <div class="flow-id">Flow ID: ${flowId}</div>
+              <div class="flow-id">
+                Flow ID: ${flowId}
+                <span class="txn-id">(Txn ID: ${txnId})</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, '${txnId}', event)" title="Copy Transaction ID">📋</button>
+              </div>
             </div>
             <div class="flow-header-right">
               <div class="validity ${valid_flow ? "valid" : "invalid"}">
@@ -439,6 +485,11 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         <button class="control-btn" onclick="downloadReport()">⬇ Download Report</button>
         <button class="control-btn" onclick="expandAll()">▼ Expand All</button>
         <button class="control-btn" onclick="collapseAll()">▲ Collapse All</button>
+      </div>
+
+      <div class="session-id-header">
+    	Session ID: <strong>${sessionId}</strong>
+        <button class="copy-btn" onclick="copyToClipboard(this, '${sessionId}', event)" title="Copy Session ID">📋</button>
       </div>
       
       <div class="flow-card">
