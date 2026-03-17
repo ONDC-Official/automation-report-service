@@ -12,6 +12,15 @@ export default async function confirm(
 ): Promise<TestResult> {
   const result = await DomainValidators.trv11Confirm210(element, sessionID, flowId, actionId);
 
+  // Agent flows (no search step) and Passes flow (starts at select) — suppress txnId false positive
+  const isAgentFlow = !!flowId?.toUpperCase().includes("AGENT");
+  const isPassesFlow = flowId === "IntraCity_Unlimited_Passes_Flow(Code Based)";
+  if ((isAgentFlow || isPassesFlow) && result.failed.length > 0) {
+    result.failed = result.failed.filter(
+      (err: string) => !err.toLowerCase().includes("no transaction ids found")
+    );
+  }
+
   try {
     const message = element?.jsonRequest?.message;
     const order = message?.order;

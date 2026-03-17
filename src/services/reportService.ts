@@ -71,7 +71,9 @@ export class ReportService {
       }
 
       const htmlReport = generateCustomHTMLReport(
-        await validationModule(flows, sessionId)
+        await validationModule(flows, sessionId),
+        sessionId,
+        flowMap
       );
 
       this.saveReportToDB(sessionId, htmlReport.html);
