@@ -70,8 +70,15 @@ export class ReportService {
         }
       }
 
-      const result = await validationModule(flows, sessionId);
-      return generateCustomHTMLReport(result, sessionId, flowMap);
+      const htmlReport = generateCustomHTMLReport(
+        await validationModule(flows, sessionId),
+        sessionId,
+        flowMap
+      );
+
+      this.saveReportToDB(sessionId, htmlReport.html);
+
+      return htmlReport;
     } catch (error) {
       logger.error(
         `Error generating report for session ${sessionId}:`,
@@ -238,5 +245,20 @@ export class ReportService {
         if (actionId) p.action_id = actionId;
       });
     });
+  }
+
+  /** Fire-and-forget: encode the HTML report as base64 and persist it to the DB. */
+  private saveReportToDB(sessionId: string, html: string): void {
+    const testId = `PW_${sessionId}`;
+    const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
+
+    axios
+      .post(
+        reportUrl,
+        { data: Buffer.from(html).toString("base64") },
+        { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
+      )
+      .then(() => logger.info(`Report saved to DB for testId: ${testId}`))
+      .catch((err) => logger.error(`Failed to save report to DB for testId: ${testId}`, {}, err));
   }
 }
