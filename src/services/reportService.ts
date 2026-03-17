@@ -248,7 +248,7 @@ export class ReportService {
 
   /** Fire-and-forget: encode the HTML report as base64 and persist it to the DB. */
   private saveReportToDB(sessionId: string, html: string): void {
-    const testId = `${sessionId}`;
+    const testId = `PW_${sessionId}`;
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
     axios
       .post(
