@@ -1,21 +1,17 @@
-name: Staging Deployment
+name: Dev Deployment
 
 on:
   push:
-    branches: ["release-staging"]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
   ssh-ec2:
     runs-on: ubuntu-latest
-    environment: 
-          name: staging
-          url: https://github.com
-          
-    steps:
+
+    steps: 
       - name: Checkout code
         uses: actions/checkout@v2
-
 
       - name: SSH Setup and Cloning Repository
         run: |
@@ -25,11 +21,11 @@ jobs:
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
           ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} -T <<EOF
-          REPO_DIR=~/ONDC-automation-framework-staging/automation-report-service
+          REPO_DIR=~/ONDC-automation-framework/automation-report-service
           echo "Removing existing repository directory if exists"
           rm -rf \$REPO_DIR
-          echo "Cloning repository from release-staging branch"
-          git clone --single-branch --branch release-staging https://github.com/ONDC-Official/automation-report-service.git \$REPO_DIR
+          echo "Cloning repository from main branch"
+          git clone --single-branch --branch main https://github.com/ONDC-Official/automation-report-service.git \$REPO_DIR
           EOF
 
       - name: Install Docker Compose (if not installed)
@@ -50,14 +46,14 @@ jobs:
         run: |
           echo "Writing secrets to .env file"
           ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
-          REPO_DIR=~/ONDC-automation-framework-staging/automation-report-service
+          REPO_DIR=~/ONDC-automation-framework/automation-report-service
           echo "Writing environment variables to .env file"
           echo "REDIS_USERNAME=${{ secrets.REDIS_USERNAME }}" >> \$REPO_DIR/.env
           echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> \$REPO_DIR/.env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> \$REPO_DIR/.env
           echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> \$REPO_DIR/.env
           echo "PORT=${{ secrets.PORT }}" >> \$REPO_DIR/.env
-          echo "DATA_BASE_URL=${{ vars.STORAGE_URL_STAGING }}" >> \$REPO_DIR/.env
+          echo "DATA_BASE_URL=${{ vars.DATA_BASE_URL }}" >> \$REPO_DIR/.env
           echo "VALIDATION_URL=${{ vars.VALIDATION_URL }}" >> \$REPO_DIR/.env
           echo "UTILITY=${{ secrets.UTILITY }}" >> \$REPO_DIR/.env
           echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}" >> \$REPO_DIR/.env
@@ -75,7 +71,7 @@ jobs:
       - name: Verify .env and docker-compose.yml files
         run: |
           ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
-          REPO_DIR=~/ONDC-automation-framework-staging/automation-report-service
+          REPO_DIR=~/ONDC-automation-framework/automation-report-service
           # Check if .env and docker-compose.yml files exist
           if [ ! -f \$REPO_DIR/.env ]; then
             echo ".env file not found in \$REPO_DIR!"
@@ -92,7 +88,7 @@ jobs:
         run: |
           echo "Deploying with Docker Compose"
           ssh -i ./key.pem ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} <<EOF
-          REPO_DIR=~/ONDC-automation-framework-staging/automation-report-service
+          REPO_DIR=~/ONDC-automation-framework/automation-report-service
           cd \$REPO_DIR
 
           # Ensure the .env and docker-compose.yml files exist
@@ -108,5 +104,5 @@ jobs:
 
           # Start the containers using Docker Compose
           echo "Running docker-compose up -d --build"
-          sudo docker compose -p automation-staging up -d --build
+          sudo docker compose up -d --build
           EOF
