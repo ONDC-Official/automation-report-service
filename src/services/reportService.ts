@@ -77,7 +77,6 @@ export class ReportService {
       );
 
       this.saveReportToDB(sessionId, htmlReport.html);
-
       return htmlReport;
     } catch (error) {
       logger.error(
@@ -249,16 +248,15 @@ export class ReportService {
 
   /** Fire-and-forget: encode the HTML report as base64 and persist it to the DB. */
   private saveReportToDB(sessionId: string, html: string): void {
-    const testId = `PW_${sessionId}`;
+    const testId = `${sessionId}`;
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
-
     axios
       .post(
         reportUrl,
         { data: Buffer.from(html).toString("base64") },
         { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
       )
-      .then(() => logger.info(`Report saved to DB for testId: ${testId}`))
+      .then((res) => logger.info(`Report saved to DB for testId: ${testId}`, res.data))
       .catch((err) => logger.error(`Failed to save report to DB for testId: ${testId}`, {}, err));
   }
 }
