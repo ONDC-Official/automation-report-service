@@ -12,12 +12,12 @@ export async function generateReportController(
     const sessionId = req.query.sessionId as string;
     if (!sessionId) {
       logger.error(MESSAGES.responses.missingSessionId);
-      apiResponse.badRequest(res,MESSAGES.responses.missingSessionId);
+      apiResponse.badRequest(res, MESSAGES.responses.missingSessionId);
       return;
     }
     logger.info(`${MESSAGES.report.enteringController} ${sessionId}`);
     const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
-    
+
     const htmlReport = await new ReportService().generate(
       sessionId,
       flowIdToPayloadIdsMap
