@@ -250,10 +250,13 @@ export class ReportService {
   private saveReportToDB(sessionId: string, html: string): void {
     const testId = `PW_${sessionId}`;
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
+    const base64Report = `data:text/html;base64,${Buffer.from(
+      html
+    ).toString("base64")}`;
     axios
       .post(
         reportUrl,
-        { data: Buffer.from(html).toString("base64") },
+        { data: base64Report },
         { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
       )
       .then((res) => logger.info(`Report saved to DB for testId: ${testId}`, res.data))
