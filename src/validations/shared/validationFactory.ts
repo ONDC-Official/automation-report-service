@@ -33,6 +33,7 @@ import {
   PAYMENT_COLLECTED_BY,
   PERSONAL_LOAN_FLOWS,
   PURCHASE_FINANCE_FLOWS,
+  BUSINESS_LOAN_FLOWS,
   PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION,
   HEALTH_INSURANCE_FLOWS,
   MOTOR_INSURANCE_FLOWS,
@@ -405,10 +406,11 @@ function validateIntent(
           `Valid intent category descriptor code ${intent.category?.descriptor?.code} is present `
         );
       }
-    } else if (flow_id && PURCHASE_FINANCE_FLOWS.includes(flow_id)) {
-      if (intent.category?.descriptor?.code !== "PURCHASE_FINANCE") {
+    } else if (flow_id && (PURCHASE_FINANCE_FLOWS.includes(flow_id) || BUSINESS_LOAN_FLOWS.includes(flow_id))) {
+            const expectedCategory = BUSINESS_LOAN_FLOWS.includes(flow_id) ? "UNIFIED_CREDIT" : "PURCHASE_FINANCE";
+      if (intent.category?.descriptor?.code !== expectedCategory) {
         testResults.failed.push(
-          `Intent category descriptor code should be PURCHASE_FINANCE for ${flow_id}`
+          `Intent category descriptor code should be ${expectedCategory} for ${flow_id}`
         );
       } else {
         testResults.passed.push(
@@ -544,7 +546,7 @@ function validateTags(
   }
 
   // Purchase Finance specific BAP_TERMS validation
-  if (flowId && PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (flowId && (PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     const paymentTags = message?.intent?.payment?.tags || message?.intent?.tags;
     if (!paymentTags || !Array.isArray(paymentTags)) {
       testResults.failed.push(
@@ -695,7 +697,7 @@ function validatePurchaseFinanceBapTerms(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -843,7 +845,7 @@ function validatePurchaseFinanceSearch(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -991,7 +993,7 @@ function validatePurchaseFinanceOnSelect(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -1246,7 +1248,7 @@ function validatePurchaseFinanceSelect(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -1335,7 +1337,7 @@ function validatePurchaseFinanceInit(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -1564,7 +1566,7 @@ function validatePurchaseFinanceOnInit(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -2008,7 +2010,7 @@ function validatePurchaseFinanceConfirm(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -2217,7 +2219,7 @@ function validatePurchaseFinanceOnCancel(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -2568,7 +2570,7 @@ function validatePurchaseFinanceOnStatus(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -2705,7 +2707,7 @@ function validatePurchaseFinanceOnUpdate(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -2934,7 +2936,7 @@ function validatePurchaseFinanceOnConfirm(
   flowId?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -3256,7 +3258,7 @@ function validatePurchaseFinanceOnSearch(
   action_id?: string
 ): void {
   // Only validate for purchase finance flows
-  if (!flowId || !PURCHASE_FINANCE_FLOWS.includes(flowId)) {
+  if (!flowId || !(PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId))) {
     return;
   }
 
@@ -4899,7 +4901,7 @@ function validateFulfillmentStateOnUpdateFIS12(
   }
 
   if (
-    PURCHASE_FINANCE_FLOWS.includes(flowId) &&
+    (PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId)) &&
     PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION.includes(flowId)
   ) {
     const fulfillments = message?.order?.fulfillments;
@@ -5194,6 +5196,7 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
               AA_LOAN: "Account Aggregator Loan",
               PERSONAL_LOAN: "Personal Loan",
               AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
+              UNIFIED_CREDIT: "Unified Credit",
               PURCHASE_FINANCE: "Purchase Finance",
               AGRI_PURCHASE_FINANCE: "Agri Purchase Finance",
               ELECTRONICS_PURCHASE_FINANCE: "Electronics Purchase Finance",
@@ -5598,7 +5601,7 @@ async function validateXinputFIS12(
 
   // Check if this is a purchase finance flow, health insurance flow, or motor insurance flow
   const isPurchaseFinanceFlow =
-    flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+    flowId && (PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId));
   const isHealthInsuranceFlow =
     flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
   const isMotorInsuranceFlow =
@@ -5908,7 +5911,7 @@ function validateXInputStatusFIS12(
   // For purchase finance: select1_purchase_finance does NOT require xinput
   //                      init1_purchase_finance does NOT require xinput
   const isPurchaseFinanceFlow =
-    flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+    flowId && (PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId));
   const isSelect1PurchaseFinance = action_id === "select_purchase_finance";
   const isInitPurchaseFinance = action_id === "init1_purchase_finance";
   // xinput is NOT required if it's purchase finance flow AND (select1_purchase_finance OR init1_purchase_finance)
@@ -6381,7 +6384,7 @@ export function validateCancel(
     } else {
       // For purchase finance flows, allow both SOFT_CANCEL and CONFIRM_CANCEL for cancel action
       const isPurchaseFinanceFlow =
-        flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+        flowId && (PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId));
 
       // For cancel action, code should be SOFT_CANCEL (or CONFIRM_CANCEL for purchase finance)
       // For cancel_hard action, code should be CONFIRM_CANCEL
@@ -6446,7 +6449,7 @@ function validateCancellation(
 
   // Check if this is a purchase finance flow
   const isPurchaseFinanceFlow =
-    flowId && PURCHASE_FINANCE_FLOWS.includes(flowId);
+    flowId && (PURCHASE_FINANCE_FLOWS.includes(flowId) || BUSINESS_LOAN_FLOWS.includes(flowId));
 
   const isHealthInsuranceFlow =
     flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
