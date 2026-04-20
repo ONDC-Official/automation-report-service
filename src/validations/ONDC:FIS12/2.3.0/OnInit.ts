@@ -3,7 +3,6 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
-import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 
 export default async function on_init(
   element: Payload,
@@ -58,12 +57,9 @@ export default async function on_init(
           on_init_vs_init: { missingFromInit, priceMismatches },
         };
       }
-
-      // Validate form ID consistency if xinput is present
-      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_init", result);
     }
   } catch (_) {}
 
-  await saveFromElement(element, sessionID, flowId, "jsonRequest");
+  await saveFromElement(element,sessionID,flowId, "jsonResponse");
   return result;
 }
