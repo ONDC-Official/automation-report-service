@@ -34,7 +34,6 @@ export class ReportService {
         requestedFlows,
         flowMap
       );
-
       // Cache current states (non-blocking)
       CacheService.set(
         `flowStates:${sessionId}`,
@@ -71,6 +70,7 @@ export class ReportService {
           return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
         }
       }
+      logger.info(`flowMap for ${domainVersionKey}, flowMap:-${JSON.stringify(flowMap)} flows: ${JSON.stringify(flows)}`);
 
       const htmlReport = generateCustomHTMLReport(
         await validationModule(flows, sessionId),

@@ -2,7 +2,6 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
-import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 
 export default async function confirm(
   element: Payload,
@@ -16,10 +15,10 @@ export default async function confirm(
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
-      const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");
+      const onInitData = await getActionData(sessionID,flowId, txnId, "on_init");
       const confirmMsg = element?.jsonRequest?.message;
 
-      // Items present and price equals ON_INIT's item price  
+      // Items present and price equals ON_INIT's item price
       const confirmItems: any[] = confirmMsg?.order?.items || [];
       const onInitBreakup: any[] = onInitData?.quote_breakup || [];
 
@@ -58,11 +57,9 @@ export default async function confirm(
           confirm_vs_on_init: { missingFromOnInit, priceMismatches },
         };
       }
-
-      // Validate form ID consistency if xinput is present
-      await validateFormIdIfXinputPresent(confirmMsg, sessionID, flowId, txnId, "confirm", result);
     }
-  } catch (_) { }
-  await saveFromElement(element, sessionID, flowId, "jsonRequest");
+  } catch (_) {}
+
+  await saveFromElement(element,sessionID,flowId, "jsonRequest");
   return result;
 }
