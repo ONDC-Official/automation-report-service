@@ -59,6 +59,10 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Cancellation"
 ]
 
+export const BUSINESS_LOAN_FLOWS = [
+  "business_term_loan_with_offline_online"
+]
+
 export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
   "Purchase_Finance_With_AA_Loan_Foreclosure",
   "Purchase_Finance_With_AA_Missed_EMI_Payment",
@@ -140,7 +144,8 @@ export const validCategoryMap: Record<string, string> = {
   BUREAU_LOAN: "Bureau Loan",
   AA_LOAN: "Account Aggregator Loan",
   PERSONAL_LOAN: "Personal Loan",
-  AA_PERSONAL_LOAN: "Account Aggregator Personal Loan"
+  AA_PERSONAL_LOAN: "Account Aggregator Personal Loan",
+  UNIFIED_CREDIT: "Unified Credit"
 };
 
 export const BUYER_CANCEL_CODES: String[] = ["001", "002", "003", "004", "005"];
