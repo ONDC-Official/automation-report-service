@@ -54,9 +54,10 @@ export class ReportService {
 
       // Check if domain is not in enabled domains - use Pramaan report
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
-      console.log("domainVersionKeyyyyyyyy", domainVersionKey);
+      logger.info(`Usecase not enabled for ${domainVersionKey}, using Pramaan`);
+      logger.info(`ENABLED_DOMAINS for  ${ENABLED_DOMAINS}`);
+
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        console.log("enableddomainnnnnnnnnn", ENABLED_DOMAINS);
         return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
       }
 
