@@ -3701,7 +3701,7 @@ domains:
         usecases:
           UNIFIED CREDIT:
             flows:
-              business_term_loan_with_offline_online:
+              business_loan_without_aa:
                 - search
                 - on_search
                 - select
@@ -3710,11 +3710,11 @@ domains:
                 - on_select
                 - init
                 - on_init
-                - HTML_FORM
+                - form
                 - on_status
                 - init
                 - on_init
-                - DYNAMIC_FORM
+                - form
                 - on_status
                 - init
                 - on_init
@@ -3722,7 +3722,7 @@ domains:
                 - on_confirm
                 - on_update            
         optional_flows:
-          - business_term_loan_with_offline_online
+          - business_loan_without_aa
         validationModules: "../validations/ONDC:FIS12/validator#validate"
   ONDC:FIS13:
     versions:
