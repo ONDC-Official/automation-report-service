@@ -1,7 +1,7 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
-import { validateOrderQuote } from "../../shared/quoteValidations";
-import { getActionData } from "../../../services/actionDataService";
+import { validateOrderQuote, validateFIS12LoanQuote } from "../../shared/quoteValidations";
+import { getActionData, validateLoanInfoAgainstLimits } from "../../../services/actionDataService";
 import { saveFromElement } from "../../../utils/specLoader";
 
 export default async function on_select(
@@ -18,17 +18,18 @@ export default async function on_select(
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
-        validateTotalMatch: true,
-        // For TRV10, item price consistency is optional
+        validateTotalMatch: false, // FIS12 uses NET_DISBURSED_AMOUNT exclusion — handled by validateFIS12LoanQuote
         validateItemPriceConsistency: false,
         flowId,
       });
+      // FIS12 loan-specific quote checks: required titles, total sum, NET_DISBURSED_AMOUNT formula
+      validateFIS12LoanQuote(message, result);
     }
 
     // Compare item ids and prices with prior SELECT request if available
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
     if (txnId) {
-      const selectData = await getActionData(sessionID,flowId, txnId, "select");
+      const selectData = await getActionData(sessionID, flowId, txnId, "select");
       const selItems: any[] = selectData?.order?.items || [];
       const onSelItems: any[] = message?.order?.items || [];
 
@@ -70,8 +71,17 @@ export default async function on_select(
           },
         };
       }
+
+      // Validate on_select LOAN_INFO terms are within on_search GENERAL_INFO limits
+      const onSearchData = await getActionData(sessionID, flowId, txnId, "on_search");
+      const loanLimitCheck = validateLoanInfoAgainstLimits(
+        message?.order?.items,
+        onSearchData
+      );
+      result.passed.push(...loanLimitCheck.passed);
+      result.failed.push(...loanLimitCheck.failed);
     }
-  } catch (_) {}
-  await saveFromElement(element,sessionID,flowId, "jsonRequest");
+  } catch (_) { }
+  await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
