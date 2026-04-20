@@ -14,9 +14,9 @@ const resource = resourceFromAttributes({
 });
 
 const sdk = new NodeSDK({
-traceExporter: new OTLPTraceExporter({
-   url: process.env.TRACE_URL
- }),
+  traceExporter: new OTLPTraceExporter({
+    url: process.env.TRACE_URL
+  }),
   instrumentations: [getNodeAutoInstrumentations()],
   resource,
 });
