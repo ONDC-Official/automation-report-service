@@ -31,7 +31,7 @@ app.use("/", Router);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   // logger.error(err.stack);
   logger.info(MESSAGES.app.internalError,
-    { error: err },
+    {error: err},
   );
   apiResponse.internalError(res, MESSAGES.responses.generic500, err);
 });

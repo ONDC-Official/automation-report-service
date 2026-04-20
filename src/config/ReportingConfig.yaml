@@ -3698,32 +3698,32 @@ domains:
             validationModules: "../validations/ONDC:FIS12/validator#validate"
 
       "2.3.0":
-        usecases:
-          UNIFIED CREDIT:
-            flows:
-              business_loan_without_aa:
-                - search
-                - on_search
-                - select
-                - on_select
-                - select
-                - on_select
-                - init
-                - on_init
-                - form
-                - on_status
-                - init
-                - on_init
-                - form
-                - on_status
-                - init
-                - on_init
-                - confirm
-                - on_confirm
-                - on_update            
+        flows:
+          business_loan_without_aa:
+            - search
+            - on_search
+            - select
+            - on_select
+            - select
+            - on_select
+            - init
+            - on_init
+            - form
+            - on_status
+            - init
+            - on_init
+            - form
+            - on_status
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+            
         optional_flows:
-          - business_loan_without_aa
-        validationModules: "../validations/ONDC:FIS12/validator#validate"
+          - Metro Card Balance - Success
+          - Metro Card Balance - Failure
+        validationModules: "../validations/ONDC:FIS11/validator#validate"
   ONDC:FIS13:
     versions:
       "2.0.0":
