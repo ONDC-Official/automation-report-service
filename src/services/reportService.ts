@@ -82,7 +82,7 @@ export class ReportService {
       return htmlReport;
     } catch (error) {
       logger.error(
-        `Error generating report for session id${sessionId}:`,
+        `Error generating report for session ${sessionId}:`,
         {},
         error
       );
