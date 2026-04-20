@@ -5,7 +5,7 @@ import axios from "axios";
 import * as fs from "fs";
 import * as path from "path";
 import { getActionData } from "../../services/actionDataService";
-import { PURCHASE_FINANCE_FLOWS, BUSINESS_LOAN_FLOWS } from "../../utils/constants";
+import { PURCHASE_FINANCE_FLOWS } from "../../utils/constants";
 
 /**
  * Normalizes HTML content for comparison by:
@@ -1303,7 +1303,7 @@ export async function validateFormIdIfXinputPresent(
   flowIds?: string[]
 ): Promise<void> {
   // Check if this flow requires form validation
-  const flowsToValidate = flowIds || [...PURCHASE_FINANCE_FLOWS, ...BUSINESS_LOAN_FLOWS];
+  const flowsToValidate = flowIds || PURCHASE_FINANCE_FLOWS;
   
   if (!flowId || !flowsToValidate.includes(flowId)) {
     return; // Skip if not a purchase finance flow

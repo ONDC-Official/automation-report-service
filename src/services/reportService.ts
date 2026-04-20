@@ -34,6 +34,7 @@ export class ReportService {
         requestedFlows,
         flowMap
       );
+
       // Cache current states (non-blocking)
       CacheService.set(
         `flowStates:${sessionId}`,
@@ -53,8 +54,6 @@ export class ReportService {
 
       // Check if domain is not in enabled domains - use Pramaan report
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
-      logger.info(`Usecase not enabled for ${domainVersionKey}, using Pramaan`);
-      logger.info(`ENABLED_DOMAINS for  ${ENABLED_DOMAINS}`);
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
         return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
@@ -70,7 +69,6 @@ export class ReportService {
           return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
         }
       }
-      logger.info(`flowMap for ${domainVersionKey}, flowMap:-${JSON.stringify(flowMap)} flows: ${JSON.stringify(flows)}`);
 
       const htmlReport = generateCustomHTMLReport(
         await validationModule(flows, sessionId),
@@ -82,7 +80,7 @@ export class ReportService {
       return htmlReport;
     } catch (error) {
       logger.error(
-        `Error generating report for session id${sessionId}:`,
+        `Error generating report for session ${sessionId}:`,
         {},
         error
       );

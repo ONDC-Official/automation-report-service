@@ -16,22 +16,18 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
       Object.entries(requestBody).map(async ([flowId, payloadIds]) => {
         try {
           const response = await axios.post<{ payloads: Payload[] }>(API_URL, { payload_ids: payloadIds }, {
-            headers: {
-              "Content-Type": "application/json",
+            headers: { "Content-Type": "application/json",
               "x-api-key": process.env.API_SERVICE_KEY
-            },
+             },
           });
-          logger.info("payloadSSSSSs", JSON.stringify(response.data.payloads))
           return { [flowId]: response.data.payloads };
         } catch (error) {
           logger.error(`Error fetching payloads for flow ID ${flowId}`,
-            {
+            {error,
+            meta: {
+              flowId,
               error,
-              meta: {
-                flowId,
-                error,
-              }
-            }
+            }}
           );
           return { [flowId]: [] }; // Return an empty array in case of an error
         }
@@ -40,12 +36,11 @@ export async function fetchPayloads(requestBody: Record<string, string[]>): Prom
     return Object.assign({}, ...results);
   } catch (error) {
     logger.error(MESSAGES.services.fetchPayloadsError,
-      {
-        error: new Error("Failed to fetch payloads"),
-        meta: {
-          error,
-        },
-      });
+      {error: new Error("Failed to fetch payloads"),
+      meta: {
+        error,
+      },
+    });
     throw new Error("Failed to fetch payloads");
   }
 }
@@ -64,19 +59,17 @@ export async function fetchSessionDetails(sessionID: string): Promise<any> {
     return response.data;
   } catch (error) {
     let errorDetails = "Unknown error";
-
+    
     if (axios.isAxiosError(error) && error.response) {
       errorDetails = JSON.stringify(error.response.data);
     }
-
+    
     logger.error(MESSAGES.services.fetchSessionError(sessionID),
-      {
-        error: new Error(errorDetails),
-        meta: {
-          sessionID,
-          errorDetails,
-        }
-      },
+     { error: new Error(errorDetails),
+      meta: {
+        sessionID,
+        errorDetails,
+      }},
     );
     throw new Error(`Failed to fetch details for session ID ${sessionID}, Details: ${errorDetails}`);
   }
@@ -100,8 +93,8 @@ export async function getPayloadsByTransactionAndSession(
     const filteredPayloads = Array.isArray(payloads)
       ? sessionId
         ? payloads.filter(
-          (p: any) => String(p.sessionId).trim() === String(sessionId).trim()
-        )
+            (p: any) => String(p.sessionId).trim() === String(sessionId).trim()
+          )
         : payloads
       : [];
 
