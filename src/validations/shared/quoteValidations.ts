@@ -245,5 +245,121 @@ export function validateGiftCardQuote(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Required breakup titles for a FIS12 personal loan quote
+// ---------------------------------------------------------------------------
+const REQUIRED_LOAN_BREAKUP_TITLES = [
+  "PRINCIPAL",
+  "INTEREST",
+  "PROCESSING_FEE",
+  "OTHER_UPFRONT_CHARGES",
+  "INSURANCE_CHARGES",
+  "NET_DISBURSED_AMOUNT",
+  "OTHER_CHARGES",
+] as const;
+
+type LoanBreakupTitle = typeof REQUIRED_LOAN_BREAKUP_TITLES[number];
+
+/**
+ * Extracts a breakup item value by title (returns 0 if missing/unparseable).
+ */
+function getLoanBreakupValue(breakup: any[], title: string): number {
+  const item = breakup.find((b: any) => b?.title === title);
+  if (!item) return 0;
+  const raw = item?.price?.value ?? item?.item?.price?.value;
+  const n = parseFloat(String(raw ?? "0"));
+  return isNaN(n) ? 0 : n;
+}
+
+/**
+ * Validates the quote object on a FIS12 personal loan on_select / on_init / on_confirm.
+ *
+ * Rules:
+ *  1. All required breakup titles must be present.
+ *  2. quote.price.value == sum of all breakup EXCEPT NET_DISBURSED_AMOUNT.
+ *  3. NET_DISBURSED_AMOUNT == PRINCIPAL - PROCESSING_FEE - OTHER_UPFRONT_CHARGES
+ *                                       - INSURANCE_CHARGES - OTHER_CHARGES
+ *
+ * Per-field formula checks (e.g. how INTEREST is computed) should be added
+ * in the TODO sections below once the formulas are confirmed.
+ */
+export function validateFIS12LoanQuote(
+  message: any,
+  testResults: TestResult
+): void {
+  const quote = message?.order?.quote;
+  if (!quote) return; // nothing to validate
+
+  const breakup: any[] = quote?.breakup || [];
+  const quoteTotalStr: string = quote?.price?.value ?? "0";
+  const quoteTotal = parseFloat(quoteTotalStr);
+
+  // ── 1. Check required breakup titles are present ──────────────────────────
+  const presentTitles = new Set(breakup.map((b: any) => b?.title));
+  for (const title of REQUIRED_LOAN_BREAKUP_TITLES) {
+    if (presentTitles.has(title)) {
+      testResults.passed.push(`Quote breakup contains required title: ${title}`);
+    } else {
+      testResults.failed.push(`Quote breakup is missing required title: ${title}`);
+    }
+  }
+
+  // ── 2. quote.price.value == sum of all breakup EXCEPT NET_DISBURSED_AMOUNT ─
+  let computedTotal = 0;
+  for (const b of breakup) {
+    if (b?.title === "NET_DISBURSED_AMOUNT") continue; // excluded from total
+    const raw = b?.price?.value ?? b?.item?.price?.value;
+    const val = parseFloat(String(raw ?? "0"));
+    if (!isNaN(val)) computedTotal += val;
+  }
+  computedTotal = parseFloat(computedTotal.toFixed(2));
+
+  if (Math.abs(quoteTotal - computedTotal) < 0.01) {
+    testResults.passed.push(
+      `Quote total (${quoteTotal}) matches sum of breakup items excluding NET_DISBURSED_AMOUNT (${computedTotal})`
+    );
+  } else {
+    testResults.failed.push(
+      `Quote total ${quoteTotal} does not match sum of breakup items (${computedTotal}). ` +
+      `NET_DISBURSED_AMOUNT is excluded from the sum.`
+    );
+  }
+
+  // ── 3. NET_DISBURSED_AMOUNT formula check ─────────────────────────────────
+  //   NET_DISBURSED_AMOUNT = PRINCIPAL - PROCESSING_FEE
+  //                                    - OTHER_UPFRONT_CHARGES
+  //                                    - INSURANCE_CHARGES
+  //                                    - OTHER_CHARGES
+  const principal = getLoanBreakupValue(breakup, "PRINCIPAL");
+  const processingFee = getLoanBreakupValue(breakup, "PROCESSING_FEE");
+  const otherUpfrontCharges = getLoanBreakupValue(breakup, "OTHER_UPFRONT_CHARGES");
+  const insuranceCharges = getLoanBreakupValue(breakup, "INSURANCE_CHARGES");
+  const otherCharges = getLoanBreakupValue(breakup, "OTHER_CHARGES");
+  const netDisbursed = getLoanBreakupValue(breakup, "NET_DISBURSED_AMOUNT");
+
+  const expectedNetDisbursed = parseFloat(
+    (principal - processingFee - otherUpfrontCharges - insuranceCharges - otherCharges).toFixed(2)
+  );
+
+  if (Math.abs(netDisbursed - expectedNetDisbursed) < 0.01) {
+    testResults.passed.push(
+      `NET_DISBURSED_AMOUNT (${netDisbursed}) = PRINCIPAL (${principal}) - deductions (${processingFee + otherUpfrontCharges + insuranceCharges + otherCharges})`
+    );
+  } else {
+    testResults.failed.push(
+      `NET_DISBURSED_AMOUNT ${netDisbursed} does not match expected ${expectedNetDisbursed} ` +
+      `[PRINCIPAL(${principal}) - PROCESSING_FEE(${processingFee}) - OTHER_UPFRONT_CHARGES(${otherUpfrontCharges}) ` +
+      `- INSURANCE_CHARGES(${insuranceCharges}) - OTHER_CHARGES(${otherCharges})]`
+    );
+  }
+
+  // ── TODO: Per-field formula checks ────────────────────────────────────────
+  // Add individual checks here once the formulas are confirmed, e.g.:
+  //   INTEREST = f(PRINCIPAL, INTEREST_RATE, TERM)
+  //   PROCESSING_FEE = f(PRINCIPAL, ...)
+  //   INSURANCE_CHARGES = f(...)
+}
+
+
 
 
