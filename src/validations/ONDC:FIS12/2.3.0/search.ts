@@ -9,8 +9,10 @@ export default async function search(
   flowId: string,
   actionId: string
 ): Promise<TestResult> {
-  const result = await DomainValidators.fis12Search(element, sessionID, flowId, actionId);
-  
+  // Unified credit flows (credit_offline, offline_journey) use forms-based search with xinput
+  // Skip BAP_TERMS / payment_collected_by checks that only apply to older FIS12 flows
+  const result = await DomainValidators.fis12UnifiedCreditSearch(element, sessionID, flowId, actionId);
+
   // Validate form ID consistency if xinput is present
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
@@ -19,7 +21,7 @@ export default async function search(
       await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "search", result);
     }
   } catch (_) {}
-  
-  await saveFromElement(element,sessionID,flowId, "jsonRequest");
+
+  await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }

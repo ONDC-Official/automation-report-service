@@ -61,7 +61,9 @@ export const PURCHASE_FINANCE_FLOWS = [
 
 export const UNIFIED_CREDIT_FLOWS = [
   "business_term_loan_with_offline_online",
-  "lamf_credit_line_with_mfc_offline_journey"
+  "lamf_credit_line_with_mfc_offline_journey",
+  "credit_offline",
+  "offline_journey"
 ]
 
 export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [

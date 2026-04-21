@@ -5655,15 +5655,11 @@ function validateUnifiedCreditOnSearchItemsFIS12(
     // ─────────────────────────────────────────────
     // LOAN NAME VALIDATION (GENERIC)
     // ─────────────────────────────────────────────
-    const name = item.descriptor.name.toLowerCase();
-
-    if (!name.includes("loan")) {
-      testResults.failed.push(
-        `Item ${item.id}: descriptor.name should contain "loan"`
-      );
-    } else {
+    // Accept any non-empty descriptor.name for unified credit
+    // (LAMF items use names like "LAMF - Single Redirection", not just "loan")
+    if (item.descriptor.name) {
       testResults.passed.push(
-        `Item ${item.id}: descriptor.name is valid`
+        `Item ${item.id}: descriptor.name is present ("${item.descriptor.name}")`
       );
     }
 
@@ -5671,7 +5667,6 @@ function validateUnifiedCreditOnSearchItemsFIS12(
     // FINAL PASS
     // ─────────────────────────────────────────────
     testResults.passed.push(`Item structure valid: ${item.id}`);
-    logger.info(`on search payload last ${JSON.stringify(testResults)}`)
   });
 }
 

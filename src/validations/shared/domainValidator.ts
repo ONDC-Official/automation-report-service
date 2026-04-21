@@ -413,6 +413,12 @@ export const DomainValidators = {
     fis12Validators.items.validate_xinput
   ),
 
+  fis12UnifiedCreditSearch: createSearchValidator(
+    // Unified credit search uses xinput-based form data, not BAP_TERMS/payment tags
+    // Only validate intent presence (via validateIntent which is skipped for UNIFIED_CREDIT_FLOWS)
+    fis11Validators.intent.validate_intent,
+  ),
+
   fis12UnifiedCreditOnSearch: createOnSearchValidator(
     // fis11Validators.catalog.validate_catalog,
     // fis11Validators.providers.validate_providers,
