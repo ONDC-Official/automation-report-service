@@ -27,6 +27,7 @@ const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const fis10Validators = validatorConstant.beckn.ondc.fis.fis10.v210;
 const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
+const fis12230Validators = validatorConstant.beckn.ondc.fis.fis12.v230;
 const logValidators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 const igmValidators = validatorConstant.beckn.ondc.trv.igm.v200;
@@ -415,7 +416,7 @@ export const DomainValidators = {
   fis12UnifiedCreditOnSearch: createOnSearchValidator(
     // fis11Validators.catalog.validate_catalog,
     // fis11Validators.providers.validate_providers,
-    fis12Validators.items.validate_onsearch_items,
+    fis12230Validators.items.validate_onsearch_items,
     // fis11Validators.payments.validate_payments,
     // fis12Validators.catalog.providers.categories,
   ),
