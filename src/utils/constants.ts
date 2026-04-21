@@ -59,6 +59,11 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Cancellation"
 ]
 
+export const UNIFIED_CREDIT_FLOWS = [
+  "business_term_loan_with_offline_online",
+  "lamf_credit_line_with_mfc_offline_journey"
+]
+
 export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
   "Purchase_Finance_With_AA_Loan_Foreclosure",
   "Purchase_Finance_With_AA_Missed_EMI_Payment",
