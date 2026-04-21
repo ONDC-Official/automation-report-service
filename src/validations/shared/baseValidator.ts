@@ -36,7 +36,7 @@ export function createDomainValidator(
         // action_id may be null (Payload type), coerce to undefined for type safety.
         checkJsonResponse(jsonResponse, testResults, action_id ?? undefined, flowId);
       }
-
+      logger.info("jsonResponse=>>>>>>>>", JSON.stringify(jsonResponse))
       try {
         const domain = element?.jsonRequest?.context?.domain;
         const ext = getRuntimeExtension();
@@ -90,7 +90,6 @@ export function createDomainValidator(
           `Error importing version-specific tests: ${err?.stack || err}`
         );
       }
-
       return testResults;
     } catch (error: any) {
       logger.error(`Error during validation: ${error?.message || error}`);

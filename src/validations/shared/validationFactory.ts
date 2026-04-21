@@ -5366,7 +5366,7 @@ function validateOnSearchItemsFIS12(
   testResults: TestResult
 ): void {
   const items = message.catalog.providers[0].items;
-  const categories = message.catalog.providers[0].categories;
+  const categories = message.catalog.providers[0].categories || [];
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     testResults.failed.push("Items array is missing or empty");
@@ -5529,6 +5529,7 @@ function validateUnifiedCreditOnSearchItemsFIS12(
   message: any,
   testResults: TestResult
 ): void {
+  console.log("Entering in validateUnifiedCreditOnSearchItemsFIS12")
   const provider = message?.catalog?.providers?.[0];
 
   if (!provider) {
@@ -5602,7 +5603,7 @@ function validateUnifiedCreditOnSearchItemsFIS12(
     // ─────────────────────────────────────────────
     // PARENT–CHILD VALIDATION
     // ─────────────────────────────────────────────
-    if (item.parent_item_id) {
+    if (item?.parent_item_id) {
       // Child item checks
       if (!item.price) {
         testResults.failed.push(
@@ -5654,15 +5655,11 @@ function validateUnifiedCreditOnSearchItemsFIS12(
     // ─────────────────────────────────────────────
     // LOAN NAME VALIDATION (GENERIC)
     // ─────────────────────────────────────────────
-    const name = item.descriptor.name.toLowerCase();
-
-    if (!name.includes("loan")) {
-      testResults.failed.push(
-        `Item ${item.id}: descriptor.name should contain "loan"`
-      );
-    } else {
+    // Accept any non-empty descriptor.name for unified credit
+    // (LAMF items use names like "LAMF - Single Redirection", not just "loan")
+    if (item.descriptor.name) {
       testResults.passed.push(
-        `Item ${item.id}: descriptor.name is valid`
+        `Item ${item.id}: descriptor.name is present ("${item.descriptor.name}")`
       );
     }
 
