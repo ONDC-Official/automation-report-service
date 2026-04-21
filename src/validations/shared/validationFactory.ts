@@ -49,6 +49,7 @@ import {
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const fis10Validators = validatorConstant.beckn.ondc.fis.fis10.v210;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
+const fis12230Validators = validatorConstant.beckn.ondc.fis.fis12.v230;
 const log11Validators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
@@ -5524,6 +5525,154 @@ function validateOnSearchItemsFIS12(
   });
 }
 
+function validateUnifiedCreditOnSearchItemsFIS12(
+  message: any,
+  testResults: TestResult
+): void {
+  const provider = message?.catalog?.providers?.[0];
+
+  if (!provider) {
+    testResults.failed.push("Provider missing in catalog");
+    return;
+  }
+
+  const items = provider.items;
+  const categories = provider.categories || [];
+
+  if (!Array.isArray(items) || items.length === 0) {
+    testResults.failed.push("Items array is missing or empty");
+    return;
+  }
+
+  const validCategoryIds = new Set(categories.map((c: any) => c.id));
+
+  // Map categoryId -> code
+  const categoryCodeMap = new Map<string, string>();
+  categories.forEach((cat: any) => {
+    if (cat?.id && cat?.descriptor?.code) {
+      categoryCodeMap.set(cat.id, cat.descriptor.code);
+    }
+  });
+
+  items.forEach((item: any) => {
+    // ─────────────────────────────────────────────
+    // BASIC VALIDATIONS
+    // ─────────────────────────────────────────────
+    if (!item.id) {
+      testResults.failed.push("Item id is missing");
+      return;
+    }
+
+    if (!item.descriptor?.code) {
+      testResults.failed.push(`Item ${item.id}: descriptor.code missing`);
+      return;
+    }
+
+    if (!item.descriptor?.name) {
+      testResults.failed.push(`Item ${item.id}: descriptor.name missing`);
+    }
+
+    // Descriptor code validation
+    const validCodes = ["LOAN", "CARD", "CREDIT_CARD", "PARENT", "ITEM"];
+    if (!validCodes.includes(item.descriptor.code)) {
+      testResults.failed.push(
+        `Item ${item.id}: Invalid descriptor.code "${item.descriptor.code}"`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: Valid descriptor.code "${item.descriptor.code}"`
+      );
+    }
+
+    // ─────────────────────────────────────────────
+    // CATEGORY VALIDATION
+    // ─────────────────────────────────────────────
+    if (!Array.isArray(item.category_ids) || item.category_ids.length === 0) {
+      testResults.failed.push(`Item ${item.id}: category_ids missing`);
+    } else {
+      item.category_ids.forEach((catId: string) => {
+        if (!validCategoryIds.has(catId)) {
+          testResults.failed.push(
+            `Item ${item.id}: Invalid category id ${catId}`
+          );
+        }
+      });
+    }
+
+    // ─────────────────────────────────────────────
+    // PARENT–CHILD VALIDATION
+    // ─────────────────────────────────────────────
+    if (item.parent_item_id) {
+      // Child item checks
+      if (!item.price) {
+        testResults.failed.push(
+          `Child Item ${item.id}: price is mandatory`
+        );
+      }
+
+      if (!item.tags || item.tags.length === 0) {
+        testResults.failed.push(
+          `Child Item ${item.id}: tags missing (LOAN_INFO / LOAN_OFFER required)`
+        );
+      } else {
+        const tagCodes = item.tags.map((t: any) => t.descriptor?.code);
+
+        if (!tagCodes.includes("LOAN_INFO")) {
+          testResults.failed.push(
+            `Item ${item.id}: LOAN_INFO tag missing`
+          );
+        }
+
+        if (!tagCodes.includes("LOAN_OFFER")) {
+          testResults.failed.push(
+            `Item ${item.id}: LOAN_OFFER tag missing`
+          );
+        }
+      }
+
+      testResults.passed.push(`Child item validated: ${item.id}`);
+    } else {
+      // Parent item checks
+      if (item.price) {
+        testResults.failed.push(
+          `Parent Item ${item.id}: should NOT have price`
+        );
+      }
+
+      testResults.passed.push(`Parent item validated: ${item.id}`);
+    }
+
+    // ─────────────────────────────────────────────
+    // FULFILLMENT VALIDATION
+    // ─────────────────────────────────────────────
+    if (!item.fulfillment_ids || item.fulfillment_ids.length === 0) {
+      testResults.failed.push(
+        `Item ${item.id}: fulfillment_ids missing`
+      );
+    }
+
+    // ─────────────────────────────────────────────
+    // LOAN NAME VALIDATION (GENERIC)
+    // ─────────────────────────────────────────────
+    const name = item.descriptor.name.toLowerCase();
+
+    if (!name.includes("loan")) {
+      testResults.failed.push(
+        `Item ${item.id}: descriptor.name should contain "loan"`
+      );
+    } else {
+      testResults.passed.push(
+        `Item ${item.id}: descriptor.name is valid`
+      );
+    }
+
+    // ─────────────────────────────────────────────
+    // FINAL PASS
+    // ─────────────────────────────────────────────
+    testResults.passed.push(`Item structure valid: ${item.id}`);
+  });
+}
+
 function validateOnSearchItemsFIS10(
   message: any,
   testResults: TestResult
@@ -7079,6 +7228,9 @@ export function createOnSearchValidator(...config: string[]) {
             break;
           case fis12Validators.items.validate_onsearch_items:
             validateOnSearchItemsFIS12(message, testResults);
+            break;
+          case fis12230Validators.items.validate_onsearch_items:
+            validateUnifiedCreditOnSearchItemsFIS12(message, testResults);
             break;
           case fis12Validators.items.validate_xinput:
             await validateXinputFIS12(

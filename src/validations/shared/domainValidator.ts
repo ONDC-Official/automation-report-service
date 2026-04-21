@@ -413,11 +413,11 @@ export const DomainValidators = {
   ),
 
   fis12UnifiedCreditOnSearch: createOnSearchValidator(
-    fis11Validators.catalog.validate_catalog,
-    fis11Validators.providers.validate_providers,
+    // fis11Validators.catalog.validate_catalog,
+    // fis11Validators.providers.validate_providers,
     fis12Validators.items.validate_onsearch_items,
-    fis11Validators.payments.validate_payments,
-    fis12Validators.catalog.providers.categories,
+    // fis11Validators.payments.validate_payments,
+    // fis12Validators.catalog.providers.categories,
   ),
 
   fis12Select: createSelectValidator(
