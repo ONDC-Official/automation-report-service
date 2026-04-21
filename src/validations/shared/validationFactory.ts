@@ -5529,6 +5529,7 @@ function validateUnifiedCreditOnSearchItemsFIS12(
   message: any,
   testResults: TestResult
 ): void {
+  console.log("Entering in validateUnifiedCreditOnSearchItemsFIS12")
   const provider = message?.catalog?.providers?.[0];
 
   if (!provider) {
@@ -5602,7 +5603,7 @@ function validateUnifiedCreditOnSearchItemsFIS12(
     // ─────────────────────────────────────────────
     // PARENT–CHILD VALIDATION
     // ─────────────────────────────────────────────
-    if (item.parent_item_id) {
+    if (item?.parent_item_id) {
       // Child item checks
       if (!item.price) {
         testResults.failed.push(
@@ -5670,6 +5671,7 @@ function validateUnifiedCreditOnSearchItemsFIS12(
     // FINAL PASS
     // ─────────────────────────────────────────────
     testResults.passed.push(`Item structure valid: ${item.id}`);
+    logger.info(`on search payload last ${JSON.stringify(testResults)}`)
   });
 }
 
