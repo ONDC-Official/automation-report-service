@@ -36,7 +36,7 @@ export function createDomainValidator(
         // action_id may be null (Payload type), coerce to undefined for type safety.
         checkJsonResponse(jsonResponse, testResults, action_id ?? undefined, flowId);
       }
-
+      logger.info("jsonResponse=>>>>>>>>", JSON.stringify(jsonResponse))
       try {
         const domain = element?.jsonRequest?.context?.domain;
         const ext = getRuntimeExtension();
@@ -84,13 +84,14 @@ export function createDomainValidator(
         if (testResult.response) {
           testResults.response = testResult.response;
         }
+        logger.info("testResult=>>>>>>>>>", JSON.stringify(testResult))
       } catch (err: any) {
         testResults.failed.push(`Incorrect version for ${action_id}`);
         logger.error(
           `Error importing version-specific tests: ${err?.stack || err}`
         );
       }
-
+      logger.info("testResult=>>>>>>>>>", JSON.stringify(testResults))
       return testResults;
     } catch (error: any) {
       logger.error(`Error during validation: ${error?.message || error}`);
