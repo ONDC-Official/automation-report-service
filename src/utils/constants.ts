@@ -59,6 +59,11 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Cancellation"
 ]
 
+export const UNIFIED_CREDIT_FLOWS = [
+  "business_term_loan_with_offline_online",
+  "lamf_credit_line_with_mfc_offline_journey"
+]
+
 export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
   "Purchase_Finance_With_AA_Loan_Foreclosure",
   "Purchase_Finance_With_AA_Missed_EMI_Payment",
@@ -154,10 +159,10 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS11:2.0.0",
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
-  "ONDC:FIS12:2.3.0",
   "ONDC:FIS12:2.2.1",
   "ONDC:FIS12:2.2.0",
   "ONDC:FIS12:2.0.1",
+  "ONDC:FIS12:2.3.0",
   "ONDC:FIS13:2.0.1",
   // "ONDC:FIS13:2.0.0:hospicash-insurance",
   // "ONDC:FIS13:2.0.0:accidental-insurance",
@@ -520,7 +525,6 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Return_Flow": "RET_MRGD_2",
         "Cash_On_Delivery_Flow": "RET_1b",
@@ -549,9 +553,7 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_full_catalog": "RET_9",
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
-        "Return_Flow": "RET_MRGD_2",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
@@ -577,9 +579,7 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_full_catalog": "RET_9",
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
-        "Return_Flow": "RET_MRGD_2",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
@@ -604,8 +604,6 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
-        "Return_Flow": "RET_MRGD_2",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
@@ -631,8 +629,6 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
-        "Return_Flow": "RET_MRGD_2",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
@@ -659,8 +655,6 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Self_Pickup_Flow": "RET_ENH_002",
         "Slotted_Delivery_Flow": "RET_ENH_003",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
-        "Return_Flow": "RET_MRGD_2",
         "Buyer_Instructions_And_Delivery_Update_Flow": "RET_MRGD_3_OOF_011",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Force_Cancellation_Flow": "RET_ENH_005", // pramaan 

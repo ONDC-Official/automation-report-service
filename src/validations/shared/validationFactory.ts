@@ -43,6 +43,7 @@ import {
   SACHET_INSURANCE_FLOWS,
   SACHET_INSURANCE_FLOWS_OBJ,
   GIFT_CARD_FLOWS,
+  UNIFIED_CREDIT_FLOWS,
 } from "../../utils/constants";
 
 const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
@@ -354,7 +355,7 @@ function validateIntent(
     return;
   }
 
-  if (!intent.category?.descriptor?.code) {
+  if (flow_id && !UNIFIED_CREDIT_FLOWS.includes(flow_id) && !intent.category?.descriptor?.code) {
     testResults.failed.push("Intent category descriptor code is missing");
   } else {
     if (action_id === "search_rental") {
