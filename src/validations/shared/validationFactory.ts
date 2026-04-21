@@ -5366,7 +5366,7 @@ function validateOnSearchItemsFIS12(
   testResults: TestResult
 ): void {
   const items = message.catalog.providers[0].items;
-  const categories = message.catalog.providers[0].categories;
+  const categories = message.catalog.providers[0].categories || [];
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     testResults.failed.push("Items array is missing or empty");
