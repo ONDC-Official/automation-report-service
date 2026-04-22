@@ -461,6 +461,7 @@ export const FLOW_ID_MAP: Record<
         "RTO_And_Part_Cancellation_Flow": "RET_MRGD_1",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Return_Flow": "RET_MRGD_2",
+        "Replacement_Flow": "RET_ENH_00B",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Self_Pickup_Flow": "RET_ENH_002",
         "Slotted_Delivery_Flow": "RET_ENH_003",
@@ -490,6 +491,7 @@ export const FLOW_ID_MAP: Record<
         "ORDER_FLOW": "RET_1",
         "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1",
         "RETURN_FLOW": "RET_MRGD_2",
+        "REPLACEMENT_FLOW": "RET_ENH_00B",
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
         "OUT_OF_STOCK(ERROR-CODE)": "RET_6",
         "BUYER_CANCEL": "RET_3",
@@ -522,8 +524,8 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Return_Flow": "RET_MRGD_2",
-        "Cash_On_Delivery_Flow": "RET_1b",
         "Replacement_Flow": "RET_ENH_00B",
+        "Cash_On_Delivery_Flow": "RET_1b",
         "Cancel_Return_Request_Flow": "RET_ENH_00D",// pramman pending
         "Force_Cancellation_Flow": "RET_ENH_005",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
@@ -552,6 +554,7 @@ export const FLOW_ID_MAP: Record<
         "Seller_Cred_Flow": "RET_ENH_017",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
         "Force_Cancellation_Flow": "RET_ENH_005",
         "Offers_Flow": "RET_ENH_009",
       },
@@ -576,6 +579,7 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
       },
@@ -600,6 +604,7 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
         "Force_Cancellation_Flow": "RET_ENH_005",
@@ -625,6 +630,7 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
         "Force_Cancellation_Flow": "RET_ENH_005",
@@ -650,6 +656,7 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Self_Pickup_Flow": "RET_ENH_002",
         "Slotted_Delivery_Flow": "RET_ENH_003",
+        "Replacement_Flow": "RET_ENH_00B",
         "Buyer_Instructions_And_Delivery_Update_Flow": "RET_MRGD_3_OOF_011",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Force_Cancellation_Flow": "RET_ENH_005", // pramaan 
