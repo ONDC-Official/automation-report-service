@@ -3967,7 +3967,51 @@ domains:
             optional_flows:
               - Credit_Card_With_AA_And_Monitoring_Consent
             validationModules: "../validations/ONDC:FIS12/validator#validate"
+      "2.3.0":
+        usecases:
+          UNIFIED CREDIT:
+            flows:
+              business_term_loan_with_offline_online:
+                - search
+                - on_search
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - kyc_form
+                - on_status
+                - init
+                - on_init
+                - loan_aggrement_form
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
 
+              lamf_credit_line_with_mfc_offline_journey:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - journey_offline_form
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+
+            optional_flows:
+              - business_term_loan_with_offline_online
+              - lamf_credit_line_with_mfc_offline_journey
+            validationModules: "../validations/ONDC:FIS12/validator#validate"
+  
   ONDC:FIS13:
     versions:
       "2.0.0":
