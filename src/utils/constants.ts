@@ -525,7 +525,6 @@ export const FLOW_ID_MAP: Record<
         "Return_Flow": "RET_MRGD_2",
         "Replacement_Flow": "RET_ENH_00B",
         "Cash_On_Delivery_Flow": "RET_1b",
-        "Replacement_Flow": "RET_ENH_00B",
         "Cancel_Return_Request_Flow": "RET_ENH_00D",// pramman pending
         "Force_Cancellation_Flow": "RET_ENH_005",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
