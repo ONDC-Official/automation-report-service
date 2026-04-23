@@ -82,6 +82,6 @@ export default async function on_select(
       result.failed.push(...loanLimitCheck.failed);
     }
   } catch (_) { }
-  await saveFromElement(element, sessionID, flowId, "jsonRequest");
+  await saveFromElement(element, sessionID, flowId, "jsonResponse");
   return result;
 }
