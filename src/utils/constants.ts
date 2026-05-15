@@ -753,6 +753,7 @@ export const typeMapping: Record<string, string> = {
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",
+  "eB2B": "RETAIL",
   "F&B": "RETAIL",
   "FASHION": "RETAIL",
   "BPC": "RETAIL",
