@@ -67,7 +67,7 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
+          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap,userId);
         }
       }
 
