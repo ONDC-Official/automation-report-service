@@ -754,6 +754,13 @@ export const FLOW_ID_MAP: Record<
         "CD_Balance_Error_Hospicash_Insurance": "INS_23"
       }
     }
+  },
+  "ONDC:NTS10": {
+    "2.0.0": {
+      "RECONCILIATION": {
+        "RECONCILIATION": "NTS10"
+      }
+    }
   }
 }
 
@@ -779,7 +786,8 @@ export const typeMapping: Record<string, string> = {
   "transit-insurance": "SACHET_INSURANCE",
   "accidental-insurance": "SACHET_INSURANCE",
   "hospicash-insurance": "SACHET_INSURANCE",
-  "Logistics (NIC2004:60232)": "LOGISTICS"
+  "Logistics (NIC2004:60232)": "LOGISTICS",
+  "RECONCILIATION": "RECONCILIATION",
 };
 
 export const NIC_LOGISTICS_CATEGORY_FLOW_MAP: Record<string, string> = {
