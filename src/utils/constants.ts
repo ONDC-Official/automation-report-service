@@ -59,6 +59,16 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Cancellation"
 ]
 
+export const UNIFIED_CREDIT_FLOWS = [
+  "business_term_loan_with_offline_online",
+  "lamf_credit_line_with_mfc_offline_journey",
+  "credit_offline",
+  "offline_journey",
+  "master_search",
+  "business_term_loan_without_aa",
+  "lamf_credit_line_with_mfc"
+]
+
 export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
   "Purchase_Finance_With_AA_Loan_Foreclosure",
   "Purchase_Finance_With_AA_Missed_EMI_Payment",
@@ -154,10 +164,10 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS11:2.0.0",
   "ONDC:FIS12:2.0.2",
   "ONDC:FIS12:2.0.3",
-  "ONDC:FIS12:2.3.0",
   "ONDC:FIS12:2.2.1",
   "ONDC:FIS12:2.2.0",
   "ONDC:FIS12:2.0.1",
+  "ONDC:FIS12:2.3.0",
   "ONDC:FIS13:2.0.1",
   // "ONDC:FIS13:2.0.0:hospicash-insurance",
   // "ONDC:FIS13:2.0.0:accidental-insurance",
@@ -461,6 +471,7 @@ export const FLOW_ID_MAP: Record<
         "RTO_And_Part_Cancellation_Flow": "RET_MRGD_1",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Return_Flow": "RET_MRGD_2",
+        "Replacement_Flow": "RET_ENH_00B",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Self_Pickup_Flow": "RET_ENH_002",
         "Slotted_Delivery_Flow": "RET_ENH_003",
@@ -482,6 +493,22 @@ export const FLOW_ID_MAP: Record<
       },
     },
   },
+  "ONDC:RETeB2B": {
+    "1.2.5": {
+      "eB2B": {
+        "Discovery_flow_broadcast_search": "RET_9_EB2B",
+        "Order_to_confirm_to_fulfillment_(cod)": "RET_1B_EB2B",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1_EB2B",
+        "Buyer_Side_Order_Cancellation": "RET_3_EB2B",
+        "Out_of_Stock(Error_code)": "RET_6_EB2B",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(Prepaid)": "RET_11_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(cod)": "RET_11B_EB2B",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5_EB2B"
+      },
+    },
+  },
+
   "ONDC:RET11": {
     "1.2.5": {
       "F&B": {
@@ -490,6 +517,7 @@ export const FLOW_ID_MAP: Record<
         "ORDER_FLOW": "RET_1",
         "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1",
         "RETURN_FLOW": "RET_MRGD_2",
+        "REPLACEMENT_FLOW": "RET_ENH_00B",
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
         "OUT_OF_STOCK(ERROR-CODE)": "RET_6",
         "BUYER_CANCEL": "RET_3",
@@ -520,7 +548,6 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Return_Flow": "RET_MRGD_2",
         "Cash_On_Delivery_Flow": "RET_1b",
@@ -549,10 +576,9 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_full_catalog": "RET_9",
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
-        "Return_Flow": "RET_MRGD_2",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
         "Seller_Cred_Flow": "RET_ENH_017",
+        "Replacement_Flow": "RET_ENH_00B",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Force_Cancellation_Flow": "RET_ENH_005",
@@ -577,10 +603,9 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_full_catalog": "RET_9",
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
-        "Return_Flow": "RET_MRGD_2",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
       },
@@ -604,9 +629,8 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
-        "Return_Flow": "RET_MRGD_2",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
         "Force_Cancellation_Flow": "RET_ENH_005",
@@ -631,9 +655,8 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
-        "Return_Flow": "RET_MRGD_2",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
         "Purchase_Finance_Flow": "RET_ENH_0099",
         "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
         "Force_Cancellation_Flow": "RET_ENH_005",
@@ -659,8 +682,7 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Self_Pickup_Flow": "RET_ENH_002",
         "Slotted_Delivery_Flow": "RET_ENH_003",
-        "Seller_Cancellation_Flow": "RET_MRGD_1",
-        "Return_Flow": "RET_MRGD_2",
+        "Replacement_Flow": "RET_ENH_00B",
         "Buyer_Instructions_And_Delivery_Update_Flow": "RET_MRGD_3_OOF_011",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Force_Cancellation_Flow": "RET_ENH_005", // pramaan 
@@ -749,6 +771,7 @@ export const typeMapping: Record<string, string> = {
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",
+  "eB2B": "RETAIL",
   "F&B": "RETAIL",
   "FASHION": "RETAIL",
   "BPC": "RETAIL",

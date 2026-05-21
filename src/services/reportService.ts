@@ -11,7 +11,8 @@ import { generateTestsFromPayloads } from "../utils/payloadUtils";
 export class ReportService {
   async generate(
     sessionId: string,
-    flowIdToPayloadIdsMap: Record<string, string[]>
+    flowIdToPayloadIdsMap: Record<string, string[]>,
+    userId?: string
   ): Promise<any> {
     try {
       // Fetch session details first
@@ -56,7 +57,7 @@ export class ReportService {
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
+        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap,userId);
       }
 
       // Check usecase-level enabling
@@ -66,7 +67,7 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
+          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap,userId);
         }
       }
 
@@ -99,9 +100,10 @@ export class ReportService {
   private async checkPramaanReport(
     sessionDetails: any,
     sessionId: string,
-    flowIdToPayloadIdsMap: Record<string, string[]>
+    flowIdToPayloadIdsMap: Record<string, string[]>,
+    userId?: string
   ): Promise<any> {
-    const testId = `PW_${sessionId}`;
+    const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
     const { tests, subscriber_id } = await generateTestsFromPayloads(
       sessionDetails.domain,
       sessionDetails.version,

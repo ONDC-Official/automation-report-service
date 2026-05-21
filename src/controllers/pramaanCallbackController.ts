@@ -4,10 +4,14 @@ import logger from "@ondc/automation-logger";
 
 export const pramaanCallbackController = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const testId = req.params.testId;
+    const rawTestId = req.params.testId;
+
+    const [testId, userId] = rawTestId.includes("::")
+      ? rawTestId.split("::")
+      : [rawTestId, undefined];
     const base64Data = req.body.data;
 
     logger.info(`Received callback for testId: ${testId}`);
@@ -23,30 +27,31 @@ export const pramaanCallbackController = async (
       throw new Error("DATA_BASE_URL not defined in environment variables");
     }
 
-    const reportUrl = `${automationDbUrl}/report/${testId}`;
-    logger.info(`Forwarding report callback to ${reportUrl}`);
+const reportUrl = `${automationDbUrl}/report/${testId}`;
 
-    // Post report data to your automation DB
-    const response = await axios.post(
-      reportUrl,
-      { data: base64Data },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.API_SERVICE_KEY,
-        },
-      }
-    );
+const response = await axios.post(
+  reportUrl,
+  { data: base64Data },
+  {
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.API_SERVICE_KEY,
+    },
+    params: {
+      ...(userId && { userId }),
+    },
+  }
+);
 
     logger.info(
-      `Successfully forwarded report for testId ${testId} — DB responded with status ${response.status}`
+      `Successfully forwarded report for testId ${testId} — DB responded with status ${response.status}`,
     );
 
     res.status(200).json({ message: "Report forwarded successfully" });
   } catch (err: any) {
     logger.error(
       `Error forwarding callback for testId: ${req.params.testId}`,
-      err
+      err,
     );
     res.status(500).json({ error: err.message });
   }

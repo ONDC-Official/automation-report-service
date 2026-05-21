@@ -10,6 +10,8 @@ export async function generateReportController(
 ): Promise<void> {
   try {
     const sessionId = req.query.sessionId as string;
+    const userId = req.query?.user_id as string;
+    logger.info("Received request to generate report for sessionId:", { sessionId, userId });
     if (!sessionId) {
       logger.error(MESSAGES.responses.missingSessionId);
       apiResponse.badRequest(res,MESSAGES.responses.missingSessionId);
@@ -20,12 +22,14 @@ export async function generateReportController(
     
     const htmlReport = await new ReportService().generate(
       sessionId,
-      flowIdToPayloadIdsMap
+      flowIdToPayloadIdsMap,
+       userId
     );
     apiResponse.successHTML(res, htmlReport);
     logger.info(MESSAGES.report.reportSent, {
       meta: {
         sessionId,
+        userId,
       },
     });
   } catch (err: any) {
