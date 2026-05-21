@@ -515,6 +515,21 @@ export const FLOW_ID_MAP: Record<
       },
     },
   },
+  "ONDC:RETeB2B": {
+    "1.2.5": {
+      "eB2B": {
+        "Discovery_flow_broadcast_search": "RET_9_EB2B",
+        "Order_to_confirm_to_fulfillment_(cod)": "RET_1B_EB2B",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1_EB2B",
+        "Buyer_Side_Order_Cancellation": "RET_3_EB2B",
+        "Out_of_Stock(Error_code)": "RET_6_EB2B",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(Prepaid)": "RET_11_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(cod)": "RET_11B_EB2B",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5_EB2B"
+      },
+    },
+  },
   "ONDC:RET12": {
     "1.2.5": {
       "FASHION": {
@@ -745,6 +760,7 @@ export const typeMapping: Record<string, string> = {
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",
+  "eB2B": "RETAIL",
   "F&B": "RETAIL",
   "FASHION": "RETAIL",
   "BPC": "RETAIL",
