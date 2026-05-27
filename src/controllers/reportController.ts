@@ -14,16 +14,16 @@ export async function generateReportController(
     logger.info("Received request to generate report for sessionId:", { sessionId, userId });
     if (!sessionId) {
       logger.error(MESSAGES.responses.missingSessionId);
-      apiResponse.badRequest(res,MESSAGES.responses.missingSessionId);
+      apiResponse.badRequest(res, MESSAGES.responses.missingSessionId);
       return;
     }
     logger.info(`${MESSAGES.report.enteringController} ${sessionId}`);
     const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
-    
+
     const htmlReport = await new ReportService().generate(
       sessionId,
       flowIdToPayloadIdsMap,
-       userId
+      userId
     );
     apiResponse.successHTML(res, htmlReport);
     logger.info(MESSAGES.report.reportSent, {
