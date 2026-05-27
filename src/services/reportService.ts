@@ -57,7 +57,7 @@ export class ReportService {
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap,userId);
+        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId);
       }
 
       // Check usecase-level enabling
@@ -67,7 +67,7 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap,userId);
+          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId);
         }
       }
 
@@ -77,7 +77,7 @@ export class ReportService {
         flowMap
       );
 
-      this.saveReportToDB(sessionId, htmlReport.html);
+      this.saveReportToDB(sessionId, htmlReport.html, userId);
       return htmlReport;
     } catch (error) {
       logger.error(
@@ -249,8 +249,9 @@ export class ReportService {
   }
 
   /** Fire-and-forget: encode the HTML report as base64 and persist it to the DB. */
-  private saveReportToDB(sessionId: string, html: string): void {
-    const testId = `PW_${sessionId}`;
+  private saveReportToDB(sessionId: string, html: string, userId?: string): void {
+    const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
+    logger.info("Saving report to DB for testId:", { testId });
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
     const base64Report = `data:text/html;base64,${Buffer.from(
       html
