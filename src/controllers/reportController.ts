@@ -21,7 +21,7 @@ export async function generateReportController(
 
     // Extract flowIdToPayloadIdsMap and flow_summary from body
     const { flow_summary, ...flowIdToPayloadIdsMap } = req?.body as Record<string, any>;
-
+    logger.info("flow_summary=>>>", flow_summary);
     const htmlReport = await new ReportService().generate(
       sessionId,
       flowIdToPayloadIdsMap as Record<string, string[]>,
