@@ -12,7 +12,8 @@ export class ReportService {
   async generate(
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>,
-    userId?: string
+    userId?: string,
+    flowSummary?: Record<string, { total: number; completed: number }>
   ): Promise<any> {
     try {
       // Fetch session details first
@@ -77,7 +78,7 @@ export class ReportService {
         flowMap
       );
 
-      this.saveReportToDB(sessionId, htmlReport.html, userId);
+      this.saveReportToDB(sessionId, htmlReport.html, userId, flowSummary);
       return htmlReport;
     } catch (error) {
       logger.error(
@@ -249,7 +250,12 @@ export class ReportService {
   }
 
   /** Fire-and-forget: encode the HTML report as base64 and persist it to the DB. */
-  private saveReportToDB(sessionId: string, html: string, userId?: string): void {
+  private saveReportToDB(
+    sessionId: string,
+    html: string,
+    userId?: string,
+    flowSummary?: Record<string, { total: number; completed: number }>
+  ): void {
     const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
     logger.info("Saving report to DB for testId:", { testId });
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
@@ -259,7 +265,7 @@ export class ReportService {
     axios
       .post(
         reportUrl,
-        { data: base64Report },
+        { data: base64Report, ...(flowSummary && { flow_summary: flowSummary }) },
         { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
       )
       .then((res) => logger.info(`Report saved to DB for testId: ${testId}`, res.data))
