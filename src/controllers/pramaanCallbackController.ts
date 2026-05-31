@@ -12,7 +12,8 @@ export const pramaanCallbackController = async (
     const [testId, userId] = rawTestId.includes("::")
       ? rawTestId.split("::")
       : [rawTestId, undefined];
-    const base64Data = req.body.data;
+
+    const { data: base64Data, flow_summary } = req.body;
 
     logger.info(`Received callback for testId: ${testId}`);
 
@@ -27,21 +28,24 @@ export const pramaanCallbackController = async (
       throw new Error("DATA_BASE_URL not defined in environment variables");
     }
 
-const reportUrl = `${automationDbUrl}/report/${testId}`;
+    const reportUrl = `${automationDbUrl}/report/${testId}`;
 
-const response = await axios.post(
-  reportUrl,
-  { data: base64Data },
-  {
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.API_SERVICE_KEY,
-    },
-    params: {
-      ...(userId && { userId }),
-    },
-  }
-);
+    const response = await axios.post(
+      reportUrl,
+      {
+        data: base64Data,
+        ...(flow_summary && { flow_summary }),
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.API_SERVICE_KEY,
+        },
+        params: {
+          ...(userId && { userId }),
+        },
+      }
+    );
 
     logger.info(
       `Successfully forwarded report for testId ${testId} — DB responded with status ${response.status}`,
