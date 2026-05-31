@@ -18,12 +18,15 @@ export async function generateReportController(
       return;
     }
     logger.info(`${MESSAGES.report.enteringController} ${sessionId}`);
-    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
+
+    // Extract flowIdToPayloadIdsMap and flow_summary from body
+    const { flow_summary, ...flowIdToPayloadIdsMap } = req?.body as Record<string, any>;
 
     const htmlReport = await new ReportService().generate(
       sessionId,
-      flowIdToPayloadIdsMap,
-      userId
+      flowIdToPayloadIdsMap as Record<string, string[]>,
+      userId,
+      flow_summary
     );
     apiResponse.successHTML(res, htmlReport);
     logger.info(MESSAGES.report.reportSent, {
