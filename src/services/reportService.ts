@@ -13,7 +13,7 @@ export class ReportService {
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>,
     userId?: string,
-    flowSummary?: Record<string, { total: number; completed: number }>
+    flow_summary?: Record<string, { total: number; completed: number }>
   ): Promise<any> {
     try {
       // Fetch session details first
@@ -58,7 +58,7 @@ export class ReportService {
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flowSummary);
+        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flow_summary);
       }
 
       // Check usecase-level enabling
@@ -68,7 +68,7 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flowSummary);
+          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flow_summary);
         }
       }
 
@@ -78,7 +78,7 @@ export class ReportService {
         flowMap
       );
 
-      this.saveReportToDB(sessionId, htmlReport.html, userId, flowSummary);
+      this.saveReportToDB(sessionId, htmlReport.html, userId, flow_summary);
       return htmlReport;
     } catch (error) {
       logger.error(
@@ -103,15 +103,15 @@ export class ReportService {
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>,
     userId?: string,
-    flowSummary?: Record<string, { total: number; completed: number }>
+    flow_summary?: Record<string, { total: number; completed: number }>
   ): Promise<any> {
     const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
-    logger.info(`Generating Pramaan Flow summary:`, flowSummary);
+    logger.info(`Generating Pramaan Flow summary:`, flow_summary);
     // Cache flow_summary so pramaanCallbackController can retrieve it when callback arrives
-    if (flowSummary && Object.keys(flowSummary).length > 0) {
+    if (flow_summary && Object.keys(flow_summary).length > 0) {
       CacheService.set(
         `flow_summary:${testId}`,
-        JSON.stringify(flowSummary)
+        JSON.stringify(flow_summary)
       ).catch((err) =>
         logger.error(`Failed to cache flow_summary for testId: ${testId}`, {}, err)
       );
@@ -266,7 +266,7 @@ export class ReportService {
     sessionId: string,
     html: string,
     userId?: string,
-    flowSummary?: Record<string, { total: number; completed: number }>
+    flow_summary?: Record<string, { total: number; completed: number }>
   ): void {
     const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
     logger.info("Saving report to DB for testId:", { testId });
@@ -277,7 +277,7 @@ export class ReportService {
     axios
       .post(
         reportUrl,
-        { data: base64Report, ...(flowSummary && { flow_summary: flowSummary }) },
+        { data: base64Report, ...(flow_summary && { flow_summary: flow_summary }) },
         { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
       )
       .then((res) => logger.info(`Report saved to DB for testId: ${testId}`, res.data))
