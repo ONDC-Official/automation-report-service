@@ -58,7 +58,7 @@ export class ReportService {
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId);
+        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flowSummary);
       }
 
       // Check usecase-level enabling
@@ -68,7 +68,7 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId);
+          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flowSummary);
         }
       }
 
@@ -102,9 +102,21 @@ export class ReportService {
     sessionDetails: any,
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>,
-    userId?: string
+    userId?: string,
+    flowSummary?: Record<string, { total: number; completed: number }>
   ): Promise<any> {
     const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
+    logger.info(`Generating Pramaan Flow summary:`, flowSummary);
+    // Cache flow_summary so pramaanCallbackController can retrieve it when callback arrives
+    if (flowSummary && Object.keys(flowSummary).length > 0) {
+      CacheService.set(
+        `flow_summary:${testId}`,
+        JSON.stringify(flowSummary)
+      ).catch((err) =>
+        logger.error(`Failed to cache flow_summary for testId: ${testId}`, {}, err)
+      );
+    }
+
     const { tests, subscriber_id } = await generateTestsFromPayloads(
       sessionDetails.domain,
       sessionDetails.version,
