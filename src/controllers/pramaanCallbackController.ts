@@ -16,7 +16,7 @@ export const pramaanCallbackController = async (
 
     const { data: base64Data, flow_summary: inlineFlowSummary } = req.body;
 
-    logger.info(`Received callback for testId: ${testId}`);
+    logger.info(`Received callback for testId: ${testId}, flow_summary`, JSON.stringify(inlineFlowSummary));
 
     if (!base64Data) {
       logger.error(`Missing data in callback for testId: ${testId}`);
@@ -37,7 +37,7 @@ export const pramaanCallbackController = async (
       if (cached) {
         try {
           flow_summary = JSON.parse(cached);
-          logger.info(`Retrieved flow_summary from cache for testId: ${rawTestId}`);
+          logger.info(`Retrieved flow_summary from cache for flow_summary`, JSON.stringify(flow_summary), `testId: ${rawTestId}`);
         } catch {
           logger.error(`Failed to parse cached flow_summary for testId: ${rawTestId}`);
         }
@@ -47,7 +47,6 @@ export const pramaanCallbackController = async (
     }
 
     const reportUrl = `${automationDbUrl}/report/${testId}`;
-    logger.info("flow_summary=>>>", flow_summary);
     const response = await axios.post(
       reportUrl,
       {
