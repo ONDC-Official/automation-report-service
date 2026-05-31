@@ -11,7 +11,7 @@ export async function generateReportController(
   try {
     const sessionId = req.query.sessionId as string;
     const userId = req.query?.user_id as string;
-    logger.info("Received request to generate report for sessionId:", { sessionId, userId });
+    logger.info("Received request to generate report for sessionId:", JSON.stringify(req?.body), { sessionId, userId });
     if (!sessionId) {
       logger.error(MESSAGES.responses.missingSessionId);
       apiResponse.badRequest(res, MESSAGES.responses.missingSessionId);
