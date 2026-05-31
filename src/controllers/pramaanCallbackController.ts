@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import axios from "axios";
 import logger from "@ondc/automation-logger";
+import { CacheService } from "../services/cacheService";
 
 export const pramaanCallbackController = async (
   req: Request,
@@ -13,7 +14,7 @@ export const pramaanCallbackController = async (
       ? rawTestId.split("::")
       : [rawTestId, undefined];
 
-    const { data: base64Data, flow_summary } = req.body;
+    const { data: base64Data, flow_summary: inlineFlowSummary } = req.body;
 
     logger.info(`Received callback for testId: ${testId}`);
 
@@ -28,8 +29,25 @@ export const pramaanCallbackController = async (
       throw new Error("DATA_BASE_URL not defined in environment variables");
     }
 
-    const reportUrl = `${automationDbUrl}/report/${testId}`;
+    // Prefer flow_summary sent inline in the callback body (Pramaan buyer path).
+    // Fall back to the one cached in Redis by checkPramaanReport (frontend-triggered path).
+    let flow_summary = inlineFlowSummary;
+    if (!flow_summary) {
+      const cached = await CacheService.get(`flow_summary:${rawTestId}`);
+      if (cached) {
+        try {
+          flow_summary = JSON.parse(cached);
+          logger.info(`Retrieved flow_summary from cache for testId: ${rawTestId}`);
+        } catch {
+          logger.error(`Failed to parse cached flow_summary for testId: ${rawTestId}`);
+        }
+        // Clean up after reading
+        CacheService.set(`flow_summary:${rawTestId}`, "").catch(() => { });
+      }
+    }
 
+    const reportUrl = `${automationDbUrl}/report/${testId}`;
+    logger.info("flow_summary=>>>", flow_summary);
     const response = await axios.post(
       reportUrl,
       {
