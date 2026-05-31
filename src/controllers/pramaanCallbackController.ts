@@ -32,7 +32,7 @@ export const pramaanCallbackController = async (
     // Prefer flow_summary sent inline in the callback body (Pramaan buyer path).
     // Fall back to the one cached in Redis by checkPramaanReport (frontend-triggered path).
     let flow_summary = inlineFlowSummary;
-    if (!flow_summary) {
+    if (!flow_summary || Object.keys(flow_summary).length === 0) {
       const cached = await CacheService.get(`flow_summary:${rawTestId}`);
       if (cached) {
         try {
