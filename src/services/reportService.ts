@@ -279,7 +279,11 @@ export class ReportService {
       .post(
         reportUrl,
         { data: base64Report, ...(flow_summary && { flow_summary }) },
-        { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
+        {
+          headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY }, params: {
+            ...(userId && { userId }),
+          }
+        }
       )
       .then((res) => logger.info(`Report saved to DB for testId: ${testId}`, res.data))
       .catch((err) => logger.error(`Failed to save report to DB for testId: ${testId}`, {}, err));
