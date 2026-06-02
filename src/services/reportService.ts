@@ -78,7 +78,7 @@ export class ReportService {
         flowMap
       );
 
-      this.saveReportToDB(sessionId, htmlReport.html, userId, flow_summary);
+      this.saveReportToDB(sessionId, htmlReport.html, userId, flow_summary, htmlReport.flowResults);
       return htmlReport;
     } catch (error) {
       logger.error(
@@ -140,6 +140,7 @@ export class ReportService {
       tests,
       test_id: testId,
     };
+    // const pramaanUrl = `${process.env.PRAMAAN_URL}/preprod/testing/buyer/runtest`;
     const pramaanUrl = process.env.PRAMAAN_URL;
     if (!pramaanUrl) {
       throw new Error("PRAMAAN_URL is not defined in environment variables");
@@ -261,26 +262,39 @@ export class ReportService {
     });
   }
 
-  /** Fire-and-forget: encode the HTML report as base64 and persist it to the DB. */
   private saveReportToDB(
     sessionId: string,
     html: string,
     userId?: string,
-    flow_summary?: Record<string, { total: number; completed: number }>
+    flow_summary?: Record<string, { total: number; completed: number }>,
+    flowResults?: Record<string, "PASS" | "FAIL">
   ): void {
     const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
     logger.info("Saving report to DB for testId:", { testId });
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
-    const base64Report = `data:text/html;base64,${Buffer.from(
-      html
-    ).toString("base64")}`;
+    const base64Report = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
+
+    // 1. Save HTML report
     axios
       .post(
         reportUrl,
-        { data: base64Report, ...(flow_summary && { flow_summary: flow_summary }) },
+        { data: base64Report, ...(flow_summary && { flow_summary }) },
         { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
       )
       .then((res) => logger.info(`Report saved to DB for testId: ${testId}`, res.data))
       .catch((err) => logger.error(`Failed to save report to DB for testId: ${testId}`, {}, err));
+
+    // 2. Save flowSummary + flowMap (pass/fail per flow) to automation-db
+    if (flow_summary && flowResults) {
+      const analyticsUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionId}/analytics`;
+      axios
+        .post(
+          analyticsUrl,
+          { flowSummary: flow_summary, flowMap: flowResults },
+          { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
+        )
+        .then(() => logger.info(`Analytics saved for sessionId: ${sessionId}`))
+        .catch((err) => logger.error(`Failed to save analytics for sessionId: ${sessionId}`, {}, err));
+    }
   }
 }
