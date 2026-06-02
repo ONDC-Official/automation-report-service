@@ -1,14 +1,16 @@
-import { Router } from "express"; 
+import { Router } from "express";
 import apiKeyMiddleware from "../middleware/api-key"; // Import API key middleware
 import ReportRoutes from "./reportRoutes"; // Import report routes
 import LogRoutes from "./logRoutes";
 import CallbackRoutes from "./callbackRoutes";
+import FlowDataRoutes from "./flowDataRoutes";
+
 const router = Router();
 
 // Mount session and payload related routes
 router.use(apiKeyMiddleware);
-router.use("/generate-report",ReportRoutes);
-router.use("/logs",LogRoutes);
-router.use("/callback",CallbackRoutes)
-
+router.use("/generate-report", ReportRoutes);
+router.use("/logs", LogRoutes);
+router.use("/callback", CallbackRoutes);
+router.use("/flow-data", FlowDataRoutes);
 export default router;
