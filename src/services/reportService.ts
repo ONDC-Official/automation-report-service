@@ -102,10 +102,10 @@ export class ReportService {
     sessionDetails: any,
     sessionId: string,
     flowIdToPayloadIdsMap: Record<string, string[]>,
-    userId?: string,
+    _userId?: string,
     flow_summary?: Record<string, { total: number; completed: number }>
   ): Promise<any> {
-    const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
+    const testId = `PW_${sessionId}`;
     logger.info(`Generating Pramaan Flow summary:`, flow_summary);
     // Cache flow_summary so pramaanCallbackController can retrieve it when callback arrives
     if (flow_summary && Object.keys(flow_summary).length > 0) {
@@ -269,7 +269,7 @@ export class ReportService {
     flow_summary?: Record<string, { total: number; completed: number }>,
     flowResults?: Record<string, "PASS" | "FAIL">
   ): void {
-    const testId = `PW_${sessionId}${userId ? `::${userId}` : ""}`;
+    const testId = `PW_${sessionId}`;
     logger.info("Saving report to DB for testId:", { testId });
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
     const base64Report = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
@@ -301,7 +301,7 @@ export class ReportService {
       .catch((err) => logger.error(`Failed to save report to DB for testId: ${testId}`, {}, err));
 
     // 2. Save flowSummary + flowMap (pass/fail per flow) to automation-db
-    if (flow_summary && flowResults) {
+    if (flowResults && Object.keys(flowResults).length > 0) {
       const analyticsUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionId}/analytics`;
       axios
         .post(
