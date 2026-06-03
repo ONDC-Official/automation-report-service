@@ -274,11 +274,23 @@ export class ReportService {
     const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
     const base64Report = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
 
+    const total_tests = flow_summary
+      ? Object.values(flow_summary).reduce((sum, f) => sum + f.total, 0)
+      : undefined;
+    const passed_tests = flow_summary
+      ? Object.values(flow_summary).reduce((sum, f) => sum + f.completed, 0)
+      : undefined;
+
     // 1. Save HTML report
     axios
       .post(
         reportUrl,
-        { data: base64Report, ...(flow_summary && { flow_summary }) },
+        {
+          data: base64Report,
+          ...(flow_summary && { flow_summary }),
+          ...(total_tests !== undefined && { total_tests }),
+          ...(passed_tests !== undefined && { passed_tests }),
+        },
         {
           headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY }, params: {
             ...(userId && { userId }),
