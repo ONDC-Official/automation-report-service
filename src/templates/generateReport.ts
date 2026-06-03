@@ -473,7 +473,7 @@ export function generateCustomHTMLReport(data: Report, sessionId: string, flowMa
   Object.entries(data?.flowErrors || {}).forEach(([flowId, { valid_flow }]) => {
     flowResults[flowId] = valid_flow ? "PASS" : "FAIL";
   });
-
+logger.info("flowResultsForPASSFAIL",JSON.stringify(flowResults))
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">

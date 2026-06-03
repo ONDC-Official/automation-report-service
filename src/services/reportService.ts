@@ -77,7 +77,7 @@ export class ReportService {
         sessionId,
         flowMap
       );
-
+      logger.info("flow map result",JSON.stringify(htmlReport.flowResults))
       this.saveReportToDB(sessionId, htmlReport.html, userId, flow_summary, htmlReport.flowResults);
       return htmlReport;
     } catch (error) {
