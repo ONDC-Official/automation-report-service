@@ -1600,6 +1600,10 @@ domains:
             - on_status
 
         optional_flows:
+          - OnDemand_Assign_driver_on_onconfirm
+          - OnDemand_Assign_driver_post_on_confirm
+          - OnDemand_Purple_Tags_Assign_driver_on_onconfirm
+          - OnDemand_Assign_driver_post_onconfirmSelfPickup
           - OnDemand_Ride_cancellation_by_driver
           - OnDemand_Ride_cancellation_by_rider
           - OnDemand_Ride_Technical_Cancellation_Flow
