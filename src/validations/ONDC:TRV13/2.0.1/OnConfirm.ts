@@ -57,6 +57,12 @@ export default async function on_confirm(
       result.passed.push(`Provider ID: ${order.provider.id}`);
     }
 
+    if (!order?.provider?.tags || !Array.isArray(order.provider.tags) || order.provider.tags.length === 0) {
+      result.failed.push("provider.tags are missing");
+    } else {
+      result.passed.push("provider.tags are present");
+    }
+
     // Validate items
     const items = order?.items;
     if (items && Array.isArray(items) && items.length > 0) {
@@ -71,14 +77,61 @@ export default async function on_confirm(
 
     // Validate fulfillments
     const fulfillments = order?.fulfillments;
-    if (fulfillments && Array.isArray(fulfillments) && fulfillments.length > 0) {
-      const fulfillment = fulfillments[0];
-      if (fulfillment?.id) {
-        result.passed.push(`Fulfillment ID: ${fulfillment.id}`);
-      }
-      if (fulfillment?.state?.descriptor?.code) {
-        result.passed.push(`Fulfillment state: ${fulfillment.state.descriptor.code}`);
-      }
+    if (!fulfillments || !Array.isArray(fulfillments) || fulfillments.length === 0) {
+      result.failed.push("Fulfillment object is incorrect (missing or empty)");
+    } else {
+      fulfillments.forEach((fulfillment: any, fIdx: number) => {
+        if (!fulfillment.id) {
+          result.failed.push(`Fulfillment[${fIdx}] is missing 'id'`);
+        }
+        if (!fulfillment.type) {
+          result.failed.push(`Fulfillment[${fIdx}] is missing 'type'`);
+        }
+        if (!fulfillment.state?.descriptor?.code) {
+          result.failed.push(`Fulfillment[${fIdx}] is missing state descriptor code`);
+        }
+
+        // Validate stops (START and END check-in/check-out)
+        const stops = fulfillment.stops;
+        if (!stops || !Array.isArray(stops) || stops.length === 0) {
+          result.failed.push(`Fulfillment[${fIdx}] stops are missing or empty`);
+        } else {
+          const startStop = stops.find((s: any) => s.type === "START");
+          const endStop = stops.find((s: any) => s.type === "END");
+          if (!startStop) {
+            result.failed.push(`Fulfillment[${fIdx}] is missing START stop`);
+          } else {
+            if (!startStop.time) {
+              result.failed.push(`Fulfillment[${fIdx}] START stop is missing 'time'`);
+            }
+            if (startStop.location && startStop.location.gps) {
+              const gps = String(startStop.location.gps).trim();
+              const gpsRegex = /^-?\d+\.\d{6},\s*-?\d+\.\d{6}$/;
+              if (!gpsRegex.test(gps)) {
+                result.failed.push(`Fulfillment[${fIdx}] START stop location.gps should have 6 decimal precision, got: ${gps}`);
+              } else {
+                result.passed.push(`Fulfillment[${fIdx}] START stop location.gps is correct`);
+              }
+            }
+          }
+          if (!endStop) {
+            result.failed.push(`Fulfillment[${fIdx}] is missing END stop`);
+          } else {
+            if (!endStop.time) {
+              result.failed.push(`Fulfillment[${fIdx}] END stop is missing 'time'`);
+            }
+            if (endStop.location && endStop.location.gps) {
+              const gps = String(endStop.location.gps).trim();
+              const gpsRegex = /^-?\d+\.\d{6},\s*-?\d+\.\d{6}$/;
+              if (!gpsRegex.test(gps)) {
+                result.failed.push(`Fulfillment[${fIdx}] END stop location.gps should have 6 decimal precision, got: ${gps}`);
+              } else {
+                result.passed.push(`Fulfillment[${fIdx}] END stop location.gps is correct`);
+              }
+            }
+          }
+        }
+      });
     }
 
     // Validate payments
@@ -240,6 +293,55 @@ export default async function on_confirm(
         validateItemPriceConsistency: false,
         flowId,
       });
+    }
+
+    // Validate BAP_TERMS & BPP_TERMS
+    let allTags: any[] = [];
+    if (order?.tags && Array.isArray(order.tags)) {
+      allTags.push(...order.tags);
+    }
+    if (payments && Array.isArray(payments)) {
+      payments.forEach((p: any) => {
+        if (p.tags && Array.isArray(p.tags)) {
+          allTags.push(...p.tags);
+        }
+      });
+    }
+
+    const bapTerms = allTags.find((t: any) => t?.descriptor?.code === "BAP_TERMS");
+    const bppTerms = allTags.find((t: any) => t?.descriptor?.code === "BPP_TERMS");
+
+    if (!bapTerms) {
+      result.failed.push("BAP terms are completely missing");
+    } else {
+      result.passed.push("BAP_TERMS tag is present");
+    }
+
+    if (!bppTerms) {
+      result.failed.push("BPP terms are incorrect (completely missing)");
+    } else {
+      result.passed.push("BPP_TERMS tag is present");
+      if (!bppTerms.list || !Array.isArray(bppTerms.list) || bppTerms.list.length === 0) {
+        result.failed.push("BPP terms are incorrect: list is missing or empty");
+      } else {
+        const requiredBppFields = [
+          "BUYER_FINDER_FEES_TYPE",
+          "BUYER_FINDER_FEES_PERCENTAGE",
+          "SETTLEMENT_WINDOW",
+          "SETTLEMENT_BASIS",
+          "MANDATORY_ARBITRATION",
+          "COURT_JURISDICTION",
+          "STATIC_TERMS",
+          "SETTLEMENT_AMOUNT",
+          "OFFLINE_CONTRACT",
+        ];
+        requiredBppFields.forEach((field) => {
+          const item = bppTerms.list.find((i: any) => i?.descriptor?.code === field);
+          if (!item || !item.value) {
+            result.failed.push(`BPP terms are incorrect: ${field} is missing or incorrect`);
+          }
+        });
+      }
     }
   } catch (error) {
     result.failed.push(`Validation error: ${error}`);

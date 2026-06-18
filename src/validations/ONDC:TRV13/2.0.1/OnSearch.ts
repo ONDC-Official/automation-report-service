@@ -39,20 +39,72 @@ export default async function on_search(
       result.passed.push(`Catalog name: ${catalog.descriptor.name}`);
     }
 
+    // Check if fulfillment/fulfillments are sent additionally
+    if (catalog?.fulfillments || catalog?.fulfillment) {
+      result.failed.push("fulfillment is being sent additionally in catalog");
+    }
+
     // Validate providers
     const providers = catalog?.providers;
     if (providers && Array.isArray(providers) && providers.length > 0) {
       result.passed.push(`${providers.length} provider(s) found`);
 
       for (const provider of providers) {
+        // Check if fulfillment/fulfillments are sent additionally at provider level
+        if (provider?.fulfillments || provider?.fulfillment) {
+          result.failed.push("fulfillment is being sent additionally in provider");
+        }
+
         // Validate provider descriptor
         if (provider?.descriptor?.name) {
           result.passed.push(`Provider: ${provider.descriptor.name}`);
         }
 
+        // Validate provider.tags
+        if (!provider?.tags || !Array.isArray(provider.tags) || provider.tags.length === 0) {
+          result.failed.push("provider.tags are missing");
+        } else {
+          result.passed.push("provider.tags are present");
+        }
+
+        // Validate provider.time
+        if (!provider?.time) {
+          result.failed.push("provider.time is incorrect (missing)");
+        } else if (typeof provider.time !== "object") {
+          result.failed.push("provider.time is incorrect: should be a valid Time object");
+        } else {
+          if (!provider.time.label) {
+            result.failed.push("provider.time is incorrect: missing 'label'");
+          }
+          if (!provider.time.range && !provider.time.timestamp) {
+            result.failed.push("provider.time is incorrect: must have either 'range' or 'timestamp'");
+          }
+          if (provider.time.range) {
+            if (!provider.time.range.start || !provider.time.range.end) {
+              result.failed.push("provider.time.range is incorrect: missing 'start' or 'end'");
+            }
+          }
+        }
+
         // Validate locations
         if (provider?.locations && provider.locations.length > 0) {
           result.passed.push(`${provider.locations.length} location(s) found`);
+
+          provider.locations.forEach((loc: any, idx: number) => {
+            if (!loc.gps) {
+              result.failed.push(`Provider location[${idx}].gps is missing`);
+            } else {
+              const gps = String(loc.gps).trim();
+              const gpsRegex = /^-?\d+\.\d{6},\s*-?\d+\.\d{6}$/;
+              if (!gpsRegex.test(gps)) {
+                result.failed.push(
+                  `provider.location.gps should be precise up to 6 decimal places (e.g. 12.971598,77.594562), got: ${gps}`
+                );
+              } else {
+                result.passed.push(`Provider location[${idx}].gps has 6 decimal precision`);
+              }
+            }
+          });
         }
 
         // Validate categories
