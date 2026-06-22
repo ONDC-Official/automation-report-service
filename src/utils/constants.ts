@@ -381,12 +381,16 @@ export const FLOW_ID_MAP: Record<
       },
       "Metro": {
         "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT": "MBL_1",
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT (W/O search_1 & select)": "MBL_1",
         "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT": "MBL_2",
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT (W/O search_1 & select)": "MBL_2",
         "USER_CANCELLATION_FLOW": "MBL_4",
+        "USER_CANCELLATION_FLOW (W/O search_1 & select)": "MBL_4",
         // "TICKET_EXPIRY_CANCELLATION_FLOW": "MBL_5",
         // "MERCHANT_SIDE_CANCELLATION_FLOW": "MBL_6",
         // "ORDER_TO_CONFIRM_MONTHLY_PASS": "MBL_3",
         "TECHNICAL_CANCELLATION_FLOW": "MBL_20",
+        "TECHNICAL_CANCELLATION_FLOW (W/O search_1 & select)": "MBL_20",
       }
     },
     "2.0.1": {
