@@ -4602,6 +4602,8 @@ domains:
             - on_status
             - update
             - on_update
+        optional_flows:
+          - Order to Confirm to Fulfillment (Updates in Booking)
         validationModules: "../validations/ONDC:TRV13/validator#validate"
       
   ONDC:FIS14:
