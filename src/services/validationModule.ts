@@ -90,6 +90,15 @@ function checkMandatoryFlows(
 
   for (const flowId of allFlows) {
     if (!testedFlows.includes(flowId)) {
+      // If the updates flow is tested, the basic confirm flow is optional
+      if (
+        (flowId === "Order to Confirm to Fulfillment (City Code)" ||
+          flowId === "Order to Confirm to Fulfillment (City Based)") &&
+        testedFlows.includes("Order to Confirm to Fulfillment (Updates in Booking)")
+      ) {
+        continue;
+      }
+
       const isOptional =
         Array.isArray(domainConfig?.optional_flows) &&
         domainConfig.optional_flows.includes(flowId);
