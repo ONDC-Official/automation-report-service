@@ -59,6 +59,18 @@ export default async function on_cancel(
       }
     }
 
+    // Validate that order contains only allowed keys: id, state, status, cancellation, updated_at
+    if (order) {
+      const allowedKeys = ["id", "state", "status", "cancellation", "updated_at"];
+      const orderKeys = Object.keys(order);
+      const disallowedKeys = orderKeys.filter(key => !allowedKeys.includes(key));
+      if (disallowedKeys.length > 0) {
+        result.failed.push(
+          `Disallowed fields found in order object: ${disallowedKeys.join(", ")}. As per Developer Guide, only order.id, order.state/status, and order.cancellation should be present.`
+        );
+      }
+    }
+
     // Validate quote with refund
     const quote = order?.quote;
     if (quote?.price?.value) {
