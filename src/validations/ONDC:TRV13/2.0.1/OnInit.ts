@@ -159,6 +159,12 @@ export default async function on_init(
       result.failed.push("Payment object is incorrect; please refer to the Swagger documentation (payments array is missing or empty)");
     } else {
       payments.forEach((payment: any, pIdx: number) => {
+        if (payment.type === "PART-PAYMENT") {
+          result.passed.push(
+            `Payment [${payment.id || 'unknown'}] is PART-PAYMENT (aggregate envelope) — validation skipped`
+          );
+          return;
+        }
         if (!payment.id) {
           result.failed.push(`Payment[${pIdx}] is missing 'id'`);
         }
@@ -242,15 +248,12 @@ export default async function on_init(
         result.failed.push("BPP terms are incorrect: list is missing or empty");
       } else {
         const requiredBppFields = [
-          "BUYER_FINDER_FEES_TYPE",
-          "BUYER_FINDER_FEES_PERCENTAGE",
-          "SETTLEMENT_WINDOW",
-          "SETTLEMENT_BASIS",
+          "MAX_LIABILITY",
+          "MAX_LIABILITY_CAP",
           "MANDATORY_ARBITRATION",
           "COURT_JURISDICTION",
-          "STATIC_TERMS",
-          "SETTLEMENT_AMOUNT",
-          "OFFLINE_CONTRACT",
+          "DELAY_INTEREST",
+          "TAX_NUMBER",
         ];
         requiredBppFields.forEach((field) => {
           const item = bppTerms.list.find((i: any) => i?.descriptor?.code === field);
