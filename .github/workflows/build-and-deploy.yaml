@@ -5,7 +5,9 @@ on:
   push:
     branches:
       - main
+      - draft-*
       - release-staging
+      - release-*
 
 permissions:
   packages: write
@@ -45,6 +47,11 @@ jobs:
             TARGET_FILE="k8/aws/helm/service-layer/values-prod.yaml"
             # include latest only on release-staging (prod)
             TAGS="ghcr.io/$REPO_LOWER:${IMAGE_TAG}\nghcr.io/$REPO_LOWER:latest"
+          elif [[ "${{ github.ref_name }}" == release-* ]]; then
+            ENVIRONMENT=staging
+            IMAGE_TAG="prod-${SEMVER}-${SHORT_SHA}"
+            TARGET_FILE="k8/aws/helm/service-layer/values-staging.yaml"
+            TAGS="ghcr.io/$REPO_LOWER:${IMAGE_TAG}"
           else
             ENVIRONMENT=dev
             IMAGE_TAG="dev-${SEMVER}-${SHORT_SHA}"
