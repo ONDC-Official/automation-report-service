@@ -59,6 +59,16 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Cancellation"
 ]
 
+export const UNIFIED_CREDIT_FLOWS = [
+  "business_term_loan_with_offline_online",
+  "lamf_credit_line_with_mfc_offline_journey",
+  "credit_offline",
+  "offline_journey",
+  "master_search",
+  "business_term_loan_without_aa",
+  "lamf_credit_line_with_mfc"
+]
+
 export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
   "Purchase_Finance_With_AA_Loan_Foreclosure",
   "Purchase_Finance_With_AA_Missed_EMI_Payment",
@@ -159,13 +169,11 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.0.1",
   "ONDC:FIS12:2.3.0",
   "ONDC:FIS13:2.0.1",
-  // "ONDC:FIS13:2.0.0:hospicash-insurance",
-  // "ONDC:FIS13:2.0.0:accidental-insurance",
   "ONDC:TRV10:2.1.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1",
-  "ONDC:FIS14:2.1.0"
+  // "ONDC:FIS14:2.1.0"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
@@ -487,6 +495,22 @@ export const FLOW_ID_MAP: Record<
       },
     },
   },
+  "ONDC:RETeB2B": {
+    "1.2.5": {
+      "eB2B": {
+        "Discovery_flow_broadcast_search": "RET_9_EB2B",
+        "Order_to_confirm_to_fulfillment_(cod)": "RET_1B_EB2B",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1_EB2B",
+        "Buyer_Side_Order_Cancellation": "RET_3_EB2B",
+        "Out_of_Stock(Error_code)": "RET_6_EB2B",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(Prepaid)": "RET_11_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(cod)": "RET_11B_EB2B",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5_EB2B"
+      },
+    },
+  },
+
   "ONDC:RET11": {
     "1.2.5": {
       "F&B": {
@@ -571,6 +595,7 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
         "Seller_Cred_Flow": "RET_ENH_017",
+        "Replacement_Flow": "RET_ENH_00B",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
         "Replacement_Flow": "RET_ENH_00B",

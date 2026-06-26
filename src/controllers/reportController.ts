@@ -10,22 +10,29 @@ export async function generateReportController(
 ): Promise<void> {
   try {
     const sessionId = req.query.sessionId as string;
+    const userId = req.query?.user_id as string;
+    logger.info("Received request to generate report for sessionId:", JSON.stringify(req?.body), { sessionId, userId });
     if (!sessionId) {
       logger.error(MESSAGES.responses.missingSessionId);
-      apiResponse.badRequest(res,MESSAGES.responses.missingSessionId);
+      apiResponse.badRequest(res, MESSAGES.responses.missingSessionId);
       return;
     }
     logger.info(`${MESSAGES.report.enteringController} ${sessionId}`);
-    const flowIdToPayloadIdsMap = req?.body as Record<string, string[]>;
-    
+
+    // Extract flowIdToPayloadIdsMap and flow_summary from body
+    const { flow_summary, ...flowIdToPayloadIdsMap } = req?.body as Record<string, any>;
+    logger.info("flow_summary=>>>", flow_summary);
     const htmlReport = await new ReportService().generate(
       sessionId,
-      flowIdToPayloadIdsMap
+      flowIdToPayloadIdsMap as Record<string, string[]>,
+      userId,
+      flow_summary
     );
     apiResponse.successHTML(res, htmlReport);
     logger.info(MESSAGES.report.reportSent, {
       meta: {
         sessionId,
+        userId,
       },
     });
   } catch (err: any) {
