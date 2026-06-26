@@ -3996,6 +3996,31 @@ domains:
                 - on_confirm
                 - on_update
 
+              business_term_loan_without_aa:
+                - search
+                - on_search
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - kyc_form
+                - on_status
+                - init
+                - on_init
+                - emandate_form
+                - on_status
+                - init
+                - on_init
+                - loan_aggrement_form
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+
               lamf_credit_line_with_mfc_offline_journey:
                 - search
                 - on_search
@@ -4011,7 +4036,40 @@ domains:
                 - on_confirm
                 - on_update
 
+              lamf_credit_line_with_mfc:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - kyc_form
+                - on_status
+                - init
+                - on_init
+                - lien_marking_form
+                - on_status
+                - init
+                - on_init
+                - emandate_form
+                - on_status
+                - init
+                - on_init
+                - loan_aggrement_form
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+
+              master_search:
+                - search
+                - on_search
             optional_flows:
+              - master_search
+              - business_term_loan_without_aa
+              - lamf_credit_line_with_mfc
               - business_term_loan_with_offline_online
               - lamf_credit_line_with_mfc_offline_journey
             validationModules: "../validations/ONDC:FIS12/validator#validate"
@@ -4544,6 +4602,8 @@ domains:
             - on_status
             - update
             - on_update
+        optional_flows:
+          - Order to Confirm to Fulfillment (Updates in Booking)
         validationModules: "../validations/ONDC:TRV13/validator#validate"
       
   ONDC:FIS14:
