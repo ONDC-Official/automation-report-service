@@ -19,7 +19,9 @@ export const fetchLogsController = async (req: Request, res: Response): Promise<
 
     // Extract sessionId from test_id (remove 'PW_' prefix)
     const sessionId =
-      typeof test_id === "string" ? test_id.replace(/^PW_/, "") : undefined;
+  typeof test_id === "string"
+    ? test_id.replace(/^PW_/, "").split("::")[0]
+    : undefined;
 
     logger.info(
       `Extracted sessionId: ${sessionId || "undefined"} from test_id: ${test_id}`

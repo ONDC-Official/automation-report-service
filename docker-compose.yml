@@ -1,11 +1,11 @@
 services:
-  report-service:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: automation-report-service-staging
+    container_name: automation-report-service
     ports:
-      - "${PORT:-3036}:${PORT:-3000}"
+      - "3036:3000"
     env_file:
       - .env
     restart: always

@@ -57,7 +57,7 @@ function generateApiValidationHtml(
 }
 
 // Generate the HTML report
-export function generateCustomHTMLReport(data: Report, sessionId: string, flowMap: Record<string, string>): { html: string } {
+export function generateCustomHTMLReport(data: Report, sessionId: string, flowMap: Record<string, string>): { html: string; flowResults: Record<string, "PASS" | "FAIL"> } {
   const styles = `
     <style>
       body {
@@ -468,6 +468,12 @@ export function generateCustomHTMLReport(data: Report, sessionId: string, flowMa
     })
     .join("");
 
+  // Build per-flow pass/fail results map
+  const flowResults: Record<string, "PASS" | "FAIL"> = {};
+  Object.entries(data?.flowErrors || {}).forEach(([flowId, { valid_flow }]) => {
+    flowResults[flowId] = valid_flow ? "PASS" : "FAIL";
+  });
+logger.info("flowResultsForPASSFAIL",JSON.stringify(flowResults))
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -506,5 +512,5 @@ export function generateCustomHTMLReport(data: Report, sessionId: string, flowMa
     </html>
   `;
 
-  return { html: htmlContent };
+  return { html: htmlContent, flowResults };
 }
