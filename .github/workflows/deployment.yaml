@@ -79,6 +79,7 @@ jobs:
             exit 1
           fi
           echo ".env and docker-compose.yml files found."
+          echo "PORT value in .env: $(grep '^PORT=' \$REPO_DIR/.env)"
           EOF
 
       - name: Automation Reporting Service Deployment
