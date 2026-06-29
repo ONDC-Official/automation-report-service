@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${PORT:-3036}:3000"
+      - "${PORT:-3036}:${PORT:-3036}"
     env_file:
       - .env
     restart: always
