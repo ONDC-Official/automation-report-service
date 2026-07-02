@@ -1,4 +1,4 @@
-import { RedisService } from "ondc-automation-cache-lib";
+import { RedisService } from "@ondc/ondc-automation-cache-lib";
 import logger from "@ondc/automation-logger";
 // Function to save data under sessionId and transactionId
 

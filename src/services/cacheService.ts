@@ -1,4 +1,4 @@
-import { RedisService } from "ondc-automation-cache-lib";
+import { RedisService } from "@ondc/ondc-automation-cache-lib";
 
 export class CacheService {
   static async set(key: string, value: string): Promise<void> {
