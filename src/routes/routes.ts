@@ -7,7 +7,7 @@ import FlowDataRoutes from "./flowDataRoutes";
 
 const router = Router();
 
-router.get("/health", (_req, res) => res.json({ status: "ok" }));
+router.get("/health", (_req, res) => { res.json({ status: "ok" }); });
 
 // Mount session and payload related routes
 router.use(apiKeyMiddleware);
