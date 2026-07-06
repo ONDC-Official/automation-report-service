@@ -1,6 +1,6 @@
 import { Payload } from "../types/payload";
 import { ParsedPayload } from "../types/parsedPayload";
-import { RedisService } from "ondc-automation-cache-lib";
+import { RedisService } from "@ondc/ondc-automation-cache-lib";
 import { FLOW_MAPPINGS } from "./constants";
 import logger from "@ondc/automation-logger";
 

@@ -10,7 +10,7 @@ import { actions } from "../utils/constants";
 import { ValidationAction } from "../types/actions";
 import logger from "@ondc/automation-logger";
 import { MESSAGES } from "../utils/messages";
-import { RedisService } from "ondc-automation-cache-lib";
+import { RedisService } from "@ondc/ondc-automation-cache-lib";
 import { checkPayload } from "./checkPayload";
 
 // Type guard to ensure the action is a valid ValidationAction from the predefined actions list
