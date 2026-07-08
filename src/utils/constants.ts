@@ -705,6 +705,17 @@ export const FLOW_ID_MAP: Record<
       },
     },
   },
+  "ONDC:RETINVL": {
+    "1.2.5": {
+      "INVL": {
+        "RETINVL_DISCOVERY_FLOW": "RETINVL_DISCOVERY_FLOW",
+        "ORDER_FLOW_BASELINE": "ORDER_FLOW_BASELINE",
+        "ORDER_FLOW_BASELINE_ILBP": "ORDER_FLOW_BASELINE_ILBP",
+        "OFFERS_FLOW": "OFFERS_FLOW",
+        "BUYER_SIDE_ORDER_CANCELLATION": "BUYER_SIDE_ORDER_CANCELLATION",
+      },
+    },
+  },
   "ONDC:LOG10": {
     "1.2.5": {
       "ride-Logistics (P2P)": {
@@ -790,6 +801,7 @@ export const typeMapping: Record<string, string> = {
   "hospicash-insurance": "SACHET_INSURANCE",
   "Logistics (NIC2004:60232)": "LOGISTICS",
   "RECONCILIATION": "RECONCILIATION",
+  "RETINVL":"RETINVL"
 };
 
 export const NIC_LOGISTICS_CATEGORY_FLOW_MAP: Record<string, string> = {
