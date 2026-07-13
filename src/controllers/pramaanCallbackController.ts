@@ -3,7 +3,7 @@ import axios from "axios";
 import logger from "@ondc/automation-logger";
 import { CacheService } from "../services/cacheService";
 import { fetchSessionDetails } from "../services/dbService";
-import { FLOW_ID_MAP, resolveFlowMapUsecaseId } from "../utils/constants";
+import { FLOW_ID_MAP } from "../utils/constants";
 
 // A mochawesome suite (one per Pramaan flow_id, tagged via `result.title`) is
 // considered failed if any of its tests — or any nested suite's tests — failed.
@@ -22,12 +22,7 @@ function buildFlowMapFromMergedReport(
   usecaseId?: string
 ): Record<string, "PASS" | "FAIL"> {
   const flowIdToName: Record<string, string> = {};
-  const resolvedUsecaseId =
-    domain && version && usecaseId
-      ? resolveFlowMapUsecaseId(domain, version, usecaseId)
-      : undefined;
-  const nameToFlowId =
-    (domain && version && resolvedUsecaseId && FLOW_ID_MAP[domain]?.[version]?.[resolvedUsecaseId]) || {};
+  const nameToFlowId = (domain && version && usecaseId && FLOW_ID_MAP[domain]?.[version]?.[usecaseId]) || {};
   for (const [flowName, pramaanFlowId] of Object.entries(nameToFlowId)) {
     flowIdToName[pramaanFlowId as string] = flowName;
   }

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { FLOW_ID_MAP, resolveFlowMapUsecaseId } from "./constants";
+import { FLOW_ID_MAP } from "./constants";
 import logger from "@ondc/automation-logger";
 export interface TestItem {
   flow_id: string;
@@ -16,28 +16,25 @@ export async function generateTestsFromPayloads(
   tests: TestItem[];
   subscriber_id: string;
 }> {
-  const resolvedUsecaseId = resolveFlowMapUsecaseId(domain, version, usecaseId) ?? usecaseId;
-
   if (
     !FLOW_ID_MAP[domain] ||
     !FLOW_ID_MAP[domain][version] ||
-    !FLOW_ID_MAP[domain][version][resolvedUsecaseId]
+    !FLOW_ID_MAP[domain][version][usecaseId]
   ) {
     logger.error(`Cannot find FLOW_ID_MAP configuration`, {
       domain,
       version,
       usecaseId,
-      resolvedUsecaseId,
       availableDomains: Object.keys(FLOW_ID_MAP),
       availableVersions: FLOW_ID_MAP[domain] ? Object.keys(FLOW_ID_MAP[domain]) : [],
       availableUsecases: FLOW_ID_MAP[domain]?.[version] ? Object.keys(FLOW_ID_MAP[domain][version]) : []
     });
     throw new Error("Cannot generate pramaan flows for this configuration");
   }
-  const flowMappings = FLOW_ID_MAP[domain][version][resolvedUsecaseId];
+  const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
   const flowMap: Record<string, TestItem & { timestamp: string }> = {};
   const payloadIds = Object.values(flowIdToPayloadIdsMap).flat();
-  const pramaanFlowIds = Object.keys(FLOW_ID_MAP[domain][version][resolvedUsecaseId]);
+  const pramaanFlowIds = Object.keys(FLOW_ID_MAP[domain][version][usecaseId]);
   const response = await axios.get(
     `${process.env.DATA_BASE_URL}/api/sessions/payload/${sessionId}`,
     {

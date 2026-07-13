@@ -777,30 +777,6 @@ export const FLOW_ID_MAP: Record<
   }
 }
 
-const FLOW_ID_USECASE_ALIASES: Record<string, Record<string, string>> = {
-  "ONDC:RETINVL": {
-    RETINVL: "INVL",
-  },
-};
-
-export function resolveFlowMapUsecaseId(
-  domain: string,
-  version: string,
-  usecaseId?: string
-): string | undefined {
-  if (!usecaseId) return undefined;
-
-  const domainVersionMap = FLOW_ID_MAP[domain]?.[version];
-  if (!domainVersionMap) return usecaseId;
-
-  if (domainVersionMap[usecaseId]) return usecaseId;
-
-  const alias = FLOW_ID_USECASE_ALIASES[domain]?.[usecaseId];
-  if (alias && domainVersionMap[alias]) return alias;
-
-  return usecaseId;
-}
-
 export const typeMapping: Record<string, string> = {
   "Bus": "BUS",
   "Metro": "METRO",
