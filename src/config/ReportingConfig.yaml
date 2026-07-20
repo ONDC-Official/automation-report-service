@@ -1297,7 +1297,7 @@ domains:
             - status
             - on_status
 
-          OnDemand_Assign_driver_post_on_ confirm:
+          OnDemand_Assign_driver_post_on_confirm:
             - search
             - on_search
             - select
@@ -1624,15 +1624,11 @@ domains:
             - issue
             
         optional_flows:
-          - OnDemand_Assign_driver_on_onconfirm
-          - OnDemand_Assign_driver_post_on_confirm
           - OnDemand_Purple_Tags_Assign_driver_on_onconfirm
           - OnDemand_Assign_driver_post_onconfirmSelfPickup
           - OnDemand_Ride_cancellation_by_driver
           - OnDemand_Ride_cancellation_by_rider
           - OnDemand_Ride_Technical_Cancellation_Flow
-          - Driver_not_found_on_onconfirm
-          - Driver_not_found_post_onconfirm
           - OnDemand_Ride_with_multiple_stops
           - OnDemand_Update_Stop
           - OnDemand_Pre_Order_Bid
