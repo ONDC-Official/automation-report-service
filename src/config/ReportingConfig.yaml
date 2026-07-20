@@ -1307,6 +1307,7 @@ domains:
             - confirm
             - on_confirm
             - on_update
+            - on_track
             - track
             - on_track
             - on_status
@@ -1599,6 +1600,29 @@ domains:
             - on_update
             - on_status
 
+          OnDemand_Assign_driver_on_onconfirm_With_IGM(v-1.0.0):
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_track
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+            
         optional_flows:
           - OnDemand_Assign_driver_on_onconfirm
           - OnDemand_Assign_driver_post_on_confirm
