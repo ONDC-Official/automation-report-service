@@ -1307,6 +1307,7 @@ domains:
             - confirm
             - on_confirm
             - on_update
+            - on_track
             - track
             - on_track
             - on_status
@@ -1599,16 +1600,32 @@ domains:
             - on_update
             - on_status
 
+          OnDemand_Assign_driver_on_onconfirm_With_IGM(v-1.0.0):
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_track
+            - on_status
+            - track
+            - on_track
+            - on_status
+            - on_status
+            - on_update
+            - status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+            
         optional_flows:
-          - OnDemand_Assign_driver_on_onconfirm
-          - OnDemand_Assign_driver_post_on_confirm
           - OnDemand_Purple_Tags_Assign_driver_on_onconfirm
           - OnDemand_Assign_driver_post_onconfirmSelfPickup
-          - OnDemand_Ride_cancellation_by_driver
-          - OnDemand_Ride_cancellation_by_rider
-          - OnDemand_Ride_Technical_Cancellation_Flow
-          - Driver_not_found_on_onconfirm
-          - Driver_not_found_post_onconfirm
           - OnDemand_Ride_with_multiple_stops
           - OnDemand_Update_Stop
           - OnDemand_Pre_Order_Bid
@@ -4141,9 +4158,6 @@ domains:
               - Purchase_Journey_Accidental_Insurance
               - CD_Balance_Error_Accidental_Insurance
             validationModules: "../validations/ONDC:FIS13/validator#validate"
-      
-      "2.0.1":
-        usecases:
           HEALTH INSURANCE:
             flows:
               Health_Insurance_Application(Individual):
