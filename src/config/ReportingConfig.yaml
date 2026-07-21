@@ -4161,9 +4161,6 @@ domains:
               - Purchase_Journey_Accidental_Insurance
               - CD_Balance_Error_Accidental_Insurance
             validationModules: "../validations/ONDC:FIS13/validator#validate"
-      
-      "2.0.1":
-        usecases:
           HEALTH INSURANCE:
             flows:
               Health_Insurance_Application(Individual):
