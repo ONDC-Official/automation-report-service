@@ -56,7 +56,13 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Loan_Foreclosure",
   "Purchase_Finance_With_AA_Missed_EMI_Payment",
   "Purchase_Finance_With_AA_Pre_Part_Payment",
-  "Purchase_Finance_With_AA_Cancellation"
+  "Purchase_Finance_With_AA_Cancellation",
+  // pramaan-validation-parity skill: previously unwired IGM(v-1.0.0) flows — now wired in
+  // ReportingConfig.yaml too, so the field-level validators below actually run for them.
+  "Purchase_Finance_With_AA_With_IGM(v-1.0.0)",
+  "Purchase_Finance_Without_AA_With_IGM(v-1.0.0)",
+  "Purchase_Finance_Single_Redirection_With_AA_With_IGM(v-1.0.0)",
+  "Purchase_Finance_Single_Redirection_Without_AA_With_IGM(v-1.0.0)"
 ]
 
 export const UNIFIED_CREDIT_FLOWS = [
@@ -168,6 +174,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.2.0",
   "ONDC:FIS12:2.0.1",
   "ONDC:FIS12:2.3.0",
+  "ONDC:FIS12:SL:2.3.0",
   "ONDC:FIS13:2.0.1",
   "ONDC:FIS13:2.0.0:HEALTH INSURANCE",
   "ONDC:FIS13:2.0.0:MOTOR INSURANCE",
@@ -175,7 +182,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1",
-  // "ONDC:FIS14:2.1.0"
+  "ONDC:FIS14:2.1.0"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
@@ -277,10 +284,14 @@ type FlowCodeRequirement = {
   code: string;
 };
 
-export function validateLSPFeaturesForFlows(
+// Shared by validateLSPFeaturesForFlows/validateLBNPFeaturesForFlows: once the
+// relevant feature tag has been looked up (each caller does its own lookup,
+// since they differ in whether a missing tag list is tolerated), this checks
+// that every required code for the current flow is present with value "yes".
+function hasAllRequiredFeatureCodes(
   currentFlowId: string,
   requirements: FlowCodeRequirement[],
-  catalogTags: Tag[]
+  featureTag: Tag | undefined
 ): boolean {
   // Filter requirements that apply to the current flow
   const relevantRequirements = requirements.filter(
@@ -292,18 +303,26 @@ export function validateLSPFeaturesForFlows(
     return true;
   }
 
-  // Get the lsp_features tag
-  const lspFeaturesTag = catalogTags.find((tag) => tag.code === "lsp_features");
-  if (!lspFeaturesTag || !Array.isArray(lspFeaturesTag.list)) {
+  if (!featureTag || !Array.isArray(featureTag.list)) {
     return false;
   }
 
   // Check that all required codes exist with value "yes"
   return relevantRequirements.every((req) =>
-    lspFeaturesTag.list.some(
+    featureTag.list.some(
       (item) => item.code === req.code && item.value.toLowerCase() === "yes"
     )
   );
+}
+
+export function validateLSPFeaturesForFlows(
+  currentFlowId: string,
+  requirements: FlowCodeRequirement[],
+  catalogTags: Tag[]
+): boolean {
+  // Get the lsp_features tag
+  const lspFeaturesTag = catalogTags.find((tag) => tag.code === "lsp_features");
+  return hasAllRequiredFeatureCodes(currentFlowId, requirements, lspFeaturesTag);
 }
 
 export function validateLBNPFeaturesForFlows(
@@ -311,30 +330,11 @@ export function validateLBNPFeaturesForFlows(
   requirements: FlowCodeRequirement[],
   intentTags: Tag[]
 ): boolean {
-  // Filter requirements that apply to the current flow
-  const relevantRequirements = requirements.filter(
-    (req) => req.flowId === currentFlowId
-  );
-
-  // If no relevant rules exist for this flowId, it's valid
-  if (relevantRequirements.length === 0) {
-    return true;
-  }
-
-  // Get the lsp_features tag
+  // Get the lbnp_features tag
   const lbnpFeaturesTag = intentTags?.find(
     (tag) => tag.code === "lbnp_features"
   );
-  if (!lbnpFeaturesTag || !Array.isArray(lbnpFeaturesTag.list)) {
-    return false;
-  }
-
-  // Check that all required codes exist with value "yes"
-  return relevantRequirements.every((req) =>
-    lbnpFeaturesTag.list.some(
-      (item) => item.code === req.code && item.value.toLowerCase() === "yes"
-    )
-  );
+  return hasAllRequiredFeatureCodes(currentFlowId, requirements, lbnpFeaturesTag);
 }
 export const rules = [
   { flowId: "CASH_ON_DELIVERY_FLOW", code: "008" },
@@ -749,23 +749,23 @@ export const FLOW_ID_MAP: Record<
   },
   "ONDC:FIS13": {
     "2.0.0": {
-      "transit-insurance": {
+      "TRANSIT INSURANCE": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
         "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_SGRTD_2",
-        "Purchase_Journey_Transit_Insurance": "INS_20",
+        "Purchase_Journey_Transit_Insurance": "INS_SGRTD_4",
         "CD_Balance_Error_Transit_Insurance": "INS_23"
       },
-      "accidental-insurance": {
+      "ACCIDENTAL INSURANCE": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
         "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "INS_SGRTD_2",
         "Purchase_Journey_Accidental_Insurance": "INS_SGRTD_3",
-        "CD_Balance_Error_Transit_Insurance": "INS_23"
+        "CD_Balance_Error_Accidental_Insurance": "INS_23"
 
       },
-      "hospicash-insurance": {
+      "HOSPICASH INSURANCE": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
         "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_SGRTD_2",
-        "Purchase_Journey_Hospicash_Insurance": "INS_21",
+        "Purchase_Journey_Hospicash_Insurance": "INS_SGRTD_5",
         "CD_Balance_Error_Hospicash_Insurance": "INS_23"
       }
     }
@@ -798,9 +798,9 @@ export const typeMapping: Record<string, string> = {
   "Intercity": "INTERCITY",
   "unreserved-entry-pass": "ENTRY_PASS",
   "Hotel-Booking": "ACCOMMODATION",
-  "transit-insurance": "SACHET_INSURANCE",
-  "accidental-insurance": "SACHET_INSURANCE",
-  "hospicash-insurance": "SACHET_INSURANCE",
+  "TRANSIT INSURANCE": "SACHET_INSURANCE",
+  "ACCIDENTAL INSURANCE": "SACHET_INSURANCE",
+  "HOSPICASH INSURANCE": "SACHET_INSURANCE",
   "Logistics (NIC2004:60232)": "LOGISTICS",
   "RECONCILIATION": "RECONCILIATION",
   "RETINVL":"RETINVL"

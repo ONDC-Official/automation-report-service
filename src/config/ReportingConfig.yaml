@@ -1639,6 +1639,50 @@ domains:
           - No_Acceptance_SoftUpdate
 
         validationModules: "../validations/ONDC:TRV10/validator#validate"
+  ONDC:FIS12:SL:
+    versions:
+      "2.3.0":
+        flows:
+          master_search:
+            - search
+            - on_search
+
+          lamf_credit_line_with_mfc_single_redirection:
+            - search
+            - on_search
+            - select
+            - on_select
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - DYNAMIC_FORM
+            - select
+            - on_select
+            - on_confirm
+
+          lamf_credit_line_with_mfc_single_redirection_with_igm_1.0.0:
+            - search
+            - on_search
+            - select
+            - on_select
+            - on_status
+            - on_status
+            - on_status
+            - on_status
+            - DYNAMIC_FORM
+            - select
+            - on_select
+            - on_confirm
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+        optional_flows:
+          - master_search
+          - lamf_credit_line_with_mfc_single_redirection
+          - lamf_credit_line_with_mfc_single_redirection_with_igm_1.0.0
+        validationModules: "../validations/ONDC:FIS12:SL/validator#validate"
   ONDC:FIS10:
     versions:
       "2.1.0":
@@ -3121,6 +3165,162 @@ domains:
                 - on_cancel
                 - on_update
 
+              # --- pramaan-validation-parity skill: added below, previously unwired ---
+              # Sequence derived from this flow's own automation-specifications fixture
+              # (config/flows/PURCHASE FINANCE/Purchase_Finance_With_AA_With_IGM_v-1_0_0_.yaml,
+              # `steps[].api` field) rather than assumed from the sibling: it is the sibling
+              # Purchase_Finance_With_AA sequence plus an issue -> on_issue -> on_issue_status
+              # tail. NOTE: the fixture has one more trailing `issue` step after
+              # `on_issue_status` with no matching `on_issue`/`on_issue_status` after it and
+              # no other flow file explains it — deliberately left OUT of this sequence rather
+              # than guessed at; see the delivery report for what to confirm with whoever owns
+              # the spec.
+              Purchase_Finance_With_AA_With_IGM(v-1.0.0):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+              # Sequence = sibling Purchase_Finance_Without_AA + issue/on_issue/on_issue_status
+              # tail, same trailing-`issue`-omitted caveat as above.
+              Purchase_Finance_Without_AA_With_IGM(v-1.0.0):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+              # Sequence = sibling Purchase_Finance_Single_Redirection_With_AA, EXCEPT this
+              # IGM variant's fixture has an active status/on_status pair where the sibling
+              # has it commented out (inactive) at the same position — verified independently
+              # from this flow's own fixture file, not copied from the sibling. Plus the same
+              # issue/on_issue/on_issue_status tail as the other three, trailing-issue omitted.
+              Purchase_Finance_Single_Redirection_With_AA_With_IGM(v-1.0.0):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - status
+                - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+              # Sequence = sibling Purchase_Finance_Single_Redirection_Without_AA, same active
+              # status/on_status pair (see note above) plus the issue tail.
+              Purchase_Finance_Single_Redirection_Without_AA_With_IGM(v-1.0.0):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - status
+                - on_status
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - update
+                - on_update
+                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+
             optional_flows:
               - Purchase_Finance_Without_AA
               - Purchase_Finance_Single_Redirection_Without_AA
@@ -3136,6 +3336,10 @@ domains:
               - Purchase_Finance_With_AA_Missed_EMI_Payment
               - Purchase_Finance_With_AA_Pre_Part_Payment
               - Purchase_Finance_With_AA_Cancellation
+              - Purchase_Finance_With_AA_With_IGM(v-1.0.0)
+              - Purchase_Finance_Without_AA_With_IGM(v-1.0.0)
+              - Purchase_Finance_Single_Redirection_With_AA_With_IGM(v-1.0.0)
+              - Purchase_Finance_Single_Redirection_Without_AA_With_IGM(v-1.0.0)
             validationModules: "../validations/ONDC:FIS12/validator#validate"
       "2.2.0":
         usecases:
@@ -3993,103 +4197,233 @@ domains:
         usecases:
           UNIFIED CREDIT:
             flows:
-              business_term_loan_with_offline_online:
+              business_term_loan_with_aa:
+                - search
+                - on_search
                 - search
                 - on_search
                 - select
                 - on_select
+                - on_status
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
                 - select
                 - on_select
-                - init
-                - on_init
-                - kyc_form
-                - on_status
-                - init
-                - on_init
-                - loan_aggrement_form
-                - on_status
-                - init
-                - on_init
-                - confirm
                 - on_confirm
-                - on_update
+                - on_status
+                - on_status
+                - on_status
+                - on_status
+
+              business_term_loan_with_aa_with_igm_1.0.0:
+                - search
+                - on_search
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
+                - select
+                - on_select
+                - on_confirm
+                - on_status
+                - on_status
+                - on_status
+                - on_status
+                - issue
+                - on_issue
+                - on_issue_status
+                - issue
 
               business_term_loan_without_aa:
                 - search
                 - on_search
                 - select
                 - on_select
+                - on_status
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
                 - select
                 - on_select
-                - init
-                - on_init
-                - kyc_form
-                - on_status
-                - init
-                - on_init
-                - emandate_form
-                - on_status
-                - init
-                - on_init
-                - loan_aggrement_form
-                - on_status
-                - init
-                - on_init
-                - confirm
                 - on_confirm
-                - on_update
 
-              lamf_credit_line_with_mfc_offline_journey:
+              business_term_loan_without_aa_with_igm_1.0.0:
                 - search
                 - on_search
                 - select
                 - on_select
-                - init
-                - on_init
-                - journey_offline_form
                 - on_status
-                - init
-                - on_init
-                - confirm
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
+                - select
+                - on_select
                 - on_confirm
-                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+                - issue
 
-              lamf_credit_line_with_mfc:
+              business_term_loan_with_file_upload:
                 - search
                 - on_search
                 - select
                 - on_select
+                - on_status
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
+                - select
+                - on_select
+                - on_confirm
+
+              business_term_loan_with_file_upload_with_igm_1.0.0:
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
+                - select
+                - on_select
+                - on_confirm
+                - issue
+                - on_issue
+                - on_issue_status
+                - issue
+
+              business_term_loan_with_offline_online_foreclosure:
+                - search
+                - on_search
+                - select
+                - on_select
+                - select
+                - on_select
                 - init
                 - on_init
-                - kyc_form
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
-                - lien_marking_form
-                - on_status
-                - init
-                - on_init
-                - emandate_form
-                - on_status
-                - init
-                - on_init
-                - loan_aggrement_form
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
                 - confirm
                 - on_confirm
                 - on_update
+                - update
+                - on_update
+                - on_update
+
+              business_term_loan_with_offline_online_missed_emi:
+                - search
+                - on_search
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+                - on_update
+
+              business_term_loan_with_offline_online_pre_part:
+                - search
+                - on_search
+                - select
+                - on_select
+                - select
+                - on_select
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - update
+                - on_update
+                - on_update
+
+              dedupe_check:
+                - select
+                - on_select
+
+              lamf_credit_line_with_mfc_single_redirection:
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - on_status
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
+                - select
+                - on_select
+                - on_confirm
+
+              lamf_credit_line_with_mfc_single_redirection_with_igm_1.0.0:
+                - search
+                - on_search
+                - select
+                - on_select
+                - on_status
+                - on_status
+                - on_status
+                - on_status
+                - DYNAMIC_FORM
+                - select
+                - on_select
+                - on_confirm
+                - issue
+                - on_issue
+                - on_issue_status
+                - issue
 
               master_search:
                 - search
                 - on_search
             optional_flows:
-              - master_search
+              - business_term_loan_with_aa
+              - business_term_loan_with_aa_with_igm_1.0.0
               - business_term_loan_without_aa
-              - lamf_credit_line_with_mfc
-              - business_term_loan_with_offline_online
-              - lamf_credit_line_with_mfc_offline_journey
+              - business_term_loan_without_aa_with_igm_1.0.0
+              - business_term_loan_with_file_upload
+              - business_term_loan_with_file_upload_with_igm_1.0.0
+              - business_term_loan_with_offline_online_foreclosure
+              - business_term_loan_with_offline_online_missed_emi
+              - business_term_loan_with_offline_online_pre_part
+              - dedupe_check
+              - lamf_credit_line_with_mfc_single_redirection
+              - lamf_credit_line_with_mfc_single_redirection_with_igm_1.0.0
+              - master_search
             validationModules: "../validations/ONDC:FIS12/validator#validate"
   
   ONDC:FIS13:
@@ -4164,42 +4498,149 @@ domains:
               Health_Insurance_Application(Individual):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
+
+              Health_Insurance_Application(Individual_With_IGM):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - DYNAMIC_FORM
+                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+                - issue
 
               Health_Insurance_Application(PRE-ORDER-Individual):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+
+              Health_Insurance_Application(PRE-ORDER-Individual-With-ManualReview):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+
+              Health_Insurance_Application(PRE-ORDER-Individual-Without-CIS):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
@@ -4207,24 +4648,35 @@ domains:
               Claim_Health_Insurance(Individual):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
+                - DYNAMIC_FORM
                 - on_update
                 - on_update
                 - on_status
@@ -4233,24 +4685,36 @@ domains:
               Renew_Health_Insurance(Individual):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
+                - on_update
+                - DYNAMIC_FORM
                 - on_update
                 - on_status
                 - on_update
@@ -4258,67 +4722,248 @@ domains:
               Cancel_Health_Insurance(Individual):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
                 - cancel
                 - on_cancel
                 - on_update
 
-              Health_Insurance_Application(Family):
+              Payment_Failure_Health_Insurance(Individual):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
+                - update
+                - on_update
+
+              Payment_Failure_Health_Insurance(PRE-ORDER-Individual-With-ManualReview):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+
+              Health_Insurance_Application(Family):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - DYNAMIC_FORM
+                - on_update
+
+              Health_Insurance_Application(Family_With_IGM):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - DYNAMIC_FORM
+                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+                - issue
 
               Health_Insurance_Application(PRE-ORDER-Family):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+
+              Health_Insurance_Application(PRE-ORDER-Family-With-ManualReview):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+
+              Health_Insurance_Application(PRE-ORDER-Family-Without-CIS):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
@@ -4326,24 +4971,35 @@ domains:
               Claim_Health_Insurance(Family):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
+                - DYNAMIC_FORM
                 - on_update
                 - on_update
                 - on_status
@@ -4352,24 +5008,36 @@ domains:
               Renew_Health_Insurance(Family):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
+                - on_update
+                - DYNAMIC_FORM
                 - on_update
                 - on_status
                 - on_update
@@ -4377,30 +5045,122 @@ domains:
               Cancel_Health_Insurance(Family):
                 - search
                 - on_search
+                - HTML_FORM
                 - search
                 - on_search
                 - select
                 - on_select
-                - on_status
+                - HTML_FORM
                 - select
                 - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - HTML_FORM
                 - init
                 - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
                 - cancel
                 - on_cancel
                 - on_update
+
+              Payment_Failure_Health_Insurance(Family):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - DYNAMIC_FORM
+                - on_update
+                - update
+                - on_update
+
+              Payment_Failure_Health_Insurance(PRE-ORDER-Family-With-ManualReview):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
             optional_flows:
+              - Health_Insurance_Application(Individual)
+              - Health_Insurance_Application(Individual_With_IGM)
               - Health_Insurance_Application(PRE-ORDER-Individual)
+              - Health_Insurance_Application(PRE-ORDER-Individual-With-ManualReview)
+              - Health_Insurance_Application(PRE-ORDER-Individual-Without-CIS)
+              - Claim_Health_Insurance(Individual)
+              - Renew_Health_Insurance(Individual)
+              - Cancel_Health_Insurance(Individual)
+              - Payment_Failure_Health_Insurance(Individual)
+              - Payment_Failure_Health_Insurance(PRE-ORDER-Individual-With-ManualReview)
+              - Health_Insurance_Application(Family)
+              - Health_Insurance_Application(Family_With_IGM)
               - Health_Insurance_Application(PRE-ORDER-Family)
+              - Health_Insurance_Application(PRE-ORDER-Family-With-ManualReview)
+              - Health_Insurance_Application(PRE-ORDER-Family-Without-CIS)
+              - Claim_Health_Insurance(Family)
+              - Renew_Health_Insurance(Family)
+              - Cancel_Health_Insurance(Family)
+              - Payment_Failure_Health_Insurance(Family)
+              - Payment_Failure_Health_Insurance(PRE-ORDER-Family-With-ManualReview)
             validationModules: "../validations/ONDC:FIS13/validator#validate"
 
           MOTOR INSURANCE:
@@ -4415,7 +5175,37 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - DYNAMIC_FORM
+                - on_update
+
+              Motor_Insurance_Application(With_IGM):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - select
                 - on_select
@@ -4436,9 +5226,12 @@ domains:
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
-                - update
-                - on_update
+                - issue
+                - on_issue
+                - on_issue_status
+                - issue
 
               Motor_Insurance_Application(PRE-ORDER):
                 - search
@@ -4449,8 +5242,6 @@ domains:
                 - select
                 - on_select
                 - DYNAMIC_FORM
-                - on_status
-                - status
                 - on_status
                 - select
                 - on_select
@@ -4482,8 +5273,6 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
-                - on_status
                 - select
                 - on_select
                 - HTML_FORM
@@ -4503,7 +5292,9 @@ domains:
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
+                - DYNAMIC_FORM
                 - on_update
                 - on_update
                 - on_status
@@ -4519,7 +5310,40 @@ domains:
                 - on_select
                 - DYNAMIC_FORM
                 - on_status
-                - status
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - confirm
+                - on_confirm
+                - DYNAMIC_FORM
+                - on_update
+                - cancel
+                - on_cancel
+                - on_update
+
+              Payment_Failure_Motor_Insurance:
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - DYNAMIC_FORM
                 - on_status
                 - select
                 - on_select
@@ -4540,12 +5364,48 @@ domains:
                 - on_status
                 - confirm
                 - on_confirm
+                - DYNAMIC_FORM
                 - on_update
-                - cancel
-                - on_cancel
+                - update
                 - on_update
+
+              Payment_Failure_Motor_Insurance(PRE-ORDER):
+                - search
+                - on_search
+                - HTML_FORM
+                - search
+                - on_search
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - select
+                - on_select
+                - HTML_FORM
+                - select
+                - on_select
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - HTML_FORM
+                - init
+                - on_init
+                - DYNAMIC_FORM
+                - on_status
+                - init
+                - on_init
             optional_flows:
+              - Motor_Insurance_Application
+              - Motor_Insurance_Application(With_IGM)
               - Motor_Insurance_Application(PRE-ORDER)
+              - Claim_Motor_Insurance
+              - Cancel_Motor_Insurance
+              - Payment_Failure_Motor_Insurance
+              - Payment_Failure_Motor_Insurance(PRE-ORDER)
             validationModules: "../validations/ONDC:FIS13/validator#validate"
       
   ONDC:TRV13:
@@ -4625,66 +5485,433 @@ domains:
     versions:
       "2.1.0":
         flows:
-          SIP_Creation_New_Folio:
-            - search
-            - on_search
+          Cart_Lumpsum_Investment_Part_Failure:
+            - select
+            - on_select
+            - HTML_FORM
             - select
             - on_select
             - init
             - on_init
             - confirm
             - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Cart_SIP_Creation:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Cart_SIP_Installment:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Cart_lumpsum_Investment:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Lumpsum_Existing_Folio:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Lumpsum_New_Folio:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Lumpsum_New_Folio_With_KYC:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - DYNAMIC_FORM
+            - on_status
+            - select
+            - on_select
+            - DYNAMIC_FORM
+            - on_status
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Lumpsum_Payment_By_Buyer_App:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - on_update
+
+          Lumpsum_Payment_Retry:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_update
+            - update
+            - on_update
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Main_Search:
+            - search
+            - on_search
+
+          Redemption_By_Amount:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+
+          Redemption_By_Units:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+
+          Redemption_Redeem_All:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update
+
+          SIP_Auto_Cancellation:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+            - on_update
+
+          SIP_Cancellation_By_The_Investor:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+            - update
+            - on_update
+
+          SIP_Completion:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
             - on_update
 
           SIP_Creation_Existing_Folio:
-            - search
-            - on_search
             - select
             - on_select
             - init
             - on_init
             - confirm
             - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          SIP_Creation_New_Folio:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
             - on_update
 
           SIP_Creation_New_Folio_With_KYC:
-            - search
-            - on_search
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - DYNAMIC_FORM
+            - on_status
+            - select
+            - on_select
+            - DYNAMIC_FORM
+            - on_status
             - select
             - on_select
             - init
             - on_init
             - confirm
             - on_confirm
+            - DYNAMIC_FORM
+            - on_status
             - on_update
 
           SIP_Creation_Without_Payment_Mandate:
-            - search
-            - on_search
             - select
             - on_select
+            - HTML_FORM
             - init
             - on_init
             - confirm
             - on_confirm
-            - on_update
-
-          SIP_Manual_Trigger_Instalment:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
 
           SIP_Instalment:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
             - on_update
 
           SIP_Instalment_Failure:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
             - on_update
+            - on_status
+            - on_update
+
+          SIP_Manual_Trigger_Instalment:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+
+          SIP_Modification_Change_Amount:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+            - update
+            - on_update
+
+          SIP_Modification_Pause:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+            - update
+            - on_update
+
+          SIP_update_new_payment_update:
+            - select
+            - on_select
+            - HTML_FORM
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - update
+            - on_update
+
+          SIP_without_payment_mandate:
+            - select
+            - on_select
+            - HTML_FORM
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+
+          STP_by_amount:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          STP_installment:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          SWP_by_amount:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          SWP_installment:
+            - select
+            - on_select
+            - HTML_FORM
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
+            - on_status
+            - on_update
+
+          Search_Incremental_Pull:
+            - search
+            - on_search
+            - search
+            - on_search
+
+          Switch_by_amount:
+            - select
+            - on_select
+            - HTML_FORM
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - DYNAMIC_FORM
 
           SIP_Instalment_Payment_Failure:
             - on_update
@@ -4693,46 +5920,6 @@ domains:
             - on_update
 
           SIP_Instalment_Manual_Payment_And_Mandate:
-            - on_update
-
-          SIP_Cancellation_By_Investor:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-            - on_update
-
-          SIP_Auto_Cancellation:
-            - on_update
-
-          SIP_Modification_Pause:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          SIP_Modification_Change_Amount:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          SIP_Completion:
             - on_update
 
           SIP_Creation_New_Folio_Payment_Failure:
@@ -4749,39 +5936,6 @@ domains:
           SIP_Add_Update_Payment_Mandate:
             - on_update
 
-          Redemption_By_Amount:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Redemption_Redeem_All:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Redemption_By_Units:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
           Instant_Redemption_By_Amount:
             - search
             - on_search
@@ -4796,28 +5950,6 @@ domains:
           Redemption_Failure:
             - on_update
 
-          Cart_Lumpsum_Investment:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Cart_SIP_Creation:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
           Cart_Lumpsum_Plus_SIP:
             - search
             - on_search
@@ -4827,59 +5959,6 @@ domains:
             - on_init
             - confirm
             - on_confirm
-            - on_update
-
-          Cart_Lumpsum_Investment_Part_Failure:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Cart_SIP_Instalment:
-            - on_update
-
-          Switch_By_Amount:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          STP_By_Amount:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          STP_Instalment:
-            - on_update
-
-          SWP_By_Amount:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          SWP_Instalment:
             - on_update
 
           Other_Services_New_KYC:
@@ -4916,61 +5995,6 @@ domains:
             - search
             - on_search
 
-          Lumpsum_Existing_Folio:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Lumpsum_New_Folio:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Lumpsum_New_Folio_With_KYC:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Lumpsum_Payment_By_Buyer_App:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
-          Lumpsum_Payment_Retry:
-            - search
-            - on_search
-            - select
-            - on_select
-            - init
-            - on_init
-            - confirm
-            - on_confirm
-            - on_update
-
           External_Folio_Lumpsum:
             - search
             - on_search
@@ -4981,56 +6005,51 @@ domains:
             - confirm
             - on_confirm
             - on_update
-
-          Search_Incremental_Pull:
-            - search
-            - on_search
-            - search
-            - on_search
-
         optional_flows:
-          - Search_Incremental_Pull
-          - SIP_Creation_New_Folio
-          - SIP_Creation_Existing_Folio
-          - SIP_Creation_New_Folio_With_KYC
-          - SIP_Creation_Without_Payment_Mandate
-          - SIP_Manual_Trigger_Instalment
-          - SIP_Instalment
-          - SIP_Instalment_Failure
-          - SIP_Instalment_Payment_Failure
-          - SIP_Instalment_Manual_Payment
-          - SIP_Instalment_Manual_Payment_And_Mandate
-          - SIP_Cancellation_By_Investor
-          - SIP_Auto_Cancellation
-          - SIP_Modification_Pause
-          - SIP_Modification_Change_Amount
-          - SIP_Completion
-          - SIP_Creation_New_Folio_Payment_Failure
-          - SIP_Add_Update_Payment_Mandate
-          - Redemption_By_Amount
-          - Redemption_Redeem_All
-          - Redemption_By_Units
-          - Instant_Redemption_By_Amount
-          - Redemption_Failure
-          - Cart_Lumpsum_Investment
-          - Cart_SIP_Creation
-          - Cart_Lumpsum_Plus_SIP
           - Cart_Lumpsum_Investment_Part_Failure
-          - Cart_SIP_Instalment
-          - Switch_By_Amount
-          - STP_By_Amount
-          - STP_Instalment
-          - SWP_By_Amount
-          - SWP_Instalment
-          - Other_Services_New_KYC
-          - Other_Services_Register_Payment_Mandate
-          - Other_Services_Open_Zero_Balance_Folio
-          - Other_Services_Search
+          - Cart_SIP_Creation
+          - Cart_SIP_Installment
+          - Cart_lumpsum_Investment
           - Lumpsum_Existing_Folio
           - Lumpsum_New_Folio
           - Lumpsum_New_Folio_With_KYC
           - Lumpsum_Payment_By_Buyer_App
           - Lumpsum_Payment_Retry
+          - Main_Search
+          - Redemption_By_Amount
+          - Redemption_By_Units
+          - Redemption_Redeem_All
+          - SIP_Auto_Cancellation
+          - SIP_Cancellation_By_The_Investor
+          - SIP_Completion
+          - SIP_Creation_Existing_Folio
+          - SIP_Creation_New_Folio
+          - SIP_Creation_New_Folio_With_KYC
+          - SIP_Creation_Without_Payment_Mandate
+          - SIP_Instalment
+          - SIP_Instalment_Failure
+          - SIP_Manual_Trigger_Instalment
+          - SIP_Modification_Change_Amount
+          - SIP_Modification_Pause
+          - SIP_update_new_payment_update
+          - SIP_without_payment_mandate
+          - STP_by_amount
+          - STP_installment
+          - SWP_by_amount
+          - SWP_installment
+          - Search_Incremental_Pull
+          - Switch_by_amount
+          - SIP_Instalment_Payment_Failure
+          - SIP_Instalment_Manual_Payment
+          - SIP_Instalment_Manual_Payment_And_Mandate
+          - SIP_Creation_New_Folio_Payment_Failure
+          - SIP_Add_Update_Payment_Mandate
+          - Instant_Redemption_By_Amount
+          - Redemption_Failure
+          - Cart_Lumpsum_Plus_SIP
+          - Other_Services_New_KYC
+          - Other_Services_Register_Payment_Mandate
+          - Other_Services_Open_Zero_Balance_Folio
+          - Other_Services_Search
           - External_Folio_Lumpsum
-
         validationModules: "../validations/ONDC:FIS14/validator#validate"
