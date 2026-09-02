@@ -581,6 +581,21 @@ export function validateInsurancePaymentParams(
             }
         }
 
+        // Payment ID validation
+if (
+    payment.id === undefined ||
+    payment.id === null ||
+    payment.id === ""
+) {
+    testResults.failed.push(
+        `Insurance payment ${index}: id is missing or undefined`
+    );
+} else {
+    testResults.passed.push(
+        `Insurance payment ${index}: id is present: ${payment.id}`
+    );
+}
+
         // Status enum
         if (payment.status) {
             const validStatuses = ["PAID", "NOT-PAID", "FAILED", "OVERDUE", "DEFAULTED"];
@@ -648,6 +663,7 @@ export function validateInsurancePaymentParams(
                 );
             }
         }
+        
     });
 }
 

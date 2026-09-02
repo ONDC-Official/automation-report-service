@@ -20,6 +20,19 @@ export default async function on_confirm(
 
   try {
     const message = element?.jsonRequest?.message;
+
+    // Validate that payment id cannot be undefined or empty for FIS13 2.0.0 on_confirm
+    const payments = message?.order?.payments;
+    if (payments && Array.isArray(payments)) {
+      payments.forEach((payment: any, index: number) => {
+        if (!payment.id || payment.id === "undefined" || (typeof payment.id === "string" && payment.id.trim() === "")) {
+          result.failed.push(`Payment ${index} id cannot be undefined`);
+        } else {
+          result.passed.push(`Payment ${index} id is present: ${payment.id}`);
+        }
+      });
+    }
+
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
