@@ -5,6 +5,13 @@ import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
+import {
+  validateInsuranceContext,
+  validateInsuranceOrderStatus,
+  validateInsuranceOrderId,
+  validateInsuranceDocuments,
+  validateInsurancePaymentParams,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function on_confirm(
   element: Payload,
@@ -17,6 +24,12 @@ export default async function on_confirm(
 
   // For normal on_confirm, use domain validator
   const result = await DomainValidators.fis13OnConfirm(element, sessionID, flowId, actionId, usecaseId);
+
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateInsuranceOrderStatus(element?.jsonRequest?.message, result, flowId);
+  validateInsuranceOrderId(element?.jsonRequest?.message, result, flowId);
+  validateInsuranceDocuments(element?.jsonRequest?.message, result, flowId);
+  validateInsurancePaymentParams(element?.jsonRequest?.message, result, flowId, actionId);
 
   try {
     const message = element?.jsonRequest?.message;

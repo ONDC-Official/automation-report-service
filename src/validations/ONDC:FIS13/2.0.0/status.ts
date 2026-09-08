@@ -1,6 +1,9 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
 import { validateStatusRefId } from "../../shared";
+import {
+  validateInsuranceContext,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function status(
   element: Payload,
@@ -18,6 +21,8 @@ export default async function status(
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
   const message = jsonRequest?.message;
+
+  validateInsuranceContext(element?.jsonRequest?.context, testResults, flowId, "2.0.0");
 
   // Validate status message
   validateStatusRefId(message, testResults);
