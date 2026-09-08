@@ -1,0 +1,11 @@
+save-data:
+  message_id: "$.context.message_id"
+  transaction_id: "$.context.transaction_id"
+  collected_by: "$.message.intent.payment.collected_by"
+  tags: "$.message.intent.tags"
+  city_code: "$.context.location.city.code"
+  category_code: "$.message.intent.category.descriptor.code"
+  items: "$.message.intent.provider.items[*].id"
+  provider_id: "$.message.intent.provider.id"
+  provider_items: "$.message.intent.provider.items[*]"
+  form_ids: "$.message.intent.provider.items[*].xinput.form.id"

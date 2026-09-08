@@ -4346,14 +4346,16 @@ domains:
     versions:
       "2.0.0":
         usecases:
-          hospicash-insurance:
+          HOSPICASH INSURANCE:
             flows:
               Discovery_of_Insurer_Providers_and_Master_Policies:
                 - search
                 - on_search
-              Discovery_of_Products_from_Master_Policies:
+
+              Discovery_of_Products_from_Master_Policies (Hospicash Insurance):
                 - search
                 - on_search
+
               Purchase_Journey_Hospicash_Insurance:
                 - search
                 - on_search
@@ -4365,6 +4367,23 @@ domains:
                 - on_confirm
                 - on_update
 
+              Purchase_Journey_Hospicash_Insurance_with_igm_1.0.0:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - issue
+                - on_issue
+                - issue_status
+                - on_issue_status
+                - on_issue_status
+                - issue
+
               CD_Balance_Error_Hospicash_Insurance:
                 - search
                 - on_search
@@ -4372,20 +4391,77 @@ domains:
                 - on_select
                 - init
                 - on_init
+
             optional_flows:
               - Discovery_of_Insurer_Providers_and_Master_Policies
-              - Discovery_of_Products_from_Master_Policies
+              - Discovery_of_Products_from_Master_Policies (Hospicash Insurance)
               - Purchase_Journey_Hospicash_Insurance
+              - Purchase_Journey_Hospicash_Insurance_with_igm_1.0.0
               - CD_Balance_Error_Hospicash_Insurance
             validationModules: "../validations/ONDC:FIS13/validator#validate"
-          accidental-insurance:
+          TRANSIT INSURANCE:
             flows:
               Discovery_of_Insurer_Providers_and_Master_Policies:
                 - search
                 - on_search
+
+              Discovery_of_Products_from_Master_Policies (Transit Insurance):
+                - search
+                - on_search
+
+              Purchase_Journey_Transit_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+
+              Purchase_Journey_Transit_Insurance_with_igm_1.0.0:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - issue
+                - on_issue
+                - issue_status
+                - on_issue_status
+                - on_issue_status
+                - issue
+
+              CD_Balance_Error_Transit_Insurance:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+
+            optional_flows:
+              - Discovery_of_Insurer_Providers_and_Master_Policies
+              - Discovery_of_Products_from_Master_Policies (Transit Insurance)
+              - Purchase_Journey_Transit_Insurance
+              - Purchase_Journey_Transit_Insurance_with_igm_1.0.0
+              - CD_Balance_Error_Transit_Insurance
+            validationModules: "../validations/ONDC:FIS13/validator#validate"
+          ACCIDENTAL INSURANCE:
+            flows:
+              Discovery_of_Insurer_Providers_and_Master_Policies:
+                - search
+                - on_search
+
               Discovery_of_Products_from_Master_Policies (Accidental Insurance):
                 - search
                 - on_search
+
               Purchase_Journey_Accidental_Insurance:
                 - search
                 - on_search
@@ -4396,6 +4472,24 @@ domains:
                 - confirm
                 - on_confirm
                 - on_update
+
+              Purchase_Journey_Accidental_Insurance_with_igm_1.0.0:
+                - search
+                - on_search
+                - select
+                - on_select
+                - init
+                - on_init
+                - confirm
+                - on_confirm
+                - on_update
+                - issue
+                - on_issue
+                - issue_status
+                - on_issue_status
+                - on_issue_status
+                - issue
+
               CD_Balance_Error_Accidental_Insurance:
                 - search
                 - on_search
@@ -4403,10 +4497,12 @@ domains:
                 - on_select
                 - init
                 - on_init
+
             optional_flows:
               - Discovery_of_Insurer_Providers_and_Master_Policies
               - Discovery_of_Products_from_Master_Policies (Accidental Insurance)
               - Purchase_Journey_Accidental_Insurance
+              - Purchase_Journey_Accidental_Insurance_with_igm_1.0.0
               - CD_Balance_Error_Accidental_Insurance
             validationModules: "../validations/ONDC:FIS13/validator#validate"
           HEALTH INSURANCE:
@@ -5078,7 +5174,6 @@ domains:
               - Payment_Failure_Health_Insurance(Family)
               - Payment_Failure_Health_Insurance(PRE-ORDER-Family-With-ManualReview)
             validationModules: "../validations/ONDC:FIS13/validator#validate"
-
           MOTOR INSURANCE:
             flows:
               Motor_Insurance_Application:

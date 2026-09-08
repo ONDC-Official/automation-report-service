@@ -5022,11 +5022,23 @@ async function validateXinputFIS12(
   if (isHealthInsuranceFlow) {
     allowedHeadings.push(
       "INSURED_PERSONAL_DETAILS",
+      "Insured Personal Details",
       "CUSTOMER_INFORMATION",
       "Customer Information",
       "Health Information",
       "Medical History",
-      "Nominee Details"
+      "Nominee Details",
+      // Headings used by the FIS13 health mock flows (family/individual journeys):
+      // family & PED detail forms, eKYC, proposer/nominee forms, CIS and payment,
+      // and the manual underwriting review form.
+      "INDIVIDUAL_DETAILS",
+      "PED",
+      "EKYC",
+      "PROPOSER_DETAILS",
+      "NOMINEE_DETAILS",
+      "CIS",
+      "CIS_AND_PAYMENT",
+      "MANUAL_REVIEW"
     );
   }
 
