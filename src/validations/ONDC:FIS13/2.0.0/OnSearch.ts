@@ -4,6 +4,10 @@ import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateInsuranceItemsOnSearch,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function on_search(
   element: Payload,
@@ -12,6 +16,9 @@ export default async function on_search(
   actionId: string
 ): Promise<TestResult> {
   const result = await DomainValidators.fis13OnSearch(element, sessionID, flowId, actionId);
+
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateInsuranceItemsOnSearch(element?.jsonRequest?.message, result, flowId);
   
   // Validate items consistency for health insurance and motor insurance flows
   const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));

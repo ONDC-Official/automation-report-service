@@ -9,12 +9,22 @@
  */
 
 import { TestResult } from "../../types/payload";
-import { HEALTH_INSURANCE_FLOWS } from "../../utils/constants";
+import { HEALTH_INSURANCE_FLOWS, SACHET_INSURANCE_FLOWS } from "../../utils/constants";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isHealthInsuranceFlow(flowId?: string): boolean {
     return !!flowId && HEALTH_INSURANCE_FLOWS.includes(flowId);
+}
+
+function isSachetInsuranceFlow(flowId?: string): boolean {
+    return !!flowId && SACHET_INSURANCE_FLOWS.includes(flowId);
+}
+
+// Health + sachet: these validators apply to every insurance journey that the
+// report service validates internally (motor has its own paths and stays out).
+function isInsuranceFlow(flowId?: string): boolean {
+    return isHealthInsuranceFlow(flowId) || isSachetInsuranceFlow(flowId);
 }
 
 /** RFC 3339 / ISO 8601 timestamp pattern (loose) */
@@ -40,9 +50,10 @@ function getTagListValue(tags: any[], tagCode: string, itemCode: string): string
 export function validateInsuranceContext(
     context: any,
     testResults: TestResult,
-    flowId?: string
+    flowId?: string,
+    expectedVersion: string = "2.0.0"
 ): void {
-    if (!isHealthInsuranceFlow(flowId) || !context) return;
+    if (!isInsuranceFlow(flowId) || !context) return;
 
     // domain
     if (context.domain) {
@@ -57,11 +68,11 @@ export function validateInsuranceContext(
 
     // version
     if (context.version) {
-        if (context.version === "2.0.1") {
-            testResults.passed.push("Context version is 2.0.1");
+        if (context.version === expectedVersion) {
+            testResults.passed.push(`Context version is ${expectedVersion}`);
         } else {
             testResults.failed.push(
-                `Context version should be 2.0.1, found: ${context.version}`
+                `Context version should be ${expectedVersion}, found: ${context.version}`
             );
         }
     }
@@ -125,7 +136,7 @@ export function validateInsurancePaymentTags(
     flowId?: string,
     source: "search" | "order" = "order"
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     let tagSets: any[][] = [];
 
@@ -226,7 +237,7 @@ export function validateInsuranceDocuments(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const documents = message?.order?.documents;
     if (!documents || !Array.isArray(documents) || documents.length === 0) {
@@ -305,7 +316,7 @@ export function validateInsuranceFulfillments(
     flowId?: string,
     actionId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const fulfillments = message?.order?.fulfillments;
     if (!fulfillments || !Array.isArray(fulfillments)) return;
@@ -377,7 +388,7 @@ export function validateInsuranceItemsOnSearch(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const providers = message?.catalog?.providers;
     if (!providers || !Array.isArray(providers)) return;
@@ -389,7 +400,9 @@ export function validateInsuranceItemsOnSearch(
         // Validate categories
         const categories = provider.categories;
         if (categories && Array.isArray(categories)) {
-            const validCategoryCodes = ["HEALTH_INSURANCE", "INDIVIDUAL_INSURANCE", "FAMILY_INSURANCE"];
+            const validCategoryCodes = isSachetInsuranceFlow(flowId)
+                ? ["MICRO_INSURANCE", "MICRO_HOSPICASH_INSURANCE", "MICRO_TRANSIT_INSURANCE", "MICRO_ACCIDENTAL_INSURANCE"]
+                : ["HEALTH_INSURANCE", "INDIVIDUAL_INSURANCE", "FAMILY_INSURANCE"];
             categories.forEach((cat: any, ci: number) => {
                 if (cat.descriptor?.code) {
                     if (!validCategoryCodes.includes(cat.descriptor.code)) {
@@ -505,7 +518,7 @@ export function validateInsuranceOrderStatus(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const status = message?.order?.status;
     if (!status) {
@@ -531,7 +544,7 @@ export function validateInsuranceBilling(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const billing = message?.order?.billing;
     if (!billing) {
@@ -563,7 +576,7 @@ export function validateInsurancePaymentParams(
     flowId?: string,
     actionId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const payments = message?.order?.payments;
     if (!payments || !Array.isArray(payments)) return;
@@ -580,6 +593,21 @@ export function validateInsurancePaymentParams(
                 testResults.passed.push(`Insurance payment ${index}: type is valid: ${payment.type}`);
             }
         }
+
+        // Payment ID validation
+if (
+    payment.id === undefined ||
+    payment.id === null ||
+    payment.id === ""
+) {
+    testResults.failed.push(
+        `Insurance payment ${index}: id is missing or undefined`
+    );
+} else {
+    testResults.passed.push(
+        `Insurance payment ${index}: id is present: ${payment.id}`
+    );
+}
 
         // Status enum
         if (payment.status) {
@@ -648,6 +676,7 @@ export function validateInsurancePaymentParams(
                 );
             }
         }
+        
     });
 }
 
@@ -671,7 +700,7 @@ export function validateBreakupTitleEnum(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const breakup = message?.order?.quote?.breakup;
     if (!breakup || !Array.isArray(breakup)) return;
@@ -715,7 +744,7 @@ export function validateInsuranceSelectItems(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const items = message?.order?.items;
     if (!items || !Array.isArray(items)) return;
@@ -756,7 +785,7 @@ export function validateInsuranceOnSelectXinput(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const items = message?.order?.items;
     if (!items || !Array.isArray(items)) return;
@@ -818,7 +847,7 @@ export function validateInsuranceInitXinput(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const items = message?.order?.items;
     if (!items || !Array.isArray(items)) return;
@@ -844,7 +873,7 @@ export function validateInsuranceOnInitExtras(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     // Cancellation terms
     const cancellationTerms = message?.order?.cancellation_terms;
@@ -903,7 +932,7 @@ export function validateInsuranceConfirmXinput(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     const items = message?.order?.items;
     if (!items || !Array.isArray(items)) return;
@@ -929,7 +958,7 @@ export function validateInsuranceOrderId(
     testResults: TestResult,
     flowId?: string
 ): void {
-    if (!isHealthInsuranceFlow(flowId)) return;
+    if (!isInsuranceFlow(flowId)) return;
 
     if (message?.order?.id) {
         testResults.passed.push(`Insurance order.id is present: ${message.order.id}`);

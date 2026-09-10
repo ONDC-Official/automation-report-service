@@ -4419,6 +4419,21 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
               GSP: "GSP",
               RETURN_UPLOAD: "Return Upload",
               MUTUAL_FUND: "Mutual Fund",
+              MUTUAL_FUNDS: "Mutual Funds",
+              OPEN_ENDED: "Open Ended",
+              CLOSED_ENDED: "Closed Ended",
+              INTERVAL: "Interval",
+              OPEN_ENDED_EQUITY: "Open Ended Equity",
+              OPEN_ENDED_EQUITY_LARGECAP: "Open Ended Equity Large Cap",
+              OPEN_ENDED_EQUITY_MIDCAP: "Open Ended Equity Mid Cap",
+              OPEN_ENDED_EQUITY_SMALLCAP: "Open Ended Equity Small Cap",
+              OPEN_ENDED_EQUITY_MULTICAP: "Open Ended Equity Multi Cap",
+              OPEN_ENDED_EQUITY_FLEXICAP: "Open Ended Equity Flexi Cap",
+              OPEN_ENDED_DEBT: "Open Ended Debt",
+              OPEN_ENDED_HYBRID: "Open Ended Hybrid",
+              OPEN_ENDED_SOLUTION_ORIENTED: "Open Ended Solution Oriented",
+              OPEN_ENDED_INDEX: "Open Ended Index",
+              OPEN_ENDED_FOF: "Open Ended Fund of Funds",
               MFC: "MFC",
               ITR: "ITR",
               UPLOAD: "Upload",
@@ -4429,18 +4444,20 @@ function validateCategoriesFIS12(message: any, testResults: TestResult, flowId?:
             }
 
   categories.forEach((cat) => {
-    const code = cat?.descriptor?.code;
+    const rawCode = cat?.descriptor?.code;
     const name = cat?.descriptor?.name;
 
-    if (!code) {
+    if (!rawCode) {
       return;
     }
 
-    if (!validCategoryMap[code]) {
-      testResults.failed.push(`Invalid category code: ${code}`);
+    const cleanCode = typeof rawCode === "string" ? rawCode.trim().toUpperCase() : rawCode;
+
+    if (!validCategoryMap[cleanCode] && !validCategoryMap[rawCode]) {
+      testResults.failed.push(`Invalid category code: ${rawCode}`);
       return;
     }
-    testResults.passed.push(`Valid category: ${code} - ${name}`);
+    testResults.passed.push(`Valid category: ${rawCode} - ${name}`);
   });
 }
 
@@ -4793,7 +4810,7 @@ function validateUnifiedCreditOnSearchItemsFIS12(
     }
 
     // Descriptor code validation
-    const validCodes = ["LOAN", "CARD", "CREDIT_CARD", "PARENT", "ITEM"];
+    const validCodes = ["LOAN", "PRE_QUALIFIER", "PERSONAL_LOAN", "GOLD_LOAN", "CARD", "CREDIT_CARD", "PARENT", "ITEM"];
     if (!validCodes.includes(item.descriptor.code)) {
       testResults.failed.push(
         `Item ${item.id}: Invalid descriptor.code "${item.descriptor.code}"`
@@ -5020,11 +5037,23 @@ async function validateXinputFIS12(
   if (isHealthInsuranceFlow) {
     allowedHeadings.push(
       "INSURED_PERSONAL_DETAILS",
+      "Insured Personal Details",
       "CUSTOMER_INFORMATION",
       "Customer Information",
       "Health Information",
       "Medical History",
-      "Nominee Details"
+      "Nominee Details",
+      // Headings used by the FIS13 health mock flows (family/individual journeys):
+      // family & PED detail forms, eKYC, proposer/nominee forms, CIS and payment,
+      // and the manual underwriting review form.
+      "INDIVIDUAL_DETAILS",
+      "PED",
+      "EKYC",
+      "PROPOSER_DETAILS",
+      "NOMINEE_DETAILS",
+      "CIS",
+      "CIS_AND_PAYMENT",
+      "MANUAL_REVIEW"
     );
   }
 
@@ -5459,7 +5488,7 @@ function validatePayments(message: any, testResults: TestResult, flow_id?: strin
     }
     if (
       payment.type &&
-      !["PRE_ORDER", "ON_ORDER", "POST_FULFILLMENT","ON_FULFILLMENT"].includes(payment.type)
+      !["PRE_ORDER", "ON_ORDER", "POST_FULFILLMENT", "ON_FULFILLMENT", "BUYER_FINDER_FEES", "PRE_FULFILLMENT", "POST_ORDER"].includes(payment.type)
     ) {
       testResults.failed.push(`Payment ${index} type has invalid value`);
     } else if (payment.type) {
@@ -6392,15 +6421,23 @@ export function createSelectValidator(...config: string[]) {
 
     const transactionId = context?.transaction_id;
 
-    // Validate transaction ID exists for this flow
-    await validateTransactionId(sessionID, flowId, transactionId, testResults);
+    // Register the transaction ID for this flow before validating it.
+    // Flows that start at `select` (e.g. MF redemption flows that skip `search`)
+    // never reach createSearchValidator's addTransactionId call, so the ID is
+    // never stored and every subsequent validator reports a false "No transaction
+    // IDs found" failure. addTransactionId is idempotent — if search already
+    // stored the ID it will not be duplicated.
     if (transactionId) {
       try {
+        await addTransactionId(sessionID, flowId, transactionId);
         await updateApiMap(sessionID, transactionId, action);
       } catch (error: any) {
         testResults.failed.push(`API map update failed: ${error.message}`);
       }
     }
+
+    // Validate transaction ID exists for this flow (will now always find it)
+    await validateTransactionId(sessionID, flowId, transactionId, testResults);
 
     for (const validation of config) {
       if (validation) {

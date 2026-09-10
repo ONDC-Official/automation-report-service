@@ -110,7 +110,16 @@ export const SACHET_INSURANCE_FLOWS = [
   "Discovery_of_Insurer_Providers_and_Master_Policies",
   "Discovery_of_Products_from_Master_Policies (Accidental Insurance)",
   "Purchase_Journey_Accidental_Insurance",
-  "CD_Balance_Error_Accidental_Insurance"
+  "Purchase_Journey_Accidental_Insurance_with_igm_1.0.0",
+  "CD_Balance_Error_Accidental_Insurance",
+  "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)",
+  "Purchase_Journey_Hospicash_Insurance",
+  "Purchase_Journey_Hospicash_Insurance_with_igm_1.0.0",
+  "CD_Balance_Error_Hospicash_Insurance",
+  "Discovery_of_Products_from_Master_Policies (Transit Insurance)",
+  "Purchase_Journey_Transit_Insurance",
+  "Purchase_Journey_Transit_Insurance_with_igm_1.0.0",
+  "CD_Balance_Error_Transit_Insurance"
 ]
 
 
@@ -178,6 +187,9 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS13:2.0.1",
   "ONDC:FIS13:2.0.0:HEALTH INSURANCE",
   "ONDC:FIS13:2.0.0:MOTOR INSURANCE",
+  "ONDC:FIS13:2.0.0:HOSPICASH INSURANCE",
+  "ONDC:FIS13:2.0.0:TRANSIT INSURANCE",
+  "ONDC:FIS13:2.0.0:ACCIDENTAL INSURANCE",
   "ONDC:TRV10:2.1.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
