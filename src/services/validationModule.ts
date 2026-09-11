@@ -201,7 +201,15 @@ function validateActionSequence(
         // And the last action was a valid response (like 'on_update', 'on_status', 'on_track')
         // Then we can assume the user chose to stop the flow here.
         if (i > 0) {
-          const lastAction = requiredSequence[i - 1].toLowerCase();
+          // Walk backwards past DYNAMIC_FORM/HTML_FORM to find the real previous action
+          let lastAction = "start";
+          for (let j = i - 1; j >= 0; j--) {
+            const prev = requiredSequence[j].toLowerCase();
+            if (prev !== "html_form" && prev !== "dynamic_form") {
+              lastAction = prev;
+              break;
+            }
+          }
           const currentExpectedAction = expectedAction.toLowerCase();
 
         if (
