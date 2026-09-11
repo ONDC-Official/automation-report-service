@@ -6172,6 +6172,7 @@ export function validateUpdateRequestTRV10(
     "payments",
     "fulfillment",
     "fulfillments",
+    "order.payments",
   ];
 
   if (!validUpdateTargets.includes(updateTarget)) {
