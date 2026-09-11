@@ -485,10 +485,10 @@ export function validateInsuranceItemsOnSearch(
                 }
 
                 if (item.xinput.form.mime_type) {
-                    const validMimeTypes = ["text/html", "application/html"];
+                    const validMimeTypes = ["text/html", "application/html", "text/html-multi"];
                     if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
                         testResults.failed.push(
-                            `on_search item ${idx}: xinput form mime_type should be text/html or application/html, found: ${item.xinput.form.mime_type}`
+                            `on_search item ${idx}: xinput form mime_type should be text/html, application/html or text/html-multi, found: ${item.xinput.form.mime_type}`
                         );
                     } else {
                         testResults.passed.push(
@@ -822,11 +822,13 @@ export function validateInsuranceOnSelectXinput(
         }
 
         // form.mime_type
+        // text/html-multi is an html-form (on_search) affordance; on_select xinput forms are
+        // single-submission html (text/html) or dynamic (application/html) — multi is not valid here.
         if (item.xinput.form?.mime_type) {
-            const validMimeTypes = ["text/html", "application/html"];
+            const validMimeTypes = ["text/html", "application/html", "text/html-multi"];
             if (!validMimeTypes.includes(item.xinput.form.mime_type)) {
                 testResults.failed.push(
-                    `Insurance on_select item ${index}: xinput form.mime_type should be text/html or application/html, found: ${item.xinput.form.mime_type}`
+                    `Insurance on_select item ${index}: xinput form.mime_type should be text/html or application/html or , "text/html-multi", found: ${item.xinput.form.mime_type}`
                 );
             } else {
                 testResults.passed.push(
