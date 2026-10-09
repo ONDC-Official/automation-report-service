@@ -1,0 +1,12 @@
+# Persists what the seller actually quoted, so the order-formation leg
+# (init / on_init / confirm / on_confirm) can prove every id it is built on traces
+# back to the quote — see orderFormationChecks.validateIdsAgainstOnSelect — and so
+# the quote-no-drift chain starts one step earlier than on_init.
+#
+# `items`, `fulfillments` come back as a BARE OBJECT when the match has exactly one
+# element (src/utils/extract.ts:16) — consumers normalize via `normalizeSaved`.
+save-data:
+  provider: "$.message.order.provider"
+  items: "$.message.order.items[*]"
+  fulfillments: "$.message.order.fulfillments[*]"
+  quote_price: "$.message.order.quote.price.value"

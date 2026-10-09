@@ -1,0 +1,3 @@
+save-data:
+  provider: "$.message.order.provider"
+  items: "$.message.order.items[*]"

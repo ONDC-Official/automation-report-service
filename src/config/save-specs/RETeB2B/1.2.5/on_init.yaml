@@ -1,0 +1,20 @@
+# Persists the seller's quoted terms so `confirm`/`on_confirm` can be held to them.
+# These are exactly the keys that make the echo checks possible — the gap the generated
+# COD validator scripts leave open, since they omit the bpp_terms and settlement_details
+# echoes across on_init -> confirm.
+#
+# `settlement_details` is reached with bracket notation because the key is slashed; it and
+# `payments` come back as a BARE OBJECT when the match has exactly one element
+# (src/utils/extract.ts:16) — consumers normalize via `normalizeSaved`.
+#
+# `bpp_terms` uses a filter expression to pull just that tag group. Consumers read only
+# `tax_number` and `provider_tax_number` from it: four of the nine order flows legitimately
+# ADD `np_type` / `accept_bap_terms` to the group at on_confirm, so a whole-group
+# deep-equal would false-fail them.
+save-data:
+  timestamp: "$.context.timestamp"
+  quote_price: "$.message.order.quote.price.value"
+  bpp_terms: "$.message.order.tags[?(@.code == 'bpp_terms')]"
+  settlement_details: "$.message.order.payments[*]['@ondc/org/settlement_details'][*]"
+  payments: "$.message.order.payments[*]"
+  billing: "$.message.order.billing"
