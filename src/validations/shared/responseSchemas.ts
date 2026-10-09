@@ -32,7 +32,7 @@ export const ackResponseSchema = Joi.object({
     }).required(),
     otherwise: Joi.forbidden(),
   }),
-});
+}).unknown(true);
 
 export const ackOnlySchema = Joi.object({
   message: Joi.object({
@@ -48,6 +48,6 @@ export const ackOnlySchema = Joi.object({
     }).required(),
     otherwise: Joi.forbidden(),
   }),
-});
+}).unknown(true);
 
 

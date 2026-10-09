@@ -25,7 +25,15 @@ export async function saveFromElement(
     const transactionId: string | undefined = context?.transaction_id;
     const domainKey = (context?.domain || "").split(":").pop() || "";
     const action = (context?.action || "");
-    const version: string | undefined = context?.version;
+    // ONDC 1.x contexts (retail/eB2B/logistics) carry `core_version`; 2.x contexts
+    // (FIS/TRV) carry `version`. Reading only `version` made this function a silent
+    // no-op for every 1.x domain — RETeB2B payloads declare `core_version: "1.2.5"`
+    // and no `version` at all, so NOTHING was ever persisted for them and every
+    // cross-call check that reads save-spec data (select-vs-on_search, the
+    // on_init -> confirm term echoes, order-id continuity) skipped silently.
+    // Same precedence every domain validator already uses, e.g.
+    // src/validations/ONDC:FIS12/validator.ts:7.
+    const version: string | undefined = context?.version || context?.core_version;
     if (transactionId && domainKey && version && action) {
       const spec = loadSaveSpec(domainKey, version, action);
       await saveActionData(sessionID,flowId, transactionId, action, payload, spec);

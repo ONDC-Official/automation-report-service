@@ -1,0 +1,22 @@
+# Persists the buyer's order-formation request so the on_init callback can be checked
+# against it: the billing identity it must echo, the provider it must stay on, and the
+# timestamp + ttl that bound how long the seller had to answer.
+#
+# `timestamp` + `ttl` feed orderFormationChecks.validateCallbackTtlWindow — the window is
+# the payload's own declared ttl (PT30S in the reference flows), never a hardcoded constant.
+#
+# No `message_id`: a message_id continuity/uniqueness check was removed from
+# src/validations/shared/flowContinuityValidators.ts:28 at the user's explicit request
+# ("not needed for this domain"), so nothing reads it and it is not stored.
+#
+# `items`, `fulfillments` and `payments` come back as a BARE OBJECT when the match has
+# exactly one element (src/utils/extract.ts:16) — consumers normalize via `normalizeSaved`.
+save-data:
+  timestamp: "$.context.timestamp"
+  ttl: "$.context.ttl"
+  provider: "$.message.order.provider"
+  billing: "$.message.order.billing"
+  items: "$.message.order.items[*]"
+  fulfillments: "$.message.order.fulfillments[*]"
+  payments: "$.message.order.payments[*]"
+  quote_price: "$.message.order.quote.price.value"

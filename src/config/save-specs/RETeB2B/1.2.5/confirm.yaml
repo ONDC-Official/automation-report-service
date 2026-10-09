@@ -1,0 +1,25 @@
+# `order_id` is read by commonChecks.compareOrderIdContinuity from on_confirm, cancel,
+# on_cancel, update and on_update. The rest is read by the on_confirm echo checks in
+# orderFormationChecks: the settlement terms and seller tax identity the seller must not
+# change after the buyer has committed, the quote price that must not drift, the payment
+# status that must not revert from PAID, and the timestamp + ttl bounding how long the
+# seller had to answer.
+#
+# No `created_at`/`updated_at`: order.created_at is deliberately NOT compared across
+# confirm -> on_confirm, because the reference payloads legitimately differ there
+# (COD ...595Z at confirm vs ...612Z at on_confirm). on_confirm validates its own
+# timestamps against its own context instead.
+#
+# `items`, `payments` and `settlement_details` come back as a BARE OBJECT when the match
+# has exactly one element (src/utils/extract.ts:16) — consumers normalize via `normalizeSaved`.
+save-data:
+  order_id: "$.message.order.id"
+  provider: "$.message.order.provider"
+  items: "$.message.order.items[*]"
+  payments: "$.message.order.payments[*]"
+  timestamp: "$.context.timestamp"
+  ttl: "$.context.ttl"
+  quote_price: "$.message.order.quote.price.value"
+  bpp_terms: "$.message.order.tags[?(@.code == 'bpp_terms')]"
+  settlement_details: "$.message.order.payments[*]['@ondc/org/settlement_details'][*]"
+  billing: "$.message.order.billing"
