@@ -20,6 +20,29 @@ export const ISO8601_DURATION = /^P(?!$)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+
 /**
  * Validate GPS coordinates format: "lat,lng"
  */
+/**
+ * Parses a timestamp to epoch milliseconds, tolerating a `Date` as well as a string.
+ * Returns null when unparseable.
+ *
+ * The `Date` branch matters. A live payload arrives as JSON, so these fields are strings and
+ * plain `Date.parse` would do. But the reference flows in automation-specifications write
+ * their timestamps UNQUOTED, so `js-yaml` hands any fixture-driven harness real `Date`
+ * objects — and `String(someDate)` renders "Tue May 19 2026 16:07:17 GMT+0530", with the
+ * MILLISECONDS DROPPED. Comparing via `Date.parse(String(x))` therefore collapses two
+ * timestamps that differ only in milliseconds, which is exactly the case for
+ * order.created_at / updated_at across confirm -> on_confirm (15-74 ms) and across
+ * successive on_status legs (12-23 ms). Any cross-leg timestamp comparison must go through
+ * this, or it will read as "equal" under test and only behave correctly in production.
+ */
+export function toMillis(value: any): number | null {
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    return Number.isFinite(ms) ? ms : null;
+  }
+  const ms = Date.parse(String(value ?? ""));
+  return Number.isFinite(ms) ? ms : null;
+}
+
 export function validateGpsFormat(gps: string | undefined, fieldPath: string, result: TestResult): void {
   if (!gps) return;
   const parts = gps.split(",");
