@@ -3,13 +3,16 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { compareOrderIdContinuity } from "./commonChecks";
-import { validateCityConsistency } from "./selectChecks";
+import { validateCityConsistency, validateOnSelectFulfillmentRefs } from "./selectChecks";
 import {
   validateOrderTimestamps,
   resolvePaymentMode,
   validatePaymentModeLock,
   validateCodSettlementCounterparty,
+  validatePaymentParamsEcho,
+  validateCreatedAtNotBeforeOrder,
 } from "./orderFormationChecks";
+import { validateNoCancelledFulfillmentRevived } from "./rtoChecks";
 import {
   resolveStatusLeg,
   validateStatusLegStates,
@@ -57,7 +60,7 @@ export default async function on_status(
     // Must come before the per-leg rules: all of them take a `length === 0` early return
     // when there is no live delivery fulfillment, so the absence would otherwise be
     // invisible rather than reported.
-    validateDeliveryFulfillmentPresent(order, actionId, result);
+    validateDeliveryFulfillmentPresent(order, actionId, result, leg);
 
     // The core rule: this leg must report exactly the states its action_id promises.
     // Replaces the old "any of five order states / any of seven fulfillment codes" check,
@@ -84,6 +87,16 @@ export default async function on_status(
     if (txnId) {
       const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
       compareOrderIdContinuity(order?.id, confirmData?.order_id, `on_status (${actionId})`, result);
+
+      // Post-confirm echo (orderFormationChecks "POST-CONFIRM ECHO") and the RTO rules:
+      // the payment committed at confirm is echoed unchanged, created_at is never earlier than
+      // the order, every items[].fulfillment_id resolves, and a fulfillment cancelled at
+      // on_cancel stays Cancelled.
+      validatePaymentParamsEcho(order, confirmData?.payments, `on_status (${actionId})`, result);
+      validateCreatedAtNotBeforeOrder(order, confirmData, `on_status (${actionId})`, result);
+      validateOnSelectFulfillmentRefs(order, result, `on_status (${actionId})`);
+      const onCancelData = await getActionData(sessionID, flowId, txnId, "on_cancel");
+      validateNoCancelledFulfillmentRevived(order, onCancelData, `on_status (${actionId})`, result);
 
       // Keyed on context.action, so this is always the IMMEDIATELY PRECEDING on_status —
       // null on the first leg, which the check treats as "nothing to compare".

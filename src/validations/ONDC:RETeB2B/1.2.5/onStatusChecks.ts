@@ -28,9 +28,11 @@ import type { PaymentMode } from "./orderFormationChecks";
 // Every value in STATUS_LEGS below is unanimous across the flows that contain that leg.
 // Rules the payloads forced us to DROP (do not re-add without re-measuring):
 //
-//  - Monotonic fulfillment-state advance -> FALSE. `on_status_rto_delivered` legitimately
-//    REVERTS the fulfillment to `Packed` after `Out-for-delivery`. The per-leg pin makes
-//    monotonicity unnecessary anyway.
+//  - Monotonic fulfillment-state advance -> not enforced as a generic rule; the per-leg pin
+//    makes it unnecessary. NOTE (corrected 2026-10-14): this bullet used to say the RTO leg
+//    "legitimately REVERTS the fulfillment to `Packed`". It does not — that was the RTO spec
+//    example's defect, copied here. A Cancelled fulfillment is terminal (rtoChecks
+//    .validateNoCancelledFulfillmentRevived) and the RTO leg is about the RTO fulfillment.
 //  - `start`/`end` `time.range` or `time.timestamp` PRESENCE -> inconsistent by design.
 //    Out_of_Stock never sends a range and always sends timestamps; Buyer_Initiated_Return
 //    sends a range at `accepted`; (cod)/(Prepaid)/with_offers send a timestamp at
@@ -61,15 +63,25 @@ export interface StatusLeg {
   requireAgent: boolean;
   /** Whether this is the leg at which the order completes and COD money is collected. */
   isDelivery: boolean;
+  /**
+   * The fulfillment `type` this leg reports on. Omitted for the forward-delivery legs, which
+   * select the live Delivery fulfillment(s); `RTO` for the RTO terminal leg, which is about the
+   * RTO fulfillment — the Delivery fulfillment is already Cancelled by then.
+   */
+  fulfillmentType?: string;
 }
 
 /**
  * The per-leg contract. `n` is the number of reference flows containing that leg; every
  * value below is unanimous across them.
  *
- * `on_status_rto_delivered` is the odd one out twice over: `order.state` ends `Cancelled`
- * rather than `Completed`, and the fulfillment reverts to `Packed` rather than advancing to
- * `RTO-Delivered` (which L1's enum would also permit). Taken from the one flow that has it.
+ * `on_status_rto_delivered` is NOT calibrated from its (single) reference example, which is
+ * defective: it reports the cancelled Delivery fulfillment as `Packed` again and drops the RTO
+ * fulfillment while items still point at it. It follows the contract's state table instead
+ * (API contract "Fulfillment states & mapping to order states", RTO section): `RTO-Delivered`
+ * is the RTO fulfillment's terminal state, with the order `Cancelled` when every fulfillment
+ * is cancelled. No agent is required — the contract's RTO fulfillment carries none. See
+ * docs/RETeB2B-merchant-rto-part-cancel-verification.md.
  */
 export const STATUS_LEGS: Record<string, StatusLeg> = {
   // action_id                      order.state      fulfillment code     agent  delivery   n
@@ -79,7 +91,7 @@ export const STATUS_LEGS: Record<string, StatusLeg> = {
   on_status_picked:           { orderState: "In-progress", fulfillmentState: "Order-picked-up",  requireAgent: true,  isDelivery: false }, // 8
   on_status_out_for_delivery: { orderState: "In-progress", fulfillmentState: "Out-for-delivery", requireAgent: true,  isDelivery: false }, // 8
   on_status_order_delivered:  { orderState: "Completed",   fulfillmentState: "Order-delivered",  requireAgent: true,  isDelivery: true },  // 7
-  on_status_rto_delivered:    { orderState: "Cancelled",   fulfillmentState: "Packed",           requireAgent: true,  isDelivery: false }, // 1
+  on_status_rto_delivered:    { orderState: "Cancelled",   fulfillmentState: "RTO-Delivered",    requireAgent: false, isDelivery: false, fulfillmentType: "RTO" }, // contract
 };
 
 /**
@@ -116,9 +128,20 @@ function fulfillmentsOf(order: any): any[] {
 function deliveryFulfillmentsOf(order: any): any[] {
   return fulfillmentsOf(order).filter((f: any) => {
     if (String(f?.type) === "Cancel") return false;
+    // An RTO fulfillment is goods coming BACK, not a shipment to the buyer: it carries no
+    // routing/tracking tags in the contract, so the forward-delivery rules must not see it.
+    if (String(f?.type) === "RTO") return false;
     if (String(f?.state?.descriptor?.code) === "Cancelled") return false;
     return true;
   });
+}
+
+/** The fulfillments a leg's state/agent pin applies to: by type when the leg names one. */
+function legFulfillmentsOf(order: any, leg: StatusLeg | null): any[] {
+  if (leg?.fulfillmentType) {
+    return fulfillmentsOf(order).filter((f: any) => String(f?.type) === leg.fulfillmentType);
+  }
+  return deliveryFulfillmentsOf(order);
 }
 
 function paymentsOf(order: any): any[] {
@@ -148,7 +171,7 @@ export function validateStatusLegStates(
 
   validateOrderState(order, result, [leg.orderState], `on_status (${actionId})`);
 
-  const fulfillments = deliveryFulfillmentsOf(order);
+  const fulfillments = legFulfillmentsOf(order, leg);
   if (fulfillments.length === 0) return;
 
   const cleanRun = failureGate(result);
@@ -187,7 +210,7 @@ export function validateDeliveryAgent(
 ): void {
   if (!leg) return;
 
-  const fulfillments = deliveryFulfillmentsOf(order);
+  const fulfillments = legFulfillmentsOf(order, leg);
   if (fulfillments.length === 0) return;
 
   const cleanRun = failureGate(result);
@@ -288,9 +311,14 @@ export function validateCodSettlementAtDelivery(
   });
 
   if (checked > 0 && cleanRun()) {
+    // Worded per mode: a prepaid payment is already PAID here, so "not yet collected" — the
+    // old wording for every non-delivery leg — misdescribed every prepaid pass.
+    const cod = payments.filter((p: any) => mode === "cod" || String(p?.type) === "ON-FULFILLMENT").length;
     const detail = leg.isDelivery
       ? "PAID at the delivery leg"
-      : `not yet collected (fulfillment is '${leg.fulfillmentState}')`;
+      : cod > 0
+        ? `COD and not yet collected (fulfillment is '${leg.fulfillmentState}')`
+        : `prepaid and already PAID`;
     result.passed.push(`on_status (${actionId}): all ${checked} payment(s) are ${detail}`);
   }
 }
@@ -307,8 +335,26 @@ export function validateCodSettlementAtDelivery(
  *
  * Holds on 47/47 reference legs: every one carries a `type: Delivery` fulfillment.
  */
-export function validateDeliveryFulfillmentPresent(order: any, actionId: string, result: TestResult): void {
+export function validateDeliveryFulfillmentPresent(
+  order: any,
+  actionId: string,
+  result: TestResult,
+  leg: StatusLeg | null = null
+): void {
   if (!Array.isArray(order?.fulfillments)) return; // nothing to judge; L1 requires the array
+  if (leg?.fulfillmentType) {
+    if (legFulfillmentsOf(order, leg).length > 0) {
+      result.passed.push(`on_status (${actionId}): the ${leg.fulfillmentType} fulfillment this leg reports on is present`);
+    } else {
+      const present = fulfillmentsOf(order)
+        .map((f: any) => `${f?.id ?? "?"} (type ${f?.type ?? "?"}, state ${f?.state?.descriptor?.code ?? "?"})`)
+        .join("; ");
+      result.failed.push(
+        `on_status (${actionId}): no fulfillment of type '${leg.fulfillmentType}' — this leg must report it in state '${leg.fulfillmentState}'${present ? ` [found: ${present}]` : ""}`
+      );
+    }
+    return;
+  }
   if (deliveryFulfillmentsOf(order).length > 0) {
     result.passed.push(`on_status (${actionId}): a live delivery fulfillment is present`);
     return;
