@@ -3,6 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateQuoteBreakup, validateItemPricing } from "./commonChecks";
+import { validateCityConsistency } from "./selectChecks";
 import {
   resolvePaymentMode,
   validatePaymentsPresence,
@@ -13,7 +14,12 @@ import {
   validateSettlementDetails,
   validateBillingDetails,
   validateIdsAgainstOnSelect,
+  validateItemsAgainstOnSelect,
+  validateFulfillmentContactAndTracking,
+  validateProviderContinuity,
   validateQuotePriceNoDrift,
+  validateOffersAgainstCatalog,
+  validateSelectOffersCarriedForward,
 } from "./orderFormationChecks";
 
 export default async function init(
@@ -30,6 +36,9 @@ export default async function init(
     const mode = resolvePaymentMode(flowId);
 
     validateBillingDetails(order, "init", result);
+    // L1 asserts these fulfillment fields EXIST; this adds the shape it cannot see
+    // (dialable phone, boolean tracking). See docs/RETeB2B-init-contract-audit.md §3.1.
+    validateFulfillmentContactAndTracking(order, "init", result);
 
     validatePaymentsPresence(order, "init", result);
     validatePaymentEnums(order, "init", result);
@@ -55,7 +64,20 @@ export default async function init(
     if (txnId) {
       const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
       validateIdsAgainstOnSelect(order, onSelectData, "init", result);
+      // The order must be formed on the terms the seller quoted, not the ones the buyer
+      // first asked for — quantities and item->fulfillment pairing come from on_select.
+      validateItemsAgainstOnSelect(order, onSelectData, "init", result);
+      validateProviderContinuity(order, onSelectData?.provider, "on_select", "init", result);
       validateQuotePriceNoDrift(order, onSelectData?.quote_price, "on_select", "init", result);
+
+      const selectData = await getActionData(sessionID, flowId, txnId, "select");
+      validateSelectOffersCarriedForward(order, selectData, "init", result);
+
+      // Only the two `_with_offers(...)` flows have an on_search step, so both of these
+      // have real data there and skip silently in the other seven.
+      const onSearchData = await getActionData(sessionID, flowId, txnId, "on_search");
+      validateCityConsistency(context, onSearchData, result, "init");
+      validateOffersAgainstCatalog(order, context, onSearchData, "init", result);
     }
   } catch (_) {}
 
