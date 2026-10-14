@@ -2061,3 +2061,126 @@ export function validateFinderFeeEcho(
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// POST-CONFIRM ECHO — on_update / update / on_status / on_cancel
+// ---------------------------------------------------------------------------
+// The order is fixed at confirm. These three rules hold every later leg to it, and each was
+// calibrated (2026-10-14) over every post-confirm leg of the nine eB2B order flows plus three
+// live sessions — see docs/RETeB2B-merchant-rto-part-cancel-verification.md.
+
+/**
+ * The payment the buyer committed at confirm does not change afterwards: `params.amount`,
+ * `currency` and (when both sides carry one) `transaction_id` are echoed on every later leg.
+ *
+ * Compared against CONFIRM, not on_confirm — on_confirm is itself a seller leg that can be
+ * wrong (the Buyer_Initiated_Return reference sends 1150.00 there against a 1040.00 order)
+ * and Out_of_Stock's on_confirm drops `transaction_id`, while every later leg in all nine
+ * flows echoes confirm exactly. A partial refund does NOT reduce `params.amount`: it records
+ * what was paid, and the refund travels as quote_trail + a `refund` settlement entry.
+ *
+ * Unanimous except the Merchant_Side_RTO part-cancel `on_update` / `update_settlement_trail`,
+ * which carry the contract's own literal `1150` / `3937` (its original order total) instead
+ * of this order's — a spec/mock defect this rule exists to catch.
+ */
+export function validatePaymentParamsEcho(
+  order: any,
+  storedPayments: any,
+  label: string,
+  result: TestResult
+): void {
+  const stored = normalizeSaved(storedPayments).filter((p: any) => p?.params);
+  const current = paymentsOf(order).filter((p: any) => p?.params);
+  if (stored.length === 0 || current.length === 0) return;
+
+  const expected = stored[0].params;
+  const ok = failureGate(result);
+  current.forEach((payment: any, index: number) => {
+    const params = payment.params;
+    const ref = `payments[${index}].params`;
+    const amount = Number(params?.amount);
+    const expectedAmount = Number(expected?.amount);
+    if (params?.amount !== undefined && expected?.amount !== undefined &&
+        !(Number.isFinite(amount) && Number.isFinite(expectedAmount) && Math.abs(amount - expectedAmount) < 0.01)) {
+      result.failed.push(
+        `${label}: ${ref}.amount '${params.amount}' differs from the ${expected.amount} committed at confirm — the paid amount does not change after confirm (refunds travel as quote_trail + settlement)`
+      );
+    }
+    if (params?.currency && expected?.currency && params.currency !== expected.currency) {
+      result.failed.push(`${label}: ${ref}.currency '${params.currency}' differs from confirm's '${expected.currency}'`);
+    }
+    if (params?.transaction_id && expected?.transaction_id && String(params.transaction_id) !== String(expected.transaction_id)) {
+      result.failed.push(
+        `${label}: ${ref}.transaction_id '${params.transaction_id}' differs from confirm's '${expected.transaction_id}'`
+      );
+    }
+  });
+  if (ok()) {
+    const detail = [expected.amount, expected.currency].filter(Boolean).join(" ");
+    const txn = expected.transaction_id ? `, txn ${expected.transaction_id}` : "";
+    result.passed.push(`${label}: payment params echo confirm (${detail}${txn})`);
+  }
+}
+
+/**
+ * `order.created_at` may be re-stamped on later legs (every reference flow does — see the
+ * confirm save-spec), but a re-stamp only ever moves it FORWARD. A value earlier than the
+ * order's own creation is a stale or placeholder timestamp. Measured: the only such value
+ * across all post-confirm reference legs is the RTO part-cancel's literal `2023-06-03`.
+ */
+export function validateCreatedAtNotBeforeOrder(
+  order: any,
+  confirmData: any,
+  label: string,
+  result: TestResult
+): void {
+  if (order?.created_at === undefined || order?.created_at === null) return;
+  const bounds = [toMillis(confirmData?.created_at), toMillis(confirmData?.timestamp)].filter(
+    (v): v is number => v !== null
+  );
+  if (bounds.length === 0) return;
+  const floor = Math.min(...bounds);
+  const createdAt = toMillis(order.created_at);
+  if (createdAt === null) {
+    result.failed.push(`${label}: order.created_at '${order.created_at}' is not a valid timestamp`);
+    return;
+  }
+  if (createdAt < floor) {
+    result.failed.push(
+      `${label}: order.created_at '${order.created_at}' is earlier than the order itself (confirmed ${new Date(floor).toISOString()}) — a stale or placeholder timestamp`
+    );
+    return;
+  }
+  result.passed.push(`${label}: order.created_at is not earlier than the order's confirmation`);
+}
+
+/** Forward order of the non-terminal order states; `Cancelled` is terminal and not ranked. */
+const ORDER_STATE_RANK: Record<string, number> = { Created: 0, Accepted: 1, "In-progress": 2, Completed: 3 };
+
+/**
+ * An order never moves back to an earlier state. Contract Scenario 1 (part cancel by
+ * merchant) keeps `order.state: "Accepted"` on its on_update; the RTO reference flow sends
+ * `Created` there, after on_confirm's `Accepted` — a regression this rule reports.
+ * `priorState` is the latest state the seller reported (previous on_status, else on_confirm).
+ */
+export function validateOrderStateNoRegression(
+  order: any,
+  priorState: any,
+  priorLabel: string,
+  label: string,
+  result: TestResult
+): void {
+  const prior = normalizeSaved(priorState)[0];
+  const current = order?.state;
+  if (!prior || !current) return;
+  const from = ORDER_STATE_RANK[String(prior)];
+  const to = ORDER_STATE_RANK[String(current)];
+  if (from === undefined || to === undefined) return; // Cancelled or unknown: not ranked
+  if (to < from) {
+    result.failed.push(
+      `${label}: order.state '${current}' moves the order backwards from '${prior}' (${priorLabel}) — an order state never regresses`
+    );
+    return;
+  }
+  result.passed.push(`${label}: order.state '${current}' does not regress from '${prior}' (${priorLabel})`);
+}

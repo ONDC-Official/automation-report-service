@@ -9,7 +9,9 @@
 # re-stamp the order but never backwards, so on_confirm's updated_at must be strictly later
 # than the value the buyer committed here.
 #
-# Still NO `created_at`: unlike updated_at it is deliberately NOT compared across
+# `created_at` IS saved (since 2026-10-14), but only as a LOWER BOUND:
+# orderFormationChecks.validateCreatedAtNotBeforeOrder fails a later leg whose created_at is
+# earlier than the order itself. It is still deliberately NOT compared for equality across
 # confirm -> on_confirm, because every reference flow legitimately re-stamps it
 # (COD ...595Z at confirm vs ...612Z at on_confirm; measured deltas 15-74 ms across the
 # nine flows). An equality rule there would false-fail all nine. on_confirm validates its
@@ -33,3 +35,4 @@ save-data:
   bpp_terms: "$.message.order.tags[?(@.code == 'bpp_terms')]"
   settlement_details: "$.message.order.payments[*]['@ondc/org/settlement_details'][*]"
   billing: "$.message.order.billing"
+  created_at: "$.message.order.created_at"

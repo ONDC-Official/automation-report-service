@@ -693,8 +693,14 @@ export function validateOnSelectItemsAgainstSelect(order: any, selectData: Recor
   }
 }
 
-/** Self-contained — on_select's own item.fulfillment_id must resolve within its own order.fulfillments. */
-export function validateOnSelectFulfillmentRefs(order: any, result: TestResult): void {
+/**
+ * Self-contained — an order's own item.fulfillment_id must resolve within its own
+ * order.fulfillments. Written for on_select; also run on every post-confirm seller leg
+ * (`label`), where it catches a fulfillment dropped while items still point at it — the RTO
+ * reference's `on_status_rto_delivered` keeps 11 units on `rto_mock_id_121` but omits that
+ * fulfillment.
+ */
+export function validateOnSelectFulfillmentRefs(order: any, result: TestResult, label: string = "on_select"): void {
   const fulfillmentIds = new Set((order?.fulfillments || []).map((f: any) => f?.id).filter(Boolean));
   if (fulfillmentIds.size === 0) return;
 
@@ -706,13 +712,13 @@ export function validateOnSelectFulfillmentRefs(order: any, result: TestResult):
     referencing++;
     if (!fulfillmentIds.has(item.fulfillment_id)) {
       result.failed.push(
-        `on_select: ${itemLabel(item)} references fulfillment_id '${item.fulfillment_id}' which is not declared in order.fulfillments`
+        `${label}: ${itemLabel(item)} references fulfillment_id '${item.fulfillment_id}' which is not declared in order.fulfillments`
       );
     }
   }
 
   if (referencing > 0 && cleanRun()) {
-    result.passed.push(`on_select: all ${referencing} item fulfillment_id reference(s) resolve to a declared fulfillment`);
+    result.passed.push(`${label}: all ${referencing} item fulfillment_id reference(s) resolve to a declared fulfillment`);
   }
 }
 

@@ -72,8 +72,16 @@ function returnFulfillments(fulfillments: any): any[] {
   return asArray(fulfillments).filter((f: any) => f?.type === "Return");
 }
 
+/**
+ * Fulfillments that take quantity (and money) off the order: a buyer Return, a seller part
+ * Cancel, and — since the RTO on_cancel books its returned quantity the same way (contract
+ * "/on_cancel (RTO flow)": items move onto the RTO fulfillment, which carries the quote_trail)
+ * — an RTO.
+ */
+const ADJUSTMENT_TYPES = new Set(["Return", "Cancel", "RTO"]);
+
 function adjustmentFulfillments(fulfillments: any): any[] {
-  return asArray(fulfillments).filter((f: any) => f?.type === "Return" || f?.type === "Cancel");
+  return asArray(fulfillments).filter((f: any) => ADJUSTMENT_TYPES.has(f?.type));
 }
 
 function toAmount(value: any): number | null {
@@ -350,7 +358,7 @@ export function validateReturnIdContinuity(
 }
 
 /**
- * Reconciles the money on a Return/Cancel fulfillment:
+ * Reconciles the money on a Return/Cancel/RTO fulfillment:
  *  - every `quote_trail` item entry equals -(moved quantity x unit price);
  *  - for a return, the moved quantity equals what the buyer asked to return;
  *  - the item's remaining breakup count equals ordered minus moved;
@@ -374,6 +382,9 @@ export function validateAdjustmentArithmetic(
   const notes: string[] = [];
   let trailTotal = 0;
   let trailSeen = false;
+  // The remaining-quantity rule is per ITEM, but it is reached once per quote_trail entry — an
+  // item cancelled in part and RTO'd for the rest carries two trails (Cancel + RTO).
+  const remainingChecked = new Set<string>();
 
   adjustments.forEach((f: any) => {
     const trail = quoteTrailOf(f);
@@ -423,7 +434,8 @@ export function validateAdjustmentArithmetic(
         }
       }
 
-      if (asArray(confirmItems).length > 0) {
+      if (asArray(confirmItems).length > 0 && !remainingChecked.has(itemId)) {
+        remainingChecked.add(itemId);
         const ordered = itemQuantity(confirmItems, itemId);
         const allMoved = adjustments.reduce(
           (sum: number, a: any) => sum + itemQuantity(items, itemId, a?.id),
@@ -433,7 +445,7 @@ export function validateAdjustmentArithmetic(
         const remaining = line ? Number(line?.["@ondc/org/item_quantity"]?.count) || 0 : 0;
         if (remaining !== ordered - allMoved) {
           result.failed.push(
-            `${label}: breakup still bills ${remaining} x '${itemId}', expected ${ordered - allMoved} (${ordered} ordered - ${allMoved} returned/cancelled)`
+            `${label}: breakup still bills ${remaining} x '${itemId}', expected ${ordered - allMoved} (${ordered} ordered - ${allMoved} returned/cancelled/RTO)`
           );
         }
       }
@@ -456,7 +468,7 @@ export function validateAdjustmentArithmetic(
     result.passed.push(
       trailSeen
         ? `${label}: quote_trail ${trailTotal.toFixed(2)} reconciles with the returned/cancelled quantity, the remaining breakup and the quote total${notes.length ? ` (${notes.join("; ")})` : ""}`
-        : `${label}: no quote_trail yet on ${adjustments.length} Return/Cancel fulfillment(s) — nothing to reconcile at this stage`
+        : `${label}: no quote_trail yet on ${adjustments.length} Return/Cancel/RTO fulfillment(s) — nothing to reconcile at this stage`
     );
   }
 }
