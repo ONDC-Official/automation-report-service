@@ -3,6 +3,12 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateOrderState, compareOrderIdContinuity } from "./commonChecks";
+import {
+  resolveRaisedReturnId,
+  validateReturnStateProgression,
+  validateReturnIdContinuity,
+  validateAdjustmentArithmetic,
+} from "./returnChecks";
 
 export default async function on_update(
   element: Payload,
@@ -38,9 +44,25 @@ export default async function on_update(
     if (txnId) {
       const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
       compareOrderIdContinuity(order?.id, confirmData?.order_id, "on_update", result);
+
+      // Return / part-cancel reconciliation — see returnChecks.ts. Both reads happen BEFORE
+      // this leg is saved, so `on_update` is the PREVIOUS on_update (null on the first).
+      // `update` is update_return's data until update_settlement_trail overwrites it, after
+      // which the raised return_request is recovered from the previous on_update instead.
+      const label = `on_update (${actionId})`;
+      const previousOnUpdate = await getActionData(sessionID, flowId, txnId, "on_update");
+      const savedUpdate = await getActionData(sessionID, flowId, txnId, "update");
+      // Once overwritten, the saved `update` is the buyer's refund report, not the return they
+      // raised — so its id is not trusted as the anchor; the previous on_update (already held
+      // to the raised id) is used instead, and the trail's id is checked by update.ts.
+      const raisedFrom = savedUpdate?.update_target === "item" ? savedUpdate : previousOnUpdate;
+      const raisedId = resolveRaisedReturnId(raisedFrom) ?? resolveRaisedReturnId(savedUpdate);
+      validateReturnStateProgression(order, actionId, previousOnUpdate, label, result);
+      validateReturnIdContinuity(order, raisedId, raisedFrom, label, result);
+      validateAdjustmentArithmetic(order, confirmData, label, result);
     }
 
-    // TODO(RETeB2B-B2B): full return-reason-code / replacement-item validation against B2B return policy tags
+    // TODO(RETeB2B-B2B): return reason-code validation against the provider's return policy
   } catch (_) {}
 
   await saveFromElement(element, sessionID, flowId, "jsonRequest");

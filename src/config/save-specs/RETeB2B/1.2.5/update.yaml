@@ -1,0 +1,14 @@
+# Read by returnChecks via OnUpdate.ts: on_update traces its Return fulfillment back to the id
+# (and item / quantity) the buyer raised here. Before this file existed, update.ts's
+# saveFromElement call was a silent no-op (loadSaveSpec threw on the missing file).
+#
+# `update_settlement_trail` is also an `update`, so it OVERWRITES this key (writes are keyed on
+# context.action). That is expected: its Return/Cancel fulfillment still carries the id, and
+# OnUpdate.ts falls back to the previous on_update for the return_request once
+# `update_target` is no longer `item`.
+#
+# `fulfillments` comes back as a BARE OBJECT when there is one (src/utils/extract.ts:16) —
+# returnChecks.asArray normalizes on read.
+save-data:
+  update_target: "$.message.update_target"
+  fulfillments: "$.message.order.fulfillments[*]"

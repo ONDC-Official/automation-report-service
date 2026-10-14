@@ -26,6 +26,10 @@ save-data:
   ttl: "$.context.ttl"
   updated_at: "$.message.order.updated_at"
   quote_price: "$.message.order.quote.price.value"
+  # returnChecks.validateAdjustmentArithmetic reads the confirmed unit price from here: a part
+  # cancel drops the item's breakup line from on_update entirely, so the price cannot always
+  # be read from the leg being checked.
+  quote_breakup: "$.message.order.quote.breakup[*]"
   bpp_terms: "$.message.order.tags[?(@.code == 'bpp_terms')]"
   settlement_details: "$.message.order.payments[*]['@ondc/org/settlement_details'][*]"
   billing: "$.message.order.billing"
