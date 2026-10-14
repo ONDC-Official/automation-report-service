@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateReturnRequest, validateRefundSettlement } from "./returnChecks";
+import { validatePaymentParamsEcho } from "./orderFormationChecks";
 
 export default async function update(
   element: Payload,
@@ -44,6 +45,11 @@ export default async function update(
       // latest on_update — the one that booked the quote_trail being refunded.
       const previousOnUpdate = await getActionData(sessionID, flowId, txnId, "on_update");
       validateRefundSettlement(order, previousOnUpdate, `update (${actionId})`, testResults);
+      // The buyer app's refund report must not restate the order's payment differently from
+      // confirm (the RTO reference sends the contract's literal 1150 / 3937 here). Skips when the
+      // update carries no params, as the return flow's settlement trail does.
+      const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
+      validatePaymentParamsEcho(order, confirmData?.payments, `update (${actionId})`, testResults);
     }
   } catch (_) {}
 

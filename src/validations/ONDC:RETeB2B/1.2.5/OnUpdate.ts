@@ -8,7 +8,15 @@ import {
   validateReturnStateProgression,
   validateReturnIdContinuity,
   validateAdjustmentArithmetic,
+  asArray,
 } from "./returnChecks";
+import {
+  validatePaymentParamsEcho,
+  validateCreatedAtNotBeforeOrder,
+  validateOrderStateNoRegression,
+} from "./orderFormationChecks";
+import { validatePartCancelPrecondition } from "./rtoChecks";
+import { validateOnSelectFulfillmentRefs } from "./selectChecks";
 
 export default async function on_update(
   element: Payload,
@@ -23,14 +31,13 @@ export default async function on_update(
     const order = message?.order;
 
     // Covers both the Merchant-side RTO/part-cancellation flow's unsolicited on_update
-    // and the buyer-initiated-return flow's on_update — be permissive on state since
-    // this can land at different points of the order lifecycle.
+    // and the buyer-initiated-return flow's on_update — the enum stays permissive since this
+    // can land at different points of the order lifecycle.
     //
-    // `Created` added 2026-10-11: Merchant_Side_RTO...'s `on_update_part_cancel` really does
-    // send `order.state: "Created"`, so omitting it was a false failure. It only became
-    // visible when the ReportingConfig sequences were extended to the full flows — before
-    // that, this leg sat beyond the cap and was never validated. L1's own on_status enum
-    // includes `Created` too.
+    // `Created` is in the enum (added 2026-10-11) but is no longer the whole story: since
+    // 2026-10-14 validateOrderStateNoRegression below fails an on_update that moves the order
+    // BACK from the state the seller last reported. The RTO reference's part cancel sends
+    // `Created` straight after on_confirm's `Accepted`; contract Scenario 1 keeps `Accepted`.
     if (order?.state) {
       validateOrderState(order, result, ["Created", "Accepted", "In-progress", "Completed", "Cancelled"], "on_update");
     }
@@ -60,6 +67,28 @@ export default async function on_update(
       validateReturnStateProgression(order, actionId, previousOnUpdate, label, result);
       validateReturnIdContinuity(order, raisedId, raisedFrom, label, result);
       validateAdjustmentArithmetic(order, confirmData, label, result);
+
+      // Post-confirm echo — see orderFormationChecks "POST-CONFIRM ECHO" and rtoChecks.
+      // `on_status` is the latest status leg when there was one (it is always later than
+      // on_confirm); otherwise on_confirm is the seller's last word on the order.
+      const priorStatus = await getActionData(sessionID, flowId, txnId, "on_status");
+      const onConfirmData = await getActionData(sessionID, flowId, txnId, "on_confirm");
+      const prior = priorStatus?.order_state !== undefined
+        ? { state: priorStatus.order_state, label: "previous on_status" }
+        : { state: onConfirmData?.order_state, label: "on_confirm" };
+      validateOrderStateNoRegression(order, prior.state, prior.label, label, result);
+      validatePaymentParamsEcho(order, confirmData?.payments, label, result);
+      validateCreatedAtNotBeforeOrder(order, confirmData, label, result);
+      validateOnSelectFulfillmentRefs(order, result, label);
+
+      const known = new Set<string>(
+        [
+          ...asArray(onConfirmData?.fulfillment_ids),
+          ...asArray(priorStatus?.fulfillment_ids),
+          ...asArray(previousOnUpdate?.fulfillments).map((f: any) => f?.id),
+        ].filter(Boolean)
+      );
+      validatePartCancelPrecondition(order, known, label, result);
     }
 
     // TODO(RETeB2B-B2B): return reason-code validation against the provider's return policy
