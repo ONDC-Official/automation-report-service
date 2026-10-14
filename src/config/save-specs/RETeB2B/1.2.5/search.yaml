@@ -1,0 +1,16 @@
+# The buyer app's own declarations at the top of the flow, kept so the order-formation leg
+# can prove it still honours them — see orderFormationChecks.validateFinderFeeAgainstSearch,
+# which holds `confirm`/`on_confirm` to the finder fee the BAP advertised here. Without this
+# a buyer app can advertise one rate and commit another, which the leg-to-leg
+# validateFinderFeeEcho cannot see.
+#
+# Only the two `_with_offers(...)` flows actually begin with a search, so these keys are
+# absent (and every consumer skips silently) in the other seven.
+#
+# NOTE on scoping: `search` and `on_search` are stored under a key WITHOUT the transaction
+# id (src/utils/redisUtils.ts:34), because some BAP/BPP pairs issue a fresh transaction_id
+# per search round within one flow. That is what makes these readable from confirm at all.
+save-data:
+  city: "$.context.city"
+  finder_fee_type: "$.message.intent.payment['@ondc/org/buyer_app_finder_fee_type']"
+  finder_fee_amount: "$.message.intent.payment['@ondc/org/buyer_app_finder_fee_amount']"

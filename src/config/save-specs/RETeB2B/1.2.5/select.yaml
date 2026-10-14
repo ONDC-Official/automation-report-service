@@ -1,3 +1,11 @@
+# `offers` exists so `init` can prove every offer the buyer chose at select is still
+# claimed when the order is formed — see orderFormationChecks.validateSelectOffersCarriedForward.
+# Only the `_with_offers(Prepaid)` flow sends offers at select, so it is absent (and the
+# check skips) in the other eight.
+#
+# `items` and `offers` come back as a BARE OBJECT when the match has exactly one element
+# (src/utils/extract.ts:16) — consumers normalize via `normalizeSaved`.
 save-data:
   provider: "$.message.order.provider"
   items: "$.message.order.items[*]"
+  offers: "$.message.order.offers[*]"

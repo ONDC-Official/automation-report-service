@@ -7,11 +7,12 @@ import {
   validateSelectProvider,
   validateSelectItems,
   validateSelectLocationRefs,
-  validateSelectFulfillmentRefs,
+  validateSelectOffers,
   validateSelectFulfillmentLocation,
   validateCustomerIdentification,
   validateCityConsistency,
   validateMinimumOrderValue,
+  validateRetrySelectAgainstOutOfStock,
 } from "./selectChecks";
 
 export default async function select(
@@ -31,7 +32,7 @@ export default async function select(
     validateSelectProvider(order, result);
     validateSelectItems(order, result);
     validateSelectLocationRefs(order, result);
-    validateSelectFulfillmentRefs(order, result);
+    validateSelectOffers(order, result);
     validateSelectFulfillmentLocation(order, result);
     validateCustomerIdentification(order, "select", result, { requireOrganizationName: true });
 
@@ -42,6 +43,11 @@ export default async function select(
       validateSelectAgainstCatalog(message, onSearchData, result);
       validateCityConsistency(context, onSearchData, result);
       validateMinimumOrderValue(order, onSearchData, result);
+
+      // Only non-empty for a select that FOLLOWS an on_select — i.e. the retry leg
+      // of Out_of_Stock(Error_code). Silent no-op for every first select.
+      const priorOnSelect = await getActionData(sessionID, flowId, txnId, "on_select");
+      validateRetrySelectAgainstOutOfStock(order, priorOnSelect, result);
     }
   } catch (_) {}
 
