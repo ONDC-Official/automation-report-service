@@ -5,10 +5,17 @@
 # status that must not revert from PAID, and the timestamp + ttl bounding how long the
 # seller had to answer.
 #
-# No `created_at`/`updated_at`: order.created_at is deliberately NOT compared across
-# confirm -> on_confirm, because the reference payloads legitimately differ there
-# (COD ...595Z at confirm vs ...612Z at on_confirm). on_confirm validates its own
-# timestamps against its own context instead.
+# `updated_at` is here for orderFormationChecks.validateUpdatedAtAdvances: a seller may
+# re-stamp the order but never backwards, so on_confirm's updated_at must be strictly later
+# than the value the buyer committed here.
+#
+# `created_at` IS saved (since 2026-10-14), but only as a LOWER BOUND:
+# orderFormationChecks.validateCreatedAtNotBeforeOrder fails a later leg whose created_at is
+# earlier than the order itself. It is still deliberately NOT compared for equality across
+# confirm -> on_confirm, because every reference flow legitimately re-stamps it
+# (COD ...595Z at confirm vs ...612Z at on_confirm; measured deltas 15-74 ms across the
+# nine flows). An equality rule there would false-fail all nine. on_confirm validates its
+# own created_at against its own context instead.
 #
 # `items`, `payments` and `settlement_details` come back as a BARE OBJECT when the match
 # has exactly one element (src/utils/extract.ts:16) — consumers normalize via `normalizeSaved`.
@@ -19,7 +26,13 @@ save-data:
   payments: "$.message.order.payments[*]"
   timestamp: "$.context.timestamp"
   ttl: "$.context.ttl"
+  updated_at: "$.message.order.updated_at"
   quote_price: "$.message.order.quote.price.value"
+  # returnChecks.validateAdjustmentArithmetic reads the confirmed unit price from here: a part
+  # cancel drops the item's breakup line from on_update entirely, so the price cannot always
+  # be read from the leg being checked.
+  quote_breakup: "$.message.order.quote.breakup[*]"
   bpp_terms: "$.message.order.tags[?(@.code == 'bpp_terms')]"
   settlement_details: "$.message.order.payments[*]['@ondc/org/settlement_details'][*]"
   billing: "$.message.order.billing"
+  created_at: "$.message.order.created_at"

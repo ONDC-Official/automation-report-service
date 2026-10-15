@@ -11,6 +11,10 @@
 # `tax_number` and `provider_tax_number` from it: four of the nine order flows legitimately
 # ADD `np_type` / `accept_bap_terms` to the group at on_confirm, so a whole-group
 # deep-equal would false-fail them.
+#
+# `cancellation_terms` is a forward-looking key: no reference flow sends it at any leg, so
+# orderFormationChecks.validateCancellationTermsEcho stays silent today and only speaks once
+# a seller actually quotes terms here and then changes them at on_confirm.
 save-data:
   timestamp: "$.context.timestamp"
   quote_price: "$.message.order.quote.price.value"
@@ -18,3 +22,4 @@ save-data:
   settlement_details: "$.message.order.payments[*]['@ondc/org/settlement_details'][*]"
   payments: "$.message.order.payments[*]"
   billing: "$.message.order.billing"
+  cancellation_terms: "$.message.order.cancellation_terms[*]"

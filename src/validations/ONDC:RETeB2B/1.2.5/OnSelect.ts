@@ -5,12 +5,17 @@ import { getActionData } from "../../../services/actionDataService";
 import { validateQuoteBreakup } from "./commonChecks";
 import {
   validateMandatoryOutOfStockError,
+  validateErrorResponse,
+  hasErrorResponse,
+  validateSelectProvider,
   validateOnSelectProviderConsistency,
   validateOnSelectItemsAgainstSelect,
   validateOnSelectFulfillmentRefs,
   validateOnSelectFulfillmentDetails,
+  validateOnSelectQuoteTtl,
   validateCustomerIdentification,
 } from "./selectChecks";
+import { isOffersFlow, validateOnSelectOffers } from "./offerChecks";
 
 // The Out_of_Stock(Error_code) flow runs two on_select legs, disambiguated by
 // action_id (confirmed against automation-specifications'
@@ -54,13 +59,33 @@ export default async function on_select(
       // falls through to the normal path — the retry is expected to succeed
     }
 
+    // Everything that did NOT take the Out_of_Stock rejection branch above. An error here is
+    // an optional terminal state rather than a required one, but when the seller does refuse,
+    // the refusal must be well-formed — the contract documents two codes for this leg
+    // (40002 out of stock, 50009 invalid customer id) and until 2026-10-12 neither was
+    // validated outside the one flow: validateErrorResponse was exported but never called.
+    // See docs/RETeB2B-select-contract-audit.md §3.2.
+    //
+    // Deliberately NOT an early return. The contract's 50009 example is a bare
+    // {context, error} with no message.order, and every check below already skips an absent
+    // order — while an error-bearing response that DOES carry an order (the shape the
+    // out-of-stock rejection uses) still gets its order validated. Returning here would
+    // silently drop that.
+    validateErrorResponse(element?.jsonRequest?.error, result);
 
     const message = element?.jsonRequest?.message;
     const order = message?.order;
 
     if (order?.quote) {
       validateQuoteBreakup(order.quote, result, "on_select");
+      // on_select is where the quote is issued, so this is where its ttl belongs. The same
+      // check already ran one leg later at confirm/on_confirm; the issuing leg was the gap.
+      validateOnSelectQuoteTtl(order, result);
     }
+    // provider.id + descriptor, shared with the select leg — the contract mandates the
+    // descriptor in BOTH sections and every on_select mock merges the saved provider that
+    // carries it. See validateSelectProvider for why this is required, not optional.
+    validateSelectProvider(order, result, "on_select");
     validateOnSelectFulfillmentRefs(order, result);
     validateOnSelectFulfillmentDetails(order, result);
     validateCustomerIdentification(order, "on_select", result);
@@ -70,6 +95,16 @@ export default async function on_select(
       const selectData = await getActionData(sessionID, flowId, txnId, "select");
       validateOnSelectProviderConsistency(order, selectData, result);
       validateOnSelectItemsAgainstSelect(order, selectData, result);
+    }
+
+    // The two `_with_offers(...)` flows exist for this: on_select is where the seller first
+    // applies offers to the quote, so this is where they are held to the catalog. Skipped on
+    // a refusal (an error-bearing on_select may still carry an order) — it quotes nothing.
+    // on_search is flow-scoped in redis (keyed without the transaction id); txnId is passed
+    // only because getActionData's signature requires it.
+    if (isOffersFlow(flowId) && order && !hasErrorResponse(requestError)) {
+      const onSearchData = txnId ? await getActionData(sessionID, flowId, txnId, "on_search") : null;
+      validateOnSelectOffers(order, element?.jsonRequest?.context, onSearchData, result);
     }
 
   } catch (_) { }

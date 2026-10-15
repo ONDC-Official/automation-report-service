@@ -11,6 +11,9 @@ import {
   validateCodPaymentConstraints,
   validatePaidTransactionId,
   validateSettlementDetails,
+  validateCodSettlementCounterparty,
+  validateFulfillmentContactAndTracking,
+  validateOrderDurations,
   validateBppTerms,
   validateCreditTerms,
   validateIdsAgainstOnSelect,
@@ -19,6 +22,11 @@ import {
   validateProviderContinuity,
   validateCallbackTtlWindow,
 } from "./orderFormationChecks";
+import {
+  isOffersFlow,
+  validateOrderOffersMatchApplied,
+  validateOfferLinesUnchanged,
+} from "./offerChecks";
 
 export default async function on_init(
   element: Payload,
@@ -45,6 +53,18 @@ export default async function on_init(
 
     // The seller's settlement account, declared here and frozen from here on.
     validateSettlementDetails(order, "on_init", result);
+    // Added 2026-10-13 (COD flow doc §3.4): a COD sale-amount must settle to the
+    // seller side — the seller collected the cash. Prepaid is deliberately untouched.
+    validateCodSettlementCounterparty(order, "on_init", mode, result);
+
+    // Added 2026-10-12 from the init-leg contract audit §3.1. The contract names
+    // fulfillments[].end.contact.phone and .tracking at /on_init, and quote.ttl; all nine
+    // payloads carry all three, and L1 asserts only that they exist. These add the shape:
+    // a dialable phone, a real boolean, and a parseable duration.
+    // validateOrderDurations also covers @ondc/org/TAT, which on_init never sends — so it
+    // reduces to the ttl check here. quote.ttl is now validated at every leg that has one.
+    validateFulfillmentContactAndTracking(order, "on_init", result);
+    validateOrderDurations(order, "on_init", result);
     // Deliberately NOT validateSettlementBasisWindow: @ondc/org/settlement_basis /
     // _window / _withholding_amount are absent from on_init in all nine reference flows.
     // The terms are agreed at confirm, where they are checked.
@@ -57,6 +77,8 @@ export default async function on_init(
     if (order?.quote) {
       validateQuoteBreakup(order.quote, result, "on_init");
     }
+    // Seller leg: the offers it lists must be exactly the offers its quote applies.
+    if (isOffersFlow(flowId)) validateOrderOffersMatchApplied(order, "on_init", result);
 
     const context = element?.jsonRequest?.context;
     const txnId = context?.transaction_id as string | undefined;
@@ -69,6 +91,7 @@ export default async function on_init(
 
       const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
       validateIdsAgainstOnSelect(order, onSelectData, "on_init", result);
+      if (isOffersFlow(flowId)) validateOfferLinesUnchanged(order, onSelectData, "on_init", result);
     }
   } catch (_) {}
 

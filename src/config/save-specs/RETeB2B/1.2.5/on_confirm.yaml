@@ -1,0 +1,14 @@
+# The seller's confirmed view of the order, read by the post-confirm legs (added 2026-10-14):
+#   order_state     on_update must not regress from it when no on_status came in between
+#                   (orderFormationChecks.validateOrderStateNoRegression) — the RTO part cancel
+#                   is raised straight after on_confirm
+#   delivery_state  what an on_cancel with no preceding on_status must record as
+#                   precancel_state.fulfillment_state (rtoChecks.validatePrecancelState)
+#   fulfillment_ids so a Cancel fulfillment is recognised as NEW on the leg that raises it
+#
+# Nothing read an `on_confirm` key before this file existed; OnConfirm.ts's saveFromElement
+# call was a silent no-op (loadSaveSpec threw on the missing file).
+save-data:
+  order_state: "$.message.order.state"
+  delivery_state: "$.message.order.fulfillments[?(@.type=='Delivery')].state.descriptor.code"
+  fulfillment_ids: "$.message.order.fulfillments[*].id"

@@ -105,15 +105,28 @@ export function validateBppDescriptorTerms(catalog: any, result: TestResult): vo
   for (const group of bppTermsGroups) {
     npType = npType ?? tagValue(group.list, "np_type");
 
-    if (tagValue(group.list, "accept_bap_terms") !== undefined) {
-      result.failed.push("on_search: bpp_terms must not contain accept_bap_terms");
-    }
-
-    const collectPayment = tagValue(group.list, "collect_payment");
-    if (collectPayment !== undefined && collectPayment !== "Y" && collectPayment !== "N") {
-      result.failed.push(
-        `on_search: bpp_terms collect_payment '${collectPayment}' must be 'Y' or 'N'`
-      );
+    // `accept_bap_terms` is a Y/N flag here, NOT a forbidden field.
+    //
+    // This used to read "bpp_terms must not contain accept_bap_terms", ported from the B2C
+    // retail validator. It contradicted the eB2B contract and a reference payload at once:
+    //   - the contract's broadcast /on_search example sends
+    //     bpp_terms = [{np_type: "MSN"}, {accept_bap_terms: "Y"}]
+    //     (ONDC eB2B Concept and API Contract, the bpp/descriptor block — see
+    //      docs/RETeB2B-search-contract-audit.md §3.1 #1 for the exact citation);
+    //   - Order_to_confirm_to_fulfillment_with_offers(Prepaid)'s on_search sends exactly
+    //     that, so the rule reported a false failure on a compliant catalog.
+    // It only ever stayed quiet because the deep catalog path in OnSearch.ts is scoped to
+    // Discovery_flow_broadcast_search, whose catalog happens to omit the flag. Widening that
+    // scope would have surfaced it immediately.
+    //
+    // Both flags are validated the same way: present-and-meaningful, or absent.
+    for (const flag of ["accept_bap_terms", "collect_payment"]) {
+      const value = tagValue(group.list, flag);
+      if (value !== undefined && value !== "Y" && value !== "N") {
+        result.failed.push(
+          `on_search: bpp_terms ${flag} '${value}' must be 'Y' or 'N'`
+        );
+      }
     }
   }
 

@@ -38,11 +38,20 @@ import {
   validateItemStatutoryFields,
   validateOffers,
 } from "./onSearchRetailChecks";
+import { isOffersFlow } from "./offerChecks";
 
 // Only Discovery_flow_broadcast_search disambiguates its two on_search legs by
-// action_id (search-0 / on_search / search-1 / on_search-1). The other eight
-// RETeB2B flows have a single, undisambiguated on_search step, so the deep path
-// and the strict action_id check below must stay scoped to this flow.
+// action_id (search-0 / on_search / search-1 / on_search-1). Of the other eight
+// RETeB2B flows, only the two `_with_offers(...)` flows have an on_search step at all,
+// and it is a single, undisambiguated one, so the strict action_id check below must
+// stay scoped to Discovery.
+//
+// The deep catalog path (validateBroadcastCatalog, incl. validateOffers) is NOT
+// Discovery-only. Since 2026-10-15 it also runs for the two `_with_offers(...)` flows:
+// their catalogs carry the offers those flows exist to exercise, and the prices-only
+// validateCatalogStructure never looked at them. Calibrated before enabling: live
+// with_offers(cod) 41 pass / 0 fail, spec cod 41/0, spec Prepaid 40/1. The one Prepaid
+// failure is brand_images, a defect in the spec example; the rule stays mandatory.
 const FLOW_DISCOVERY_BROADCAST = "Discovery_flow_broadcast_search";
 const ACTION_ID_BROADCAST = "on_search";
 const ACTION_ID_P2P = "on_search-1";
@@ -68,6 +77,9 @@ export default async function on_search(
           `on_search: unexpected action_id '${actionId}' for flow '${flowId}' — expected '${ACTION_ID_BROADCAST}' or '${ACTION_ID_P2P}'`
         );
       }
+    } else if (isOffersFlow(flowId)) {
+      // Deep path, no action_id dispatch: these flows have one on_search step.
+      validateBroadcastCatalog(element, message, result);
     } else {
       validateCatalogStructure(message, result);
     }

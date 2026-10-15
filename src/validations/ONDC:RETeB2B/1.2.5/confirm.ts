@@ -3,6 +3,7 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateOrderState, validateQuoteBreakup, validateItemPricing } from "./commonChecks";
+import { validateCityConsistency } from "./selectChecks";
 import {
   resolvePaymentMode,
   validatePaymentsPresence,
@@ -11,6 +12,7 @@ import {
   validateCodPaymentConstraints,
   validatePaidTransactionId,
   validateSettlementDetails,
+  validateCodSettlementCounterparty,
   validateSettlementBasisWindow,
   validatePaymentAmountMatchesQuote,
   validateBppTerms,
@@ -24,7 +26,15 @@ import {
   validateBillingEcho,
   validateProviderContinuity,
   validateIdsAgainstOnSelect,
+  validateItemsAgainstOnSelect,
+  validateShipFromLocation,
+  validateFulfillmentContactAndTracking,
+  validateOrderDurations,
+  validateTaxNumberPanConsistency,
+  validateDistinctTaxIdentities,
+  validateFinderFeeAgainstSearch,
 } from "./orderFormationChecks";
+import { isOffersFlow, validateOfferLinesUnchanged } from "./offerChecks";
 
 export default async function confirm(
   element: Payload,
@@ -58,12 +68,18 @@ export default async function confirm(
     validatePaidTransactionId(order, "confirm", result);
 
     validateSettlementDetails(order, "confirm", result);
+    // Added 2026-10-13 (COD flow doc §3.4): a COD sale-amount must settle to the
+    // seller side — the seller collected the cash. Prepaid is deliberately untouched.
+    validateCodSettlementCounterparty(order, "confirm", mode, result);
     // The settlement terms are agreed here (delivery / P1D / 0.00 in all nine reference
     // flows) and absent from on_init, which is why this runs at confirm and not earlier.
     validateSettlementBasisWindow(order, "confirm", result);
     validatePaymentAmountMatchesQuote(order, "confirm", result);
 
     validateBppTerms(order, "confirm", result);
+    // Silent unless bpp_terms declares np_type (five of nine flows omit it at this leg).
+    validateTaxNumberPanConsistency(order, "confirm", result);
+    validateDistinctTaxIdentities(order, "confirm", result);
     // Not required here — no reference confirm repeats the credit tag — but validated if sent.
     validateCreditTerms(order, "confirm", result);
     // accept_bpp_terms is required here — this is the buyer's own request, and all nine
@@ -74,6 +90,15 @@ export default async function confirm(
     if (order?.quote) {
       validateQuoteBreakup(order.quote, result, "confirm");
     }
+    // Deliberately kept even though it is a silent no-op here: the contract's /confirm
+    // declares no fulfillments[].start, and neither do the nine reference payloads. It is
+    // the on_confirm leg that has a ship-from location. See the confirm contract audit §4.
+    validateShipFromLocation(order, "confirm", result);
+    // Added 2026-10-12 from the confirm-leg contract audit §3.1. L1 asserts end.contact.phone
+    // and tracking EXIST at this leg; this adds the shape it cannot see. The start.contact
+    // branch finds nothing here — confirm carries no fulfillment start.
+    validateFulfillmentContactAndTracking(order, "confirm", result);
+    validateOrderDurations(order, "confirm", result);
 
     const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
@@ -91,6 +116,19 @@ export default async function confirm(
 
       const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
       validateIdsAgainstOnSelect(order, onSelectData, "confirm", result);
+      // The committed order must match the terms the seller quoted, not the ones the buyer
+      // first asked for: quantities and item->fulfillment pairing come from on_select.
+      validateItemsAgainstOnSelect(order, onSelectData, "confirm", result);
+      // Buyer leg, so the offer LINES only — see the matching note in init.ts.
+      if (isOffersFlow(flowId)) validateOfferLinesUnchanged(order, onSelectData, "confirm", result);
+
+      // Only the two `_with_offers(...)` flows have a search/on_search step, so both of
+      // these have real data there and skip silently in the other seven.
+      const searchData = await getActionData(sessionID, flowId, txnId, "search");
+      validateFinderFeeAgainstSearch(order, searchData, "confirm", result);
+
+      const onSearchData = await getActionData(sessionID, flowId, txnId, "on_search");
+      validateCityConsistency(context, onSearchData, result, "confirm");
     }
   } catch (_) {}
 
