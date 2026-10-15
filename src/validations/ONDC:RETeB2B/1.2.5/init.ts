@@ -21,6 +21,7 @@ import {
   validateOffersAgainstCatalog,
   validateSelectOffersCarriedForward,
 } from "./orderFormationChecks";
+import { isOffersFlow, validateOfferLinesUnchanged } from "./offerChecks";
 
 export default async function init(
   element: Payload,
@@ -69,6 +70,10 @@ export default async function init(
       validateItemsAgainstOnSelect(order, onSelectData, "init", result);
       validateProviderContinuity(order, onSelectData?.provider, "on_select", "init", result);
       validateQuotePriceNoDrift(order, onSelectData?.quote_price, "on_select", "init", result);
+      // The offer lines the seller applied at on_select must reach the order unchanged. Not
+      // validateOrderOffersMatchApplied: init is the buyer's leg, and its order.offers lists
+      // only the buyer's opt-ins, not the seller's auto-applied offers.
+      if (isOffersFlow(flowId)) validateOfferLinesUnchanged(order, onSelectData, "init", result);
 
       const selectData = await getActionData(sessionID, flowId, txnId, "select");
       validateSelectOffersCarriedForward(order, selectData, "init", result);

@@ -14,6 +14,11 @@ import {
 } from "./orderFormationChecks";
 import { validateNoCancelledFulfillmentRevived } from "./rtoChecks";
 import {
+  isOffersFlow,
+  validateOrderOffersMatchApplied,
+  validateOfferLinesUnchanged,
+} from "./offerChecks";
+import {
   resolveStatusLeg,
   validateStatusLegStates,
   validateDeliveryFulfillmentPresent,
@@ -82,6 +87,8 @@ export default async function on_status(
     validateFulfillmentRouting(order, actionId, result);
     validateTrackingTag(order, actionId, result);
     validateFulfillmentTimeWindows(order, context, actionId, result);
+    // Seller leg: the offers it lists must be exactly the offers its quote applies.
+    if (isOffersFlow(flowId)) validateOrderOffersMatchApplied(order, `on_status (${actionId})`, result);
 
     const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
@@ -105,6 +112,13 @@ export default async function on_status(
 
       const onSearchData = await getActionData(sessionID, flowId, txnId, "on_search");
       validateCityConsistency(context, onSearchData, result, `on_status (${actionId})`);
+
+      // The offer lines quoted at on_select must survive the whole fulfillment lifecycle.
+      // The read is gated so the other flows pay no extra redis read.
+      if (isOffersFlow(flowId)) {
+        const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
+        validateOfferLinesUnchanged(order, onSelectData, `on_status (${actionId})`, result);
+      }
     }
   } catch (_) {}
 

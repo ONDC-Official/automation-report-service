@@ -34,6 +34,7 @@ import {
   validateDistinctTaxIdentities,
   validateFinderFeeAgainstSearch,
 } from "./orderFormationChecks";
+import { isOffersFlow, validateOfferLinesUnchanged } from "./offerChecks";
 
 export default async function confirm(
   element: Payload,
@@ -118,6 +119,8 @@ export default async function confirm(
       // The committed order must match the terms the seller quoted, not the ones the buyer
       // first asked for: quantities and item->fulfillment pairing come from on_select.
       validateItemsAgainstOnSelect(order, onSelectData, "confirm", result);
+      // Buyer leg, so the offer LINES only — see the matching note in init.ts.
+      if (isOffersFlow(flowId)) validateOfferLinesUnchanged(order, onSelectData, "confirm", result);
 
       // Only the two `_with_offers(...)` flows have a search/on_search step, so both of
       // these have real data there and skip silently in the other seven.

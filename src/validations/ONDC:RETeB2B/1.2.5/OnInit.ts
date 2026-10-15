@@ -22,6 +22,11 @@ import {
   validateProviderContinuity,
   validateCallbackTtlWindow,
 } from "./orderFormationChecks";
+import {
+  isOffersFlow,
+  validateOrderOffersMatchApplied,
+  validateOfferLinesUnchanged,
+} from "./offerChecks";
 
 export default async function on_init(
   element: Payload,
@@ -72,6 +77,8 @@ export default async function on_init(
     if (order?.quote) {
       validateQuoteBreakup(order.quote, result, "on_init");
     }
+    // Seller leg: the offers it lists must be exactly the offers its quote applies.
+    if (isOffersFlow(flowId)) validateOrderOffersMatchApplied(order, "on_init", result);
 
     const context = element?.jsonRequest?.context;
     const txnId = context?.transaction_id as string | undefined;
@@ -84,6 +91,7 @@ export default async function on_init(
 
       const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
       validateIdsAgainstOnSelect(order, onSelectData, "on_init", result);
+      if (isOffersFlow(flowId)) validateOfferLinesUnchanged(order, onSelectData, "on_init", result);
     }
   } catch (_) {}
 

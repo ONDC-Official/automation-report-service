@@ -6,6 +6,7 @@ import { validateQuoteBreakup } from "./commonChecks";
 import {
   validateMandatoryOutOfStockError,
   validateErrorResponse,
+  hasErrorResponse,
   validateSelectProvider,
   validateOnSelectProviderConsistency,
   validateOnSelectItemsAgainstSelect,
@@ -14,6 +15,7 @@ import {
   validateOnSelectQuoteTtl,
   validateCustomerIdentification,
 } from "./selectChecks";
+import { isOffersFlow, validateOnSelectOffers } from "./offerChecks";
 
 // The Out_of_Stock(Error_code) flow runs two on_select legs, disambiguated by
 // action_id (confirmed against automation-specifications'
@@ -93,6 +95,16 @@ export default async function on_select(
       const selectData = await getActionData(sessionID, flowId, txnId, "select");
       validateOnSelectProviderConsistency(order, selectData, result);
       validateOnSelectItemsAgainstSelect(order, selectData, result);
+    }
+
+    // The two `_with_offers(...)` flows exist for this: on_select is where the seller first
+    // applies offers to the quote, so this is where they are held to the catalog. Skipped on
+    // a refusal (an error-bearing on_select may still carry an order) — it quotes nothing.
+    // on_search is flow-scoped in redis (keyed without the transaction id); txnId is passed
+    // only because getActionData's signature requires it.
+    if (isOffersFlow(flowId) && order && !hasErrorResponse(requestError)) {
+      const onSearchData = txnId ? await getActionData(sessionID, flowId, txnId, "on_search") : null;
+      validateOnSelectOffers(order, element?.jsonRequest?.context, onSearchData, result);
     }
 
   } catch (_) { }

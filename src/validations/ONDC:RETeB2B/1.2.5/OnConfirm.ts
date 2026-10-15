@@ -43,6 +43,11 @@ import {
   validateUpdatedAtAdvances,
   validateCancellationTermsEcho,
 } from "./orderFormationChecks";
+import {
+  isOffersFlow,
+  validateOrderOffersMatchApplied,
+  validateOfferLinesUnchanged,
+} from "./offerChecks";
 
 export default async function on_confirm(
   element: Payload,
@@ -94,6 +99,8 @@ export default async function on_confirm(
     if (order?.quote) {
       validateQuoteBreakup(order.quote, result, "on_confirm");
     }
+    // Seller leg: the offers it lists must be exactly the offers its quote applies.
+    if (isOffersFlow(flowId)) validateOrderOffersMatchApplied(order, "on_confirm", result);
     validateShipFromLocation(order, "on_confirm", result);
     // Added 2026-10-12 from the confirm-leg contract audit §3.1. This is the one leg that
     // carries BOTH contacts: the seller's warehouse (start) and the buyer's door (end). L1
@@ -122,6 +129,7 @@ export default async function on_confirm(
       const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
       validateIdsAgainstOnSelect(order, onSelectData, "on_confirm", result);
       validateItemsAgainstOnSelect(order, onSelectData, "on_confirm", result);
+      if (isOffersFlow(flowId)) validateOfferLinesUnchanged(order, onSelectData, "on_confirm", result);
 
       const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");
       validateCancellationTermsEcho(order, onInitData?.cancellation_terms, "on_init", "on_confirm", result);
