@@ -1805,14 +1805,19 @@ export function validateCancellationTermsEcho(
  *   location_ids ["L1"] (order has L1), item_ids ["I1".."I4"] (order has I1),
  *   time.label "valid", range 2026-06-29T00:00 -> 2026-07-04T23:59 with an init timestamp
  *   of 2026-06-29T07:29:39.107Z, and qualifier.min_value 500.00 against 17 x 52.00 = 884.00.
- *   with_offers(cod) sends no offers at all, so it skips.
+ *   with_offers(cod)'s SPEC example sends no order.offers at select or init (its seller
+ *   auto-applies buy2get3 as a breakup line only), so it skips there. The live COD mock
+ *   does opt into [{id: discp10}] at select and carries it into init, where it is checked.
  *
  * Two prior-art clauses are deliberately NOT included:
  *  - "offer must carry a `selection`/`apply: yes` tag" (:283-291) — eB2B order offers are a
  *    bare `{id}` with no tags at all. L1 only enum-checks `{yes, no}` IF the tag is present.
- *  - additivity, i.e. multiple non-additive offers cannot combine (:298-334) — every eB2B
- *    catalog offer is `meta.additive: yes` and no flow sends more than one offer, so the
- *    rule has zero fixture coverage and nothing to calibrate against.
+ *  - additivity, i.e. multiple non-additive offers cannot combine (:298-334) — not at this
+ *    leg. The rule is real: both `with_offers` catalogs carry non-additive offers (slab1,
+ *    slab2, freebie1 and buy2get3 are `meta.additive: no`), and a live on_select has applied
+ *    two offers at once. But init's order.offers lists only the buyer's opt-ins; the seller's
+ *    auto-applied offers exist only as quote breakup lines. Stacking is therefore enforced on
+ *    the SELLER's applied lines at on_select, by offerChecks.validateOfferStacking.
  */
 export function validateOffersAgainstCatalog(
   order: any,
@@ -1941,8 +1946,9 @@ export function validateOffersAgainstCatalog(
  * ONE DIRECTION ONLY. The converse — every `init` offer must have appeared at `select` —
  * is NOT enforced and must not be added: five of the nine flows send
  * `init.offers: [{id: discp10}]` with no `select` offers at all, as a contract-sample
- * default. Only `with_offers(Prepaid)` sends an offer at `select` (`discp10`), and it is
- * carried into `init` there, so the rule holds wherever it has data.
+ * default. Both the `with_offers(Prepaid)` spec example and the live `with_offers(cod)` mock
+ * send an offer at `select` (`discp10`), and both carry it into `init`, so the rule holds
+ * wherever it has data. (The `with_offers(cod)` spec example sends none at either leg.)
  */
 export function validateSelectOffersCarriedForward(
   order: any,

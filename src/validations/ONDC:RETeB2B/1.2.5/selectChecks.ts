@@ -195,9 +195,12 @@ export function validateSelectLocationRefs(order: any, result: TestResult): void
  * "mandatory only for with-offers flows", but that cannot be enforced: both `with_offers`
  * mocks drive offers from retailer input and delete the key when nothing is selected
  * (`if (validOffers.length > 0) order.offers = …; else delete order.offers`), and
- * `with_offers(cod)`'s own reference select sends none. A retailer who picks no offer in a
- * with-offers flow legitimately sends no offers, so a hard requirement would false-fail both
- * the fixture and that real case.
+ * `with_offers(cod)`'s own reference select sends none (the live COD mock does send
+ * `[discp10]`). A retailer who picks no offer in a with-offers flow legitimately sends no
+ * offers, so a hard requirement would false-fail both the fixture and that real case.
+ *
+ * The with-offers obligation lives one leg later, on the seller: at least one applied
+ * offer in the on_select quote, enforced by offerChecks.validateOfferLinesPresent.
  *
  * Shape only, therefore: each declared offer must carry a non-empty `id`. Whether those ids
  * exist in the catalog is already checked one leg later by
