@@ -6243,8 +6243,30 @@ domains:
         # on_status legs are the point of the flow. `track`/`on_track` are deliberately NOT
         # listed — they are in the sequence and the live run does send them, but tracking is
         # optional in ONDC generally and failing a flow for not tracking would overreach.
+        #
+        # Added 2026-10-15: the two `_with_offers(...)` flows run the same six-leg lifecycle
+        # (their `flows` lists above are COD's plus a search/on_search prefix), and every
+        # on_status leg re-checks the offer lines quoted at on_select, so a run that stops
+        # short leaves the offers unproven for the rest of the order. Same six legs, same
+        # track/on_track exclusion. Listing them here does NOT make the flows themselves
+        # mandatory — they stay in `optional_flows`; this only applies when one is run
+        # (validationModule looks it up per tested flowId).
         mandatory_legs:
           "Order_to_confirm_to_fulfillment_(cod)":
+            - on_status_accepted
+            - on_status_packed
+            - on_status_agent_assigned
+            - on_status_picked
+            - on_status_out_for_delivery
+            - on_status_order_delivered
+          "Order_to_confirm_to_fulfillment_with_offers(cod)":
+            - on_status_accepted
+            - on_status_packed
+            - on_status_agent_assigned
+            - on_status_picked
+            - on_status_out_for_delivery
+            - on_status_order_delivered
+          "Order_to_confirm_to_fulfillment_with_offers(Prepaid)":
             - on_status_accepted
             - on_status_packed
             - on_status_agent_assigned
