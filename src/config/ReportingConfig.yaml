@@ -6226,12 +6226,14 @@ domains:
             - update                # update_settlement_trail
             - on_update             # on_update_settlement_trail
 
+        # A flow not listed here is reported as mandatory. Mirrors the MANDATORY tags in
+        # automation-specifications config/flows/index.yaml: the seven flows tagged MANDATORY
+        # there (Discovery_flow_broadcast_search, (cod), with_offers(cod),
+        # Buyer_Side_Order_Cancellation, Buyer_Initiated_Return, Merchant_Side_RTO,
+        # Out_of_Stock) are mandatory here; the two Prepaid flows are only REPORTABLE there.
         optional_flows:
-          - "Out_of_Stock(Error_code)"
-          - Merchant_Side_RTO_and_Part_Order_Cancellation_Flow
+          - "Order_to_confirm_to_fulfillment_(Prepaid)"
           - "Order_to_confirm_to_fulfillment_with_offers(Prepaid)"
-          - "Order_to_confirm_to_fulfillment_with_offers(cod)"
-          - "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)"
 
         # action_ids that must all be exercised for the flow to be valid. `flows` above
         # declares the expected ORDER, and the sequence validator's lookahead deliberately
@@ -6248,9 +6250,9 @@ domains:
         # (their `flows` lists above are COD's plus a search/on_search prefix), and every
         # on_status leg re-checks the offer lines quoted at on_select, so a run that stops
         # short leaves the offers unproven for the rest of the order. Same six legs, same
-        # track/on_track exclusion. Listing them here does NOT make the flows themselves
-        # mandatory — they stay in `optional_flows`; this only applies when one is run
-        # (validationModule looks it up per tested flowId).
+        # track/on_track exclusion. Listing a flow here does NOT make the flow itself
+        # mandatory (that is `optional_flows`' job — with_offers(Prepaid) stays optional);
+        # it only applies when the flow is run (validationModule looks it up per tested flowId).
         mandatory_legs:
           "Order_to_confirm_to_fulfillment_(cod)":
             - on_status_accepted
