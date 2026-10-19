@@ -194,7 +194,8 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1",
-  "ONDC:FIS14:2.1.0"
+  "ONDC:FIS14:2.1.0",
+  "ONDC:RETeB2B:1.2.5"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases

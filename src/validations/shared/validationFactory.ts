@@ -6157,22 +6157,30 @@ export function createSearchValidator(...config: string[]) {
 /**
  * TRV10-specific: validate update request envelope
  */
+const TRV10_UPDATE_TARGETS = [
+  "order.quote.breakup",
+  "order.fulfillments",
+  "fulfillments[0].stops",
+  "payments",
+  "fulfillment",
+  "fulfillments",
+];
+
+// FIS14 (Mutual Funds) update_target values: payment update/retry, SIP amount change,
+// SIP pause / cancellation
+const FIS14_UPDATE_TARGETS = [
+  "order.payments",
+  "order.items",
+  "order.fulfillments",
+];
+
 export function validateUpdateRequestTRV10(
   message: any,
   testResults: TestResult,
-  action_id: string
+  action_id: string,
+  validUpdateTargets: string[] = TRV10_UPDATE_TARGETS
 ): void {
   const { update_target: updateTarget, order } = message ?? {};
-
-  // Validation rules for update_target based on action_id
-  const validUpdateTargets = [
-    "order.quote.breakup",
-    "order.fulfillments",
-    "fulfillments[0].stops",
-    "payments",
-    "fulfillment",
-    "fulfillments",
-  ];
 
   if (!validUpdateTargets.includes(updateTarget)) {
     testResults.failed.push(
@@ -6227,7 +6235,14 @@ export function createUpdateValidator(...config: string[]) {
     }
 
     // Always validate update envelope first
-    validateUpdateRequestTRV10(message, testResults, action_id);
+    validateUpdateRequestTRV10(
+      message,
+      testResults,
+      action_id,
+      context?.domain === "ONDC:FIS14"
+        ? FIS14_UPDATE_TARGETS
+        : TRV10_UPDATE_TARGETS
+    );
 
     for (const validation of config) {
       if (validation) {

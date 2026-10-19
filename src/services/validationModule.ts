@@ -52,6 +52,21 @@ interface SessionDetails {
 interface DomainConfig {
   flows: Record<string, string[]>;
   optional_flows?: string[];
+  /**
+   * Per-flow `action_id`s that MUST appear for the flow to be valid, keyed by flow id.
+   *
+   * Opt-in by design: `flows` declares the expected ORDER of actions, and
+   * validateActionSequence's lookahead deliberately tolerates skipped steps so that
+   * genuinely optional ones (a repeat `search`, mid-flow polling) do not fail a flow. The
+   * side effect was that a flow could skip mandatory steps entirely and still report Valid —
+   * a COD run that sent 1 of its 6 `on_status` legs was reported Valid with no sequence
+   * errors, because the lookahead found `track` further down the sequence and jumped there.
+   *
+   * This is the narrow fix: a flow listed here additionally has its mandatory `action_id`s
+   * checked for PRESENCE. A flow or domain absent from this map behaves exactly as before,
+   * so no other domain's reports change.
+   */
+  mandatory_legs?: Record<string, string[]>;
   validationModules?: string;
 }
 
@@ -113,6 +128,36 @@ function checkMandatoryFlows(
       ", "
     )} is/are mandatory and should be tested.`;
   }
+}
+
+/**
+ * Which of a flow's mandatory `action_id`s never arrived.
+ *
+ * Complements validateActionSequence, which checks ORDER and tolerates skipped steps. This
+ * checks PRESENCE only, so the two are independent: a flow can have every mandatory leg in
+ * the wrong order (a sequence error) or the right order with legs missing (a mandatory-leg
+ * error), and each is reported by the rule that is actually about it.
+ *
+ * Matching is on `action_id` because that is what distinguishes the legs that matter — the
+ * six `on_status` legs of an order flow all have `action` `on_status` and are told apart
+ * only by `action_id` (`on_status_packed`, `on_status_order_delivered`, …). Falls back to
+ * `action` the same way checkPayload.ts does, so a flow whose mandatory legs are plain
+ * actions still works.
+ */
+function findMissingMandatoryLegs(
+  payloads: Payload[],
+  mandatoryLegs: string[] | undefined
+): string[] {
+  if (!Array.isArray(mandatoryLegs) || mandatoryLegs.length === 0) return [];
+  if (!Array.isArray(payloads)) return mandatoryLegs;
+
+  const seen = new Set(
+    payloads
+      .map((p) => String(p?.action_id || p?.action || "").toLowerCase())
+      .filter(Boolean)
+  );
+
+  return mandatoryLegs.filter((leg) => !seen.has(String(leg).toLowerCase()));
 }
 
 /**
@@ -632,11 +677,28 @@ export async function validationModule(
     logger.info(MESSAGES.validations.actionValidationStart(flowId), { flowId });
 
     // Step 1: Validate action sequence with deduplication
-    const { validSequence, errors } = validateActionSequence(
+    let { validSequence, errors } = validateActionSequence(
       payloads,
       requiredSequence || [],
       flowId
     );
+
+    // Step 1b: mandatory legs. Opt-in per flow — see DomainConfig.mandatory_legs. Reported
+    // alongside the sequence errors because a missing mandatory leg IS a flow-shape problem,
+    // and because the lookahead in validateActionSequence cannot see it.
+    const missingLegs = findMissingMandatoryLegs(
+      payloads,
+      domainConfig?.mandatory_legs?.[flowId]
+    );
+    if (missingLegs.length > 0) {
+      validSequence = false;
+      errors = [
+        ...errors,
+        `Error: flow '${flowId}' is missing ${missingLegs.length} mandatory step(s): ` +
+          `${missingLegs.join(", ")}. These must all be exercised for this flow to be valid.`,
+      ];
+      logger.info("Mandatory legs missing", { flowId, missingLegs });
+    }
 
     logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });
 

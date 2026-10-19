@@ -765,5 +765,16 @@ export const DomainValidators = {
     fis12Validators.payments.validate_payments,
     fis11Validators.order_status.validate_order_status,
   ),
+
+  retEB2BSearch: createSearchValidator(),
+  retEB2BOnSearch: createOnSearchValidator(),
+  retEB2BSelect: createSelectValidator(),
+  retEB2BOnSelect: createOnSelectValidator(),
+  retEB2BInit: createInitValidator(),
+  retEB2BOnInit: createOnInitValidator(),
+  retEB2BConfirm: createConfirmValidator(),
+  retEB2BOnConfirm: createOnConfirmValidator(),
+  retEB2BOnUpdate: createOnUpdateValidator(),
+  retEB2BOnStatus: createOnStatusValidator(),
 };
 

@@ -77,7 +77,7 @@ export class ReportService {
         sessionId,
         flowMap
       );
-      logger.info("flow map result",JSON.stringify(htmlReport.flowResults))
+      logger.info("flow map result", JSON.stringify(htmlReport.flowResults))
       this.saveReportToDB(sessionId, htmlReport.html, userId, flow_summary, htmlReport.flowResults);
       return htmlReport;
     } catch (error) {
@@ -202,10 +202,22 @@ export class ReportService {
             );
             return [flowName, data] as const;
           } catch (error) {
-            logger.error(
-              `Failed to fetch current state for flow ${flowName}:`,
-              error
-            );
+            if (axios.isAxiosError(error)) {
+              logger.error(
+                `Failed to fetch current state for flow ${flowName}:`,
+                error.message
+              );
+
+              // Axios-specific details
+              logger.error("Status:", error.response?.status);
+              logger.error("Response:", error.response?.data);
+            } else {
+              logger.error(
+                `Failed to fetch current state for flow ${flowName}:`,
+                error instanceof Error ? error.message : error
+              );
+            }
+
             return [flowName, null] as const;
           }
         })

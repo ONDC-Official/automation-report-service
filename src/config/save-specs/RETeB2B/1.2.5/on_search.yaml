@@ -1,0 +1,3 @@
+save-data:
+  providers: "$.message.catalog['bpp/providers'][*]"
+  city: "$.context.city"

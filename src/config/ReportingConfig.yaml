@@ -6064,3 +6064,216 @@ domains:
           - Other_Services_Search
           - External_Folio_Lumpsum
         validationModules: "../validations/ONDC:FIS14/validator#validate"
+
+  ONDC:RETeB2B:
+    versions:
+      "1.2.5":
+        flows:
+          Discovery_flow_broadcast_search:
+            - search
+            - on_search
+            - search
+            - on_search
+
+          # Each list below mirrors its flow's REAL step list, one entry per payload, in
+          # order. That matters twice over:
+          #  - processPayloads treats requiredSequence.length as a hard CAP on how many
+          #    payloads it validates at all (it dispatches each payload on its own action and
+          #    never matches it against the declared sequence). A list shorter than the flow
+          #    silently drops the tail: the (cod) flow's 9-entry list meant its last five
+          #    payloads — including on_status_order_delivered, where COD money is collected —
+          #    were never validated by anything.
+          #  - validateActionSequence DOES compare content, and its verdict becomes
+          #    `valid_flow` in the report. The lists previously declared a phantom
+          #    search/on_search prefix for flows that have no search step.
+          # Comments give the action_id, which is what the on_status validator keys its
+          # per-leg contract on (src/validations/ONDC:RETeB2B/1.2.5/onStatusChecks.ts).
+          "Order_to_confirm_to_fulfillment_(cod)":
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status            # on_status_accepted
+            - on_status            # on_status_packed
+            - on_status            # on_status_agent_assigned
+            - on_status            # on_status_picked
+            - track
+            - on_track
+            - on_status            # on_status_out_for_delivery
+            - on_status            # on_status_order_delivered
+
+          "Order_to_confirm_to_fulfillment_(Prepaid)":
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status            # on_status_accepted
+            - on_status            # on_status_packed
+            - on_status            # on_status_agent_assigned
+            - on_status            # on_status_picked
+            - track
+            - on_track
+            - on_status            # on_status_out_for_delivery
+            - on_status            # on_status_order_delivered
+
+          Buyer_Side_Order_Cancellation:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+
+          # Was 4 entries, so this flow's init / on_init / confirm / on_confirm and every
+          # on_status leg went unvalidated entirely. Note the two select legs: select0 is the
+          # request that goes out of stock, select is the retry.
+          "Out_of_Stock(Error_code)":
+            - select                # select0
+            - on_select             # on_select_out_of_stock
+            - select                # select (the retry)
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status            # on_status_accepted
+            - on_status            # on_status_packed
+            - on_status            # on_status_agent_assigned
+            - on_status            # on_status_picked
+            - track
+            - on_track
+            - on_status            # on_status_out_for_delivery
+            - on_status            # on_status_order_delivered
+
+          # The only flow whose declared sequence previously made validateActionSequence
+          # report `valid_flow: false` ("Expected 'on_status' after 'on_update'"), because the
+          # real flow interleaves update/on_cancel between the status callbacks.
+          Merchant_Side_RTO_and_Part_Order_Cancellation_Flow:
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_update             # on_update_part_cancel
+            - update                # update_settlement_trail
+            - on_status            # on_status_packed
+            - on_status            # on_status_agent_assigned
+            - on_status            # on_status_picked
+            - on_status            # on_status_out_for_delivery
+            - on_cancel             # on_cancel_rto
+            - on_status            # on_status_rto_delivered
+
+          "Order_to_confirm_to_fulfillment_with_offers(Prepaid)":
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status            # on_status_accepted
+            - on_status            # on_status_packed
+            - on_status            # on_status_agent_assigned
+            - on_status            # on_status_picked
+            - track
+            - on_track
+            - on_status            # on_status_out_for_delivery
+            - on_status            # on_status_order_delivered
+
+          "Order_to_confirm_to_fulfillment_with_offers(cod)":
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status            # on_status_accepted
+            - on_status            # on_status_packed
+            - on_status            # on_status_agent_assigned
+            - on_status            # on_status_picked
+            - track
+            - on_track
+            - on_status            # on_status_out_for_delivery
+            - on_status            # on_status_order_delivered
+
+          "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)":
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_status            # on_status_accepted
+            - on_status            # on_status_packed
+            - on_status            # on_status_agent_assigned
+            - on_status            # on_status_picked
+            - on_status            # on_status_out_for_delivery
+            - on_status            # on_status_order_delivered
+            - update                # update_return
+            - on_update             # on_update_return_init
+            - on_update             # on_update_return_approved
+            - on_update             # on_update_return_picked
+            - update                # update_settlement_trail
+            - on_update             # on_update_settlement_trail
+
+        # A flow not listed here is reported as mandatory. Mirrors the MANDATORY tags in
+        # automation-specifications config/flows/index.yaml: the seven flows tagged MANDATORY
+        # there (Discovery_flow_broadcast_search, (cod), with_offers(cod),
+        # Buyer_Side_Order_Cancellation, Buyer_Initiated_Return, Merchant_Side_RTO,
+        # Out_of_Stock) are mandatory here; the two Prepaid flows are only REPORTABLE there.
+        optional_flows:
+          - "Order_to_confirm_to_fulfillment_(Prepaid)"
+          - "Order_to_confirm_to_fulfillment_with_offers(Prepaid)"
+
+        # action_ids that must all be exercised for the flow to be valid. `flows` above
+        # declares the expected ORDER, and the sequence validator's lookahead deliberately
+        # tolerates skipped steps so genuinely optional ones do not fail a flow — which meant
+        # a COD run that sent 1 of its 6 on_status legs was still reported Valid. This block
+        # pins PRESENCE. Opt-in: a flow not listed here behaves exactly as before.
+        #
+        # COD is the base flow, so its whole fulfillment lifecycle is mandatory: the six
+        # on_status legs are the point of the flow. `track`/`on_track` are deliberately NOT
+        # listed — they are in the sequence and the live run does send them, but tracking is
+        # optional in ONDC generally and failing a flow for not tracking would overreach.
+        #
+        # Added 2026-10-15: the two `_with_offers(...)` flows run the same six-leg lifecycle
+        # (their `flows` lists above are COD's plus a search/on_search prefix), and every
+        # on_status leg re-checks the offer lines quoted at on_select, so a run that stops
+        # short leaves the offers unproven for the rest of the order. Same six legs, same
+        # track/on_track exclusion. Listing a flow here does NOT make the flow itself
+        # mandatory (that is `optional_flows`' job — with_offers(Prepaid) stays optional);
+        # it only applies when the flow is run (validationModule looks it up per tested flowId).
+        mandatory_legs:
+          "Order_to_confirm_to_fulfillment_(cod)":
+            - on_status_accepted
+            - on_status_packed
+            - on_status_agent_assigned
+            - on_status_picked
+            - on_status_out_for_delivery
+            - on_status_order_delivered
+          "Order_to_confirm_to_fulfillment_with_offers(cod)":
+            - on_status_accepted
+            - on_status_packed
+            - on_status_agent_assigned
+            - on_status_picked
+            - on_status_out_for_delivery
+            - on_status_order_delivered
+          "Order_to_confirm_to_fulfillment_with_offers(Prepaid)":
+            - on_status_accepted
+            - on_status_packed
+            - on_status_agent_assigned
+            - on_status_picked
+            - on_status_out_for_delivery
+            - on_status_order_delivered
+
+        validationModules: "../validations/ONDC:RETeB2B/validator#validate"

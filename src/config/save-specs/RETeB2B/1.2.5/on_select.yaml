@@ -1,0 +1,23 @@
+# Persists what the seller actually quoted, so the order-formation leg
+# (init / on_init / confirm / on_confirm) can prove every id it is built on traces
+# back to the quote — see orderFormationChecks.validateIdsAgainstOnSelect — and so
+# the quote-no-drift chain starts one step earlier than on_init.
+#
+# `error` and `quote_breakup` exist for the Out_of_Stock(Error_code) flow's retry
+# select: the rejection on_select reports, per item, how much the seller can really
+# supply, and the next select must respect it — see
+# selectChecks.validateRetrySelectAgainstOutOfStock. `error` is a sibling of
+# context/message on the callback itself (NOT the ACK/NACK envelope), and
+# `quote_breakup` is the fallback for the available count when the error payload
+# omits the non-standard `available_count` field.
+#
+# `items`, `fulfillments`, `quote_breakup` come back as a BARE OBJECT when the match
+# has exactly one element (src/utils/extract.ts:16) — consumers normalize via
+# `normalizeSaved`.
+save-data:
+  provider: "$.message.order.provider"
+  items: "$.message.order.items[*]"
+  fulfillments: "$.message.order.fulfillments[*]"
+  quote_price: "$.message.order.quote.price.value"
+  quote_breakup: "$.message.order.quote.breakup[*]"
+  error: "$.error"
