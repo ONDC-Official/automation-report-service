@@ -55,7 +55,9 @@ export class ReportService {
       const flows = sortPayloadsByCreatedAt(payloads);
 
       // Check if domain is not in enabled domains - use Pramaan report
-      const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${resolveUsecaseKey(FLOW_ID_MAP[sessionDetails.domain]?.[sessionDetails.version], sessionDetails.usecaseId) ?? sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
+      const rawDomainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
+      // Usecase casing differs across session / ENABLED_DOMAINS / FLOW_ID_MAP (e.g. "Transit Insurance" vs "TRANSIT INSURANCE")
+      const domainVersionKey = (ENABLED_DOMAINS.find((d) => d.toLowerCase() === rawDomainVersionKey.toLowerCase()) as string | undefined) ?? rawDomainVersionKey;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
         return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flow_summary);

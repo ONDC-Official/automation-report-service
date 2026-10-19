@@ -185,6 +185,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.3.0",
   "ONDC:FIS12:SL:2.3.0",
   "ONDC:FIS13:2.0.1",
+  "ONDC:FIS13:2.0.0",
   "ONDC:FIS13:2.0.0:Health Insurance",
   "ONDC:FIS13:2.0.0:Motor Insurance",
   "ONDC:FIS13:2.0.0:Hospicash Insurance",
