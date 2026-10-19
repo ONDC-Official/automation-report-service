@@ -4,9 +4,9 @@ import { validationModule } from "./validationModule";
 import { generateCustomHTMLReport } from "../templates/generateReport";
 import { CacheService } from "./cacheService";
 import logger from "@ondc/automation-logger";
-import { DOMAINS_WITH_VERSION, ENABLED_DOMAINS, ENABLED_USECASES, typeMapping } from "../utils/constants";
+import { DOMAINS_WITH_VERSION, ENABLED_DOMAINS, ENABLED_USECASES, FLOW_ID_MAP, typeMapping } from "../utils/constants";
 import axios from "axios";
-import { generateTestsFromPayloads } from "../utils/payloadUtils";
+import { generateTestsFromPayloads, resolveUsecaseKey } from "../utils/payloadUtils";
 
 export class ReportService {
   async generate(
@@ -55,7 +55,7 @@ export class ReportService {
       const flows = sortPayloadsByCreatedAt(payloads);
 
       // Check if domain is not in enabled domains - use Pramaan report
-      const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
+      const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${resolveUsecaseKey(FLOW_ID_MAP[sessionDetails.domain]?.[sessionDetails.version], sessionDetails.usecaseId) ?? sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
         return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flow_summary);
@@ -130,7 +130,7 @@ export class ReportService {
     );
 
     // Build request body for Pramaan
-    const mappedType = typeMapping[sessionDetails.usecaseId];
+    const mappedType = typeMapping[sessionDetails.usecaseId] ?? typeMapping[resolveUsecaseKey(typeMapping, sessionDetails.usecaseId) ?? ""];
     const body = {
       id: subscriber_id,
       version: sessionDetails.version,
