@@ -1,0 +1,11 @@
+# Read by returnChecks via update.ts and OnUpdate.ts. Every on_update leg writes the SAME key
+# (keyed on context.action), so a read always returns the IMMEDIATELY PRECEDING on_update —
+# what validateReturnStateProgression compares against, and the leg whose quote_trail
+# validateRefundSettlement holds update_settlement_trail's refund to. Null on the first leg,
+# which the checks treat as "nothing to compare".
+#
+# The whole fulfillments array is kept (not just ids/states) because the Return fulfillment's
+# return_request and quote_trail tags are both read back from it.
+save-data:
+  fulfillments: "$.message.order.fulfillments[*]"
+  quote_price: "$.message.order.quote.price.value"

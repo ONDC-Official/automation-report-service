@@ -116,5 +116,28 @@ export function contextValidators(expected?: ExpectedContext): Validation[] {
         return results.length ? { valid: false, results } : { valid: true, results: [] };
       },
     },
+    {
+      // The bap counterpart of the check above. The L1 audit noted at :82 removed bap format
+      // as a duplicate of ONDC:FIS12's L1 file, but a re-read of
+      // automation-specifications/config/validations/index.yaml shows that the format rules it
+      // carries are CONTEXT_REG_BAP_URI / CONTEXT_REG_BPP_URI (`^https?://`, on the URIs only)
+      // plus CONTEXT_REQUIRED_BAP_ID / BPP_ID (presence only) — there is no bare-domain regex
+      // on either *_id. So bap_id format was unchecked everywhere, while bpp_id format was
+      // checked here. This closes that asymmetry; it is also the prior art's
+      // log-validation-utility Init/init.ts:27-31 rule, which covers both ids.
+      //
+      // NOTE for mock-driven sessions: the eB2B reference payloads carry the placeholders
+      // `sample-bap-id` / `sample-bpp-id`, which are not domains and therefore fail ID_RE.
+      // That is pre-existing behaviour for bpp_id, not introduced here; real NP traffic sends
+      // real hostnames. If the placeholders ever need tolerating, tolerate BOTH ids together.
+      name: 'context:bap-id-format',
+      run: (payload: any) => {
+        const ctx = payload?.context;
+        const results: UnitResult[] = [];
+        if (ctx?.bap_id && !ID_RE.test(ctx.bap_id)) results.push({ valid: false, description: `context.bap_id must be a bare domain/hostname, found '${ctx.bap_id}'`, code: 400 });
+        if (ctx?.bap_uri && !URI_RE.test(ctx.bap_uri)) results.push({ valid: false, description: `context.bap_uri must be a valid http(s) URI, found '${ctx.bap_uri}'`, code: 400 });
+        return results.length ? { valid: false, results } : { valid: true, results: [] };
+      },
+    },
   ];
 }

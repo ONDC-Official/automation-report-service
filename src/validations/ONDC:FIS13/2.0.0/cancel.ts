@@ -1,6 +1,9 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { saveFromElement } from "../../../utils/specLoader";
 import { validateCancel } from "../../shared/validationFactory";
+import {
+  validateInsuranceContext,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function cancel(
   element: Payload,
@@ -18,6 +21,8 @@ export default async function cancel(
   if (jsonResponse?.response) testResults.response = jsonResponse?.response;
 
   const message = jsonRequest?.message;
+
+  validateInsuranceContext(element?.jsonRequest?.context, testResults, flowId, "2.0.0");
 
   // Validate cancel message based on action_id
   validateCancel(message, testResults, actionId,flowId);

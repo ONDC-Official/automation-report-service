@@ -5,6 +5,11 @@ import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateBreakupTitleEnum,
+  validateInsuranceOnSelectXinput,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function on_select(
   element: Payload,
@@ -14,6 +19,10 @@ export default async function on_select(
   usecaseId?: string
 ): Promise<TestResult> {
   const result = await DomainValidators.fis13OnSelect(element, sessionID, flowId, actionId, usecaseId);
+
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateBreakupTitleEnum(element?.jsonRequest?.message, result, flowId);
+  validateInsuranceOnSelectXinput(element?.jsonRequest?.message, result, flowId);
 
   try {
     const message = element?.jsonRequest?.message;

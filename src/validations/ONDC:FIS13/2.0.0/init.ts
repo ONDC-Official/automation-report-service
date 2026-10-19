@@ -2,6 +2,13 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import {
+  validateInsuranceContext,
+  validateInsuranceBilling,
+  validateInsuranceFulfillments,
+  validateInsurancePaymentTags,
+  validateInsuranceInitXinput,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function init(
   element: Payload,
@@ -11,6 +18,12 @@ export default async function init(
   usecaseId?: string
 ): Promise<TestResult> {
   const result = await DomainValidators.fis13Init(element, sessionID, flowId, actionId, usecaseId);
+
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateInsuranceBilling(element?.jsonRequest?.message, result, flowId);
+  validateInsuranceFulfillments(element?.jsonRequest?.message, result, flowId, actionId);
+  validateInsurancePaymentTags(element?.jsonRequest?.message, result, flowId, "order");
+  validateInsuranceInitXinput(element?.jsonRequest?.message, result, flowId);
 
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
