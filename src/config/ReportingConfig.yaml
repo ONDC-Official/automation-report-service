@@ -3860,6 +3860,8 @@ domains:
                 - on_status
                 - issue
                 - on_issue
+                - issue_status
+                - on_issue_status
                 - on_issue_status
                 - issue
             optional_flows:
