@@ -1,3 +1,4 @@
+import { getIgmHandler, isFinanceDomain, runIgmAction } from "./igm/igmActionHandler";
 import { ValidationAction } from "../../types/actions";
 import { TestResult, Payload } from "../../types/payload";
 import { DOMAINS } from "../../utils/constants";
@@ -40,6 +41,14 @@ export function createDomainValidator(
       try {
         const domain = element?.jsonRequest?.context?.domain;
         const ext = getRuntimeExtension();
+        const igmHandler = isFinanceDomain(domain) ? getIgmHandler(action) : undefined;
+        if (igmHandler) {
+          const igmResult = await runIgmAction(igmHandler, element, sessionID, flowId, action_id as string);
+          testResults.passed.push(...(igmResult.passed || []));
+          testResults.failed.push(...(igmResult.failed || []));
+          return testResults;
+        }
+
 
         let baseName =
           domain && domain.startsWith(DOMAINS.FIS11)
