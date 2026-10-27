@@ -3,6 +3,10 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateInsurancePaymentTags,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function search(
   element: Payload,
@@ -11,6 +15,9 @@ export default async function search(
   actionId: string
 ): Promise<TestResult> {
   const result = await DomainValidators.fis13Search(element, sessionID, flowId, actionId);
+
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateInsurancePaymentTags(element?.jsonRequest?.message, result, flowId, "search");
   
   // Validate form ID consistency if xinput is present
   try {

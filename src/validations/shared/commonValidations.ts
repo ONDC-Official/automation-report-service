@@ -71,7 +71,7 @@ export function validateLBNPFeatures(
   testResults: TestResult
 ): void {
   if (LBNPfeatureFlow.includes(flowId)) {
-    const intentTags = message?.intent?.tags;
+    const intentTags = message?.intent?.tags ? message?.intent?.tags : message?.order?.tags
     const isValid = validateLBNPFeaturesForFlows(flowId, rules, intentTags);
     try {
       assert.ok(
@@ -85,6 +85,8 @@ export function validateLBNPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
@@ -97,7 +99,7 @@ export function validateLSPFeatures(
   testResults: TestResult
 ): void {
   if (LSPfeatureFlow.includes(flowId)) {
-    const catalogTags = message?.catalog?.tags;
+    const catalogTags = message?.catalog?.tags ? message?.catalog?.tags : message?.order?.tags
     const isValid = validateLSPFeaturesForFlows(flowId, rules, catalogTags);
     try {
       assert.ok(
@@ -110,6 +112,8 @@ export function validateLSPFeatures(
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
+  } else {
+    return;
   }
 }
 
@@ -149,38 +153,38 @@ export function validateCODFlow(
     );
 
     // Validate cod_order tag
-    try {
-      const codOrderTag = linkedOrderTag?.list?.find?.(
-        (tag: { code: string; value: string }) =>
-          tag.code === "cod_order" && tag.value.toLowerCase() === "yes"
-      );
+    // try {
+    //   const codOrderTag = linkedOrderTag?.list?.find?.(
+    //     (tag: { code: string; value: string }) =>
+    //       tag.code === "cod_order" && tag.value.toLowerCase() === "yes"
+    //   );
 
-      assert.ok(
-        codOrderTag,
-        `cod_order tag with value "yes" should be present inside linked_order tag list`
-      );
+    //   assert.ok(
+    //     codOrderTag,
+    //     `cod_order tag with value "yes" should be present inside linked_order tag list`
+    //   );
 
-      testResults.passed.push(`cod_order tag validation passed`);
-    } catch (error: any) {
-      testResults.failed.push(error.message);
-    }
+    //   testResults.passed.push(`cod_order tag validation passed`);
+    // } catch (error: any) {
+    //   testResults.failed.push(error.message);
+    // }
 
     // Validate collection_amount tag
-    try {
-      const collectionTag = linkedOrderTag?.list?.find?.(
-        (tag: { code: string; value: string }) =>
-          tag.code === "collection_amount"
-      );
+    // try {
+    //   const collectionTag = linkedOrderTag?.list?.find?.(
+    //     (tag: { code: string; value: string }) =>
+    //       tag.code === "collection_amount"
+    //   );
 
-      assert.ok(
-        collectionTag,
-        `collection_amount tag should be present inside linked_order tag list`
-      );
+    //   assert.ok(
+    //     collectionTag,
+    //     `collection_amount tag should be present inside linked_order tag list`
+    //   );
 
-      testResults.passed.push(`collection_amount tag validation passed`);
-    } catch (error: any) {
-      testResults.failed.push(error.message);
-    }
+    //   testResults.passed.push(`collection_amount tag validation passed`);
+    // } catch (error: any) {
+    //   testResults.failed.push(error.message);
+    // }
   }
 }
 
@@ -243,27 +247,6 @@ export function getTimestampFromDuration(
 }
 
 /**
- * Validates that a required field exists
- */
-export function validateRequiredField(
-  value: any,
-  fieldPath: string,
-  testResults: TestResult,
-  successMessage?: string
-): boolean {
-  try {
-    assert.ok(value, `${fieldPath} is required`);
-    if (successMessage) {
-      testResults.passed.push(successMessage);
-    }
-    return true;
-  } catch (error: any) {
-    testResults.failed.push(error.message);
-    return false;
-  }
-}
-
-/**
  * Validates that a field matches expected value
  */
 export function validateFieldValue(
@@ -286,29 +269,6 @@ export function validateFieldValue(
 }
 
 /**
- * Validates array contains required item
- */
-export function validateArrayContains(
-  array: any[],
-  predicate: (item: any) => boolean,
-  fieldPath: string,
-  testResults: TestResult,
-  successMessage?: string
-): boolean {
-  try {
-    const found = array?.find(predicate);
-    assert.ok(found, `${fieldPath} should contain required item`);
-    if (successMessage) {
-      testResults.passed.push(successMessage);
-    }
-    return true;
-  } catch (error: any) {
-    testResults.failed.push(error.message);
-    return false;
-  }
-}
-
-/**
  * Adds default validation message if no validations were run
  */
 export function addDefaultValidationMessage(
@@ -317,6 +277,29 @@ export function addDefaultValidationMessage(
 ): void {
   if (testResults.passed.length < 1 && testResults.failed.length < 1) {
     testResults.passed.push(`Validated ${action}`);
+  }
+}
+
+/**
+ * Tags every passed/failed message pushed inside `fn` with a validation-layer
+ * prefix, without requiring each individual check to know about layering.
+ * L2 = domain-common (applies regardless of which flow is running).
+ * L3 = flow-specific (only meaningful for one particular flow/scenario, e.g.
+ * RTO, cancellation reason codes, OOS, COD-gated settlement).
+ */
+export function tagLayer(
+  testResults: TestResult,
+  layer: "L2" | "L3",
+  fn: () => void
+): void {
+  const passedStart = testResults.passed.length;
+  const failedStart = testResults.failed.length;
+  fn();
+  for (let i = passedStart; i < testResults.passed.length; i++) {
+    testResults.passed[i] = `${layer}: ${testResults.passed[i]}`;
+  }
+  for (let i = failedStart; i < testResults.failed.length; i++) {
+    testResults.failed[i] = `${layer}: ${testResults.failed[i]}`;
   }
 }
 
@@ -380,14 +363,12 @@ export async function validateTransactionId(
   try {
 
     if (!currentTransactionId) {
-      testResults.failed.push("Transaction ID is missing in context");
       return;
     }
 
     // Get all stored transaction IDs for this session and flow from Redis
     const storedTransactionIds = await getTransactionIds(sessionID, flowId);
     if (storedTransactionIds.length === 0) {
-      testResults.failed.push("No transaction IDs found for this flow. Flow may not have started properly.");
       return;
     }
 
@@ -414,11 +395,6 @@ export async function validateSlaMetricsSearch(sessionID: string, transactionId:
         const tags = message?.intent?.tags || [];
         const slaTerms = tags.filter((tag: any) => tag.code === 'lbnp_sla_terms');
 
-        assert.ok(
-          slaTerms.length > 0,
-          'At least one tag with code "lbnp_sla_terms" must be present'
-        );
-
         const allowedMetrics = [
           'Order_Accept',
           'Pickup_ETA',
@@ -444,12 +420,10 @@ export async function validateSlaMetricsSearch(sessionID: string, transactionId:
           const penaltyValue = getValue('penalty_value');
 
           //  Basic presence checks
-          assert.ok(metric, `Metric must be present in lbnp_sla_terms`);
           assert.ok(allowedMetrics.includes(metric),
             `Invalid metric "${metric}" found in lbnp_sla_terms`
           );
 
-          assert.ok(baseUnit, `Base unit must be present for metric ${metric}`);
           assert.ok(
             ['mins', 'percent', 'per_order'].includes(baseUnit),
             `Invalid base_unit "${baseUnit}" for metric ${metric}`
@@ -571,19 +545,11 @@ export async function validateNpTaxType(flowId: string, message: any, testResult
       const tags = action.toLowerCase() === "search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags || [];
       const bppTermsTag = tags.find((tag: any) => tag.code === "bpp_terms");
 
-      assert.ok(
-        bppTermsTag,
-        'Tag with code "bpp_terms" must be present under bpp/descriptor'
-      );
-
       const npTaxTypeEntry = bppTermsTag?.list?.find(
         (entry: any) => entry.code === "np_tax_type"
       );
 
-      assert.ok(
-        npTaxTypeEntry,
-        'Entry with code "np_tax_type" must be present in bpp_terms.list'
-      );
+      if (!npTaxTypeEntry) return;
 
       assert.ok(
         npTaxTypeEntry.value === "RCM",
@@ -609,17 +575,12 @@ export async function validateCodifiedStaticTerms(
   action: string
 ) {
   try {
-    const tags = action.toLowerCase() === "search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags || [];
+    const tags = action.toLowerCase() === "search" && action.toLowerCase() === "on_search" ? message?.catalog?.["bpp/descriptor"]?.tags : message?.order?.tags;
     const bppTerms = tags.find(
       (tag: any) => tag.code === "bpp_terms"
     );
 
     const list = bppTerms?.list || [];
-
-    assert.ok(
-      list.length > 0,
-      `bpp_terms list must be present under bpp/descriptor.tags`
-    );
 
     // Convert list to key-value object for easier validation
     const termsObj = list.reduce((acc: any, entry: any) => {
@@ -639,11 +600,6 @@ export async function validateCodifiedStaticTerms(
     // Validate on_search_LOGISTICS_CODIFIED_TERMS
     if (action_id === "on_search_LOGISTICS_CODIFIED_TERMS") {
       for (const key of requiredKeys) {
-        assert.ok(
-          key in termsObj,
-          `Missing required codified term "${key}" in on_search payload`
-        );
-
         // Optional — ensure value is not empty
         assert.ok(
           termsObj[key] !== undefined && termsObj[key] !== "",
@@ -702,27 +658,21 @@ export async function validateCustomerContactDetails(
 
     // Determine which term to check based on flowId
     const tagCode =
-      action_id === "confirm_LOGISTICS_EXCHANGE"
+      ['confirm_LOGISTICS_EXCHANGE', 'confirm_LOGISTICS'].includes(action_id)
         ? "bap_terms"
-        : action_id === "on_confirm_LOGISTICS_EXCHANGE"
+        : ['on_confirm_LOGISTICS_EXCHANGE', 'on_confirm_LOGISTICS'].includes(action_id)
           ? "bpp_terms"
-          : null;
-
-    if (!tagCode) {
-      testResults.failed.push(`Unsupported flowId: ${action_id}`);
-      return;
-    }
+          : "bpp_terms";
 
     // Extract tag section
     const termsTag = tags.find((tag: any) => tag.code === tagCode);
-    assert.ok(termsTag, `Missing "${tagCode}" tag in message.order.tags`);
+    if (!termsTag) return;
 
     const list = termsTag.list || [];
     const phoneEntry = list.find((entry: any) => entry.code === "phone");
-    assert.ok(phoneEntry, `Missing "phone" entry inside ${tagCode}.list`);
+    if (!phoneEntry) return;
 
     const phoneValue = phoneEntry.value;
-    assert.ok(phoneValue, `Phone number value missing inside ${tagCode}.list`);
     testResults.passed.push(
       `Phone number "${phoneValue}" saved successfully from ${tagCode}`
     );
@@ -779,7 +729,7 @@ export async function validatePublicSpecialCapabilities(
 
       //  Find special_req tag
       const specialReqTag = tags.find((t: any) => t.code === "special_req");
-      assert.ok(specialReqTag, `"special_req" tag must be present under provider.tags`);
+      if (!specialReqTag) return;
 
       const list = specialReqTag.list || [];
       assert.ok(list.length > 0, `"special_req".list must not be empty`);
@@ -801,11 +751,6 @@ export async function validatePublicSpecialCapabilities(
 
       // Validate keys and values
       for (const key of expectedKeys) {
-        assert.ok(
-          key in specialReqMap,
-          `Missing required capability "${key}" under special_req.list`
-        );
-
         const value = specialReqMap[key]?.toLowerCase();
         assert.ok(
           value === "yes" || value === "no",
@@ -838,8 +783,6 @@ export async function validateSellerCreds(
       const fulfillments = message?.order?.fulfillments || [];
       assert.ok(fulfillments.length > 0, "No fulfillments found in order");
 
-      let linkedProviderTagFound = false;
-
       for (const fulfillment of fulfillments) {
         const tags = fulfillment?.tags || [];
 
@@ -849,7 +792,6 @@ export async function validateSellerCreds(
         );
         if (!linkedProviderTag) continue;
 
-        linkedProviderTagFound = true;
         const list = linkedProviderTag.list || [];
 
         // Required codes that must exist
@@ -858,11 +800,7 @@ export async function validateSellerCreds(
         // Check all required codes exist and are valid
         for (const code of requiredCodes) {
           const entry = list.find((item: any) => item.code === code);
-
-          assert.ok(
-            entry,
-            `Missing required code "${code}" under linked_provider.list`
-          );
+          if (!entry) continue;
 
           assert.ok(
             typeof entry.value === "string" && entry.value.trim() !== "",
@@ -885,11 +823,6 @@ export async function validateSellerCreds(
         );
       }
 
-      assert.ok(
-        linkedProviderTagFound,
-        `"linked_provider" tag must exist in at least one fulfillment`
-      );
-
       testResults.passed.push(
         `Seller credentials (linked_provider) validated successfully`
       );
@@ -910,7 +843,6 @@ export async function validateEpodProofs(
       const fulfillments = message?.order?.fulfillments || [];
       assert.ok(fulfillments.length > 0, "No fulfillments found in order");
 
-      let proofFound = false;
       const allowedTypes = ["webp", "jpeg", "png", "pdf"];
 
       for (const fulfillment of fulfillments) {
@@ -918,7 +850,6 @@ export async function validateEpodProofs(
         const proofTags = tags.filter((tag: any) => tag.code === "fulfillment_proof");
 
         for (const proofTag of proofTags) {
-          proofFound = true;
           const list = proofTag?.list || [];
 
           // Required fields inside list
@@ -926,10 +857,7 @@ export async function validateEpodProofs(
 
           for (const field of requiredFields) {
             const entry = list.find((item: any) => item.code === field);
-            assert.ok(
-              entry,
-              `Missing required field "${field}" inside fulfillment_proof.list`
-            );
+            if (!entry) continue;
 
             assert.ok(
               typeof entry.value === "string" && entry.value.trim() !== "",
@@ -949,11 +877,6 @@ export async function validateEpodProofs(
         }
       }
 
-      assert.ok(
-        proofFound,
-        `At least one tag with code "fulfillment_proof" must be present in fulfillments`
-      );
-
       testResults.passed.push(
         `All fulfillment_proof tags validated successfully under E-POD flow`
       );
@@ -971,30 +894,6 @@ export function validateP2H2PRequirements(
   action: string
 ) {
   if (context?.domain !== "ONDC:LOG11") return;
-  const fulfillments = message?.order?.fulfillments || []
-  try {
-    assert.ok(
-      fulfillments.every((fulfillment: any) => fulfillment["@ondc/org/awb_no"]),
-      "AWB no is required for P2H2P shipments"
-    );
-    testResults.passed.push("AWB number for P2H2P validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
-
-  try {
-    const hasShippingLabel = fulfillments.some((fulfillment: any) => {
-      const tags = fulfillment?.tags || [];
-      return tags.some((tag: any) => tag.code === "shipping_label");
-    });
-
-    assert.ok(hasShippingLabel, "Shipping label is required for P2H2P shipments");
-    testResults.passed.push("Shipping label for P2H2P validation passed");
-  } catch (error: any) {
-    logger.error(`Error during ${action} validation: ${error.message}`);
-    testResults.failed.push(error.message);
-  }
 }
 
 

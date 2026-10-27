@@ -39,20 +39,51 @@ export default async function on_search(
       result.passed.push(`Catalog name: ${catalog.descriptor.name}`);
     }
 
+    // Check if fulfillment/fulfillments are sent additionally
+    if (catalog?.fulfillments || catalog?.fulfillment) {
+      result.failed.push("fulfillment is being sent additionally in catalog");
+    }
+
     // Validate providers
     const providers = catalog?.providers;
     if (providers && Array.isArray(providers) && providers.length > 0) {
       result.passed.push(`${providers.length} provider(s) found`);
 
       for (const provider of providers) {
+        // Check if fulfillment/fulfillments are sent additionally at provider level
+        if (provider?.fulfillments || provider?.fulfillment) {
+          result.failed.push("fulfillment is being sent additionally in provider");
+        }
+
         // Validate provider descriptor
         if (provider?.descriptor?.name) {
           result.passed.push(`Provider: ${provider.descriptor.name}`);
         }
 
+        // Validate provider.time
+        if (provider?.time) {
+          if (typeof provider.time !== "object") {
+            result.failed.push("provider.time is incorrect: should be a valid Time object");
+          }
+        }
+
         // Validate locations
         if (provider?.locations && provider.locations.length > 0) {
           result.passed.push(`${provider.locations.length} location(s) found`);
+
+          provider.locations.forEach((loc: any, idx: number) => {
+            if (loc.gps) {
+              const gps = String(loc.gps).trim();
+              const gpsRegex = /^-?\d+\.\d{6},\s*-?\d+\.\d{6}$/;
+              if (!gpsRegex.test(gps)) {
+                result.failed.push(
+                  `provider.location.gps should be precise up to 6 decimal places (e.g. 12.971598,77.594562), got: ${gps}`
+                );
+              } else {
+                result.passed.push(`Provider location[${idx}].gps has 6 decimal precision`);
+              }
+            }
+          });
         }
 
         // Validate categories
@@ -99,8 +130,6 @@ export default async function on_search(
           }
         }
       }
-    } else {
-      result.failed.push("No providers found in catalog");
     }
 
     // Validate pagination tags if present

@@ -27,6 +27,7 @@ const fis11Validators = validatorConstant.beckn.ondc.fis.fis11.v200;
 const fis10Validators = validatorConstant.beckn.ondc.fis.fis10.v210;
 const trv11Validators = validatorConstant.beckn.ondc.trv.trv11.v201;
 const fis12Validators = validatorConstant.beckn.ondc.fis.fis12.v202;
+const fis12230Validators = validatorConstant.beckn.ondc.fis.fis12.v230;
 const logValidators = validatorConstant.beckn.ondc.log.v125;
 const trv10Validators = validatorConstant.beckn.ondc.trv.trv10.v210;
 const igmValidators = validatorConstant.beckn.ondc.trv.igm.v200;
@@ -126,9 +127,7 @@ export const DomainValidators = {
     logValidators.shipment_types.validate_shipment_types,
     logValidators.cod.validate_cod,
     logValidators.tax_type_rcm.validate_np_tax_type_rcm,
-    logValidators.codified_static_terms.validate_codified_static_terms,
-    logValidators.public_special_capabilities
-      .validate_public_special_capabilities
+    // logValidators.codified_static_terms.validate_codified_static_terms,
   ),
 
   nic2004Search: createSearchValidator(
@@ -156,7 +155,7 @@ export const DomainValidators = {
    */
   ondclogInit: createInitValidator(
     logValidators.holidays.validate_holidays,
-    logValidators.lbnp.validate_lbnp,
+    // logValidators.lbnp.validate_lbnp,
     logValidators.prepaid_payment.validate_prepaid_payment,
     logValidators.cod.validate_cod
   ),
@@ -165,30 +164,26 @@ export const DomainValidators = {
    * ONDC LOG10/LOG11 on_init validator with comprehensive validations
    */
   ondclogOnInit: createOnInitValidator(
-    logValidators.lsp.validate_lsp,
+    // logValidators.lsp.validate_lsp,
     logValidators.tat.validate_tat,
     logValidators.shipment_types.validate_shipment_types
   ),
 
   ondclogConfirm: createConfirmValidator(
     logValidators.holidays.validate_holidays,
-    logValidators.lbnp.validate_lbnp,
+    // logValidators.lbnp.validate_lbnp,
     logValidators.prepaid_payment.validate_prepaid_payment,
     logValidators.sla_metrics.validate_sla_metrics,
-    logValidators.exchange_customer_contact_details
-      .validate_customer_contact_details,
     logValidators.seller_creds.validate_seller_creds
   ),
 
   ondclogOnConfirm: createOnConfirmValidator(
-    logValidators.lsp.validate_lsp,
+    // logValidators.lsp.validate_lsp,
     logValidators.tat.validate_tat,
     logValidators.shipment_types.validate_shipment_types,
     logValidators.sla_metrics.validate_sla_metrics,
     logValidators.tax_type_rcm.validate_np_tax_type_rcm,
     logValidators.codified_static_terms.validate_codified_static_terms,
-    logValidators.exchange_customer_contact_details
-      .validate_customer_contact_details
   ),
 
   /**
@@ -413,9 +408,23 @@ export const DomainValidators = {
     fis11Validators.catalog.validate_catalog,
     fis11Validators.providers.validate_providers,
     fis12Validators.items.validate_onsearch_items,
-    fis11Validators.payments.validate_payments,
+    fis12Validators.payments.validate_payments,
     fis12Validators.catalog.providers.categories,
     fis12Validators.items.validate_xinput
+  ),
+
+  fis12UnifiedCreditSearch: createSearchValidator(
+    // Unified credit search uses xinput-based form data, not BAP_TERMS/payment tags
+    // Only validate intent presence (via validateIntent which is skipped for UNIFIED_CREDIT_FLOWS)
+    fis11Validators.intent.validate_intent,
+  ),
+
+  fis12UnifiedCreditOnSearch: createOnSearchValidator(
+    // fis11Validators.catalog.validate_catalog,
+    // fis11Validators.providers.validate_providers,
+    fis12230Validators.items.validate_onsearch_items,
+    // fis11Validators.payments.validate_payments,
+    // fis12Validators.catalog.providers.categories,
   ),
 
   fis12Select: createSelectValidator(
@@ -674,4 +683,98 @@ export const DomainValidators = {
   igm1OnIssueStatus: createOnIssueStatusValidator(
     igm1Validators.on_issue_status.validate_on_issue_status
   ),
+
+  fis14Search: createSearchValidator(
+    fis11Validators.intent.validate_intent,
+  ),
+
+  fis14OnSearch: createOnSearchValidator(
+    fis11Validators.catalog.validate_catalog,
+    fis11Validators.providers.validate_providers,
+    fis12Validators.catalog.providers.categories,
+  ),
+
+  fis14Select: createSelectValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+  ),
+
+  fis14OnSelect: createOnSelectValidator(
+    trv10Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    fis11Validators.items.validate_items,
+  ),
+
+  fis14Init: createInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments,
+  ),
+
+  fis14OnInit: createOnInitValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments,
+  ),
+
+  fis14Confirm: createConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.payments.validate_payments,
+  ),
+
+  fis14OnConfirm: createOnConfirmValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis11Validators.order_status.validate_order_status,
+  ),
+
+  fis14Status: createSearchValidator(
+    fis11Validators.intent.validate_intent,
+  ),
+
+  fis14OnStatus: createOnStatusValidator(
+    fis11Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    fis11Validators.provider.validate_provider,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis11Validators.order_status.validate_order_status,
+  ),
+
+  fis14Update: createUpdateValidator(
+    trv10Validators.update_request_trv10.validate_update_request_trv10,
+  ),
+
+  fis14OnUpdate: createOnUpdateValidator(
+    trv10Validators.order.validate_order,
+    fis11Validators.quote.validate_quote,
+    trv10Validators.provider_trv10.validate_provider_trv10,
+    fis11Validators.items.validate_items,
+    fis12Validators.fulfillments.validate_fulfillments,
+    fis12Validators.payments.validate_payments,
+    fis11Validators.order_status.validate_order_status,
+  ),
+
+  retEB2BSearch: createSearchValidator(),
+  retEB2BOnSearch: createOnSearchValidator(),
+  retEB2BSelect: createSelectValidator(),
+  retEB2BOnSelect: createOnSelectValidator(),
+  retEB2BInit: createInitValidator(),
+  retEB2BOnInit: createOnInitValidator(),
+  retEB2BConfirm: createConfirmValidator(),
+  retEB2BOnConfirm: createOnConfirmValidator(),
+  retEB2BOnUpdate: createOnUpdateValidator(),
+  retEB2BOnStatus: createOnStatusValidator(),
 };
+

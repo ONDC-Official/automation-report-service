@@ -4,6 +4,13 @@ import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateInsuranceFulfillments,
+  validateInsurancePaymentTags,
+  validateInsurancePaymentParams,
+  validateInsuranceConfirmXinput,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function confirm(
   element: Payload,
@@ -13,6 +20,12 @@ export default async function confirm(
   usecaseId?: string
 ): Promise<TestResult> {
   const result = await DomainValidators.fis13Confirm(element, sessionID, flowId, actionId, usecaseId);
+
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateInsuranceFulfillments(element?.jsonRequest?.message, result, flowId, actionId);
+  validateInsurancePaymentTags(element?.jsonRequest?.message, result, flowId, "order");
+  validateInsurancePaymentParams(element?.jsonRequest?.message, result, flowId, actionId);
+  validateInsuranceConfirmXinput(element?.jsonRequest?.message, result, flowId);
 
   try {
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;

@@ -1,38 +1,36 @@
-import { Payload, WrappedPayload } from "../types/payload";
+import { Payload } from "../types/payload";
 import logger from "@ondc/automation-logger";
-// Function to group payloads by flowId and sort within each group by createdAt
-// export function groupAndSortPayloadsByFlowId(flowID: string, payloads: Payload[]): Record<string, WrappedPayload[]> {
-//   return payloads.reduce((grouped, element) => {
-//     const { flowId } = element;
 
-//     // Initialize the group if not already present
-//     if (!grouped[flowId]) {
-//       grouped[flowId] = [];
-//     }
+/**
+ * Extracts the best available timestamp for sorting:
+ * 1. context.timestamp (protocol-canonical ordering)
+ * 2. createdAt (DB insertion time, fallback)
+ *
+ * Using context.timestamp prevents BAP-side payload misordering where
+ * requests (select, init) are inserted before their responses (on_select,
+ * on_init) arrive, causing createdAt-based sorting to interleave them
+ * incorrectly.
+ */
+function getSortTimestamp(p: Payload): number {
+  const contextTs = p?.jsonRequest?.context?.timestamp;
+  if (contextTs) {
+    const ms = new Date(contextTs).getTime();
+    if (!isNaN(ms)) return ms;
+  }
+  return new Date(p.createdAt).getTime();
+}
 
-//     // Push payload to the respective flowId group
-//     grouped[flowId].push(element);
-
-//     // Sort the group by createdAt timestamp
-//     grouped[flowId].sort(
-//       (a, b) => new Date(a.payload.createdAt).getTime() - new Date(b.payload.createdAt).getTime()
-//     );
-
-//     return grouped;
-//   }, {} as Record<string, WrappedPayload[]>);
-// }
-
-// Function to sort payloads within each flowId group by createdAt
+// Function to sort payloads within each flowId group by context.timestamp (primary) or createdAt (fallback)
 export function sortPayloadsByCreatedAt(
   grouped: Record<string, Payload[]>
 ): Record<string, Payload[]> {
   Object.keys(grouped).forEach((key) => {
     if (Array.isArray(grouped[key])) {
       grouped[key].sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        (a, b) => getSortTimestamp(a) - getSortTimestamp(b)
       );
     }
   });
   return grouped;
 }
+

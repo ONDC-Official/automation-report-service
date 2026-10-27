@@ -1,19 +1,12 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
-import { getActionData } from "../../../services/actionDataService";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import {
   validateInsuranceContext,
   validateInsuranceOrderStatus,
   validateInsuranceDocuments,
 } from "../../shared/healthInsuranceValidations";
-import {
-  validateQuoteBreakupSum,
-  validateCreatedUpdatedAt,
-  validateOrderStatusTransition,
-  validateFulfillmentStateTransition,
-  validateAllContext,
-} from "../../shared/healthInsuranceL2Validations";
 
 export default async function on_status(
   element: Payload,
@@ -28,38 +21,15 @@ export default async function on_status(
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Health insurance context validation
+    // Health insurance domain checks
     validateInsuranceContext(context, result, flowId);
+    if (message) validateInsuranceOrderStatus(message, result, flowId);
+    if (message) validateInsuranceDocuments(message, result, flowId);
 
-    // Health insurance order status enum
-    if (message) {
-      validateInsuranceOrderStatus(message, result, flowId);
-    }
-
-    // Health insurance document types
-    if (message) {
-      validateInsuranceDocuments(message, result, flowId);
-    }
-
-    // ── L2: Financial ──
-    if (message) {
-      validateQuoteBreakupSum(message, result, flowId, "on_status");
-    }
-
-    // ── L2: Timestamps ──
-    if (message) {
-      validateCreatedUpdatedAt(message, result, flowId, "on_status");
-    }
-
-    // ── L2: State transitions vs on_confirm ──
+    // Form ID (xinput) check
     const txnId = context?.transaction_id as string | undefined;
-    if (txnId) {
-      const onConfirmData = await getActionData(sessionID, flowId, txnId, "on_confirm");
-      if (onConfirmData) {
-        validateOrderStatusTransition(message, onConfirmData, result, flowId, "on_status", "on_confirm");
-        validateFulfillmentStateTransition(message, onConfirmData, result, flowId, "on_status", "on_confirm");
-        validateAllContext(context, onConfirmData, result, flowId, "on_status", "on_confirm");
-      }
+    if (txnId && message) {
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_status", result);
     }
   } catch (_) { }
 

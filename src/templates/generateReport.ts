@@ -57,7 +57,7 @@ function generateApiValidationHtml(
 }
 
 // Generate the HTML report
-export function generateCustomHTMLReport(data: Report): { html: string } {
+export function generateCustomHTMLReport(data: Report, sessionId: string, flowMap: Record<string, string>): { html: string; flowResults: Record<string, "PASS" | "FAIL"> } {
   const styles = `
     <style>
       body {
@@ -113,6 +113,12 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         overflow: hidden;
         white-space: normal;
         display: block;
+      }
+      .txn-id {
+      	font-size: 14px;
+      	color: #666;
+      	font-weight: normal;
+      	margin-left: 8px;
       }
       .arrow-icon {
         font-size: 18px;
@@ -257,11 +263,46 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
       .control-btn:hover {
         background-color: #003d7a;
       }
+      .session-id-header {
+      	text-align: center;
+      	color: #555;
+      	font-size: 16px;
+      	margin-bottom: 30px;
+      }
+      .copy-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px 6px;
+        margin-left: 6px;
+        border-radius: 4px;
+        color: #666;
+        transition: background-color 0.2s, color 0.2s;
+        font-size: 14px;
+      }
+      .copy-btn:hover {
+        background-color: #e0e0e0;
+        color: #333;
+      }
     </style>
   `;
 
   const script = `
     <script>
+      function copyToClipboard(buttonElement, textToCopy, event) {
+          // Prevent event from bubbling up to the accordion header click
+          event.stopPropagation();
+          
+          navigator.clipboard.writeText(textToCopy).then(() => {
+              const originalText = buttonElement.innerHTML;
+              buttonElement.innerHTML = '✅';
+              setTimeout(() => {
+                  buttonElement.innerHTML = originalText;
+              }, 2000);
+          }).catch(err => {
+              console.error('Failed to copy text: ', err);
+          });
+      }
       function toggleAccordion(id) {
         const content = document.getElementById(id);
         const arrow = document.getElementById('arrow-' + id);
@@ -302,21 +343,46 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
           arrow.textContent = '▼';
         });
       }
+      function downloadReport() {
+        const contents = document.querySelectorAll('.flow-content');
+        const arrows = document.querySelectorAll('.arrow-icon');
+
+        contents.forEach(content => content.classList.add('expanded'));
+        arrows.forEach(arrow => {
+          arrow.classList.add('expanded');
+          arrow.textContent = '▲';
+        });
+
+        const htmlContent = document.documentElement.outerHTML;
+
+        const blob = new Blob([htmlContent], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Flow_Validation_Report.html";
+        document.body.appendChild(a);
+        a.click();
+
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     </script>
   `;
 
   // Generate final report summary section
   const finalReportHtml = Object.entries(data?.finalReport || {}).length
     ? `<ul class="result-list">${Object.entries(data?.finalReport)
-        .map(([key, value]) =>
-          key.length > 0
-            ? `<li class="result-item failed"><span class="icon fail">✘</span>${value}</li>`
-            : ""
-        )
-        .join("")}</ul>`
+      .map(([key, value]) =>
+        key.length > 0
+          ? `<li class="result-item failed"><span class="icon fail">✘</span>${value}</li>`
+          : ""
+      )
+      .join("")}</ul>`
     : "<p>All flows have been tested</p>";
 
   // Generate flow cards HTML
+  const flowResults: Record<string, "PASS" | "FAIL"> = {};
   const flowCardsHtml = Object.entries(data?.flowErrors || {})
     .map(([flowId, { valid_flow, errors, messages }], index) => {
       const parsedMessages: Record<string, ParsedMessage> = Object.entries(
@@ -346,14 +412,23 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         return acc;
       }, {} as Record<string, ParsedMessage>);
 
+      // A flow only actually passes if the action sequence matched AND no
+      // individual action reported a validation failure — valid_flow alone
+      // only reflects sequence order, not business/schema correctness.
+      const hasValidationFailures = Object.values(parsedMessages).some(
+        (m) => Array.isArray(m.failed) && m.failed.length > 0
+      );
+      const flowPassed = valid_flow && !hasValidationFailures;
+      flowResults[flowId] = flowPassed ? "PASS" : "FAIL";
+
       // Generate errors list
       const errorsHtml = errors.length
         ? `<ul class="result-list">${errors
-            .map(
-              (err) =>
-                `<li class="result-item failed"><span class="icon fail">✘</span>${err}</li>`
-            )
-            .join("")}</ul>`
+          .map(
+            (err) =>
+              `<li class="result-item failed"><span class="icon fail">✘</span>${err}</li>`
+          )
+          .join("")}</ul>`
         : "<p>No errors found.</p>";
 
       // Generate API validations HTML
@@ -370,16 +445,21 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
         )
         .join("");
 
+      const txnId = flowMap[flowId] || 'N/A';
       return `
         <div class="flow-card">
           <div class="flow-header" onclick="toggleAccordion('flow-${index}')">
             <div class="flow-header-left">
               <span class="arrow-icon" id="arrow-flow-${index}">▼</span>
-              <div class="flow-id">Flow ID: ${flowId}</div>
+              <div class="flow-id">
+                Flow ID: ${flowId}
+                <span class="txn-id">(Txn ID: ${txnId})</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, '${txnId}', event)" title="Copy Transaction ID">📋</button>
+              </div>
             </div>
             <div class="flow-header-right">
-              <div class="validity ${valid_flow ? "valid" : "invalid"}">
-                ${valid_flow ? "Valid" : "Invalid"}
+              <div class="validity ${flowPassed ? "valid" : "invalid"}">
+                ${flowPassed ? "Valid" : "Invalid"}
               </div>
             </div>
           </div>
@@ -398,6 +478,7 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
     })
     .join("");
 
+logger.info("flowResultsForPASSFAIL",JSON.stringify(flowResults))
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -412,8 +493,14 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
       
       <!-- Control Buttons -->
       <div class="controls">
+        <button class="control-btn" onclick="downloadReport()">⬇ Download Report</button>
         <button class="control-btn" onclick="expandAll()">▼ Expand All</button>
         <button class="control-btn" onclick="collapseAll()">▲ Collapse All</button>
+      </div>
+
+      <div class="session-id-header">
+    	Session ID: <strong>${sessionId}</strong>
+        <button class="copy-btn" onclick="copyToClipboard(this, '${sessionId}', event)" title="Copy Session ID">📋</button>
       </div>
       
       <div class="flow-card">
@@ -430,5 +517,5 @@ export function generateCustomHTMLReport(data: Report): { html: string } {
     </html>
   `;
 
-  return { html: htmlContent };
+  return { html: htmlContent, flowResults };
 }

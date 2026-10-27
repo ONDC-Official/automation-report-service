@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { getPayloadsByTransactionAndSession } from "../services/dbService";
-import { mapPayloadsToLogFormat } from "../utils/payloadUtils"; 
+import { mapPayloadsToLogFormat } from "../utils/payloadUtils";
 import logger from "@ondc/automation-logger";
+import { MESSAGES } from "../utils/messages";
 
 export const fetchLogsController = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -12,14 +13,16 @@ export const fetchLogsController = async (req: Request, res: Response): Promise<
     );
 
     if (!transaction_id) {
-      logger.error("Missing transaction_id in query parameters");
-      res.status(400).json({ error: "transaction_id is required" });
+      logger.error(MESSAGES.logsController.missingTransactionId);
+      res.status(400).json({ error: MESSAGES.logsController.transactionIdRequired });
       return;
     }
 
     // Extract sessionId from test_id (remove 'PW_' prefix)
     const sessionId =
-      typeof test_id === "string" ? test_id.replace(/^PW_/, "") : undefined;
+  typeof test_id === "string"
+    ? test_id.replace(/^PW_/, "").split("::")[0]
+    : undefined;
 
     logger.info(
       `Extracted sessionId: ${sessionId || "undefined"} from test_id: ${test_id}`
@@ -48,6 +51,6 @@ export const fetchLogsController = async (req: Request, res: Response): Promise<
       `Error in fetchLogsController for transaction_id: ${req.query.transaction_id} — ${error.message}`,
       { stack: error.stack }
     );
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: MESSAGES.logsController.internalServerError });
   }
 };

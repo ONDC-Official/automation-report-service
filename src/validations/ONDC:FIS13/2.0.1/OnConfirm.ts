@@ -3,7 +3,6 @@ import { DomainValidators } from "../../shared/domainValidator";
 import { validateOrderQuote } from "../../shared/quoteValidations";
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
-import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
 import {
   validateInsuranceContext,
@@ -12,16 +11,6 @@ import {
   validateInsurancePaymentParams,
   validateInsuranceOrderId,
 } from "../../shared/healthInsuranceValidations";
-import {
-  validateAllFinancials,
-  validateProviderConsistency,
-  validateItemConsistency,
-  validateQuoteConsistency,
-  validateBillingConsistency,
-  validatePaymentCollectedByConsistency,
-  validateCreatedUpdatedAt,
-  validateAllContext,
-} from "../../shared/healthInsuranceL2Validations";
 
 export default async function on_confirm(
   element: Payload,
@@ -36,29 +25,14 @@ export default async function on_confirm(
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Health insurance context validation
+    // Health insurance domain checks
     validateInsuranceContext(context, result, flowId);
+    if (message) validateInsuranceOrderStatus(message, result, flowId);
+    if (message) validateInsuranceOrderId(message, result, flowId);
+    if (message) validateInsuranceDocuments(message, result, flowId);
+    if (message) validateInsurancePaymentParams(message, result, flowId, actionId);
 
-    // Health insurance order status (ACTIVE)
-    if (message) {
-      validateInsuranceOrderStatus(message, result, flowId);
-    }
-
-    // Health insurance order ID (Policy ID)
-    if (message) {
-      validateInsuranceOrderId(message, result, flowId);
-    }
-
-    // Health insurance document types (POLICY_DOC)
-    if (message) {
-      validateInsuranceDocuments(message, result, flowId);
-    }
-
-    // Health insurance payment params (transaction_id)
-    if (message) {
-      validateInsurancePaymentParams(message, result, flowId, actionId);
-    }
-
+    // Quote calculation check
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,
@@ -68,42 +42,37 @@ export default async function on_confirm(
       });
     }
 
-    // ── L2: Financial validations ──
-    if (message) {
-      validateAllFinancials(message, result, flowId, "on_confirm");
-    }
-
-    // ── L2: Timestamp validation ──
-    if (message) {
-      validateCreatedUpdatedAt(message, result, flowId, "on_confirm");
-    }
-
-    // ── L2: Cross-action consistency ──
     const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
-      const onInitData = await getActionData(sessionID, flowId, txnId, "on_init");
+      // Price comparison: confirm → on_confirm
       const confirmData = await getActionData(sessionID, flowId, txnId, "confirm");
-
-      // vs on_init
-      if (onInitData) {
-        validateProviderConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
-        validateItemConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
-        validateQuoteConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
-        validatePaymentCollectedByConsistency(message, onInitData, result, flowId, "on_confirm", "on_init");
+      const onConfirmItems: any[] = message?.order?.items || [];
+      const confirmItems: any[] = confirmData?.items || [];
+      const confirmPriceById = new Map<string, string>();
+      for (const it of confirmItems) {
+        if (it?.id && it?.price?.value !== undefined) confirmPriceById.set(it.id, String(it.price.value));
       }
 
-      // vs confirm
-      if (confirmData) {
-        validateBillingConsistency(message, confirmData, result, flowId, "on_confirm", "confirm");
-        validateAllContext(context, confirmData, result, flowId, "on_confirm", "confirm");
+      const missingFromConfirm: string[] = [];
+      const priceMismatches: Array<{ id: string; confirm: string; on_confirm: string }> = [];
+      for (const it of onConfirmItems) {
+        const id = it?.id;
+        if (!id) continue;
+        if (!confirmPriceById.has(id)) { missingFromConfirm.push(id); continue; }
+        const cnf = parseFloat(confirmPriceById.get(id) as string);
+        const onCnf = it?.price?.value !== undefined ? parseFloat(String(it.price.value)) : NaN;
+        if (!Number.isNaN(cnf) && !Number.isNaN(onCnf)) {
+          if (cnf === onCnf) result.passed.push(`Item '${id}' price matches CONFIRM`);
+          else priceMismatches.push({ id, confirm: String(cnf), on_confirm: String(onCnf) });
+        }
+      }
+      if (priceMismatches.length) result.failed.push("Item price mismatches between CONFIRM and on_confirm");
+      if (missingFromConfirm.length || priceMismatches.length) {
+        (result.response as any) = { ...(result.response || {}), on_confirm_vs_confirm: { missingFromConfirm, priceMismatches } };
       }
 
-      // Validate form ID consistency if xinput is present
-      const isInsuranceFlow = flowId && (HEALTH_INSURANCE_FLOWS.includes(flowId) || MOTOR_INSURANCE_FLOWS.includes(flowId));
-      if (isInsuranceFlow) {
-        const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
-        await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_confirm", result, insuranceFlows);
-      }
+      // Form ID (xinput) check
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_confirm", result);
     }
   } catch (_) { }
 

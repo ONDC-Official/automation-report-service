@@ -1,0 +1,8 @@
+# Read by OnStatus.ts (rtoChecks.validateNoCancelledFulfillmentRevived): a fulfillment that is
+# Cancelled here must stay Cancelled on every later leg. The RTO reference flow's terminal
+# on_status reports its cancelled Delivery fulfillment as `Packed` again.
+#
+# `fulfillments` comes back as a BARE OBJECT when there is one (src/utils/extract.ts:16) —
+# normalize on read (returnChecks.asArray).
+save-data:
+  fulfillments: "$.message.order.fulfillments[*]"

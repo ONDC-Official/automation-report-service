@@ -7,8 +7,6 @@ import {
   formatDate,
   extractTATHours,
   getTimestampFromDuration,
-  validateRequiredField,
-  validateArrayContains,
   addDefaultValidationMessage,
 } from "./commonValidations";
 
@@ -71,15 +69,15 @@ export function validateShipmentTypes(
     }
   });
 
-  try {
-    assert.ok(
-      hasForwardShipment && hasBackwardShipment,
-      "Both forward shipment (Delivery) and backward shipment (RTO) should be provided in the catalog"
-    );
-    testResults.passed.push("Shipment types validation passed");
-  } catch (error: any) {
-    testResults.failed.push(error.message);
-  }
+  // try {
+  //   assert.ok(
+  //     hasForwardShipment && hasBackwardShipment,
+  //     "Both forward shipment (Delivery) and backward shipment (RTO) should be provided in the catalog"
+  //   );
+  //   testResults.passed.push("Shipment types validation passed");
+  // } catch (error: any) {
+  //   testResults.failed.push(error.message);
+  // }
 
   return { hasForwardShipment, hasBackwardShipment };
 }

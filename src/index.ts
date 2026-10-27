@@ -2,7 +2,7 @@ import "./config/otelConfig"
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import Router from "./routes/routes";
-import { RedisService } from "ondc-automation-cache-lib";
+import { RedisService } from "@ondc/ondc-automation-cache-lib";
 import logger from "@ondc/automation-logger";
 import { MESSAGES } from "./utils/messages";
 import { apiResponse } from "./utils/responseHandler";
@@ -20,9 +20,6 @@ try {
 } catch (err) {
   logger.error(String(err));
 }
-
-// Middleware setup
-app.use(express.json());
 
 // Routes
 app.use("/", Router);

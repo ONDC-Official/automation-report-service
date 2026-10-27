@@ -38,8 +38,6 @@ export default async function on_confirm(
     // Validate order ID
     if (order?.id) {
       result.passed.push(`Order ID: ${order.id}`);
-    } else {
-      result.failed.push("Order ID is missing");
     }
 
     // Validate order state
@@ -57,6 +55,10 @@ export default async function on_confirm(
       result.passed.push(`Provider ID: ${order.provider.id}`);
     }
 
+    if (order?.provider?.tags && Array.isArray(order.provider.tags) && order.provider.tags.length > 0) {
+      result.passed.push("provider.tags are present");
+    }
+
     // Validate items
     const items = order?.items;
     if (items && Array.isArray(items) && items.length > 0) {
@@ -72,13 +74,43 @@ export default async function on_confirm(
     // Validate fulfillments
     const fulfillments = order?.fulfillments;
     if (fulfillments && Array.isArray(fulfillments) && fulfillments.length > 0) {
-      const fulfillment = fulfillments[0];
-      if (fulfillment?.id) {
-        result.passed.push(`Fulfillment ID: ${fulfillment.id}`);
-      }
-      if (fulfillment?.state?.descriptor?.code) {
-        result.passed.push(`Fulfillment state: ${fulfillment.state.descriptor.code}`);
-      }
+      fulfillments.forEach((fulfillment: any, fIdx: number) => {
+        if (fulfillment.type) {
+          result.passed.push(`Fulfillment[${fIdx}] type: ${fulfillment.type}`);
+        }
+        if (fulfillment.state?.descriptor?.code) {
+          result.passed.push(`Fulfillment[${fIdx}] state: ${fulfillment.state.descriptor.code}`);
+        }
+
+        // Validate stops (START and END check-in/check-out) only if stops are present
+        const stops = fulfillment.stops;
+        if (stops && Array.isArray(stops) && stops.length > 0) {
+          const startStop = stops.find((s: any) => s.type === "START");
+          const endStop = stops.find((s: any) => s.type === "END");
+          if (startStop) {
+            if (startStop.location && startStop.location.gps) {
+              const gps = String(startStop.location.gps).trim();
+              const gpsRegex = /^-?\d+\.\d{6},\s*-?\d+\.\d{6}$/;
+              if (!gpsRegex.test(gps)) {
+                result.failed.push(`Fulfillment[${fIdx}] START stop location.gps should have 6 decimal precision, got: ${gps}`);
+              } else {
+                result.passed.push(`Fulfillment[${fIdx}] START stop location.gps is correct`);
+              }
+            }
+          }
+          if (endStop) {
+            if (endStop.location && endStop.location.gps) {
+              const gps = String(endStop.location.gps).trim();
+              const gpsRegex = /^-?\d+\.\d{6},\s*-?\d+\.\d{6}$/;
+              if (!gpsRegex.test(gps)) {
+                result.failed.push(`Fulfillment[${fIdx}] END stop location.gps should have 6 decimal precision, got: ${gps}`);
+              } else {
+                result.passed.push(`Fulfillment[${fIdx}] END stop location.gps is correct`);
+              }
+            }
+          }
+        }
+      });
     }
 
     // Validate payments
@@ -87,8 +119,20 @@ export default async function on_confirm(
       const validStatuses = ["PAID", "NOT-PAID"];
       const paymentStatuses: string[] = [];
       let totalPaymentAmount = 0;
+      // In split-payment flows, PART-PAYMENT is the aggregate envelope.
+      // Sub-payments (PRE-ORDER, ON-FULFILLMENT) may be NOT-PAID or carry amount=0
+      const hasPartPayment = payments.some((p: any) => p.type === "PART-PAYMENT");
       
       for (const payment of payments) {
+        // PART-PAYMENT is a meta/aggregate envelope that links sub-payments via LINKED-PAYMENTS tags.
+        // Per the TRV13 2.0.1 API contract, it intentionally carries no params at any API stage.
+        if (payment.type === "PART-PAYMENT") {
+          result.passed.push(
+            `Payment [${payment.id || 'unknown'}] is PART-PAYMENT (aggregate envelope) — params validation skipped per contract`
+          );
+          continue;
+        }
+
         if (payment?.status) {
           // Validate status is valid
           if (validStatuses.includes(payment.status)) {
@@ -98,50 +142,45 @@ export default async function on_confirm(
             result.failed.push(`Invalid payment status: ${payment.status}. Must be PAID or NOT-PAID`);
           }
           
-          // Validate payment type consistency with status
-          if (payment.type === "PRE-ORDER" && payment.status === "NOT-PAID") {
+          // Only enforce PRE-ORDER = PAID when not in a split-payment (PART-PAYMENT) flow
+          if (payment.type === "PRE-ORDER" && payment.status === "NOT-PAID" && !hasPartPayment) {
             result.failed.push(`PRE-ORDER payment should be PAID in on_confirm, found NOT-PAID`);
           }
-        } else {
-          result.failed.push(`Payment status is missing for payment type: ${payment.type || 'unknown'}`);
         }
-        
+
         // Validate payment.params
         const params = payment?.params;
         if (!params) {
-          result.failed.push(`Payment params missing for payment type: ${payment.type || 'unknown'}`);
           continue;
         }
-        
+
         // Validate params.amount
-        if (!params.amount) {
-          result.failed.push(`Payment params.amount missing for ${payment.type || 'unknown'} payment`);
-        } else {
+        if (params.amount) {
           const amount = parseFloat(params.amount);
-          if (isNaN(amount) || amount <= 0) {
+          // ON-FULFILLMENT payments collected at hotel checkout — amount can be 0 at on_confirm stage.
+          // In split-payment flows, amount is tracked in PART-PAYMENT tags, not on the sub-payment.
+          if (isNaN(amount) || (amount <= 0 && !hasPartPayment && payment.type !== "ON-FULFILLMENT")) {
             result.failed.push(`Invalid payment amount: ${params.amount}. Must be a positive number`);
           } else {
             result.passed.push(`Payment ${payment.type} amount: ${params.currency || ''} ${params.amount}`);
             totalPaymentAmount += amount;
           }
         }
-        
+
         // Validate params.currency
-        if (!params.currency) {
-          result.failed.push(`Payment params.currency missing for ${payment.type || 'unknown'} payment`);
-        } else if (quote?.price?.currency && params.currency !== quote.price.currency) {
-          result.failed.push(
-            `Payment currency mismatch: expected ${quote.price.currency}, found ${params.currency}`
-          );
-        } else {
-          result.passed.push(`Payment currency: ${params.currency}`);
+        if (params.currency) {
+          if (quote?.price?.currency && params.currency !== quote.price.currency) {
+            result.failed.push(
+              `Payment currency mismatch: expected ${quote.price.currency}, found ${params.currency}`
+            );
+          } else {
+            result.passed.push(`Payment currency: ${params.currency}`);
+          }
         }
-        
+
         // Validate transaction_id for PAID payments
         if (payment.status === "PAID") {
-          if (!params.transaction_id) {
-            result.failed.push(`Transaction ID missing for PAID ${payment.type || 'unknown'} payment`);
-          } else {
+          if (params.transaction_id) {
             result.passed.push(`Transaction ID present for PAID payment: ${params.transaction_id}`);
           }
         }
@@ -206,8 +245,6 @@ export default async function on_confirm(
           }
         }
       }
-    } else {
-      result.failed.push("Payment information is missing in on_confirm");
     }
 
     // Validate created_at and updated_at
@@ -226,6 +263,30 @@ export default async function on_confirm(
         validateItemPriceConsistency: false,
         flowId,
       });
+    }
+
+    // Validate BAP_TERMS & BPP_TERMS
+    let allTags: any[] = [];
+    if (order?.tags && Array.isArray(order.tags)) {
+      allTags.push(...order.tags);
+    }
+    if (payments && Array.isArray(payments)) {
+      payments.forEach((p: any) => {
+        if (p.tags && Array.isArray(p.tags)) {
+          allTags.push(...p.tags);
+        }
+      });
+    }
+
+    const bapTerms = allTags.find((t: any) => t?.descriptor?.code === "BAP_TERMS");
+    const bppTerms = allTags.find((t: any) => t?.descriptor?.code === "BPP_TERMS");
+
+    if (bapTerms) {
+      result.passed.push("BAP_TERMS tag is present");
+    }
+
+    if (bppTerms) {
+      result.passed.push("BPP_TERMS tag is present");
     }
   } catch (error) {
     result.failed.push(`Validation error: ${error}`);

@@ -2,6 +2,7 @@ import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
 import { getActionData } from "../../../services/actionDataService";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import {
   validateInsuranceContext,
   validateInsuranceBilling,
@@ -9,12 +10,6 @@ import {
   validateInsurancePaymentTags,
   validateInsuranceInitXinput,
 } from "../../shared/healthInsuranceValidations";
-import {
-  validateProviderConsistency,
-  validateItemConsistency,
-  validatePaymentCollectedByConsistency,
-  validateAllContext,
-} from "../../shared/healthInsuranceL2Validations";
 
 export default async function init(
   element: Payload,
@@ -31,37 +26,36 @@ export default async function init(
 
     // Health insurance context validation
     validateInsuranceContext(context, result, flowId);
+    if (message) validateInsuranceBilling(message, result, flowId);
+    if (message) validateInsuranceFulfillments(message, result, flowId, actionId);
+    if (message) validateInsurancePaymentTags(message, result, flowId, "order");
+    if (message) validateInsuranceInitXinput(message, result, flowId);
 
-    // Health insurance billing validation (name, phone, email)
-    if (message) {
-      validateInsuranceBilling(message, result, flowId);
-    }
-
-    // Health insurance fulfillments validation (type, customer details)
-    if (message) {
-      validateInsuranceFulfillments(message, result, flowId, actionId);
-    }
-
-    // Health insurance payment tags (BUYER_FINDER_FEES, SETTLEMENT_TERMS)
-    if (message) {
-      validateInsurancePaymentTags(message, result, flowId, "order");
-    }
-
-    // Health insurance init xinput form_response validation
-    if (message) {
-      validateInsuranceInitXinput(message, result, flowId);
-    }
-
-    // ── L2: Cross-action consistency vs on_select ──
     const txnId = context?.transaction_id as string | undefined;
     if (txnId) {
+      // Provider + item ID comparison: on_select → init
       const onSelectData = await getActionData(sessionID, flowId, txnId, "on_select");
       if (onSelectData) {
-        validateProviderConsistency(message, onSelectData, result, flowId, "init", "on_select");
-        validateItemConsistency(message, onSelectData, result, flowId, "init", "on_select");
-        validatePaymentCollectedByConsistency(message, onSelectData, result, flowId, "init", "on_select");
-        validateAllContext(context, onSelectData, result, flowId, "init", "on_select");
+        const initProviderId = message?.order?.provider?.id;
+        const selectProviderId = onSelectData?.order?.provider?.id || onSelectData?.provider?.id;
+        if (initProviderId && selectProviderId) {
+          if (initProviderId === selectProviderId) result.passed.push("Provider id matches on_select");
+          else result.failed.push("Provider id mismatch with on_select");
+        }
+
+        const initItems: any[] = message?.order?.items || [];
+        const selItems: any[] = onSelectData?.order?.items || onSelectData?.items || [];
+        const selIds = selItems.map((it: any) => it?.id).filter(Boolean) as string[];
+        const iniIds = initItems.map((it: any) => it?.id).filter(Boolean) as string[];
+        const missing = selIds.filter(id => !iniIds.includes(id));
+        if (selIds.length > 0) {
+          if (missing.length === 0) result.passed.push(`Item IDs consistent between on_select and init (${selIds.length} items)`);
+          else result.failed.push(`Items from on_select missing in init: ${missing.join(", ")}`);
+        }
       }
+
+      // Form ID (xinput) check
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "init", result);
     }
   } catch (_) { }
 

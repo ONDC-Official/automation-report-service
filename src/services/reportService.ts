@@ -4,14 +4,16 @@ import { validationModule } from "./validationModule";
 import { generateCustomHTMLReport } from "../templates/generateReport";
 import { CacheService } from "./cacheService";
 import logger from "@ondc/automation-logger";
-import { DOMAINS_WITH_VERSION, ENABLED_DOMAINS, ENABLED_USECASES, typeMapping } from "../utils/constants";
+import { DOMAINS_WITH_VERSION, ENABLED_DOMAINS, ENABLED_USECASES, FLOW_ID_MAP, typeMapping } from "../utils/constants";
 import axios from "axios";
-import { generateTestsFromPayloads } from "../utils/payloadUtils";
+import { generateTestsFromPayloads, resolveUsecaseKey } from "../utils/payloadUtils";
 
 export class ReportService {
   async generate(
     sessionId: string,
-    flowIdToPayloadIdsMap: Record<string, string[]>
+    flowIdToPayloadIdsMap: Record<string, string[]>,
+    userId?: string,
+    flow_summary?: Record<string, { total: number; completed: number }>
   ): Promise<any> {
     try {
       // Fetch session details first
@@ -53,11 +55,12 @@ export class ReportService {
       const flows = sortPayloadsByCreatedAt(payloads);
 
       // Check if domain is not in enabled domains - use Pramaan report
-      console.log("sessionDetails=>>>>>>>>>>>>>>>>>", sessionDetails);
-      const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
+      const rawDomainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
+      // Usecase casing differs across session / ENABLED_DOMAINS / FLOW_ID_MAP (e.g. "Transit Insurance" vs "TRANSIT INSURANCE")
+      const domainVersionKey = (ENABLED_DOMAINS.find((d) => d.toLowerCase() === rawDomainVersionKey.toLowerCase()) as string | undefined) ?? rawDomainVersionKey;
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
-        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
+        return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flow_summary);
       }
 
       // Check usecase-level enabling
@@ -67,12 +70,18 @@ export class ReportService {
         const currentUsecase = sessionDetails.usecaseId?.toLowerCase();
         if (!currentUsecase || !allowedUsecases.includes(currentUsecase)) {
           logger.info(`Usecase '${currentUsecase}' not enabled for ${domainVersionKey}, using Pramaan`);
-          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap);
+          return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flow_summary);
         }
       }
 
-      const result = await validationModule(flows, sessionId);
-      return generateCustomHTMLReport(result);
+      const htmlReport = generateCustomHTMLReport(
+        await validationModule(flows, sessionId),
+        sessionId,
+        flowMap
+      );
+      logger.info("flow map result", JSON.stringify(htmlReport.flowResults))
+      this.saveReportToDB(sessionId, htmlReport.html, userId, flow_summary, htmlReport.flowResults);
+      return htmlReport;
     } catch (error) {
       logger.error(
         `Error generating report for session ${sessionId}:`,
@@ -94,9 +103,22 @@ export class ReportService {
   private async checkPramaanReport(
     sessionDetails: any,
     sessionId: string,
-    flowIdToPayloadIdsMap: Record<string, string[]>
+    flowIdToPayloadIdsMap: Record<string, string[]>,
+    _userId?: string,
+    flow_summary?: Record<string, { total: number; completed: number }>
   ): Promise<any> {
     const testId = `PW_${sessionId}`;
+    logger.info(`Generating Pramaan Flow summary:`, flow_summary);
+    // Cache flow_summary so pramaanCallbackController can retrieve it when callback arrives
+    if (flow_summary && Object.keys(flow_summary).length > 0) {
+      CacheService.set(
+        `flow_summary:${testId}`,
+        JSON.stringify(flow_summary)
+      ).catch((err) =>
+        logger.error(`Failed to cache flow_summary for testId: ${testId}`, {}, err)
+      );
+    }
+
     const { tests, subscriber_id } = await generateTestsFromPayloads(
       sessionDetails.domain,
       sessionDetails.version,
@@ -110,7 +132,7 @@ export class ReportService {
     );
 
     // Build request body for Pramaan
-    const mappedType = typeMapping[sessionDetails.usecaseId];
+    const mappedType = typeMapping[sessionDetails.usecaseId] ?? typeMapping[resolveUsecaseKey(typeMapping, sessionDetails.usecaseId) ?? ""];
     const body = {
       id: subscriber_id,
       version: sessionDetails.version,
@@ -120,6 +142,7 @@ export class ReportService {
       tests,
       test_id: testId,
     };
+    // const pramaanUrl = `${process.env.PRAMAAN_URL}/preprod/testing/buyer/runtest`;
     const pramaanUrl = process.env.PRAMAAN_URL;
     if (!pramaanUrl) {
       throw new Error("PRAMAAN_URL is not defined in environment variables");
@@ -168,7 +191,7 @@ export class ReportService {
         flowNames.map(async (flowName) => {
           const txnId = flowMap[flowName];
           if (!txnId) {
-            console.warn(`No transaction ID found for flow: ${flowName}`);
+            logger.warning(`No transaction ID found for flow: ${flowName}`);
             return [flowName, null] as const;
           }
 
@@ -181,17 +204,29 @@ export class ReportService {
             );
             return [flowName, data] as const;
           } catch (error) {
-            console.error(
-              `Failed to fetch current state for flow ${flowName}:`,
-              error
-            );
+            if (axios.isAxiosError(error)) {
+              logger.error(
+                `Failed to fetch current state for flow ${flowName}:`,
+                error.message
+              );
+
+              // Axios-specific details
+              logger.error("Status:", error.response?.status);
+              logger.error("Response:", error.response?.data);
+            } else {
+              logger.error(
+                `Failed to fetch current state for flow ${flowName}:`,
+                error instanceof Error ? error.message : error
+              );
+            }
+
             return [flowName, null] as const;
           }
         })
       );
       return Object.fromEntries(entries);
     } catch (error) {
-      console.error("Error in fetchCurrentStates:", error);
+      logger.error("Error in fetchCurrentStates:", error);
       throw new Error(
         `Failed to fetch current states for session ${sessionId}`
       );
@@ -239,5 +274,57 @@ export class ReportService {
         if (actionId) p.action_id = actionId;
       });
     });
+  }
+
+  private saveReportToDB(
+    sessionId: string,
+    html: string,
+    userId?: string,
+    flow_summary?: Record<string, { total: number; completed: number }>,
+    flowResults?: Record<string, "PASS" | "FAIL">
+  ): void {
+    const testId = `PW_${sessionId}`;
+    logger.info("Saving report to DB for testId:", { testId });
+    const reportUrl = `${process.env.DATA_BASE_URL}/report/${testId}`;
+    const base64Report = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
+
+    const total_tests = flow_summary
+      ? Object.values(flow_summary).reduce((sum, f) => sum + f.total, 0)
+      : undefined;
+    const passed_tests = flow_summary
+      ? Object.values(flow_summary).reduce((sum, f) => sum + f.completed, 0)
+      : undefined;
+
+    // 1. Save HTML report
+    axios
+      .post(
+        reportUrl,
+        {
+          data: base64Report,
+          ...(flow_summary && { flow_summary }),
+          ...(total_tests !== undefined && { total_tests }),
+          ...(passed_tests !== undefined && { passed_tests }),
+        },
+        {
+          headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY }, params: {
+            ...(userId && { userId }),
+          }
+        }
+      )
+      .then((res) => logger.info(`Report saved to DB for testId: ${testId}`, res.data))
+      .catch((err) => logger.error(`Failed to save report to DB for testId: ${testId}`, {}, err));
+
+    // 2. Save flowSummary + flowMap (pass/fail per flow) to automation-db
+    if (flowResults && Object.keys(flowResults).length > 0) {
+      const analyticsUrl = `${process.env.DATA_BASE_URL}/api/sessions/${sessionId}/analytics`;
+      axios
+        .post(
+          analyticsUrl,
+          { flowSummary: flow_summary, flowMap: flowResults },
+          { headers: { "Content-Type": "application/json", "x-api-key": process.env.API_SERVICE_KEY } }
+        )
+        .then(() => logger.info(`Analytics saved for sessionId: ${sessionId}`))
+        .catch((err) => logger.error(`Failed to save analytics for sessionId: ${sessionId}`, {}, err));
+    }
   }
 }

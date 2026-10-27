@@ -19,6 +19,10 @@ export const actions: String[] = [
   "on_issue",
   "issue_status",
   "on_issue_status",
+  // Non-standard pseudo-action recorded by the mock for ONDC:RET10's
+  // Catalog_Rejection_Flow — a real recorded payload (context.action:
+  // "catalog_rejection"), not one of Beckn's 20 canonical actions.
+  "catalog_rejection",
 ];
 
 export const MANDATORY_FLOWS: String[] = [
@@ -56,7 +60,23 @@ export const PURCHASE_FINANCE_FLOWS = [
   "Purchase_Finance_With_AA_Loan_Foreclosure",
   "Purchase_Finance_With_AA_Missed_EMI_Payment",
   "Purchase_Finance_With_AA_Pre_Part_Payment",
-  "Purchase_Finance_With_AA_Cancellation"
+  "Purchase_Finance_With_AA_Cancellation",
+  // pramaan-validation-parity skill: previously unwired IGM(v-1.0.0) flows — now wired in
+  // ReportingConfig.yaml too, so the field-level validators below actually run for them.
+  "Purchase_Finance_With_AA_With_IGM(v-1.0.0)",
+  "Purchase_Finance_Without_AA_With_IGM(v-1.0.0)",
+  "Purchase_Finance_Single_Redirection_With_AA_With_IGM(v-1.0.0)",
+  "Purchase_Finance_Single_Redirection_Without_AA_With_IGM(v-1.0.0)"
+]
+
+export const UNIFIED_CREDIT_FLOWS = [
+  "business_term_loan_with_offline_online",
+  "lamf_credit_line_with_mfc_offline_journey",
+  "credit_offline",
+  "offline_journey",
+  "master_search",
+  "business_term_loan_without_aa",
+  "lamf_credit_line_with_mfc"
 ]
 
 export const PURCHASE_FINANCE_FLOWS_SKIP_VALIDATION = [
@@ -94,7 +114,16 @@ export const SACHET_INSURANCE_FLOWS = [
   "Discovery_of_Insurer_Providers_and_Master_Policies",
   "Discovery_of_Products_from_Master_Policies (Accidental Insurance)",
   "Purchase_Journey_Accidental_Insurance",
-  "CD_Balance_Error_Accidental_Insurance"
+  "Purchase_Journey_Accidental_Insurance_with_igm_1.0.0",
+  "CD_Balance_Error_Accidental_Insurance",
+  "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)",
+  "Purchase_Journey_Hospicash_Insurance",
+  "Purchase_Journey_Hospicash_Insurance_with_igm_1.0.0",
+  "CD_Balance_Error_Hospicash_Insurance",
+  "Discovery_of_Products_from_Master_Policies (Transit Insurance)",
+  "Purchase_Journey_Transit_Insurance",
+  "Purchase_Journey_Transit_Insurance_with_igm_1.0.0",
+  "CD_Balance_Error_Transit_Insurance"
 ]
 
 
@@ -157,13 +186,36 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.2.1",
   "ONDC:FIS12:2.2.0",
   "ONDC:FIS12:2.0.1",
+  "ONDC:FIS12:2.3.0",
+  "ONDC:FIS12:SL:2.3.0",
   "ONDC:FIS13:2.0.1",
-  // "ONDC:FIS13:2.0.0:hospicash-insurance",
-  // "ONDC:FIS13:2.0.0:accidental-insurance",
+  "ONDC:FIS13:2.0.0:HEALTH INSURANCE",
+  "ONDC:FIS13:2.0.0:MOTOR INSURANCE",
+  "ONDC:FIS13:2.0.0:HOSPICASH INSURANCE",
+  "ONDC:FIS13:2.0.0:TRANSIT INSURANCE",
+  "ONDC:FIS13:2.0.0:ACCIDENTAL INSURANCE",
   "ONDC:TRV10:2.1.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
-  "ONDC:TRV13:2.0.1"
+  "ONDC:TRV13:2.0.1",
+  "ONDC:FIS14:2.1.0",
+  "ONDC:RETeB2B:1.2.5",
+  "ONDC:RET10:1.2.0",
+  "ONDC:RET10:1.2.5",
+  "ONDC:RET11:1.2.0",
+  "ONDC:RET11:1.2.5",
+  "ONDC:RET12:1.2.0",
+  "ONDC:RET12:1.2.5",
+  "ONDC:RET13:1.2.0",
+  "ONDC:RET13:1.2.5",
+  "ONDC:RET14:1.2.0",
+  "ONDC:RET14:1.2.5",
+  "ONDC:RET15:1.2.0",
+  "ONDC:RET15:1.2.5",
+  "ONDC:RET16:1.2.0",
+  "ONDC:RET16:1.2.5",
+  "ONDC:RET18:1.2.0",
+  "ONDC:RET18:1.2.5",
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
@@ -183,8 +235,17 @@ export const DOMAINS = {
   FIS12: "ONDC:FIS12",
   TRV10: "ONDC:TRV10",
   TRV11: "ONDC:TRV11",
-  TRV13: "ONDC:TRV13"
+  TRV13: "ONDC:TRV13",
+  RET10: "ONDC:RET10"
 };
+
+// Prefix shared by every RET1X Retail domain — mirrors log-validation-utility's
+// own structure, which has no per-domain folders at all for Retail (just
+// version-level utils/Retail vs utils/Retail_.1.2.5), with RET11 as the one
+// named exception (RET11_onSearch). RET10's own folder plays that same role
+// here as that single shared structure: every other RET1X domain falls back
+// to RET10's files when it has none of its own.
+export const RET_DOMAIN_PREFIX = "ONDC:RET";
 
 export const FLOW_MAPPINGS: Record<string, string> = {
   //METRO
@@ -265,10 +326,14 @@ type FlowCodeRequirement = {
   code: string;
 };
 
-export function validateLSPFeaturesForFlows(
+// Shared by validateLSPFeaturesForFlows/validateLBNPFeaturesForFlows: once the
+// relevant feature tag has been looked up (each caller does its own lookup,
+// since they differ in whether a missing tag list is tolerated), this checks
+// that every required code for the current flow is present with value "yes".
+function hasAllRequiredFeatureCodes(
   currentFlowId: string,
   requirements: FlowCodeRequirement[],
-  catalogTags: Tag[]
+  featureTag: Tag | undefined
 ): boolean {
   // Filter requirements that apply to the current flow
   const relevantRequirements = requirements.filter(
@@ -280,18 +345,26 @@ export function validateLSPFeaturesForFlows(
     return true;
   }
 
-  // Get the lsp_features tag
-  const lspFeaturesTag = catalogTags.find((tag) => tag.code === "lsp_features");
-  if (!lspFeaturesTag || !Array.isArray(lspFeaturesTag.list)) {
+  if (!featureTag || !Array.isArray(featureTag.list)) {
     return false;
   }
 
   // Check that all required codes exist with value "yes"
   return relevantRequirements.every((req) =>
-    lspFeaturesTag.list.some(
+    featureTag.list.some(
       (item) => item.code === req.code && item.value.toLowerCase() === "yes"
     )
   );
+}
+
+export function validateLSPFeaturesForFlows(
+  currentFlowId: string,
+  requirements: FlowCodeRequirement[],
+  catalogTags: Tag[]
+): boolean {
+  // Get the lsp_features tag
+  const lspFeaturesTag = catalogTags.find((tag) => tag.code === "lsp_features");
+  return hasAllRequiredFeatureCodes(currentFlowId, requirements, lspFeaturesTag);
 }
 
 export function validateLBNPFeaturesForFlows(
@@ -299,30 +372,11 @@ export function validateLBNPFeaturesForFlows(
   requirements: FlowCodeRequirement[],
   intentTags: Tag[]
 ): boolean {
-  // Filter requirements that apply to the current flow
-  const relevantRequirements = requirements.filter(
-    (req) => req.flowId === currentFlowId
-  );
-
-  // If no relevant rules exist for this flowId, it's valid
-  if (relevantRequirements.length === 0) {
-    return true;
-  }
-
-  // Get the lsp_features tag
-  const lbnpFeaturesTag = intentTags.find(
+  // Get the lbnp_features tag
+  const lbnpFeaturesTag = intentTags?.find(
     (tag) => tag.code === "lbnp_features"
   );
-  if (!lbnpFeaturesTag || !Array.isArray(lbnpFeaturesTag.list)) {
-    return false;
-  }
-
-  // Check that all required codes exist with value "yes"
-  return relevantRequirements.every((req) =>
-    lbnpFeaturesTag.list.some(
-      (item) => item.code === req.code && item.value.toLowerCase() === "yes"
-    )
-  );
+  return hasAllRequiredFeatureCodes(currentFlowId, requirements, lbnpFeaturesTag);
 }
 export const rules = [
   { flowId: "CASH_ON_DELIVERY_FLOW", code: "008" },
@@ -371,12 +425,16 @@ export const FLOW_ID_MAP: Record<
       },
       "Metro": {
         "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT": "MBL_1",
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT (W/O search_1 & select)": "MBL_1",
         "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT": "MBL_2",
-        "ORDER_TO_CONFIRM_MONTHLY_PASS": "MBL_3",
+        "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT (W/O search_1 & select)": "MBL_2",
         "USER_CANCELLATION_FLOW": "MBL_4",
-        "TICKET_EXPIRY_CANCELLATION_FLOW": "MBL_5",
-        "MERCHANT_SIDE_CANCELLATION_FLOW": "MBL_6",
+        "USER_CANCELLATION_FLOW (W/O search_1 & select)": "MBL_4",
+        // "TICKET_EXPIRY_CANCELLATION_FLOW": "MBL_5",
+        // "MERCHANT_SIDE_CANCELLATION_FLOW": "MBL_6",
+        // "ORDER_TO_CONFIRM_MONTHLY_PASS": "MBL_3",
         "TECHNICAL_CANCELLATION_FLOW": "MBL_20",
+        "TECHNICAL_CANCELLATION_FLOW (W/O search_1 & select)": "MBL_20",
       }
     },
     "2.0.1": {
@@ -456,16 +514,17 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Cancellation_Flow": "RET_3",
-        "RTO_And_Part_Cancellation_Flow": "RET_MRGD_1", 
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Return_Flow": "RET_MRGD_2", 
-        "Cash_On_Delivery_Flow": "RET_1b", 
-        "Self_Pickup_Flow":"RET_ENH_002", 
-        "Slotted_Delivery_Flow":"RET_ENH_003",  
-        "Buyer_Delivery_Flow":"RET_ENH_004", //pramaan pending
-        "Buyer_Instructions_And_Delivery_Update_Flow":"RET_MRGD_3_OOF_011",  
+        "RTO_And_Part_Cancellation_Flow": "RET_MRGD_1",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Return_Flow": "RET_MRGD_2",
+        "Replacement_Flow": "RET_ENH_00B",
+        "Cash_On_Delivery_Flow": "RET_1b",
+        "Self_Pickup_Flow": "RET_ENH_002",
+        "Slotted_Delivery_Flow": "RET_ENH_003",
+        "Buyer_Delivery_Flow": "RET_ENH_004", //pramaan pending
+        "Buyer_Instructions_And_Delivery_Update_Flow": "RET_MRGD_3_OOF_011",
         "Commercial_Model_For_BNP/SNP_Flow": "RET_ENH_00A",
-        "Forced_Cancellation_Flow":"RET_ENH_005" 
+        "Forced_Cancellation_Flow": "RET_ENH_005"
       },
     },
     "1.2.0": {
@@ -480,6 +539,22 @@ export const FLOW_ID_MAP: Record<
       },
     },
   },
+  "ONDC:RETeB2B": {
+    "1.2.5": {
+      "eB2B": {
+        "Discovery_flow_broadcast_search": "RET_9_EB2B",
+        "Order_to_confirm_to_fulfillment_(cod)": "RET_1B_EB2B",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1_EB2B",
+        "Buyer_Side_Order_Cancellation": "RET_3_EB2B",
+        "Out_of_Stock(Error_code)": "RET_6_EB2B",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_1_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(Prepaid)": "RET_11_EB2B",
+        "Order_to_confirm_to_fulfillment_with_offers(cod)": "RET_11B_EB2B",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5_EB2B"
+      },
+    },
+  },
+
   "ONDC:RET11": {
     "1.2.5": {
       "F&B": {
@@ -488,15 +563,16 @@ export const FLOW_ID_MAP: Record<
         "ORDER_FLOW": "RET_1",
         "RTO_PLUS_PART_CANCELLATION": "RET_MRGD_1",
         "RETURN_FLOW": "RET_MRGD_2",
+        "REPLACEMENT_FLOW": "RET_ENH_00B",
         "COMMERCIAL_MODEL_FOR_BNP/SNP_FLOW": "RET_ENH_00A",
-        "OUT_OF_STOCK(ERROR-CODE)":"RET_6",
-        "BUYER_CANCEL":"RET_3",
-        "FORCE_CANCEL":"RET_ENH_005", 
-        "OFFERS_FLOW":"RET_ENH_009",
-        "SELF_PICKUP":"RET_ENH_002",
-        "SLOTTED_DELIVERY":"RET_ENH_003",
-        "BUYER_DELIVERY":"RET_ENH_004",// pramaan pending
-        "BUYER INSTRUCTIONS AND ADDRESS UPDATE FLOW":"RET_MRGD_3_OOF_011", 
+        "OUT_OF_STOCK(ERROR-CODE)": "RET_6",
+        "BUYER_CANCEL": "RET_3",
+        "FORCE_CANCEL": "RET_ENH_005",
+        "OFFERS_FLOW": "RET_ENH_009",
+        "SELF_PICKUP": "RET_ENH_002",
+        "SLOTTED_DELIVERY": "RET_ENH_003",
+        "BUYER_DELIVERY": "RET_ENH_004",// pramaan pending
+        "BUYER INSTRUCTIONS AND ADDRESS UPDATE FLOW": "RET_MRGD_3_OOF_011",
       },
     },
     "1.2.0": {
@@ -520,12 +596,12 @@ export const FLOW_ID_MAP: Record<
         "Buyer_Cancellation_Flow": "RET_3",
         "Seller_Cred_Flow": "RET_ENH_017",
         "Return_Flow": "RET_MRGD_2",
+        "Replacement_Flow": "RET_ENH_00B",
         "Cash_On_Delivery_Flow": "RET_1b",
-        "Replacement_Flow":"RET_ENH_00B",
-        "Cancel_Return_Request_Flow":"RET_ENH_00D",// pramman pending
-        "Force_Cancellation_Flow":"RET_ENH_005", 
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Buyer_Instructions_And_Delivery_Update_Flow":"RET_MRGD_3_OOF_011", 
+        "Cancel_Return_Request_Flow": "RET_ENH_00D",// pramman pending
+        "Force_Cancellation_Flow": "RET_ENH_005",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Buyer_Instructions_And_Delivery_Update_Flow": "RET_MRGD_3_OOF_011",
       },
     },
     "1.2.0": {
@@ -548,10 +624,22 @@ export const FLOW_ID_MAP: Record<
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
         "Seller_Cred_Flow": "RET_ENH_017",
+        "Replacement_Flow": "RET_ENH_00B",
         "Cash_On_Delivery_Flow": "RET_1b",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Force_Cancellation_Flow":"RET_ENH_005", 
-        "Offers_Flow":"RET_ENH_009",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Force_Cancellation_Flow": "RET_ENH_005",
+        "Offers_Flow": "RET_ENH_009",
+      },
+    },
+    "1.2.0": {
+      "BPC": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
@@ -562,9 +650,21 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Purchase_Finance_Flow":"RET_ENH_0099", 
-        "Customization_Input_Text_Flow":"RET_ENH_016",// pramaan 
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
+        "Purchase_Finance_Flow": "RET_ENH_0099",
+        "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
+      },
+    },
+    "1.2.0": {
+      "ELECTRONICS": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
@@ -575,10 +675,22 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Purchase_Finance_Flow":"RET_ENH_0099",
-        "Customization_Input_Text_Flow":"RET_ENH_016",// pramaan 
-        "Force_Cancellation_Flow":"RET_ENH_005",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
+        "Purchase_Finance_Flow": "RET_ENH_0099",
+        "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
+        "Force_Cancellation_Flow": "RET_ENH_005",
+      },
+    },
+    "1.2.0": {
+      "APPLIANCES": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
@@ -589,10 +701,22 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
         "Buyer_Cancellation_Flow": "RET_3",
-        "Out_Of_Stock_Flow(Error-code)":"RET_6",
-        "Purchase_Finance_Flow":"RET_ENH_0099",
-        "Customization_Input_Text_Flow":"RET_ENH_016",// pramaan 
-        "Force_Cancellation_Flow":"RET_ENH_005",
+        "Out_Of_Stock_Flow(Error-code)": "RET_6",
+        "Replacement_Flow": "RET_ENH_00B",
+        "Purchase_Finance_Flow": "RET_ENH_0099",
+        "Customization_Input_Text_Flow": "RET_ENH_016",// pramaan 
+        "Force_Cancellation_Flow": "RET_ENH_005",
+      },
+    },
+    "1.2.0": {
+      "HOME&KITCHEN": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
@@ -602,25 +726,26 @@ export const FLOW_ID_MAP: Record<
         "Discovery_Flow_full_catalog": "RET_9",
         "Discovery_Flow_incremental_catalog": "RET_9_INC_PUSH",
         "Delivery_Flow": "RET_1",
-        "Self_Pickup_Flow":"RET_ENH_002", 
-        "Slotted_Delivery_Flow":"RET_ENH_003",
-        "Buyer_Instructions_And_Delivery_Update_Flow":"RET_MRGD_3_OOF_011", 
-        "Seller_Cred_Flow":"RET_ENH_017",
-        "Force_Cancellation_Flow":"RET_ENH_005", // pramaan 
+        "Self_Pickup_Flow": "RET_ENH_002",
+        "Slotted_Delivery_Flow": "RET_ENH_003",
+        "Replacement_Flow": "RET_ENH_00B",
+        "Buyer_Instructions_And_Delivery_Update_Flow": "RET_MRGD_3_OOF_011",
+        "Seller_Cred_Flow": "RET_ENH_017",
+        "Force_Cancellation_Flow": "RET_ENH_005", // pramaan 
         "Buyer_Cancellation_Flow": "RET_3",
         "Cash_On_Delivery_Flow": "RET_1b",
         "Out_Of_Stock_Flow(Error-code)": "RET_6",
       },
     },
-  },
-  "ONDC:RETINVL": {
-    "1.2.5": {
-      "INVL": {
-        "RETINVL_DISCOVERY_FLOW": "RETINVL_DISCOVERY_FLOW",
-        "ORDER_FLOW_BASELINE": "ORDER_FLOW_BASELINE",
-        "ORDER_FLOW_BASELINE_ILBP": "ORDER_FLOW_BASELINE_ILBP",
-        "OFFERS_FLOW":"OFFERS_FLOW", 
-        "BUYER_SIDE_ORDER_CANCELLATION":"BUYER_SIDE_ORDER_CANCELLATION",
+    "1.2.0": {
+      "HEALTH&WELLNESS": {
+        "Search_and_Custom_Menu_(Full_Catalog_City)": "RET_9",
+        "Search_and_Custom_Menu_(Incremental_Push)": "RET_9_INC_PUSH",
+        "Order_to_confirm_to_fulfillment_(Prepaid)": "RET_1",
+        "Buyer_Side_Order_Cancellation": "RET_3",
+        "Merchant_Side_RTO_and_Part_Order_Cancellation_Flow": "RET_MRGD_4",
+        "Buyer_Initiated_Return_(Full_Order_and_Partial_Order)": "RET_MRGD_5",
+        "Out_of_Stock(Error_code)": "RET_6",
       },
     },
   },
@@ -643,36 +768,43 @@ export const FLOW_ID_MAP: Record<
       },
     },
   },
-  "nic2004:60232":{
-    "1.2.0":{
-      "Logistics (NIC2004:60232)":{
-        "ORDER_FLOW_BASELINE":"B2C_1",
-        "ORDER_FLOW_BASELINE(without rts)":"B2C_1_WORTS",
-        "BUYER_SIDE_ORDER_CANCELLATION":"B2C_5",
-        "RTO_FLOW":"B2C_2"
+  "nic2004:60232": {
+    "1.2.0": {
+      "Logistics (NIC2004:60232)": {
+        "ORDER_FLOW_BASELINE": "B2C_1",
+        "ORDER_FLOW_BASELINE(without rts)": "B2C_1_WORTS",
+        "BUYER_SIDE_ORDER_CANCELLATION": "B2C_5",
+        "RTO_FLOW": "B2C_2"
       }
     }
   },
   "ONDC:FIS13": {
     "2.0.0": {
-      "transit-insurance": {
+      "TRANSIT INSURANCE": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
         "Discovery_of_Products_from_Master_Policies (Transit Insurance)": "INS_SGRTD_2",
-        "Purchase_Journey_Transit_Insurance": "INS_20",
+        "Purchase_Journey_Transit_Insurance": "INS_SGRTD_4",
         "CD_Balance_Error_Transit_Insurance": "INS_23"
       },
-      "accidental-insurance": {
+      "ACCIDENTAL INSURANCE": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
         "Discovery_of_Products_from_Master_Policies (Accidental Insurance)": "INS_SGRTD_2",
         "Purchase_Journey_Accidental_Insurance": "INS_SGRTD_3",
-        "CD_Balance_Error_Transit_Insurance": "INS_23"
+        "CD_Balance_Error_Accidental_Insurance": "INS_23"
 
       },
-      "hospicash-insurance": {
+      "HOSPICASH INSURANCE": {
         "Discovery_of_Insurer_Providers_and_Master_Policies": "INS_SGRTD_1",
         "Discovery_of_Products_from_Master_Policies (Hospicash Insurance)": "INS_SGRTD_2",
-        "Purchase_Journey_Hospicash_Insurance": "INS_21",
+        "Purchase_Journey_Hospicash_Insurance": "INS_SGRTD_5",
         "CD_Balance_Error_Hospicash_Insurance": "INS_23"
+      }
+    }
+  },
+  "ONDC:NTS10": {
+    "2.0.0": {
+      "RECONCILIATION": {
+        "RECONCILIATION": "NTS10"
       }
     }
   }
@@ -685,6 +817,7 @@ export const typeMapping: Record<string, string> = {
   "ride-Logistics (P2P)": "LOG",
   "gift-card": "GIFTCARD",
   "GROCERY": "RETAIL",
+  "eB2B": "RETAIL",
   "F&B": "RETAIL",
   "FASHION": "RETAIL",
   "BPC": "RETAIL",
@@ -696,11 +829,12 @@ export const typeMapping: Record<string, string> = {
   "Intercity": "INTERCITY",
   "unreserved-entry-pass": "ENTRY_PASS",
   "Hotel-Booking": "ACCOMMODATION",
-  "transit-insurance": "SACHET_INSURANCE",
-  "accidental-insurance": "SACHET_INSURANCE",
-  "hospicash-insurance": "SACHET_INSURANCE",
-  "Logistics (NIC2004:60232)":"LOGISTICS",
-  "RETINVL":"RETINVL"
+  "TRANSIT INSURANCE": "SACHET_INSURANCE",
+  "ACCIDENTAL INSURANCE": "SACHET_INSURANCE",
+  "HOSPICASH INSURANCE": "SACHET_INSURANCE",
+  "Logistics (NIC2004:60232)": "LOGISTICS",
+  "RETINVL":"RETINVL",
+  "RECONCILIATION": "RECONCILIATION",
 };
 
 export const NIC_LOGISTICS_CATEGORY_FLOW_MAP: Record<string, string> = {

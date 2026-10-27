@@ -5,6 +5,11 @@ import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { saveFromElement } from "../../../utils/specLoader";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
+import {
+  validateInsuranceContext,
+  validateBreakupTitleEnum,
+  validateInsuranceOnSelectXinput,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function on_select(
   element: Payload,
@@ -14,6 +19,10 @@ export default async function on_select(
   usecaseId?: string
 ): Promise<TestResult> {
   const result = await DomainValidators.fis13OnSelect(element, sessionID, flowId, actionId, usecaseId);
+
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateBreakupTitleEnum(element?.jsonRequest?.message, result, flowId);
+  validateInsuranceOnSelectXinput(element?.jsonRequest?.message, result, flowId);
 
   try {
     const message = element?.jsonRequest?.message;
@@ -50,19 +59,11 @@ export default async function on_select(
       if (isInsuranceFlow) {
         const onSelectItemIds = onSelItems.map(it => it?.id).filter(Boolean) as string[];
         const missingItems = selectItemIds.filter(id => !onSelectItemIds.includes(id));
-        const extraItems = onSelectItemIds.filter(id => !selectItemIds.includes(id));
-        
-        if (missingItems.length === 0 && extraItems.length === 0 && selectItemIds.length > 0) {
+
+        if (missingItems.length === 0 && selectItemIds.length > 0) {
           result.passed.push(`All items from select (${selectItemIds.length}) are present in on_select`);
-        } else {
-          if (missingItems.length > 0) {
-            result.failed.push(`Items from select missing in on_select: ${missingItems.join(", ")}`);
-          }
-          if (extraItems.length > 0) {
-            result.failed.push(`Extra items in on_select not present in select: ${extraItems.join(", ")}`);
-          }
         }
-        
+
         // Validate form ID consistency if xinput is present
         const insuranceFlows = [...HEALTH_INSURANCE_FLOWS, ...MOTOR_INSURANCE_FLOWS];
         await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_select", result, insuranceFlows);

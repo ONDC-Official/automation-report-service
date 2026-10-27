@@ -1,0 +1,9 @@
+save-data:
+  message_id: "$.context.message_id"
+  transaction_id: "$.context.transaction_id"
+  catalog_descriptor: "$.message.catalog.descriptor"
+  providers: "$.message.catalog.providers[*]"
+  items: "$.message.catalog.providers[*].items[*]"
+  form_ids: "$.message.catalog.providers[*].items[*].xinput.form.id"
+  form_urls: "$.message.catalog.providers[*].items[*].xinput.form.url"
+

@@ -6,6 +6,21 @@ export interface TestItem {
   transaction_id: string;
 }
 
+const normalizeUsecaseKey = (value: string) =>
+  value.toLowerCase().replace(/[-_\s]+/g, " ").trim();
+
+// Session usecaseIds can arrive as slugs ("transit-insurance") or in a different case,
+// while FLOW_ID_MAP is keyed by display name ("TRANSIT INSURANCE").
+export function resolveUsecaseKey(
+  usecases: Record<string, unknown> | undefined,
+  usecaseId: string
+): string | undefined {
+  if (!usecases || !usecaseId) return undefined;
+  if (usecases[usecaseId]) return usecaseId;
+  const target = normalizeUsecaseKey(usecaseId);
+  return Object.keys(usecases).find((k) => normalizeUsecaseKey(k) === target);
+}
+
 export async function generateTestsFromPayloads(
   domain: string,
   version: string,
@@ -16,11 +31,11 @@ export async function generateTestsFromPayloads(
   tests: TestItem[];
   subscriber_id: string;
 }> {
-  if (
-    !FLOW_ID_MAP[domain] ||
-    !FLOW_ID_MAP[domain][version] ||
-    !FLOW_ID_MAP[domain][version][usecaseId]
-  ) {
+  const resolvedUsecaseId = resolveUsecaseKey(
+    FLOW_ID_MAP[domain]?.[version],
+    usecaseId
+  );
+  if (!resolvedUsecaseId) {
     logger.error(`Cannot find FLOW_ID_MAP configuration`, {
       domain,
       version,
@@ -31,6 +46,7 @@ export async function generateTestsFromPayloads(
     });
     throw new Error("Cannot generate pramaan flows for this configuration");
   }
+  usecaseId = resolvedUsecaseId;
   const flowMappings = FLOW_ID_MAP[domain][version][usecaseId];
   const flowMap: Record<string, TestItem & { timestamp: string }> = {};
   const payloadIds = Object.values(flowIdToPayloadIdsMap).flat();
@@ -98,7 +114,6 @@ export async function generateTestsFromPayloads(
     //     NIC_LOGISTICS_CATEGORY_FLOW_MAP[category_id] ??
     //     "B2C_1A";
     // }
-    console.log("mappedFlowId in report", mappedFlowId)
     if (!mappedFlowId) {
       throw new Error(
         `No flowId mapping found for ${payload.flowId} under ${domain} → ${version} → ${usecaseId}`

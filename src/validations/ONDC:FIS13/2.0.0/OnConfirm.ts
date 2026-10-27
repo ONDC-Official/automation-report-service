@@ -5,6 +5,13 @@ import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { HEALTH_INSURANCE_FLOWS, MOTOR_INSURANCE_FLOWS } from "../../../utils/constants";
 import { saveFromElement } from "../../../utils/specLoader";
+import {
+  validateInsuranceContext,
+  validateInsuranceOrderStatus,
+  validateInsuranceOrderId,
+  validateInsuranceDocuments,
+  validateInsurancePaymentParams,
+} from "../../shared/healthInsuranceValidations";
 
 export default async function on_confirm(
   element: Payload,
@@ -18,8 +25,27 @@ export default async function on_confirm(
   // For normal on_confirm, use domain validator
   const result = await DomainValidators.fis13OnConfirm(element, sessionID, flowId, actionId, usecaseId);
 
+  validateInsuranceContext(element?.jsonRequest?.context, result, flowId, "2.0.0");
+  validateInsuranceOrderStatus(element?.jsonRequest?.message, result, flowId);
+  validateInsuranceOrderId(element?.jsonRequest?.message, result, flowId);
+  validateInsuranceDocuments(element?.jsonRequest?.message, result, flowId);
+  validateInsurancePaymentParams(element?.jsonRequest?.message, result, flowId, actionId);
+
   try {
     const message = element?.jsonRequest?.message;
+
+    // Validate that payment id cannot be undefined or empty for FIS13 2.0.0 on_confirm
+    const payments = message?.order?.payments;
+    if (payments && Array.isArray(payments)) {
+      payments.forEach((payment: any, index: number) => {
+        if (!payment.id || payment.id === "undefined" || (typeof payment.id === "string" && payment.id.trim() === "")) {
+          result.failed.push(`Payment ${index} id cannot be undefined`);
+        } else {
+          result.passed.push(`Payment ${index} id is present: ${payment.id}`);
+        }
+      });
+    }
+
     if (message?.order?.quote) {
       validateOrderQuote(message, result, {
         validateDecimalPlaces: true,

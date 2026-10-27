@@ -1,0 +1,8 @@
+save-data:
+  message_id: "$.context.message_id"
+  transaction_id: "$.context.transaction_id"
+  bap_id: "$.context.bap_id"
+  bpp_id: "$.context.bpp_id"
+  timestamp: "$.context.timestamp"
+  domain: "$.context.domain"
+  version: "$.context.version"

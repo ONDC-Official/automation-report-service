@@ -35,9 +35,28 @@ export default async function on_select(
       result.failed.push(`Invalid action: expected on_select, got ${context?.action}`);
     }
 
+    // Validate order.tags
+    if (order?.tags) {
+      result.failed.push("message.order.tags is being sent additionally");
+    }
+
     // Validate provider
     if (order?.provider?.id) {
       result.passed.push(`Provider ID: ${order.provider.id}`);
+    }
+
+    if (order?.provider?.locations) {
+      result.failed.push("provider.locations is being sent additionally");
+    }
+
+    if (order?.provider?.time) {
+      result.failed.push("provider.time is being sent additionally");
+    }
+
+    if (!order?.provider?.tags || !Array.isArray(order.provider.tags) || order.provider.tags.length === 0) {
+      result.failed.push("provider.tags are missing");
+    } else {
+      result.passed.push("provider.tags are present");
     }
 
     // Validate items with prices
@@ -47,6 +66,24 @@ export default async function on_select(
       for (const item of items) {
         if (item?.price?.value && item?.price?.currency) {
           result.passed.push(`Item ${item.id} price: ${item.price.currency} ${item.price.value}`);
+        }
+
+        // Validate item.tags
+        if (!item.tags || !Array.isArray(item.tags) || item.tags.length === 0) {
+          result.failed.push("item.tags are missing");
+        } else {
+          result.passed.push(`Item ${item.id} tags are present`);
+        }
+
+        // Validate additional fields on item
+        if (item.quantity?.selected?.count !== undefined) {
+          result.failed.push("item.quantity.selected.count is being sent additionally");
+        }
+        if (item.location_id !== undefined) {
+          result.failed.push("item.location_id is being sent additionally");
+        }
+        if (item.fulfillment_id !== undefined) {
+          result.failed.push("item.fulfillment_id is being sent additionally");
         }
       }
     }

@@ -1,0 +1,21 @@
+save-data:
+  fulfillments: $.message.order.fulfillments[*]
+  quote_price: $.message.order.quote.price
+  quote: $.message.order.quote
+  payment: $.message.order.payment
+  on_init_items: $.message.order.items[*]
+  cancellation_terms: $.message.order.cancellation_terms[*]
+  message_id: $.context.message_id
+  transaction_id: $.context.transaction_id
+  bap_id: $.context.bap_id
+  bap_uri: $.context.bap_uri
+  bpp_id: $.context.bpp_id
+  bpp_uri: $.context.bpp_uri
+  timestamp: $.context.timestamp
+  domain: $.context.domain
+  version: $.context.version
+  city: $.context.city
+  action: $.context.action
+  provider_id: $.message.order.provider.id
+  item_id: $.message.order.items[0].id
+  fulfillment_id: $.message.order.fulfillments[0].id

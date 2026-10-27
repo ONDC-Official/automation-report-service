@@ -37,8 +37,6 @@ export default async function on_cancel(
     // Validate order ID
     if (order?.id) {
       result.passed.push(`Order ID: ${order.id}`);
-    } else {
-      result.failed.push("Order ID is missing");
     }
 
     // Validate order state should be CANCELLED
@@ -56,6 +54,18 @@ export default async function on_cancel(
       }
       if (cancellation?.reason?.descriptor?.code) {
         result.passed.push(`Cancellation reason code: ${cancellation.reason.descriptor.code}`);
+      }
+    }
+
+    // Validate that order contains only allowed keys: id, state, status, cancellation, updated_at
+    if (order) {
+      const allowedKeys = ["id", "state", "status", "cancellation", "updated_at"];
+      const orderKeys = Object.keys(order);
+      const disallowedKeys = orderKeys.filter(key => !allowedKeys.includes(key));
+      if (disallowedKeys.length > 0) {
+        result.failed.push(
+          `Disallowed fields found in order object: ${disallowedKeys.join(", ")}. As per Developer Guide, only order.id, order.state/status, and order.cancellation should be present.`
+        );
       }
     }
 

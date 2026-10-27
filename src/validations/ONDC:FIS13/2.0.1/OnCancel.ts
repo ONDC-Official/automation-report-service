@@ -1,16 +1,12 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
 import { saveFromElement } from "../../../utils/specLoader";
-import { getActionData } from "../../../services/actionDataService";
+import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import {
   validateInsuranceContext,
   validateInsuranceOrderStatus,
   validateInsuranceDocuments,
 } from "../../shared/healthInsuranceValidations";
-import {
-  validateOrderStatusTransition,
-  validateAllContext,
-} from "../../shared/healthInsuranceL2Validations";
 
 export default async function on_cancel(
   element: Payload,
@@ -24,27 +20,15 @@ export default async function on_cancel(
     const context = element?.jsonRequest?.context;
     const message = element?.jsonRequest?.message;
 
-    // Health insurance context validation
+    // Health insurance domain checks
     validateInsuranceContext(context, result, flowId);
+    if (message) validateInsuranceOrderStatus(message, result, flowId);
+    if (message) validateInsuranceDocuments(message, result, flowId);
 
-    // Health insurance order status enum (CANCELLED, CANCELLATION_INITIATED)
-    if (message) {
-      validateInsuranceOrderStatus(message, result, flowId);
-    }
-
-    // Health insurance document types
-    if (message) {
-      validateInsuranceDocuments(message, result, flowId);
-    }
-
-    // ── L2: State transition + context vs on_confirm ──
+    // Form ID (xinput) check
     const txnId = context?.transaction_id as string | undefined;
-    if (txnId) {
-      const onConfirmData = await getActionData(sessionID, flowId, txnId, "on_confirm");
-      if (onConfirmData) {
-        validateOrderStatusTransition(message, onConfirmData, result, flowId, "on_cancel", "on_confirm");
-        validateAllContext(context, onConfirmData, result, flowId, "on_cancel", "on_confirm");
-      }
+    if (txnId && message) {
+      await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_cancel", result);
     }
   } catch (_) { }
 

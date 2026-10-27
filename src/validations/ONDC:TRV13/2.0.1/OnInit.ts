@@ -41,6 +41,14 @@ export default async function on_init(
       result.passed.push(`Provider ID: ${order.provider.id}`);
     }
 
+    if (order?.provider?.locations) {
+      result.failed.push("provider.locations is being sent additionally");
+    }
+
+    if (order?.provider?.tags && Array.isArray(order.provider.tags) && order.provider.tags.length > 0) {
+      result.passed.push("provider.tags are present");
+    }
+
     // Validate items with prices
     const items = order?.items;
     if (items && Array.isArray(items) && items.length > 0) {
@@ -48,6 +56,22 @@ export default async function on_init(
       for (const item of items) {
         if (item?.price?.value) {
           result.passed.push(`Item ${item.id} price: ${item.price.currency} ${item.price.value}`);
+        }
+
+        // Validate item.tags
+        if (item.tags && Array.isArray(item.tags) && item.tags.length > 0) {
+          result.passed.push(`Item ${item.id} tags are present`);
+        }
+
+        // Validate additional fields on item
+        if (item.quantity?.selected?.count !== undefined) {
+          result.failed.push("item.quantity.selected.count is being sent additionally");
+        }
+        if (item.location_id !== undefined) {
+          result.failed.push("item.location_id is being sent additionally");
+        }
+        if (item.fulfillment_id !== undefined) {
+          result.failed.push("item.fulfillment_id is being sent additionally");
         }
       }
     }
@@ -63,32 +87,86 @@ export default async function on_init(
       const breakup = quote?.breakup;
       if (breakup && Array.isArray(breakup) && breakup.length > 0) {
         result.passed.push(`Quote has ${breakup.length} breakup item(s)`);
+
+        const hasAddon = breakup.some((b: any) => {
+          const title = String(b.title || '').toLowerCase();
+          const type = String(b['@ondc/org/title_type'] || '').toLowerCase();
+          return title.includes('add-on') || title.includes('addon') || title.includes('add_on') || type.includes('add-on') || type.includes('addon') || type.includes('add_on') || type === 'ancillary';
+        });
+        if (!hasAddon) {
+          result.failed.push("quote.breakup is incorrect as it does not include Add-ons");
+        } else {
+          result.passed.push("quote.breakup includes Add-ons");
+        }
+
+        const hasTax = breakup.some((b: any) => {
+          const title = String(b.title || '').toLowerCase();
+          const type = String(b['@ondc/org/title_type'] || '').toLowerCase();
+          return title.includes('gst') || title.includes('tax') || type.includes('gst') || type.includes('tax');
+        });
+        if (!hasTax) {
+          result.failed.push("quote.breakup is incorrect as it does not include Service Tax/GST");
+        } else {
+          result.passed.push("quote.breakup includes Service Tax/GST");
+        }
+
+        const hasMeal = breakup.some((b: any) => {
+          const title = String(b.title || '').toLowerCase();
+          const type = String(b['@ondc/org/title_type'] || '').toLowerCase();
+          return title.includes('meal') || title.includes('breakfast') || title.includes('lunch') || title.includes('dinner') || type.includes('meal');
+        });
+        if (!hasMeal) {
+          result.failed.push("quote.breakup is incorrect as it does not include Meal Inclusion Charges");
+        } else {
+          result.passed.push("quote.breakup includes Meal Inclusion Charges");
+        }
       }
     }
 
     // Validate payments with terms
     const payments = order?.payments;
     if (payments && Array.isArray(payments) && payments.length > 0) {
-      for (const payment of payments) {
-        if (payment?.type) {
-          result.passed.push(`Payment type: ${payment.type}`);
+      payments.forEach((payment: any, pIdx: number) => {
+        if (payment.type === "PART-PAYMENT") {
+          result.passed.push(
+            `Payment [${payment.id || 'unknown'}] is PART-PAYMENT (aggregate envelope) — validation skipped`
+          );
+          return;
         }
-        if (payment?.collected_by) {
-          result.passed.push(`Collected by: ${payment.collected_by}`);
+        if (payment.collected_by && !["BAP", "BPP"].includes(payment.collected_by)) {
+          result.failed.push(`Payment[${pIdx}].collected_by must be BAP or BPP, got: ${payment.collected_by}`);
         }
-        if (payment?.params?.bank_code || payment?.params?.bank_account_number) {
-          result.passed.push("Payment bank details present");
+        if (payment.type && !["PRE-ORDER", "ON-FULFILLMENT", "PART-PAYMENT"].includes(payment.type)) {
+          result.failed.push(`Payment[${pIdx}].type must be PRE-ORDER, ON-FULFILLMENT, or PART-PAYMENT, got: ${payment.type}`);
         }
-      }
+        if (payment.status && !["NOT-PAID", "PAID"].includes(payment.status)) {
+          result.failed.push(`Payment[${pIdx}].status must be NOT-PAID or PAID, got: ${payment.status}`);
+        }
+      });
     }
 
-    // Validate BPP_TERMS if present
-    const tags = order?.tags;
-    if (tags && Array.isArray(tags)) {
-      const bppTerms = tags.find((t: any) => t?.descriptor?.code === "BPP_TERMS");
-      if (bppTerms) {
-        result.passed.push("BPP_TERMS present");
-      }
+    // Validate BAP_TERMS & BPP_TERMS
+    let allTags: any[] = [];
+    if (order?.tags && Array.isArray(order.tags)) {
+      allTags.push(...order.tags);
+    }
+    if (payments && Array.isArray(payments)) {
+      payments.forEach((p: any) => {
+        if (p.tags && Array.isArray(p.tags)) {
+          allTags.push(...p.tags);
+        }
+      });
+    }
+
+    const bapTerms = allTags.find((t: any) => t?.descriptor?.code === "BAP_TERMS");
+    const bppTerms = allTags.find((t: any) => t?.descriptor?.code === "BPP_TERMS");
+
+    if (bapTerms) {
+      result.passed.push("BAP_TERMS tag is present");
+    }
+
+    if (bppTerms) {
+      result.passed.push("BPP_TERMS tag is present");
     }
 
     // Use shared quote validation

@@ -1,6 +1,8 @@
 import { TestResult, Payload } from "../../../types/payload";
 import { DomainValidators } from "../../shared/domainValidator";
-import { validateOrderQuote } from "../../shared/quoteValidations";
+// pramaan-validation-parity skill: validateFIS12LoanQuote import removed 2026-08-25 — the call
+// site below it was disabled at the user's request (see the doc comment further down). Re-add
+// `import { validateFIS12LoanQuote } from "../../shared/quoteValidations";` if re-enabling it.
 import { getActionData } from "../../../services/actionDataService";
 import { validateFormIdIfXinputPresent } from "../../shared/formValidations";
 import { saveFromElement } from "../../../utils/specLoader";
@@ -17,15 +19,15 @@ export default async function on_select(
 
   try {
     const message = element?.jsonRequest?.message;
-    if (message?.order?.quote) {
-      validateOrderQuote(message, result, {
-        validateDecimalPlaces: true,
-        validateTotalMatch: true,
-        // For TRV10, item price consistency is optional
-        validateItemPriceConsistency: false,
-        flowId,
-      });
-    }
+    // pramaan-validation-parity skill: the generic quote-arithmetic call that used to be here
+    // (validateOrderQuote — breakup sums to price.value) now runs universally for every domain
+    // via flowContinuityValidators.ts's checkFlowContinuity(), called from checkPayload.ts
+    // before any domain file (this one included) is even reached — see that file. The
+    // FIS12-specific loan-quote formula check (validateFIS12LoanQuote — PRINCIPAL/INTEREST/EMI)
+    // that was wired in here was disabled again 2026-08-25 at the user's explicit request: quote
+    // validation kept to just the one common breakup-total check, not domain-specific ones, for
+    // now. `validateFIS12LoanQuote` itself is untouched in quoteValidations.ts — re-add the
+    // import and this block to re-enable it for Purchase Finance specifically.
 
     // Compare item ids and prices with prior SELECT request if available
     const txnId = element?.jsonRequest?.context?.transaction_id as string | undefined;
@@ -51,7 +53,17 @@ export default async function on_select(
         const onSelectItemIds = onSelItems.map(it => it?.id).filter(Boolean) as string[];
         const missingItems = selectItemIds.filter(id => !onSelectItemIds.includes(id));
         const extraItems = onSelectItemIds.filter(id => !selectItemIds.includes(id));
-        
+
+        // pramaan-validation-parity skill: extraItems softened to informational 2026-08-25 —
+        // see gap-patterns.md for the write-up. A BPP legitimately CAN return items in on_select
+        // that weren't in the buyer's select (e.g. an auto-added mandatory/dependent item, a
+        // processing-fee or add-on line item) — this isn't a protocol violation, and
+        // automation-report-pramaan's own creditBuyerNPTest/v2.2.0/select.js does not assert any
+        // item-set equality between select and on_select either, so treating it as a hard FAIL
+        // was report-service going beyond spec/pramaan parity and produced a false failure
+        // (reported by user, item b378d433-96d7-4568-a413-7eabbc50b13f). missingItems stays a
+        // real FAIL: a BPP silently dropping an item the buyer explicitly selected is a genuine
+        // correctness problem, not a benign addition.
         if (missingItems.length === 0 && extraItems.length === 0 && selectItemIds.length > 0) {
           result.passed.push(`All items from select (${selectItemIds.length}) are present in on_select`);
         } else {
@@ -59,10 +71,10 @@ export default async function on_select(
             result.failed.push(`Items from select missing in on_select: ${missingItems.join(", ")}`);
           }
           if (extraItems.length > 0) {
-            result.failed.push(`Extra items in on_select not present in select: ${extraItems.join(", ")}`);
+            result.passed.push(`on_select includes additional item(s) beyond select (informational, not a failure): ${extraItems.join(", ")}`);
           }
         }
-        
+
         // Validate form ID consistency if xinput is present
         await validateFormIdIfXinputPresent(message, sessionID, flowId, txnId, "on_select", result);
       }

@@ -1,0 +1,33 @@
+# Persists just enough for the NEXT on_status leg to be held to a forward-moving order.
+# Before this file existed, OnStatus.ts's saveFromElement call was a silent no-op:
+# loadSaveSpec threw on the missing file and the surrounding catch swallowed it.
+#
+# Every on_status leg writes to the SAME key, because saveFromElement keys on
+# `context.action` (not `action_id`) and writes overwrite (src/utils/redisUtils.ts). So a
+# read always returns the IMMEDIATELY PRECEDING on_status — exactly the comparison
+# onStatusChecks.validateStatusProgression wants. It is null on the first leg, which that
+# check treats as "nothing to compare" rather than a failure.
+#
+# `fulfillment_state` and `payment_status` are not read today — the per-leg contract in
+# STATUS_LEGS pins both without needing the previous leg, and a monotonic-advance rule is
+# deliberately NOT enforced (on_status_rto_delivered legitimately reverts the fulfillment to
+# `Packed`). They are here because they cost nothing and are what any future
+# progression rule would need.
+#
+# `fulfillment_state` / `payment_status` come back as a BARE STRING when the match has
+# exactly one element (src/utils/extract.ts:16) — normalize on read.
+#
+# Added 2026-10-14 for the cancellation / RTO / part-cancel rules (rtoChecks.ts,
+# orderFormationChecks.validateOrderStateNoRegression):
+#   delivery_state  the Delivery fulfillment's state — what a following on_cancel's
+#                   precancel_state must record (validatePrecancelState)
+#   order_state     the latest order.state — what a following on_update must not regress from
+#   fulfillment_ids every fulfillment id seen — so a part cancel is recognised as NEW only on
+#                   the leg that raises it (validatePartCancelPrecondition)
+save-data:
+  updated_at: "$.message.order.updated_at"
+  fulfillment_state: "$.message.order.fulfillments[*].state.descriptor.code"
+  payment_status: "$.message.order.payments[*].status"
+  delivery_state: "$.message.order.fulfillments[?(@.type=='Delivery')].state.descriptor.code"
+  order_state: "$.message.order.state"
+  fulfillment_ids: "$.message.order.fulfillments[*].id"

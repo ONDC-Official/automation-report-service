@@ -10,8 +10,9 @@ import { actions } from "../utils/constants";
 import { ValidationAction } from "../types/actions";
 import logger from "@ondc/automation-logger";
 import { MESSAGES } from "../utils/messages";
-import { RedisService } from "ondc-automation-cache-lib";
+import { RedisService } from "@ondc/ondc-automation-cache-lib";
 import { checkPayload } from "./checkPayload";
+import { prefetchExternalValidation, clearExternalValidationCache } from "../validations/shared/externalSchemaValidator";
 
 // Type guard to ensure the action is a valid ValidationAction from the predefined actions list
 function isValidAction(action: string): action is ValidationAction {
@@ -40,6 +41,7 @@ const INITIAL_ACTION_COUNTERS: Record<ValidationAction, number> = {
   on_issue: 1,
   issue_status: 1,
   on_issue_status: 1,
+  catalog_rejection: 1,
 };
 
 // Interface for session details
@@ -52,6 +54,21 @@ interface SessionDetails {
 interface DomainConfig {
   flows: Record<string, string[]>;
   optional_flows?: string[];
+  /**
+   * Per-flow `action_id`s that MUST appear for the flow to be valid, keyed by flow id.
+   *
+   * Opt-in by design: `flows` declares the expected ORDER of actions, and
+   * validateActionSequence's lookahead deliberately tolerates skipped steps so that
+   * genuinely optional ones (a repeat `search`, mid-flow polling) do not fail a flow. The
+   * side effect was that a flow could skip mandatory steps entirely and still report Valid —
+   * a COD run that sent 1 of its 6 `on_status` legs was reported Valid with no sequence
+   * errors, because the lookahead found `track` further down the sequence and jumped there.
+   *
+   * This is the narrow fix: a flow listed here additionally has its mandatory `action_id`s
+   * checked for PRESENCE. A flow or domain absent from this map behaves exactly as before,
+   * so no other domain's reports change.
+   */
+  mandatory_legs?: Record<string, string[]>;
   validationModules?: string;
 }
 
@@ -90,6 +107,15 @@ function checkMandatoryFlows(
 
   for (const flowId of allFlows) {
     if (!testedFlows.includes(flowId)) {
+      // If the updates flow is tested, the basic confirm flow is optional
+      if (
+        (flowId === "Order to Confirm to Fulfillment (City Code)" ||
+          flowId === "Order to Confirm to Fulfillment (City Based)") &&
+        testedFlows.includes("Order to Confirm to Fulfillment (Updates in Booking)")
+      ) {
+        continue;
+      }
+
       const isOptional =
         Array.isArray(domainConfig?.optional_flows) &&
         domainConfig.optional_flows.includes(flowId);
@@ -104,6 +130,36 @@ function checkMandatoryFlows(
       ", "
     )} is/are mandatory and should be tested.`;
   }
+}
+
+/**
+ * Which of a flow's mandatory `action_id`s never arrived.
+ *
+ * Complements validateActionSequence, which checks ORDER and tolerates skipped steps. This
+ * checks PRESENCE only, so the two are independent: a flow can have every mandatory leg in
+ * the wrong order (a sequence error) or the right order with legs missing (a mandatory-leg
+ * error), and each is reported by the rule that is actually about it.
+ *
+ * Matching is on `action_id` because that is what distinguishes the legs that matter — the
+ * six `on_status` legs of an order flow all have `action` `on_status` and are told apart
+ * only by `action_id` (`on_status_packed`, `on_status_order_delivered`, …). Falls back to
+ * `action` the same way checkPayload.ts does, so a flow whose mandatory legs are plain
+ * actions still works.
+ */
+function findMissingMandatoryLegs(
+  payloads: Payload[],
+  mandatoryLegs: string[] | undefined
+): string[] {
+  if (!Array.isArray(mandatoryLegs) || mandatoryLegs.length === 0) return [];
+  if (!Array.isArray(payloads)) return mandatoryLegs;
+
+  const seen = new Set(
+    payloads
+      .map((p) => String(p?.action_id || p?.action || "").toLowerCase())
+      .filter(Boolean)
+  );
+
+  return mandatoryLegs.filter((leg) => !seen.has(String(leg).toLowerCase()));
 }
 
 /**
@@ -166,10 +222,10 @@ function validateActionSequence(
         createdAt: p?.createdAt
       }))
     });
-    
+
     for (let i = 0; i < requiredSequence.length; i++) {
       const expectedAction = requiredSequence[i].toLowerCase();
-      
+
       // Skip HTML_FORM entries in the required sequence - they don't have corresponding payloads
       if (expectedAction === "html_form") {
         logger.info(`Skipping HTML_FORM at sequence position ${i + 1}`);
@@ -192,19 +248,45 @@ function validateActionSequence(
         // And the last action was a valid response (like 'on_update', 'on_status', 'on_track')
         // Then we can assume the user chose to stop the flow here.
         if (i > 0) {
-          const lastAction = requiredSequence[i - 1].toLowerCase();
+          // Walk backwards past DYNAMIC_FORM/HTML_FORM to find the real previous action
+          let lastAction = "start";
+          for (let j = i - 1; j >= 0; j--) {
+            const prev = requiredSequence[j].toLowerCase();
+            if (prev !== "html_form" && prev !== "dynamic_form") {
+              lastAction = prev;
+              break;
+            }
+          }
           const currentExpectedAction = expectedAction.toLowerCase();
-          
-          if (
-            (currentExpectedAction === "update" || 
-             currentExpectedAction === "status" || 
-             currentExpectedAction === "track" ||
-             currentExpectedAction === "cancel") &&
-            (lastAction.startsWith("on_"))
+
+        if (
+            (currentExpectedAction === "update" ||
+              currentExpectedAction === "status" ||
+              currentExpectedAction === "track" ||
+              currentExpectedAction === "cancel" ||
+              currentExpectedAction === "on_status" ||
+              currentExpectedAction === "on_update") &&
+            // Allow when previous was an on_ response (e.g. on_confirm → on_status)
+            // OR when previous was the matching request (e.g. update → on_update, status → on_status)
+            (lastAction.startsWith("on_") ||
+              (currentExpectedAction === "on_update" && lastAction === "update") ||
+              (currentExpectedAction === "on_status" && lastAction === "status"))
           ) {
             logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}'). Assuming user stopped the interaction.`);
             validSequence = true; // Restore validSequence to true for valid early termination
             break; // Exit loop, considering validation successful so far
+          }
+
+          // Allow early termination when a second 'search' is expected after 'on_search'
+          // This handles TTL-based flows (e.g. Hotel Booking ttl based) where the second
+          // incremental search is optional — if the BAP didn't send it, the flow is still valid.
+          if (
+            currentExpectedAction === "search" &&
+            lastAction === "on_search"
+          ) {
+            logger.info(`Flow ended early at step ${i + 1} (Expected '${expectedAction}' after 'on_search'). Treating repeat search as optional.`);
+            validSequence = true;
+            break;
           }
         }
 
@@ -262,12 +344,12 @@ function validateActionSequence(
       if (actualAction !== expectedAction) {
         let foundFutureMatch = false;
         let futureIndex = -1;
-        // Look ahead up to 5 steps
-        for (let k = i + 1; k < Math.min(i + 6, requiredSequence.length); k++) {
+        // Look ahead up to 15 steps
+        for (let k = i + 1; k < Math.min(i + 15, requiredSequence.length); k++) {
           const futureAction = requiredSequence[k]?.toLowerCase();
           // Skip checking against HTML_FORM/DYNAMIC_FORM as jump targets
           if (futureAction === "html_form" || futureAction === "dynamic_form") continue;
-          
+
           if (futureAction === actualAction) {
             foundFutureMatch = true;
             futureIndex = k;
@@ -276,10 +358,28 @@ function validateActionSequence(
         }
 
         if (foundFutureMatch) {
-           logger.info(`Skipping expected steps from index ${i} to ${futureIndex-1} because actual action '${actualAction}' matches sequence at index ${futureIndex}`);
-           i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
-           continue; // Continue loop to match current payload against new expected action
+          logger.info(`Skipping expected steps from index ${i} to ${futureIndex - 1} because actual action '${actualAction}' matches sequence at index ${futureIndex}`);
+          i = futureIndex - 1; // Advance loop to just before the matching step (loop will increment i)
+          continue; // Continue loop to match current payload against new expected action
         }
+
+        // Allow mid-flow status/on_status polling after select/on_select or init/on_init
+        if (actualAction === "status" || actualAction === "on_status") {
+          logger.info(`Treating '${actualAction}' at payload position ${payloadIndex + 1} as an allowed mid-flow status check (Expected '${expectedAction}')`);
+          payloadIndex++;
+          i--; // Retry current expected action against the next payload
+          continue;
+        }
+      }
+
+      // If the expected action is on_status but the actual payload is a BAP-initiated
+      // 'status' request (e.g. Technical Cancellation flow ordering), skip this payload
+      // and retry the same expected action against the next payload.
+      if (expectedAction === "on_status" && actualAction === "status") {
+        logger.info(`Expected 'on_status' but found 'status' payload; skipping and retrying`);
+        payloadIndex++;
+        i--; // Retry current expected action (on_status) against next payload
+        continue;
       }
 
       if (actualAction !== expectedAction) {
@@ -288,9 +388,9 @@ function validateActionSequence(
         if (expectedAction === "select") {
           displayExpectedAction = "select or init";
         }
-        
+
         validSequence = false;
-        
+
         // Find the previous non-HTML_FORM/non-DYNAMIC_FORM action for better error message
         let previousAction = "start";
         for (let j = i - 1; j >= 0; j--) {
@@ -300,11 +400,11 @@ function validateActionSequence(
             break;
           }
         }
-        
+
         // Also check if there's an HTML_FORM or DYNAMIC_FORM right before this expected action
         const hasHtmlFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "html_form";
         const hasDynamicFormBefore = i > 0 && requiredSequence[i - 1]?.toLowerCase() === "dynamic_form";
-        
+
         // Check if we're ahead in payloads (missing action scenario)
         // Look ahead to see if the expected action appears later
         let foundLater = false;
@@ -325,7 +425,7 @@ function validateActionSequence(
             action: p?.action?.toLowerCase(),
             transactionId: p?.transactionId
           }));
-        
+
         logger.error("Action sequence mismatch - Detailed Debug", {
           sequencePosition: i + 1,
           expectedAction,
@@ -345,7 +445,7 @@ function validateActionSequence(
           originalPayloadActions: payloads.map(p => p?.action?.toLowerCase()),
           deduplicatedPayloadActions: validationPayloads.map(p => p?.action?.toLowerCase())
         });
-        
+
         let errorMessage = `Error: Expected '${displayExpectedAction}' after '${previousAction}'`;
         if (hasHtmlFormBefore) {
           errorMessage += ` (HTML_FORM was skipped)`;
@@ -357,7 +457,7 @@ function validateActionSequence(
           errorMessage += `. Note: '${expectedAction}' action found later at payload position ${foundAtPosition + 1}, suggesting a missing action in the sequence.`;
         }
         errorMessage += `, but found '${actualAction || "undefined"}'.`;
-        
+
         errors.push(errorMessage);
         break;
       }
@@ -384,29 +484,45 @@ async function processPayloads(
   flowId: string,
   domainConfig: DomainConfig,
   requiredSequence?: string[],
-  usecaseId?: string
+  usecaseId?: string,
+  // pramaan-validation-parity skill: what this flow's domain/version is supposed to be,
+  // independent of any single payload — threaded down to checkPayload's
+  // context:domain-exact-match / context:version-exact-match checks.
+  expectedDomainVersion?: { domain?: string; version?: string }
 ): Promise<Record<string, string>> {
   const messages: Record<string, string> = {};
   const actionCounters = { ...INITIAL_ACTION_COUNTERS };
   let payloadIndex = 0; // Track actual payloads
   let htmlFormCounter = 0; // Track HTML_FORM occurrences
   let dynamicFormCounter = 0; // Track DYNAMIC_FORM occurrences
+  // pramaan-validation-parity skill: everything actually checked so far in this flow, in
+  // processing order — passed to checkPayload so it can run cross-call continuity checks.
+  // Built incrementally below, both in the sequence-order branch and the fallback branch.
+  const priorPayloadsInFlow: Payload[] = [];
+
+  // Kick off this flow's L0+L1 external validation calls for every action up
+  // front, concurrently — each one only needs its own payload, not any prior
+  // action's saved state, so there's no correctness reason to wait for the
+  // sequential per-action loop below to reach each one in turn. The loop's
+  // own calls (inside each action's business-logic validator) pick up these
+  // already-in-flight results instead of firing a second request.
+  prefetchExternalValidation(payloads.map((p) => p?.jsonRequest));
 
   // If we have a required sequence, process in sequence order
   if (requiredSequence && requiredSequence.length > 0) {
     const transactionId = payloads[0]?.transactionId || payloads[0]?.jsonRequest?.context?.transaction_id;
-    
+
     for (let seqIndex = 0; seqIndex < requiredSequence.length; seqIndex++) {
       const expectedAction = requiredSequence[seqIndex].toLowerCase();
-      
+
       // Handle HTML_FORM validation inline
       if (expectedAction === "html_form") {
         htmlFormCounter++;
-        
+
         try {
           const { validateHTMLForm } = await import("../validations/shared/formValidations");
           const htmlFormTestResults: TestResult = { response: {}, passed: [], failed: [] };
-          
+
           if (transactionId) {
             await validateHTMLForm(sessionID, transactionId, flowId, htmlFormTestResults);
             messages[`html_form_${htmlFormCounter}`] = JSON.stringify({
@@ -433,13 +549,13 @@ async function processPayloads(
       // Handle DYNAMIC_FORM validation inline (similar to HTML_FORM)
       if (expectedAction === "dynamic_form") {
         dynamicFormCounter++;
-        
+
         try {
           // For now, just mark dynamic forms as passed since there's no specific validation
           // This can be extended later if needed
           const dynamicFormTestResults: TestResult = { response: {}, passed: [], failed: [] };
           dynamicFormTestResults.passed.push(`Dynamic form ${dynamicFormCounter} processed successfully`);
-          
+
           messages[`dynamic_form_${dynamicFormCounter}`] = JSON.stringify({
             passed: dynamicFormTestResults.passed,
             failed: dynamicFormTestResults.failed,
@@ -457,7 +573,7 @@ async function processPayloads(
       // Process actual payload
       if (payloadIndex >= payloads.length) {
         logger.info(`No more payloads available at sequence position ${seqIndex + 1}`,
-          {meta: { flowId, seqIndex: seqIndex + 1 }}
+          { meta: { flowId, seqIndex: seqIndex + 1 } }
         );
         break;
       }
@@ -480,7 +596,9 @@ async function processPayloads(
           sessionID,
           flowId,
           domainConfig,
-          usecaseId
+          usecaseId,
+          priorPayloadsInFlow,
+          expectedDomainVersion
         );
 
         messages[`${action}_${actionCounters[action]}`] = JSON.stringify(result);
@@ -488,6 +606,7 @@ async function processPayloads(
       } catch (error) {
         logger.error(`Error occurred for action ${action} at index ${payloadIndex}`, error, { flowId, action, index: payloadIndex });
       }
+      priorPayloadsInFlow.push(element);
 
       payloadIndex++;
     }
@@ -511,7 +630,9 @@ async function processPayloads(
           sessionID,
           flowId,
           domainConfig,
-          usecaseId
+          usecaseId,
+          priorPayloadsInFlow,
+          expectedDomainVersion
         );
 
         messages[`${action}_${actionCounters[action]}`] = JSON.stringify(result);
@@ -519,6 +640,7 @@ async function processPayloads(
       } catch (error) {
         logger.error(`Error occurred for action ${action} at index ${i}`, error, { flowId, action, index: i });
       }
+      priorPayloadsInFlow.push(element);
     }
   }
 
@@ -536,70 +658,127 @@ export async function validationModule(
   const flowsReport: Record<string, FlowValidationResult> = {};
   const testedFlows = Object.keys(groupedPayloads);
 
-  // Get session details and domain configuration
-  const sessionDetails = await getSessionDetails(sessionID);
-  // Use optional chaining for usecaseId to avoid property access error
-  const domainConfig: DomainConfig = sessionDetails
-    ? loadConfig(
-        sessionDetails.domain,
-        sessionDetails.version,
-        (sessionDetails as any).usecaseId // fallback to 'any' for backwards compatibility
-      )
-    : { flows: {} };
-
-  // Check mandatory flows
+  // resultCache (and the concurrency limiter) in externalSchemaValidator.ts
+  // are process-wide singletons, long-lived for this server's entire
+  // lifetime — this clear() call is the only thing that keeps resultCache
+  // from growing unbounded across every report this process ever
+  // generates. It used to sit after the Promise.all below, unprotected: if
+  // anything above that point threw (e.g. getSessionDetails, which isn't
+  // wrapped in its own try/catch), this function would throw straight out
+  // to reportService.ts's catch block — surfacing as the generic "Failed
+  // to generate report" 500 — and clearExternalValidationCache() would
+  // never run for that call. Wrapping the whole body in try/finally
+  // guarantees it always runs, on every exit path, not just the happy one.
   try {
-    logger.info(MESSAGES.validations.checkingMandatoryFlows, { testedFlows });
+    // Get session details and domain configuration
+    const sessionDetails = await getSessionDetails(sessionID);
+    // Use optional chaining for usecaseId to avoid property access error
+    const domainConfig: DomainConfig = sessionDetails
+      ? loadConfig(
+          sessionDetails.domain,
+          sessionDetails.version,
+          (sessionDetails as any).usecaseId // fallback to 'any' for backwards compatibility
+        )
+      : { flows: {} };
 
-    checkMandatoryFlows(testedFlows, domainConfig, report);
+    // Check mandatory flows
+    try {
+      logger.info(MESSAGES.validations.checkingMandatoryFlows, { testedFlows });
 
-    logger.info(MESSAGES.validations.mandatoryFlowsDone, { testedFlows });
-  } catch (error: any) {
-    logger.error("Error checking mandatory flows", error, { testedFlows });
-  }
-  // Process each flow
-  for (const flowId in groupedPayloads) {
-    const requiredSequence = domainConfig?.flows?.[flowId];
-    const payloads = groupedPayloads[flowId];
+      checkMandatoryFlows(testedFlows, domainConfig, report);
 
-    logger.info(MESSAGES.validations.actionValidationStart(flowId), { flowId });
+      logger.info(MESSAGES.validations.mandatoryFlowsDone, { testedFlows });
+    } catch (error: any) {
+      logger.error("Error checking mandatory flows", error, { testedFlows });
+    }
+    // Process each flow. Flows are independent of one another — separate
+    // transaction IDs, separate Redis keys — so there's no correctness reason
+    // to validate them one at a time; doing so was the dominant cost in report
+    // generation (N flows x ~15 sequential network calls each). Run them all
+    // concurrently instead; the shared limiter inside externalSchemaValidator.ts
+    // caps how many external validator calls are actually in flight at once,
+    // so this doesn't translate into unbounded concurrent load downstream.
+    await Promise.all(
+      Object.keys(groupedPayloads).map(async (flowId) => {
+        try {
+          const requiredSequence = domainConfig?.flows?.[flowId];
+          const payloads = groupedPayloads[flowId];
 
-    // Step 1: Validate action sequence with deduplication
-    const { validSequence, errors } = validateActionSequence(
-      payloads,
-      requiredSequence || [],
-      flowId
+          logger.info(MESSAGES.validations.actionValidationStart(flowId), { flowId });
+
+          // Step 1: Validate action sequence with deduplication
+          let { validSequence, errors } = validateActionSequence(
+            payloads,
+            requiredSequence || [],
+            flowId
+          );
+
+          // Step 1b: mandatory legs. Opt-in per flow — see DomainConfig.mandatory_legs. Reported
+          // alongside the sequence errors because a missing mandatory leg IS a flow-shape problem,
+          // and because the lookahead in validateActionSequence cannot see it.
+          const missingLegs = findMissingMandatoryLegs(
+            payloads,
+            domainConfig?.mandatory_legs?.[flowId]
+          );
+          if (missingLegs.length > 0) {
+            validSequence = false;
+            errors = [
+              ...errors,
+              `Error: flow '${flowId}' is missing ${missingLegs.length} mandatory step(s): ` +
+                `${missingLegs.join(", ")}. These must all be exercised for this flow to be valid.`,
+            ];
+            logger.info("Mandatory legs missing", { flowId, missingLegs });
+          }
+
+          logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });
+
+          // Step 2: Process payloads (HTML_FORM validations are now handled inline)
+          // Try multiple possible keys for usecaseId
+          const usecaseId = (sessionDetails as any)?.usecaseId
+            || (sessionDetails as any)?.usecase_id
+            || (sessionDetails as any)?.useCaseId;
+          // pramaan-validation-parity skill: sessionDetails is independently fetched session state
+          // (not read from any single payload), so it's a real "expected" value to check payloads
+          // against — see contextValidator.ts's ExpectedContext doc comment for why this matters.
+          const expectedDomainVersion = sessionDetails
+            ? { domain: sessionDetails.domain, version: sessionDetails.version }
+            : undefined;
+
+          const messages = await processPayloads(
+            payloads,
+            sessionID,
+            flowId,
+            domainConfig,
+            requiredSequence,
+            usecaseId,
+            expectedDomainVersion
+          );
+
+          logger.info(MESSAGES.validations.payloadProcessingDone(flowId), { flowId });
+
+          // Step 3: Store validation results
+          flowsReport[flowId] = {
+            valid_flow: validSequence,
+            errors,
+            messages,
+          };
+        } catch (error: any) {
+          logger.error(`Error processing flow ${flowId}`, error, { flowId });
+          flowsReport[flowId] = {
+            valid_flow: false,
+            errors: [`Error processing flow: ${error?.message || error}`],
+            messages: {},
+          };
+        }
+      })
     );
 
-    logger.info(MESSAGES.validations.actionValidationDone(flowId), { flowId });
+    report.flowErrors = flowsReport;
 
-    // Step 2: Process payloads (HTML_FORM validations are now handled inline)
-    // Try multiple possible keys for usecaseId
-    const usecaseId = (sessionDetails as any)?.usecaseId 
-      || (sessionDetails as any)?.usecase_id 
-      || (sessionDetails as any)?.useCaseId;
-    const messages = await processPayloads(
-      payloads,
-      sessionID,
-      flowId,
-      domainConfig,
-      requiredSequence,
-      usecaseId
-    );
+    logger.info(MESSAGES.services.validationExit, { sessionID, flowCount: Object.keys(flowsReport).length });
 
-    logger.info(MESSAGES.validations.payloadProcessingDone(flowId), { flowId });
-
-    // Step 3: Store validation results
-    flowsReport[flowId] = {
-      valid_flow: validSequence,
-      errors,
-      messages,
-    };
+    return report;
+  } finally {
+    clearExternalValidationCache();
   }
-
-  report.flowErrors = flowsReport;
-
-  logger.info(MESSAGES.services.validationExit, { sessionID, flowCount: Object.keys(flowsReport).length });
-
-  return report;
 }

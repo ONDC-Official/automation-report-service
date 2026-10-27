@@ -9,6 +9,6 @@ export default async function on_search(
   actionId: string
 ): Promise<TestResult> {
   const result = await DomainValidators.fis12OnSearch(element, sessionID, flowId, actionId);
-  await saveFromElement(element,sessionID,flowId, "jsonRequest");
+  await saveFromElement(element, sessionID, flowId, "jsonRequest");
   return result;
 }
