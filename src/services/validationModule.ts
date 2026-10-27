@@ -610,6 +610,39 @@ async function processPayloads(
 
       payloadIndex++;
     }
+
+    // The configured sequence can be shorter than what the flow actually produced (repeated
+    // on_status polls, extra IGM legs, ...). Don't drop the surplus payloads from the report.
+    for (; payloadIndex < payloads.length; payloadIndex++) {
+      const element = payloads[payloadIndex];
+      const action = element?.action?.toLowerCase();
+
+      if (!isValidAction(action)) {
+        logger.error(`Invalid action: ${action}`, { flowId, action, index: payloadIndex });
+        continue;
+      }
+
+      const domain = element?.jsonRequest?.context?.domain;
+
+      try {
+        const result = await checkPayload(
+          domain,
+          element,
+          sessionID,
+          flowId,
+          domainConfig,
+          usecaseId,
+          priorPayloadsInFlow,
+          expectedDomainVersion
+        );
+
+        messages[`${action}_${actionCounters[action]}`] = JSON.stringify(result);
+        actionCounters[action] += 1;
+      } catch (error) {
+        logger.error(`Error occurred for action ${action} at index ${payloadIndex}`, error, { flowId, action, index: payloadIndex });
+      }
+      priorPayloadsInFlow.push(element);
+    }
   } else {
     // Fallback: process payloads without sequence (original behavior)
     for (let i = 0; i < payloads.length; i++) {
