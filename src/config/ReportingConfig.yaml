@@ -138,6 +138,7 @@ domains:
             - on_status
             - issue
             - on_issue
+            - issue_status
             - on_issue_status
             - issue
 
@@ -484,6 +485,7 @@ domains:
             - on_status
             - issue
             - on_issue
+            - issue_status
             - on_issue_status
             - issue
         optional_flows:
@@ -1676,6 +1678,7 @@ domains:
             - on_confirm
             - issue
             - on_issue
+            - issue_status
             - on_issue_status
             - issue
         optional_flows:
@@ -4320,6 +4323,7 @@ domains:
                 - on_confirm
                 - issue
                 - on_issue
+                - issue_status
                 - on_issue_status
                 - issue
 
