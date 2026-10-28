@@ -1,1 +1,1 @@
-export * from "../../ONDC:FIS12/2.3.0/OnStatus";
+export { default } from "../../ONDC:FIS12/2.3.0/OnStatus";

@@ -1,1 +1,1 @@
-export * from "../../ONDC:FIS12/2.3.0/LoanAggrementForm";
+export { default } from "../../ONDC:FIS12/2.3.0/LoanAggrementForm";
