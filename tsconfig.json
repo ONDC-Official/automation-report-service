@@ -13,8 +13,5 @@
   
     },
     "include": ["src/**/*", "src/**/*.yaml"],
-    "exclude": ["node_modules", "dist"],
-    "ts-node": {
-      "transpileOnly": true
-    }
+    "exclude": ["node_modules", "dist"]
   }
