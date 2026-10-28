@@ -244,9 +244,29 @@ function checkQuoteIdConsistency(element: Payload, priorPayloadsInFlow: Payload[
 function checkQuoteArithmetic(element: Payload): { passed: string[]; failed: string[] } {
   const quote = ctxMessage(element)?.order?.quote;
   if (!quote) return { passed: [], failed: [] };
+  // FIS12 loans after disbursal (on_update / on_status in the Foreclosure, Missed EMI and
+  // Pre-part flows): the lender adds servicing lines such as OUTSTANDING_PRINCIPAL and
+  // LATE_FEE_AMOUNT to the original breakup while quote.price stays the loan's total cost.
+  // Those lines are not parts of quote.price, so the sum check would fail every such call.
+  if (hasLoanServicingLines(quote)) return { passed: [], failed: [] };
   const local: TestResult = { response: {}, passed: [], failed: [] };
   validateQuote(quote, local, { validateDecimalPlaces: false, validateTotalMatch: true });
   return { passed: local.passed, failed: local.failed };
+}
+
+/** FIS12 loan-servicing breakup titles (spelling as in the FIS12 spec, incl. FORCLOSUER). */
+const LOAN_SERVICING_BREAKUP_TITLES = new Set([
+  "OUTSTANDING_PRINCIPAL",
+  "OUTSTANDING_INTEREST",
+  "FORCLOSUER_CHARGES",
+  "FORECLOSURE_CHARGES",
+  "LATE_FEE_AMOUNT",
+  "PRE_PAYMENT_CHARGE",
+]);
+
+function hasLoanServicingLines(quote: any): boolean {
+  const breakup = Array.isArray(quote?.breakup) ? quote.breakup : [];
+  return breakup.some((b: any) => LOAN_SERVICING_BREAKUP_TITLES.has(b?.title));
 }
 
 /**
