@@ -1880,6 +1880,11 @@ domains:
             - issue
 
         optional_flows:
+          - master_search
+          - dedupe_check
+          - business_term_loan_without_aa
+          - business_term_loan_with_file_upload
+          - business_term_loan_with_aa
           - business_term_loan_with_offline_online_foreclosure
           - business_term_loan_with_offline_online_missed_emi
           - business_term_loan_with_offline_online_pre_part
