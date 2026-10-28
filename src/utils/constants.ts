@@ -846,8 +846,7 @@ export const typeMapping: Record<string, string> = {
   "HOSPICASH INSURANCE": "SACHET_INSURANCE",
   "Logistics (NIC2004:60232)": "LOGISTICS",
   "RETINVL":"RETINVL",
-  "RECONCILIATION": "RECONCILIATION",
-  "RETINVL":"RETINVL"
+  "RECONCILIATION": "RECONCILIATION"
 };
 
 export const NIC_LOGISTICS_CATEGORY_FLOW_MAP: Record<string, string> = {
