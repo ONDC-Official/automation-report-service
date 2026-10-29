@@ -15,9 +15,15 @@
  *   route index. The judge creates one engine per flow, with a clock that reads the recorded time
  *   of the message being replayed, so expiry checks see the time of the run, not of the report;
  * - the judge then drives `initialState`, `observe` and `sent`, exactly as the playground does
- *   when it plays the counterparty, and reads the ledger (`state.engine.messages`).
+ *   when it plays the counterparty, and reads the ledger (`state.engine.messages`);
+ * - certification (M7): `kit.certificationPlan` is `loadScenarioCatalogue(spec)
+ *   .certificationPlan(role, declaration, {availableFlows})`, the catalogue bound to the same
+ *   parsed spec on first use; `kit.scoreSla` / `kit.scoreCallbackDeadlines` are the engine's
+ *   `scoreSla` / `scoreCallbackDeadlines` over the loaded route table, and `slaCertifiable` /
+ *   `deadlinesCertifiable` decide them.
  */
 import { randomBytes } from "crypto";
+import type { FdParticipantRole } from "./constants";
 
 // ── The engine's API, as the judge uses it ─────────────────────────────────
 
@@ -50,6 +56,8 @@ export interface FdRoute {
   inReplyTo: string | null;
   hasBody: boolean;
   requirements: string[];
+  /** The operation's `x-fd-sla` text, or null. */
+  sla?: string | null;
 }
 
 export interface FdRouteIndex {
@@ -123,6 +131,91 @@ export interface FdEngine {
   sent(state: FdState, message: FdSentMessage): FdState;
 }
 
+// ── Certification (M7): the plan, and SLA scoring ─────────────────────────────
+
+/** The engine's `CapabilityDeclaration`: the participant's Registry profile, or the parts that scope certification. */
+export interface FdCapabilityDeclaration {
+  /** `Participant.actionGroups`. Absent or empty: BOOKING only. */
+  actionGroups?: readonly string[];
+  capabilities?: {
+    servicingActionsSupported?: readonly string[];
+    etbCheckSupported?: boolean;
+    webhooksSupported?: readonly string[];
+    [key: string]: unknown;
+  };
+  regulatoryLicence?: { licenceType?: string; [key: string]: unknown };
+  [key: string]: unknown;
+}
+
+/** The engine's `CertificationPlan`: what certifying a participant takes. */
+export interface FdCertificationPlan {
+  role: string;
+  actionGroups: string[];
+  actions: string[];
+  /** Every requirement ID in scope. Coverage and the certificate cover exactly these. */
+  requirementIds: string[];
+  /** The flows to run (engine ids: `fd_booking`, `fd_scn_<n>`). */
+  flows: string[];
+  missingFlows: string[];
+  scenarios: number[];
+  runnable: number[];
+  edge: number[];
+  notRun: { n: number; coverage: string; dependsOn?: string[]; missingFlows?: string[] }[];
+  outOfScope: { n: number; reason: string }[];
+  covered: string[];
+  /** In-scope requirement IDs no runnable flow covers. */
+  gaps: string[];
+  gapDetails: { requirementId: string; actions: string[]; scenarios: number[] }[];
+  declarationProblems: string[];
+  certifiable: boolean;
+  blockers: string[];
+}
+
+export interface FdScenarioCatalogue {
+  certificationPlan(role: FdEngineRole, declaration?: FdCapabilityDeclaration, opts?: { availableFlows?: readonly string[] }): FdCertificationPlan;
+}
+
+/** One SYNC answer time. */
+export interface FdSlaSample {
+  action: string;
+  ms: number;
+}
+
+export type FdSlaVerdict = "PASS" | "FAIL" | "INSUFFICIENT_SAMPLES" | "NO_SLA";
+
+/** The engine's `SlaScore`: one SYNC route's answer times against its declared SLA. */
+export interface FdSlaScore {
+  action: string;
+  n: number;
+  p95: number | null;
+  limitMs: number | null;
+  verdict: FdSlaVerdict;
+  percentile: number | null;
+  observedMs: number | null;
+  proposed: boolean;
+  sla: string | null;
+}
+
+export interface FdCallbackPair {
+  request: string | { action?: string; ttl?: string };
+  requestAt: string | number | Date;
+  callbackAt?: string | number | Date | null;
+}
+
+export type FdDeadlineVerdict = "PASS" | "FAIL" | "NO_DEADLINE" | "NEEDS_CALENDAR";
+
+/** The engine's `CallbackDeadlineScore`. */
+export interface FdCallbackDeadlineScore {
+  request: string;
+  callback: string;
+  requestAt: string;
+  callbackAt: string | null;
+  elapsedMs: number | null;
+  deadline: { source: "sla" | "ttl"; text: string; ms?: number; businessDays?: number; proposed?: boolean } | null;
+  verdict: FdDeadlineVerdict;
+  detail: string;
+}
+
 interface EngineConfig {
   spec: unknown;
   routes: unknown;
@@ -138,6 +231,11 @@ interface FdContractModule {
   requirementMapFromRoutes(source: unknown): FdRequirementMap;
   parseSpec(input: unknown): unknown;
   isAcknowledgement(body: unknown): boolean;
+  loadScenarioCatalogue(spec: unknown): FdScenarioCatalogue;
+  scoreSla(samples: readonly FdSlaSample[], routes: unknown, opts?: { minSamples?: number; callee?: string; actions?: readonly string[] }): FdSlaScore[];
+  slaCertifiable(scores: readonly FdSlaScore[]): boolean;
+  scoreCallbackDeadlines(pairs: readonly FdCallbackPair[], routes: unknown, opts?: Record<string, unknown>): FdCallbackDeadlineScore[];
+  deadlinesCertifiable(scores: readonly FdCallbackDeadlineScore[]): boolean;
 }
 
 // ── Loading ─────────────────────────────────────────────────────────────────
@@ -168,6 +266,11 @@ const REQUIRED_EXPORTS = [
   "requirementMapFromRoutes",
   "parseSpec",
   "isAcknowledgement",
+  "loadScenarioCatalogue",
+  "scoreSla",
+  "slaCertifiable",
+  "scoreCallbackDeadlines",
+  "deadlinesCertifiable",
 ] as const;
 
 export function loadFdContract(): FdContractModule {
@@ -224,6 +327,18 @@ export interface FdJudgeKit {
     keyLookup?: (subscriberId: string, uniqueKeyId: string) => Promise<string>;
   }): FdEngine;
   isAcknowledgement(body: unknown): boolean;
+  /**
+   * The certification plan for the NP's role and declaration (`loadScenarioCatalogue(spec)
+   * .certificationPlan`). The catalogue is bound to the spec on first use; a catalogue that does
+   * not match the spec, an unknown action group or servicing action throws.
+   */
+  certificationPlan(role: FdParticipantRole, declaration: FdCapabilityDeclaration, opts?: { availableFlows?: readonly string[] }): FdCertificationPlan;
+  /** `scoreSla` over this route table. Throws `SlaError` for an SLA text or sample it cannot read. */
+  scoreSla(samples: readonly FdSlaSample[], opts: { minSamples: number; callee: FdParticipantRole; actions?: readonly string[] }): FdSlaScore[];
+  slaCertifiable(scores: readonly FdSlaScore[]): boolean;
+  /** `scoreCallbackDeadlines` over this route table. */
+  scoreCallbackDeadlines(pairs: readonly FdCallbackPair[]): FdCallbackDeadlineScore[];
+  deadlinesCertifiable(scores: readonly FdCallbackDeadlineScore[]): boolean;
 }
 
 /**
@@ -243,6 +358,7 @@ export function prepareFdJudgeKit(sources: { spec: unknown; routes: unknown }): 
     throw new FdEngineUnavailableError("the FD spec or route table could not be loaded", e);
   }
   const contractVersion = fdContractVersion();
+  let catalogue: FdScenarioCatalogue | undefined;
   return {
     routes,
     requirements,
@@ -256,6 +372,14 @@ export function prepareFdJudgeKit(sources: { spec: unknown; routes: unknown }): 
       return mod.createEngine(cfg);
     },
     isAcknowledgement: (body) => mod.isAcknowledgement(body),
+    certificationPlan(role, declaration, opts) {
+      catalogue ??= mod.loadScenarioCatalogue(spec);
+      return catalogue.certificationPlan(role, declaration, opts);
+    },
+    scoreSla: (samples, opts) => mod.scoreSla(samples, routes, opts),
+    slaCertifiable: (scores) => mod.slaCertifiable(scores),
+    scoreCallbackDeadlines: (pairs) => mod.scoreCallbackDeadlines(pairs, routes),
+    deadlinesCertifiable: (scores) => mod.deadlinesCertifiable(scores),
   };
 }
 

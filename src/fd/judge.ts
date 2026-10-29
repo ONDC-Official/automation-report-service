@@ -58,6 +58,12 @@ export interface FdJudgedExchange {
   answer: string;
   judged: boolean;
   findings: number;
+  /** The recorded answer time (ms), when the recorder stored one. */
+  durationMs?: number;
+  /** A callback's `inReplyTo`. */
+  inReplyTo?: string;
+  /** The request's `context.ttl`. */
+  ttl?: string;
 }
 
 /** A step of the flow (the playground's flow state), and the payloads recorded for it. */
@@ -199,6 +205,9 @@ export async function judgeFdFlow(payloads: FdRecordedPayload[], opts: FdJudgeOp
     else if (record.bodyAction) ex.action = record.bodyAction;
     if (record.messageId) ex.messageId = record.messageId;
     if (record.httpStatus !== undefined) ex.httpStatus = record.httpStatus;
+    if (record.durationMs !== undefined) ex.durationMs = record.durationMs;
+    if (record.inReplyTo) ex.inReplyTo = record.inReplyTo;
+    if (record.ttl) ex.ttl = record.ttl;
     exchanges.push(ex);
     if (rt?.kind === "callback" && record.inReplyTo) callbacksSeen.add(`${rt.action}|${record.inReplyTo}`);
     if (!engine || !state || engineError) continue; // after an engine error nothing is judged

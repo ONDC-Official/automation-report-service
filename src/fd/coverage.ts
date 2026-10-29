@@ -4,11 +4,16 @@
  * - Which requirements a message exercises comes from the engine's requirement map:
  *   `requirementsFor(action, {inheritFromRequest: true})`, so a callback answers for its
  *   request's requirements (no callback in 0.1.4 declares its own).
- * - The requirements in scope are those of every route the NP's role takes part in, as caller or
- *   callee. A requirement no judged message exercised is NOT_COVERED.
+ * - The requirements in scope are the certification plan's `requirementIds` (plan.ts): those of
+ *   the routes the NP's role takes part in within its declared action groups. Coverage has an
+ *   entry for each of them and for nothing else. A requirement no judged message exercised is
+ *   NOT_COVERED.
  * - A requirement any finding cites is FAIL, in every flow. Otherwise one exercised by a judged
  *   message is PASS. `scenarios` are the flows that exercised or cited it; `evidence` the message
- *   ids.
+ *   ids. A finding that cites only requirements outside the scope is not in coverage, but it
+ *   stays in the run summary's findings, so it still refuses the certificate.
+ * - `requirementsInScope` (every requirement of every route the role touches) is the fallback
+ *   when no plan can be computed; the certificate is then refused anyway.
  */
 import { FdParticipantRole } from "./constants";
 import { FdJudgeKit } from "./engine";
@@ -22,7 +27,7 @@ export interface FdCoverageEntry {
   evidence: string[];
 }
 
-/** Every requirement of a route the NP's role takes part in. */
+/** Every requirement of a route the NP's role takes part in (the fallback scope, with no plan). */
 export function requirementsInScope(kit: FdJudgeKit, npRole: FdParticipantRole): string[] {
   const ids = new Set<string>();
   for (const route of kit.routes.table.routes) {
@@ -32,21 +37,15 @@ export function requirementsInScope(kit: FdJudgeKit, npRole: FdParticipantRole):
   return [...ids].sort();
 }
 
-export function buildCoverage(flows: FdFlowVerdict[], inScope: string[]): Record<string, FdCoverageEntry> {
+export function buildCoverage(flows: FdFlowVerdict[], inScope: readonly string[]): Record<string, FdCoverageEntry> {
   const entries = new Map<string, { failed: boolean; exercised: boolean; scenarios: Set<string>; evidence: Set<string> }>();
-  const entry = (id: string) => {
-    let e = entries.get(id);
-    if (!e) {
-      e = { failed: false, exercised: false, scenarios: new Set(), evidence: new Set() };
-      entries.set(id, e);
-    }
-    return e;
-  };
-  for (const id of inScope) entry(id);
+  for (const id of inScope) entries.set(id, { failed: false, exercised: false, scenarios: new Set(), evidence: new Set() });
+  const entry = (id: string) => entries.get(id);
   for (const flow of flows) {
     for (const [id, messageIds] of Object.entries(flow.exercised)) {
       if (messageIds.length === 0) continue;
       const e = entry(id);
+      if (!e) continue;
       e.exercised = true;
       e.scenarios.add(flow.flowId);
       for (const m of messageIds) e.evidence.add(m);
@@ -54,6 +53,7 @@ export function buildCoverage(flows: FdFlowVerdict[], inScope: string[]): Record
     for (const finding of flow.findings) {
       for (const id of finding.requirementIds) {
         const e = entry(id);
+        if (!e) continue;
         e.failed = true;
         e.scenarios.add(flow.flowId);
         if (finding.messageId) e.evidence.add(finding.messageId);

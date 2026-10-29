@@ -7,7 +7,7 @@ import { setFdContractLoaderForTests } from "../engine";
 import { evaluateIssuance } from "../certificate";
 import { FdReportInput, generateFdReport } from "../report";
 import { generateFdHTMLReport } from "../../templates/generateFdReport";
-import { SPEC_TEXT, Session, TABLE, TXN } from "./journey";
+import { certificationRun, reportInput, SPEC_TEXT, Session, TABLE, TXN } from "./journey";
 
 const sources = async () => ({ spec: SPEC_TEXT, routes: TABLE });
 
@@ -53,7 +53,7 @@ afterEach(() => {
 });
 
 describe("generateFdReport", () => {
-  it("judges a clean booking: PASS, with coverage, and would refuse a certificate for what it did not cover", async () => {
+  it("judges a clean booking: PASS, with coverage over the BOOKING plan, and would refuse a certificate for what it did not run", async () => {
     const session = await (await Session.create("BAP")).book();
     const report = await generateFdReport(inputFor(session), { loadSources: sources, keyLookup: session.keyLookup });
     expect(report.error).toBeUndefined();
@@ -63,14 +63,31 @@ describe("generateFdReport", () => {
     expect(report.workbenchRole).toBe("DEPOSIT_ISSUER");
     expect(report.tableHash).toBe(TABLE.tableHash);
 
+    // No declaration in the session: BOOKING only, and coverage is exactly the plan's requirement IDs.
+    const scope = report.certification!;
+    expect(scope.declaration).toEqual({ source: "default", declaration: { actionGroups: ["BOOKING"] } });
+    expect(scope.plan!.actionGroups).toEqual(["BOOKING"]);
+    expect(Object.keys(report.coverage)).toEqual(scope.plan!.requirementIds);
+
     // Exercised requirements PASS with scenario and evidence; the rest are NOT_COVERED.
     const idn = report.coverage["FD-IDN-06"]!;
     expect(idn.status).toBe("PASS");
     expect(idn.scenarios).toEqual(["fd_booking"]);
     expect(idn.evidence.length).toBeGreaterThan(0);
-    expect(report.coverage["FD-GRV-01"]).toEqual({ status: "NOT_COVERED", scenarios: [], evidence: [] });
-    expect(report.coverage["FD-PAR-03"]?.status).toBe("NOT_COVERED"); // discovery: the app's, not the issuer's
+    expect(report.coverage["FD-CON-05"]).toEqual({ status: "NOT_COVERED", scenarios: [], evidence: [] }); // consent_withdraw: a plan gap
+    expect(report.coverage["FD-GRV-01"]).toBeUndefined(); // GRIEVANCE is not declared
+    expect(report.coverage["FD-PAR-03"]).toBeUndefined(); // nor is DISCOVERY
     expect(Object.values(report.coverage).some((e) => e.status === "FAIL")).toBe(false);
+
+    // The session's configuration has fd_booking only, so the plan's scenario flows are missing.
+    expect(scope.flows.map((f) => [f.planFlowId, f.status])).toEqual([
+      ["fd_booking", "JUDGED"],
+      ["fd_scn_12", "NOT_IN_SESSION"],
+      ["fd_scn_34", "NOT_IN_SESSION"],
+      ["fd_scn_38", "NOT_IN_SESSION"],
+      ["fd_scn_6", "NOT_IN_SESSION"],
+    ]);
+    expect(report.fullRun.full).toBe(false);
 
     // The run summary, as automation-db's POST /certificates expects it.
     const summary = report.summary!;
@@ -80,9 +97,11 @@ describe("generateFdReport", () => {
       domain: "ONDC:FIS14:FD",
       version: "0.1.4",
       tableHash: TABLE.tableHash,
-      findings: [],
       waivers: [],
     });
+    // No judge finding; only the run's blockers, which cite no requirement ID (no waiver covers them).
+    expect(summary.findings.every((f) => f.requirementIds.length === 0)).toBe(true);
+    expect([...new Set(summary.findings.map((f) => f.rule))].sort()).toEqual(["certification.missing-flow", "certification.plan"]);
     expect(Object.keys(summary.toolVersions).sort()).toEqual(["automation-report-service", "fd-contract"]);
     expect(summary.runs).toHaveLength(1);
     expect(summary.runs[0]).toMatchObject({ sessionId: "session-fd-1", flowId: "fd_booking", transactionId: TXN });
@@ -92,7 +111,7 @@ describe("generateFdReport", () => {
     // Not a certification deployment: nothing is sent, and the decision is shown.
     expect(report.certificate!.sent).toBe(false);
     expect(report.certificate!.decision).toBe("REFUSED");
-    expect(report.certificate!.reasons).toContain("FD-GRV-01: NOT_COVERED");
+    expect(report.certificate!.reasons).toContain("FD-CON-05: NOT_COVERED");
     expect(report.certificate!.notSent).toEqual(expect.arrayContaining(["FD_CERTIFY is not true"]));
 
     const { html, flowResults } = generateFdHTMLReport(report);
@@ -101,6 +120,8 @@ describe("generateFdReport", () => {
     expect(html).toContain("Would issue");
     expect(html).toContain("REFUSED");
     expect(html).toContain("FD-IDN-06");
+    expect(html).toContain("Certification plan");
+    expect(html).toContain("BOOKING only");
   });
 
   it("scopes coverage to the issuer's routes when the NP is the issuer", async () => {
@@ -108,8 +129,10 @@ describe("generateFdReport", () => {
     const report = await generateFdReport(inputFor(session), { loadSources: sources, keyLookup: session.keyLookup });
     expect(report.verdict).toBe("PASS");
     expect(report.summary).toMatchObject({ role: "DEPOSIT_ISSUER", subscriberId: "fd.examplebank.in" });
+    expect(report.certification!.plan!.role).toBe("DEPOSIT_ISSUER");
     expect(report.coverage["FD-PAR-03"]).toBeUndefined(); // discovery_capability_read goes to the INDEX
-    expect(report.coverage["FD-GRV-01"]?.status).toBe("NOT_COVERED");
+    expect(report.coverage["FD-GRV-01"]).toBeUndefined();
+    expect(report.coverage["FD-CON-05"]?.status).toBe("NOT_COVERED");
   });
 
   it("missing evidence fails the flow, and its requirements are FAIL or NOT_COVERED", async () => {
@@ -119,9 +142,12 @@ describe("generateFdReport", () => {
     const report = await generateFdReport(input, { loadSources: sources, keyLookup: session.keyLookup });
     expect(report.verdict).toBe("FAIL");
     expect(report.flows[0]!.findings.map((f) => f.rule)).toEqual(["judge.missing-evidence"]);
-    // deposit_read's requirements: cited by the finding, so FAIL, never PASS.
-    expect(report.coverage["FD-MOD-10"]?.status).toBe("FAIL");
-    expect(report.coverage["FD-MOD-10"]?.scenarios).toEqual(["fd_booking"]);
+    // deposit_read's in-scope requirements: cited by the finding, so FAIL, never PASS.
+    expect(report.coverage["FD-MOD-09"]?.status).toBe("FAIL");
+    expect(report.coverage["FD-MOD-09"]?.scenarios).toEqual(["fd_booking"]);
+    // FD-MOD-10 (SERVICING) is outside the BOOKING plan: not in coverage, but the finding stays.
+    expect(report.coverage["FD-MOD-10"]).toBeUndefined();
+    expect(report.summary!.findings.find((f) => f.rule === "judge.missing-evidence")?.requirementIds).toContain("FD-MOD-10");
     expect(report.certificate!.decision).toBe("REFUSED");
     expect(generateFdHTMLReport(report).flowResults).toEqual({ fd_booking: "FAIL" });
   });
@@ -185,10 +211,11 @@ describe("the certificate hand-off", () => {
     certifying();
     const post = jest.spyOn(axios, "post").mockResolvedValue({
       status: 201,
-      data: { certificate: { certificateId: "cert-1", status: "REFUSED", verdict: "FAIL" }, reasons: ["FD-GRV-01: NOT_COVERED"] },
+      data: { certificate: { certificateId: "cert-1", status: "REFUSED", verdict: "FAIL" }, reasons: ["FD-CON-05: NOT_COVERED"] },
     });
-    const session = await (await Session.create("BAP")).book();
-    const report = await generateFdReport(inputFor(session), { loadSources: sources, keyLookup: session.keyLookup });
+    const sessions = await certificationRun("BAP");
+    const report = await generateFdReport(reportInput(sessions), { loadSources: sources, keyLookup: sessions[0]!.keyLookup });
+    expect(report.fullRun).toEqual({ full: true, notFull: [] });
     expect(post).toHaveBeenCalledTimes(1);
     const [url, body, config] = post.mock.calls[0]!;
     expect(url).toBe("http://automation-db.local/certificates");
@@ -196,6 +223,7 @@ describe("the certificate hand-off", () => {
     expect(Object.keys(body as object).sort()).toEqual(
       ["coverage", "domain", "findings", "role", "runs", "subscriberId", "tableHash", "toolVersions", "version", "waivers"].sort()
     );
+    expect((body as any).runs).toHaveLength(5);
     expect(report.certificate).toMatchObject({ sent: true, response: { certificateId: "cert-1", status: "REFUSED", verdict: "FAIL" } });
     expect(generateFdHTMLReport(report).html).toContain("cert-1");
   });
@@ -207,11 +235,14 @@ describe("the certificate hand-off", () => {
     const partial = inputFor(session);
     partial.sessionDetails = { ...partial.sessionDetails, flowConfigs: { fd_booking: {}, fd_withdrawal: {} } };
     const report = await generateFdReport(partial, { loadSources: sources, keyLookup: session.keyLookup });
-    expect(report.fullRun).toEqual({ full: false, notFull: ["flows not in this report: fd_withdrawal"] });
-    expect(report.certificate).toMatchObject({ sent: false, notSent: ["flows not in this report: fd_withdrawal"] });
+    const missing = ["fd_scn_12", "fd_scn_34", "fd_scn_38", "fd_scn_6"].map((f) => `flow ${f} is not a flow of this session`);
+    expect(report.fullRun).toEqual({ full: false, notFull: missing });
+    expect(report.certificate).toMatchObject({ sent: false, notSent: missing });
 
+    const sessions = await certificationRun("BAP");
     delete process.env.AUTOMATION_DB_API_KEY;
-    const unconfigured = await generateFdReport(inputFor(session), { loadSources: sources, keyLookup: session.keyLookup });
+    const unconfigured = await generateFdReport(reportInput(sessions), { loadSources: sources, keyLookup: sessions[0]!.keyLookup });
+    expect(unconfigured.fullRun.full).toBe(true);
     expect(unconfigured.certificate!.notSent).toEqual(["AUTOMATION_DB_API_KEY is not set"]);
     expect(post).not.toHaveBeenCalled();
   });
@@ -219,8 +250,8 @@ describe("the certificate hand-off", () => {
   it("reports a failed POST as no certificate", async () => {
     certifying();
     jest.spyOn(axios, "post").mockRejectedValue(new Error("connect ECONNREFUSED"));
-    const session = await (await Session.create("BAP")).book({}, "quote_request");
-    const report = await generateFdReport(inputFor(session), { loadSources: sources, keyLookup: session.keyLookup });
+    const sessions = await certificationRun("BAP");
+    const report = await generateFdReport(reportInput(sessions), { loadSources: sources, keyLookup: sessions[0]!.keyLookup });
     expect(report.certificate).toMatchObject({ sent: false });
     expect(report.certificate!.error).toMatch(/ECONNREFUSED/);
   });

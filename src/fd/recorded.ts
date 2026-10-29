@@ -10,7 +10,11 @@
  *   call it was: `X-Pwb-Fd-Method`, `X-Pwb-Fd-Path` (np mode: the NP called the workbench),
  *   `X-Pwb-Fd-Route`, `X-Pwb-Fd-Path-Params`, `X-Pwb-Fd-Replay`; `X-Pwb-Internal-Key` marks a
  *   message the workbench's mock sent;
- * - `createdAt`: when it was recorded; `messageId`, `action`, `flowId`, `transactionId`.
+ * - `createdAt`: when it was recorded; `messageId`, `action`, `flowId`, `transactionId`;
+ * - `durationMs` (FD only, when network-observability measured it): how long the module took to
+ *   answer the exchange, in milliseconds. For a call the workbench made to the NP it is the NP's
+ *   answer time plus the workbench's own small overhead (signing, transport); for a call the NP
+ *   made it measures the workbench.
  */
 import { FD_HEADERS } from "./constants";
 
@@ -26,6 +30,7 @@ export interface FdRecordedPayload {
   jsonResponse?: unknown;
   httpStatus?: unknown;
   createdAt?: string;
+  durationMs?: unknown;
 }
 
 export interface FdRecord {
@@ -46,6 +51,10 @@ export interface FdRecord {
   /** A callback's `fdEnvelope.inReplyTo`. */
   inReplyTo?: string;
   transactionId?: string;
+  /** The recorded answer time in ms: a finite, non-negative number, else absent. */
+  durationMs?: number;
+  /** The request's `context.ttl`. */
+  ttl?: string;
 }
 
 export const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -108,6 +117,10 @@ export function readRecord(p: FdRecordedPayload, original: number): FdRecord {
   if (inReplyTo) out.inReplyTo = inReplyTo;
   const transactionId = str(context.transaction_id) ?? str(p.transactionId);
   if (transactionId) out.transactionId = transactionId;
+  const duration = typeof p.durationMs === "number" ? p.durationMs : typeof p.durationMs === "string" ? Number(p.durationMs) : Number.NaN;
+  if (Number.isFinite(duration) && duration >= 0) out.durationMs = duration;
+  const ttl = str(context.ttl);
+  if (ttl) out.ttl = ttl;
   return out;
 }
 

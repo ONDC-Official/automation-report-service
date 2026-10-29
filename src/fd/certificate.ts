@@ -6,10 +6,19 @@
  *    transactionId, startedAt, finishedAt}], coverage{reqId: {status, scenarios, evidence}},
  *    findings[], waivers[]}
  *
+ * - `coverage`: exactly the certification plan's requirement IDs (plan.ts, coverage.ts).
+ * - `findings`: every judge and engine finding of every flow, then the certification blockers
+ *   (plan blockers, plan flows not run, an unreadable declaration) and every SLA row that is not
+ *   a pass (sla.ts). A blocker cites no requirement ID, so the issuance rule refuses it and no
+ *   waiver can cover it: the server gives VALID exactly when every in-scope requirement is PASS
+ *   with evidence, the plan has no blocker, every plan flow ran, the SLAs pass, and nothing was
+ *   found.
+ *
  * It is sent only when the deployment certifies (`FD_CERTIFY=true`), automation-db is configured
  * (`AUTOMATION_DB_BASE_URL`, `AUTOMATION_DB_API_KEY`) and the report covers a full certification
- * run. Otherwise the report shows what would happen: "would issue: PASS" or "REFUSED", by the
- * same issuance rule the server applies (the server's decision is the one that counts).
+ * run (every plan flow judged). Otherwise the report shows what would happen: "would issue:
+ * PASS" or "REFUSED", by the same issuance rule the server applies (the server's decision is the
+ * one that counts).
  */
 import axios from "axios";
 import { FdParticipantRole } from "./constants";
@@ -73,13 +82,15 @@ export function buildRunSummary(input: {
   contractVersion: string;
   flows: FdFlowVerdict[];
   coverage: Record<string, FdCoverageEntry>;
+  /** Findings about the run as a whole: certification blockers and SLA rows that are not a pass. */
+  runFindings?: { requirementIds: string[]; rule: string; detail: string; action?: string; messageId?: string }[];
 }): FdRunSummary {
   const runs: FdRunSummary["runs"] = [];
   for (const flow of input.flows) {
     if (!flow.transactionId || !flow.startedAt || !flow.finishedAt) continue;
     runs.push({ sessionId: input.sessionId, flowId: flow.flowId, transactionId: flow.transactionId, startedAt: flow.startedAt, finishedAt: flow.finishedAt });
   }
-  const findings = input.flows.flatMap((flow) => flow.findings.map(toSummaryFinding));
+  const findings = [...input.flows.flatMap((flow) => flow.findings), ...(input.runFindings ?? [])].map(toSummaryFinding);
   return {
     subscriberId: input.subscriberId,
     role: input.role,
@@ -95,7 +106,7 @@ export function buildRunSummary(input: {
 }
 
 /** A finding as automation-db stores it: no empty strings, requirement IDs without whitespace. */
-function toSummaryFinding(f: FdJudgedFinding): FdRunSummary["findings"][number] {
+function toSummaryFinding(f: Pick<FdJudgedFinding, "requirementIds" | "rule" | "detail" | "errorCode" | "fieldPath" | "messageId" | "action">): FdRunSummary["findings"][number] {
   const out: FdRunSummary["findings"][number] = {
     requirementIds: (f.requirementIds ?? []).filter((id) => typeof id === "string" && IDENTIFIER.test(id)),
     rule: f.rule || "unknown",

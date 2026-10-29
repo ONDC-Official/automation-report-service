@@ -1,7 +1,9 @@
 /**
- * The FD report: every requested flow judged by `judgeFdFlow`, the requirement coverage of the
- * run, and the certificate hand-off. The session's FD flows never reach the Beckn validators or
- * Pramaan (reportService routes them here first).
+ * The FD report: every requested flow judged by `judgeFdFlow`, the certification plan for the
+ * NP's role and declaration (plan.ts), the requirement coverage of the run over the plan's
+ * requirement IDs, the SLA scores from the recorded timings (sla.ts), and the certificate
+ * hand-off. The session's FD flows never reach the Beckn validators or Pramaan (reportService
+ * routes them here first).
  *
  * Fail-closed throughout: an engine, spec or route table that cannot be loaded, an FD version
  * that is not enabled, or an npType that is neither BAP nor BPP gives a report in which every
@@ -12,7 +14,9 @@ import { fdRoleOfNp, fdWorkbenchRole, FdParticipantRole } from "./constants";
 import { buildCoverage, FdCoverageEntry, requirementsInScope } from "./coverage";
 import { buildRunSummary, FdCertificateOutcome, FdRunSummary, handOffCertificate } from "./certificate";
 import { fdIdentityFromEnv, fdRegistryKeyLookup, fetchFdRouteTableSource, readFdSpecSource } from "./config";
-import { FdIdentity, FdJudgeKit, prepareFdJudgeKit } from "./engine";
+import { FdCapabilityDeclaration, FdCertificationPlan, FdIdentity, FdJudgeKit, prepareFdJudgeKit } from "./engine";
+import { certificationScope, FdCertificationScope } from "./plan";
+import { FdSlaReport, scoreRunSla } from "./sla";
 import { FdFlowStep, FdFlowVerdict, judgeFdFlow } from "./judge";
 import { FdRecordedPayload, isRecord } from "./recorded";
 
@@ -30,7 +34,11 @@ export interface FdReport {
   coverage: Record<string, FdCoverageEntry>;
   summary?: FdRunSummary;
   certificate?: FdCertificateOutcome;
-  /** Whether the report covers a full certification run, and why not. */
+  /** The certification plan, the declaration it was computed for, and which plan flows ran. */
+  certification?: FdCertificationScope;
+  /** Answer times and callback deadlines of what the NP answered. */
+  sla?: FdSlaReport;
+  /** Whether the report covers a full certification run (every plan flow judged), and why not. */
   fullRun: { full: boolean; notFull: string[] };
   /** A report-level failure: nothing could be judged. */
   error?: string;
@@ -57,6 +65,8 @@ export interface FdReportDeps {
   loadSources?: (domain: string, version: string) => Promise<{ spec: unknown; routes: unknown }>;
   keyLookup?: (subscriberId: string, uniqueKeyId: string) => Promise<string>;
   identity?: FdIdentity;
+  /** Test hook: the certification plan the engine would give. Default: the engine's. */
+  planFor?: (role: FdParticipantRole, declaration: FdCapabilityDeclaration, opts: { availableFlows?: readonly string[] }) => FdCertificationPlan;
 }
 
 async function defaultSources(domain: string, version: string): Promise<{ spec: unknown; routes: unknown }> {
@@ -75,7 +85,7 @@ export async function generateFdReport(input: FdReportInput, deps: FdReportDeps 
     verdict: "FAIL",
     flows: [],
     coverage: {},
-    fullRun: fullRunOf(input),
+    fullRun: { full: false, notFull: ["the run has not been judged"] },
     generatedAt: new Date().toISOString(),
   };
   if (sessionDetails?.npType !== undefined) report.npType = String(sessionDetails.npType);
@@ -85,6 +95,7 @@ export async function generateFdReport(input: FdReportInput, deps: FdReportDeps 
     report.error = error;
     report.flows = input.requestedFlows.map((flowId) => failedFlow(flowId, input.flowMap[flowId], report, error));
     report.verdict = "FAIL";
+    report.fullRun = { full: false, notFull: [`the run could not be judged: ${error}`] };
     return report;
   };
 
@@ -134,24 +145,45 @@ export async function generateFdReport(input: FdReportInput, deps: FdReportDeps 
     report.flows.push(verdict);
   }
 
-  report.coverage = buildCoverage(report.flows, requirementsInScope(kit, report.npRole));
+  // What certifying this NP takes, which of it the session ran, and the SLAs of what it answered.
+  const npRole = report.npRole;
+  const scope = certificationScope(
+    kit,
+    npRole,
+    input,
+    report.flows,
+    () => requirementsInScope(kit, npRole),
+    deps.planFor ? (declaration, opts) => deps.planFor!(npRole, declaration, opts) : undefined
+  );
+  report.certification = scope;
+  report.fullRun = { full: scope.full, notFull: scope.notFull };
+  report.coverage = buildCoverage(report.flows, scope.requirementIds);
+  report.sla = scoreRunSla(kit, npRole, report.flows, scope.plan?.actions);
   report.verdict = report.flows.length > 0 && report.flows.every((f) => f.verdict === "PASS") ? "PASS" : "FAIL";
 
-  const subscriberId = npSubscriberId(input, report.npRole);
+  const subscriberId = npSubscriberId(input, npRole);
   report.summary = buildRunSummary({
     sessionId,
     subscriberId,
-    role: report.npRole,
+    role: npRole,
     domain,
     version,
     tableHash: kit.tableHash,
     contractVersion: kit.contractVersion,
     flows: report.flows,
     coverage: report.coverage,
+    runFindings: [...scope.findings, ...report.sla.findings],
   });
   report.certificate = await handOffCertificate(report.summary, report.fullRun);
   logger.info(`[FD] report for session ${sessionId}: ${report.verdict}`, {
     flows: report.flows.map((f) => ({ flowId: f.flowId, verdict: f.verdict, findings: f.findings.length })),
+    certification: {
+      declaration: scope.declaration.source,
+      planFlows: scope.flows.map((f) => `${f.planFlowId}:${f.status}`),
+      gaps: scope.plan?.gaps.length,
+      blockers: scope.blockers.length,
+      sla: report.sla.certifiable,
+    },
     certificate: { decision: report.certificate.decision, sent: report.certificate.sent, status: report.certificate.response?.status },
   });
   return report;
@@ -180,22 +212,6 @@ function stepsOf(state: any, kit: FdJudgeKit): FdFlowStep[] | undefined {
     steps.push(out);
   }
   return steps;
-}
-
-/**
- * A full certification run: every flow of the session's configuration is in this report and was
- * started. (Whether a certificate is then requested also depends on FD_CERTIFY.)
- */
-function fullRunOf(input: FdReportInput): { full: boolean; notFull: string[] } {
-  const configured = isRecord(input.sessionDetails?.flowConfigs) ? Object.keys(input.sessionDetails.flowConfigs) : [];
-  const expected = configured.length > 0 ? configured : Object.keys(input.flowMap ?? {});
-  const notFull: string[] = [];
-  const absent = expected.filter((f) => !input.requestedFlows.includes(f));
-  if (absent.length > 0) notFull.push(`flows not in this report: ${absent.join(", ")}`);
-  const unstarted = input.requestedFlows.filter((f) => !input.flowMap?.[f]);
-  if (unstarted.length > 0) notFull.push(`flows never started: ${unstarted.join(", ")}`);
-  if (input.requestedFlows.length === 0) notFull.push("the report has no flow");
-  return { full: notFull.length === 0, notFull };
 }
 
 /** The NP's subscriber id: the session's, else the context of the NP's side (bap_id or bpp_id). */

@@ -8,6 +8,8 @@
  */
 import { FdReport } from "../fd/report";
 import { FdFlowVerdict, FdJudgedFinding, JUDGE_RULES } from "../fd/judge";
+import { CERTIFICATION_RULES } from "../fd/plan";
+import { SLA_RULES } from "../fd/sla";
 
 function esc(value: unknown): string {
   return String(value ?? "")
@@ -25,7 +27,12 @@ function badge(text: string, kind: "pass" | "fail" | "neutral"): string {
 }
 
 function verdictBadge(verdict: string): string {
-  return badge(verdict, verdict === "PASS" ? "pass" : verdict === "NOT_COVERED" ? "neutral" : "fail");
+  return badge(verdict, verdict === "PASS" || verdict === "JUDGED" ? "pass" : verdict === "NOT_COVERED" || verdict === "NO_SLA" ? "neutral" : "fail");
+}
+
+function list(items: readonly string[], empty = ""): string {
+  if (items.length === 0) return empty;
+  return `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
 }
 
 /** Findings grouped by requirement ID; a finding citing several IDs is listed under each. */
@@ -119,7 +126,10 @@ function coverageHtml(report: FdReport): string {
       </tr>`
     )
     .join("");
-  return `<p>${count("PASS")} PASS · ${count("FAIL")} FAIL · ${count("NOT_COVERED")} NOT_COVERED, of ${entries.length} requirements in scope for ${esc(report.npRole ?? "")}.</p>
+  const scope = report.certification?.plan
+    ? `in the certification plan for ${esc(report.npRole ?? "")} (action groups ${esc(report.certification.plan.actionGroups.join(", "))})`
+    : `in scope for ${esc(report.npRole ?? "")} (every route the role takes part in: no certification plan could be computed)`;
+  return `<p>${count("PASS")} PASS · ${count("FAIL")} FAIL · ${count("NOT_COVERED")} NOT_COVERED, of ${entries.length} requirements ${scope}.</p>
     <table><thead><tr><th>Requirement</th><th>Status</th><th>Scenarios</th><th>Evidence (message IDs)</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -139,8 +149,98 @@ function certificateHtml(report: FdReport): string {
     ${reasons}`;
 }
 
+function planHtml(report: FdReport): string {
+  const c = report.certification;
+  if (!c) return `<p class="muted">No certification plan: ${esc(report.error ?? "the run could not be judged")}.</p>`;
+  const d = c.declaration;
+  const declaration =
+    d.source === "default"
+      ? `<p><strong>Declaration:</strong> the session carries no capability declaration (<code>capabilityDeclaration</code>), so certification assumes <strong>BOOKING only</strong>.</p>`
+      : `<p><strong>Declaration:</strong> from the session${d.problem ? "" : ":"} <code>${esc(JSON.stringify(d.declaration))}</code></p>`;
+  const problem = d.problem ? `<p class="error">${esc(d.problem)}; the plan below is for BOOKING only, and the certificate is refused.</p>` : "";
+  const plan = c.plan;
+  if (!plan) return `${declaration}${problem}<p class="error">${esc(c.planError ?? "the certification plan could not be computed")}</p>`;
+
+  const flowRows = c.flows
+    .map(
+      (f) => `<tr>
+        <td><code>${esc(f.planFlowId)}</code></td>
+        <td>${f.sessionFlowId ? `<code>${esc(f.sessionFlowId)}</code>` : `<span class="muted">none</span>`}</td>
+        <td>${verdictBadge(f.status)}</td>
+        <td>${f.verdict ? verdictBadge(f.verdict) : ""}</td>
+      </tr>`
+    )
+    .join("");
+  const run = c.flows.filter((f) => f.status === "JUDGED").length;
+  const gapRows = plan.gapDetails
+    .map(
+      (g) => `<tr>
+        <td><code>${esc(g.requirementId)}</code></td>
+        <td>${g.actions.map((a) => `<code>${esc(a)}</code>`).join(" ")}</td>
+        <td>${g.scenarios.length > 0 ? esc(g.scenarios.join(", ")) : `<span class="muted">none in the catalogue</span>`}</td>
+      </tr>`
+    )
+    .join("");
+  const notRun = plan.notRun.map((s) => `scenario ${s.n}: ${s.coverage}${s.dependsOn ? ` (waits for spec change ${s.dependsOn.join(", ")})` : ""}${s.missingFlows ? ` (flow ${s.missingFlows.join(", ")} not available)` : ""}`);
+  const blockers = [...c.blockers, ...(report.sla?.blockers ?? [])];
+  return `${declaration}${problem}
+    <p>Role <strong>${esc(plan.role)}</strong>, action groups <strong>${esc(plan.actionGroups.join(", "))}</strong>: ${plan.requirementIds.length} requirement IDs in scope, ${plan.covered.length} covered by a runnable flow, ${plan.gaps.length} gap(s). Plan certifiable: ${plan.certifiable ? badge("yes", "pass") : badge("no", "fail")}</p>
+    <div class="section-title">Flows: ${run} of ${c.flows.length} required flows run and judged</div>
+    <table><thead><tr><th>Plan flow</th><th>Session flow</th><th>Status</th><th>Verdict</th></tr></thead><tbody>${flowRows || `<tr><td colspan="4" class="muted">The plan lists no flow.</td></tr>`}</tbody></table>
+    <div class="section-title">Gaps: in-scope requirements no runnable flow covers</div>
+    ${gapRows ? `<table><thead><tr><th>Requirement</th><th>Actions citing it</th><th>Scenarios that would cover it</th></tr></thead><tbody>${gapRows}</tbody></table>` : `<p class="ok">No gap.</p>`}
+    <div class="section-title">Blockers (${blockers.length})</div>
+    ${list(blockers, `<p class="ok">No blocker.</p>`)}
+    <details><summary>Scenarios: ${plan.runnable.length} run by the flows, ${plan.edge.length} checked on every message, ${plan.notRun.length} not run yet, ${plan.outOfScope.length} out of scope</summary>
+      <p>Run by the flows: ${esc(plan.runnable.join(", ") || "none")}. Checked on every message: ${esc(plan.edge.join(", ") || "none")}.</p>
+      ${notRun.length > 0 ? `<div class="muted">Not run yet:</div>${list(notRun)}` : ""}
+      ${plan.outOfScope.length > 0 ? `<div class="muted">Out of scope:</div>${list(plan.outOfScope.map((o) => `scenario ${o.n}: ${o.reason}`))}` : ""}
+    </details>`;
+}
+
+function slaHtml(report: FdReport): string {
+  const sla = report.sla;
+  if (!sla) return `<p class="muted">No SLA scores: ${esc(report.error ?? "the run could not be judged")}.</p>`;
+  const answerRows = sla.answerTimes
+    .map(
+      (r) => `<tr class="${r.verdict === "PASS" || r.verdict === "NO_SLA" ? "" : "row-fail"}">
+        <td><code>${esc(r.action)}</code></td>
+        <td>${esc(r.sla ?? "")}${r.proposed ? ` <span class="muted">(proposed)</span>` : ""}</td>
+        <td>${esc(r.n)} / ${esc(sla.minSamples)}${r.untimed > 0 ? `<div class="muted">${esc(r.untimed)} untimed</div>` : ""}</td>
+        <td>${r.observedMs === null ? "" : `${esc(r.observedMs)} ms`}</td>
+        <td>${r.limitMs === null ? "" : `${esc(r.limitMs)} ms`}</td>
+        <td>${verdictBadge(r.verdict)}</td>
+        <td>${r.needed > 0 ? `${esc(r.needed)} more` : ""}</td>
+      </tr>`
+    )
+    .join("");
+  const deadlineRows = sla.deadlines
+    .map(
+      (r) => `<tr class="${r.verdict === "PASS" ? "" : "row-fail"}">
+        <td>${esc(r.flowId)}</td>
+        <td><code>${esc(r.request)}</code><div class="muted">${esc(r.messageId)}</div></td>
+        <td><code>${esc(r.callback)}</code></td>
+        <td>${r.elapsedMs === null ? "none" : `${esc(r.elapsedMs)} ms`}</td>
+        <td>${r.deadline ? `${esc(r.deadline.text)} <span class="muted">(${esc(r.deadline.source)})</span>` : ""}</td>
+        <td>${verdictBadge(r.verdict)}</td>
+        <td>${esc(r.detail)}</td>
+      </tr>`
+    )
+    .join("");
+  return `<p>Only what the NP answers is scored. Answer times: nearest-rank percentile over at least <strong>${esc(sla.minSamples)}</strong> timed answers per action (env <code>FD_SLA_MIN_SAMPLES</code>); fewer is INSUFFICIENT_SAMPLES, which refuses the certificate. SLAs certifiable: ${sla.certifiable ? badge("yes", "pass") : badge("no", "fail")}</p>
+    ${sla.minSamplesNote ? `<p class="error">${esc(sla.minSamplesNote)}</p>` : ""}
+    ${sla.error ? `<p class="error">${esc(sla.error)}</p>` : ""}
+    <div class="section-title">Answer times (SYNC routes the NP answers)</div>
+    ${answerRows ? `<table><thead><tr><th>Action</th><th>SLA</th><th>Samples</th><th>Observed</th><th>Limit</th><th>Verdict</th><th>Needed</th></tr></thead><tbody>${answerRows}</tbody></table>` : `<p class="muted">No SYNC route the NP answers is in scope with an answer-time SLA.</p>`}
+    <div class="section-title">Callback deadlines (callbacks the NP owed)</div>
+    ${deadlineRows ? `<table><thead><tr><th>Flow</th><th>Request</th><th>Callback</th><th>Elapsed</th><th>Deadline</th><th>Verdict</th><th>Detail</th></tr></thead><tbody>${deadlineRows}</tbody></table>` : `<p class="muted">The NP owed no callback in this run.</p>`}
+    <details><summary>Known biases</summary>${list(sla.biases)}</details>`;
+}
+
 function rulesLegend(): string {
   return `<details><summary>Judge rules</summary><ul>${Object.entries(JUDGE_RULES)
+    .map(([rule, text]) => `<li><code>${esc(rule)}</code>: ${esc(text)}</li>`)
+    .join("")}</ul><p class="muted">Certification and SLA rules, on the run as a whole (they cite no requirement ID, so no waiver covers them):</p><ul>${Object.entries({ ...CERTIFICATION_RULES, ...SLA_RULES })
     .map(([rule, text]) => `<li><code>${esc(rule)}</code>: ${esc(text)}</li>`)
     .join("")}</ul><p class="muted">Every other rule is the engine's (@ondc/fd-contract ENVELOPE_RULES and JOURNEY_RULES).</p></details>`;
 }
@@ -218,6 +318,14 @@ export function generateFdHTMLReport(report: FdReport): { html: string; flowResu
   <div class="card">
     <div class="section-title">Certificate</div>
     ${certificateHtml(report)}
+  </div>
+  <div class="card">
+    <div class="section-title">Certification plan</div>
+    ${planHtml(report)}
+  </div>
+  <div class="card">
+    <div class="section-title">SLA</div>
+    ${slaHtml(report)}
   </div>
   ${report.flows.map(flowCard).join("")}
   <div class="card">
