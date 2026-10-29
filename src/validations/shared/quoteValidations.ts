@@ -131,7 +131,11 @@ export function validateQuote(
           quote.price.value
         )} does not match the breakup total ${totalBreakup}`
       );
-      testResults.passed.push("Quote price matches breakup total");
+      testResults.passed.push(
+        `Quote price ${parseFloat(
+          quote.price.value
+        )} matches the breakup total ${totalBreakup}`
+      );
     } catch (error: any) {
       testResults.failed.push(error.message);
     }
