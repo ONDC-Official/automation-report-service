@@ -137,13 +137,15 @@ export class Session {
   private record(action: string, sender: "NP" | "WORKBENCH", request: any, answer: { body: any; status: number } | undefined, rest: { method: string; path: string; params: Record<string, string> }): string {
     this.t += 1000;
     const payloadId = `p-${++this.n}`;
-    const headers: Record<string, string[]> = { "X-Pwb-Fd-Route": [action], "X-Pwb-Fd-Path-Params": [JSON.stringify(rest.params)] };
-    if (sender === "NP") {
-      headers["X-Pwb-Fd-Method"] = [rest.method];
-      headers["X-Pwb-Fd-Path"] = [rest.path];
-    } else {
-      headers["X-Pwb-Internal-Key"] = ["internal"];
-    }
+    // As fd-gate records them in both modes: the REST call, and who sent it. The playground's
+    // internal key is stripped in mock mode, so it is never recorded.
+    const headers: Record<string, string[]> = {
+      "X-Pwb-Fd-Route": [action],
+      "X-Pwb-Fd-Path-Params": [JSON.stringify(rest.params)],
+      "X-Pwb-Fd-Method": [rest.method],
+      "X-Pwb-Fd-Path": [rest.path],
+      "X-Pwb-Fd-Origin": [sender === "NP" ? "np" : "workbench"],
+    };
     const p: FdRecordedPayload = {
       payloadId,
       messageId: request?.context?.message_id,

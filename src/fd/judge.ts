@@ -137,7 +137,11 @@ export async function judgeFdFlow(payloads: FdRecordedPayload[], opts: FdJudgeOp
   };
 
   const senderOf = (r: FdRecord, rt: FdRoute): "NP" | "WORKBENCH" => {
-    if (header(r, FD_HEADERS.method)) return "NP"; // fd-gate np mode: the NP called the workbench
+    // fd-gate says who sent it; X-Pwb-Fd-Method alone does not (both modes set it).
+    const origin = header(r, FD_HEADERS.origin)?.toLowerCase();
+    if (origin === "np") return "NP";
+    if (origin === "workbench") return "WORKBENCH";
+    if (header(r, FD_HEADERS.method)) return "NP"; // older recordings: fd-gate np mode
     if (header(r, FD_HEADERS.internalKey)) return "WORKBENCH"; // the mock's call through mock/
     return rt.caller === npRole ? "NP" : "WORKBENCH";
   };
