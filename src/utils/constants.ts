@@ -174,6 +174,10 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1",
   // "ONDC:FIS14:2.1.0"
+  // FD is judged by the FD module (src/fd), never by the Beckn validators or Pramaan;
+  // reportService routes every ONDC:FIS14:FD session there and fails closed for an FD
+  // version that is not listed here.
+  "ONDC:FIS14:FD:0.1.4",
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases

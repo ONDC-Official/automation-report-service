@@ -7,6 +7,9 @@ import logger from "@ondc/automation-logger";
 import { DOMAINS_WITH_VERSION, ENABLED_DOMAINS, ENABLED_USECASES, typeMapping } from "../utils/constants";
 import axios from "axios";
 import { generateTestsFromPayloads } from "../utils/payloadUtils";
+import { isFdDomain } from "../fd/constants";
+import { generateFdReport } from "../fd/report";
+import { generateFdHTMLReport } from "../templates/generateFdReport";
 
 export class ReportService {
   async generate(
@@ -56,6 +59,24 @@ export class ReportService {
 
       // Check if domain is not in enabled domains - use Pramaan report
       const domainVersionKey = sessionDetails.domain === DOMAINS_WITH_VERSION.FIS13 && sessionDetails.version === DOMAINS_WITH_VERSION.FIS13_VERSION ? `${sessionDetails.domain}:${sessionDetails.version}:${sessionDetails.usecaseId}` : `${sessionDetails.domain}:${sessionDetails.version}`;
+
+      // FD (ONDC:FIS14:FD) is judged by the FD engine, fail-closed, and never falls back to
+      // Pramaan or the Beckn validators. Beckn sessions do not enter this branch.
+      if (isFdDomain(sessionDetails.domain)) {
+        const fdReport = await generateFdReport({
+          sessionId,
+          sessionDetails,
+          flows,
+          currentStates,
+          flowMap,
+          requestedFlows,
+          enabled: ENABLED_DOMAINS.includes(domainVersionKey),
+        });
+        const htmlReport = generateFdHTMLReport(fdReport);
+        logger.info("FD flow results", JSON.stringify(htmlReport.flowResults));
+        this.saveReportToDB(sessionId, htmlReport.html, userId, flow_summary, htmlReport.flowResults);
+        return htmlReport;
+      }
 
       if (!ENABLED_DOMAINS.includes(domainVersionKey)) {
         return await this.checkPramaanReport(sessionDetails, sessionId, flowIdToPayloadIdsMap, userId, flow_summary);
