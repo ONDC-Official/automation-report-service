@@ -1,5 +1,6 @@
 import { TestResult,Validation } from "../../types/payload";
 import Joi from "joi";
+import { FD_DOMAIN, isFdDomain } from "../../fd/constants";
 
 // Default ACK/NACK schema (used when a schema isn't provided)
 const defaultAckSchema = Joi.object({
@@ -79,11 +80,58 @@ const defaultAckSchema = Joi.object({
   }),
 });
 
+/**
+ * FD (ONDC:FIS14:FD) acknowledgement, per the FD spec's `Ack`: `{context, message: {ack}, error?}`,
+ * no `fdEnvelope`. The Beckn default above cannot read it: its domain pattern
+ * `^ONDC:[A-Z0-9]+$` rejects a domain with two colons, and its context is Beckn's (city,
+ * core_version, Beckn actions). On a NACK the context may be the very context being rejected,
+ * so only an ACK's context is checked. FD acknowledgements are judged in full by the FD engine
+ * (src/fd); this schema only keeps the shared helper from misreading one.
+ */
+const fdAckContextSchema = Joi.object({
+  domain: Joi.string().valid(FD_DOMAIN).required(),
+  location: Joi.object().required(),
+  version: Joi.string().pattern(/^\d+(\.\d+)+$/).required(),
+  action: Joi.string().pattern(/^[a-z][a-z0-9_]*$/).required(),
+  bap_id: Joi.string().required(),
+  bap_uri: Joi.string().uri().required(),
+  bpp_id: Joi.string(),
+  bpp_uri: Joi.string().uri(),
+  transaction_id: Joi.string().uuid().required(),
+  message_id: Joi.string().uuid().required(),
+  timestamp: Joi.string().isoDate().required(),
+  ttl: Joi.string().required(),
+}).and("bpp_id", "bpp_uri");
+
+export const fdAckSchema = Joi.object({
+  context: Joi.when(Joi.ref("message.ack.status"), {
+    is: "NACK",
+    then: Joi.object().required(),
+    otherwise: fdAckContextSchema.required(),
+  }),
+  message: Joi.object({
+    ack: Joi.object({
+      status: Joi.string().valid("ACK", "NACK").required(),
+    }).required(),
+  }).required(),
+  error: Joi.when(Joi.ref("message.ack.status"), {
+    is: "NACK",
+    then: Joi.object({
+      code: Joi.string().required(),
+      message: Joi.string().required(),
+    }).unknown(true).required(),
+    otherwise: Joi.forbidden(),
+  }),
+});
+
 export const validateJsonResponse = (
   jsonResponse: any,
   schema?: Joi.ObjectSchema<any>
 ) => {
-  const effectiveSchema = schema ?? defaultAckSchema;
+  // FD only: a response whose context names the FD domain is read with the FD schema. Every
+  // other response (all of Beckn) still gets the Beckn default, unchanged.
+  const effectiveSchema =
+    schema ?? (isFdDomain(jsonResponse?.context?.domain) ? fdAckSchema : defaultAckSchema);
   const { error } = effectiveSchema.validate(jsonResponse, { abortEarly: false });
   return {
     isValid: !error,
