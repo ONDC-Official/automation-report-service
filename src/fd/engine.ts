@@ -154,7 +154,7 @@ export interface FdCertificationPlan {
   actions: string[];
   /** Every requirement ID in scope. Coverage and the certificate cover exactly these. */
   requirementIds: string[];
-  /** The flows to run (engine ids: `fd_booking`, `fd_scn_<n>`). */
+  /** The flows to run, by the spec branch's flow ids (the engine's SCENARIO_FLOW_IDS). */
   flows: string[];
   missingFlows: string[];
   scenarios: number[];

@@ -164,8 +164,7 @@ function planHtml(report: FdReport): string {
   const flowRows = c.flows
     .map(
       (f) => `<tr>
-        <td><code>${esc(f.planFlowId)}</code></td>
-        <td>${f.sessionFlowId ? `<code>${esc(f.sessionFlowId)}</code>` : `<span class="muted">none</span>`}</td>
+        <td><code>${esc(f.flowId)}</code></td>
         <td>${verdictBadge(f.status)}</td>
         <td>${f.verdict ? verdictBadge(f.verdict) : ""}</td>
       </tr>`
@@ -186,7 +185,7 @@ function planHtml(report: FdReport): string {
   return `${declaration}${problem}
     <p>Role <strong>${esc(plan.role)}</strong>, action groups <strong>${esc(plan.actionGroups.join(", "))}</strong>: ${plan.requirementIds.length} requirement IDs in scope, ${plan.covered.length} covered by a runnable flow, ${plan.gaps.length} gap(s). Plan certifiable: ${plan.certifiable ? badge("yes", "pass") : badge("no", "fail")}</p>
     <div class="section-title">Flows: ${run} of ${c.flows.length} required flows run and judged</div>
-    <table><thead><tr><th>Plan flow</th><th>Session flow</th><th>Status</th><th>Verdict</th></tr></thead><tbody>${flowRows || `<tr><td colspan="4" class="muted">The plan lists no flow.</td></tr>`}</tbody></table>
+    <table><thead><tr><th>Flow</th><th>Status</th><th>Verdict</th></tr></thead><tbody>${flowRows || `<tr><td colspan="3" class="muted">The plan lists no flow.</td></tr>`}</tbody></table>
     <div class="section-title">Gaps: in-scope requirements no runnable flow covers</div>
     ${gapRows ? `<table><thead><tr><th>Requirement</th><th>Actions citing it</th><th>Scenarios that would cover it</th></tr></thead><tbody>${gapRows}</tbody></table>` : `<p class="ok">No gap.</p>`}
     <div class="section-title">Blockers (${blockers.length})</div>

@@ -11,13 +11,13 @@
  * - Coverage and the certificate cover exactly the plan's `requirementIds`.
  * - A full run: every flow the plan lists (`flows`, and `missingFlows`, those a runnable scenario
  *   needs but the session's configuration lacks) was started in the session (it has a
- *   transaction in flowMap) and judged in this report. A plan flow `fd_scn_<n>` is met by the session flow of
- *   that id or of its alias (FD_SCENARIO_FLOW_ALIASES).
+ *   transaction in flowMap) and judged in this report. The plan names flows by the spec branch's
+ *   own flow ids (the engine's SCENARIO_FLOW_IDS), so a plan flow is the session flow of that id.
  * - Fail closed: every plan blocker (gaps, missing flows, declaration problems), every plan flow
  *   that was not run, and an unreadable declaration become findings of the run summary, with no
  *   requirement ID, so automation-db's issuance rule refuses them and no waiver can cover them.
  */
-import { FD_DECLARATION_KEY, FD_DEFAULT_DECLARATION, FdParticipantRole, planFlowIdOf, sessionFlowIdsFor } from "./constants";
+import { FD_DECLARATION_KEY, FD_DEFAULT_DECLARATION, FdParticipantRole } from "./constants";
 import { FdCapabilityDeclaration, FdCertificationPlan, FdJudgeKit } from "./engine";
 import { FdFlowVerdict } from "./judge";
 import { isRecord } from "./recorded";
@@ -51,10 +51,8 @@ export interface FdDeclarationInfo {
 export type FdPlanFlowStatus = "JUDGED" | "NOT_STARTED" | "NOT_IN_REPORT" | "NOT_IN_SESSION";
 
 export interface FdPlanFlow {
-  /** The plan's flow id (`fd_booking`, `fd_scn_<n>`). */
-  planFlowId: string;
-  /** The session flow that ran it. */
-  sessionFlowId?: string;
+  /** The plan's flow id, which is the session's (`fd_booking`, `fd_stale_version`, …). */
+  flowId: string;
   status: FdPlanFlowStatus;
   verdict?: "PASS" | "FAIL";
 }
@@ -64,7 +62,7 @@ export interface FdCertificationScope {
   plan?: FdCertificationPlan;
   /** The plan could not be computed. */
   planError?: string;
-  /** The flow ids the session's configuration has, as the plan names them (its `availableFlows`). */
+  /** The flow ids the session's configuration has (the plan's `availableFlows`). */
   availableFlows?: string[];
   flows: FdPlanFlow[];
   /** What coverage and the certificate cover. */
@@ -142,9 +140,9 @@ export function certificationScope(
   };
   if (declaration.problem) block("certification.declaration", `declaration: ${declaration.problem}`);
 
-  // The flows the deployment has, as the plan names them.
+  // The flows the deployment has.
   const configured = isRecord(input.sessionDetails?.flowConfigs) ? Object.keys(input.sessionDetails.flowConfigs) : [];
-  const availableFlows = configured.length > 0 ? [...new Set(configured.map(planFlowIdOf))].sort() : undefined;
+  const availableFlows = configured.length > 0 ? [...configured].sort() : undefined;
 
   let plan: FdCertificationPlan | undefined;
   let planError: string | undefined;
@@ -161,19 +159,13 @@ export function certificationScope(
   const known = new Set([...configured, ...Object.keys(input.flowMap ?? {}), ...input.requestedFlows]);
   // The plan's flows to run, and the ones it needs that the deployment lacks: both are required.
   const required = [...new Set([...(plan?.flows ?? []), ...(plan?.missingFlows ?? [])])].sort();
-  const planFlows: FdPlanFlow[] = required.map((planFlowId) => {
-    const candidates = sessionFlowIdsFor(planFlowId);
-    const inReport = candidates.find((id) => input.requestedFlows.includes(id) && judged.has(id));
-    const started = (id: string) => Boolean(input.flowMap?.[id]);
-    if (inReport && started(inReport)) {
-      return { planFlowId, sessionFlowId: inReport, status: "JUDGED", verdict: judged.get(inReport)!.verdict };
-    }
-    if (inReport) return { planFlowId, sessionFlowId: inReport, status: "NOT_STARTED" };
-    const elsewhere = candidates.find((id) => started(id));
-    if (elsewhere) return { planFlowId, sessionFlowId: elsewhere, status: "NOT_IN_REPORT" };
-    const configuredAs = candidates.find((id) => known.has(id));
-    if (configuredAs) return { planFlowId, sessionFlowId: configuredAs, status: "NOT_STARTED" };
-    return { planFlowId, status: "NOT_IN_SESSION" };
+  const planFlows: FdPlanFlow[] = required.map((flowId) => {
+    const started = Boolean(input.flowMap?.[flowId]);
+    const inReport = input.requestedFlows.includes(flowId) && judged.has(flowId);
+    if (inReport && started) return { flowId, status: "JUDGED", verdict: judged.get(flowId)!.verdict };
+    if (started) return { flowId, status: "NOT_IN_REPORT" };
+    if (inReport || known.has(flowId)) return { flowId, status: "NOT_STARTED" };
+    return { flowId, status: "NOT_IN_SESSION" };
   });
 
   const notFull: string[] = [];
@@ -181,16 +173,14 @@ export function certificationScope(
   if (input.requestedFlows.length === 0) notFull.push("the report has no flow");
   for (const f of planFlows) {
     if (f.status === "JUDGED") continue;
-    const name = f.sessionFlowId && f.sessionFlowId !== f.planFlowId ? `${f.planFlowId} (${f.sessionFlowId})` : f.planFlowId;
     const why =
       f.status === "NOT_STARTED"
         ? "was never started in this session"
         : f.status === "NOT_IN_REPORT"
           ? "ran in this session but is not in this report"
           : "is not a flow of this session";
-    const detail = `flow ${name} ${why}`;
-    notFull.push(detail);
-    block("certification.missing-flow", `the plan needs flow ${name}, which ${why}`);
+    notFull.push(`flow ${f.flowId} ${why}`);
+    block("certification.missing-flow", `the plan needs flow ${f.flowId}, which ${why}`);
   }
 
   return {

@@ -7,7 +7,7 @@ import { setFdContractLoaderForTests } from "../engine";
 import { evaluateIssuance } from "../certificate";
 import { FdReportInput, generateFdReport } from "../report";
 import { generateFdHTMLReport } from "../../templates/generateFdReport";
-import { certificationRun, reportInput, SPEC_TEXT, Session, TABLE, TXN } from "./journey";
+import { BOOKING_PLAN_FLOWS, certificationRun, reportInput, SPEC_TEXT, Session, TABLE, TXN } from "./journey";
 
 const sources = async () => ({ spec: SPEC_TEXT, routes: TABLE });
 
@@ -74,19 +74,13 @@ describe("generateFdReport", () => {
     expect(idn.status).toBe("PASS");
     expect(idn.scenarios).toEqual(["fd_booking"]);
     expect(idn.evidence.length).toBeGreaterThan(0);
-    expect(report.coverage["FD-CON-05"]).toEqual({ status: "NOT_COVERED", scenarios: [], evidence: [] }); // consent_withdraw: a plan gap
+    expect(report.coverage["FD-CON-05"]).toEqual({ status: "NOT_COVERED", scenarios: [], evidence: [] }); // consent_withdraw: its flow is not deployed here
     expect(report.coverage["FD-GRV-01"]).toBeUndefined(); // GRIEVANCE is not declared
     expect(report.coverage["FD-PAR-03"]).toBeUndefined(); // nor is DISCOVERY
     expect(Object.values(report.coverage).some((e) => e.status === "FAIL")).toBe(false);
 
     // The session's configuration has fd_booking only, so the plan's scenario flows are missing.
-    expect(scope.flows.map((f) => [f.planFlowId, f.status])).toEqual([
-      ["fd_booking", "JUDGED"],
-      ["fd_scn_12", "NOT_IN_SESSION"],
-      ["fd_scn_34", "NOT_IN_SESSION"],
-      ["fd_scn_38", "NOT_IN_SESSION"],
-      ["fd_scn_6", "NOT_IN_SESSION"],
-    ]);
+    expect(scope.flows.map((f) => [f.flowId, f.status])).toEqual(BOOKING_PLAN_FLOWS.BAP.map((id) => [id, id === "fd_booking" ? "JUDGED" : "NOT_IN_SESSION"]));
     expect(report.fullRun.full).toBe(false);
 
     // The run summary, as automation-db's POST /certificates expects it.
@@ -211,7 +205,7 @@ describe("the certificate hand-off", () => {
     certifying();
     const post = jest.spyOn(axios, "post").mockResolvedValue({
       status: 201,
-      data: { certificate: { certificateId: "cert-1", status: "REFUSED", verdict: "FAIL" }, reasons: ["FD-CON-05: NOT_COVERED"] },
+      data: { certificate: { certificateId: "cert-1", status: "VALID", verdict: "PASS" }, reasons: [] },
     });
     const sessions = await certificationRun("BAP");
     const report = await generateFdReport(reportInput(sessions), { loadSources: sources, keyLookup: sessions[0]!.keyLookup });
@@ -223,8 +217,8 @@ describe("the certificate hand-off", () => {
     expect(Object.keys(body as object).sort()).toEqual(
       ["coverage", "domain", "findings", "role", "runs", "subscriberId", "tableHash", "toolVersions", "version", "waivers"].sort()
     );
-    expect((body as any).runs).toHaveLength(5);
-    expect(report.certificate).toMatchObject({ sent: true, response: { certificateId: "cert-1", status: "REFUSED", verdict: "FAIL" } });
+    expect((body as any).runs).toHaveLength(8);
+    expect(report.certificate).toMatchObject({ decision: "PASS", sent: true, response: { certificateId: "cert-1", status: "VALID", verdict: "PASS" } });
     expect(generateFdHTMLReport(report).html).toContain("cert-1");
   });
 
@@ -235,7 +229,7 @@ describe("the certificate hand-off", () => {
     const partial = inputFor(session);
     partial.sessionDetails = { ...partial.sessionDetails, flowConfigs: { fd_booking: {}, fd_withdrawal: {} } };
     const report = await generateFdReport(partial, { loadSources: sources, keyLookup: session.keyLookup });
-    const missing = ["fd_scn_12", "fd_scn_34", "fd_scn_38", "fd_scn_6"].map((f) => `flow ${f} is not a flow of this session`);
+    const missing = BOOKING_PLAN_FLOWS.BAP.filter((f) => f !== "fd_booking").map((f) => `flow ${f} is not a flow of this session`);
     expect(report.fullRun).toEqual({ full: false, notFull: missing });
     expect(report.certificate).toMatchObject({ sent: false, notSent: missing });
 

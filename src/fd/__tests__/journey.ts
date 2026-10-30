@@ -37,7 +37,13 @@ export const TXN = "6a0b6b2e-64c4-4c8a-9b2a-3f6f1c2d55aa";
 const START = "2026-09-17T04:48:00.000Z";
 
 /** The booking journey of deposit-journey.md (the engine's own test journey). */
-export const BOOKING_JOURNEY: { action: string; webhook?: boolean; userInputs?: Record<string, unknown> }[] = [
+export interface JourneyStep {
+  action: string;
+  webhook?: boolean;
+  userInputs?: Record<string, unknown>;
+}
+
+export const BOOKING_JOURNEY: JourneyStep[] = [
   { action: "quote_request" },
   { action: "consent_grant" },
   { action: "application_create" },
@@ -291,6 +297,15 @@ export class Session {
     }
     return this;
   }
+
+  /** Runs a journey: requests, and webhooks the issuer sends. */
+  async run(journey: readonly JourneyStep[]): Promise<this> {
+    for (const step of journey) {
+      if (step.webhook) await this.webhook(step.action, step.userInputs ?? {});
+      else await this.request(step.action);
+    }
+    return this;
+  }
 }
 
 // ── A certification run: several recorded flows, one session ───────────────
@@ -298,22 +313,76 @@ export class Session {
 /** The FD spec branch's flows (fd-protocol spec/to_pwb.py), as a session's flowConfigs lists them. */
 export const DEPLOYED_FLOWS = [
   "fd_booking",
+  "fd_cancelled_after_funding",
+  "fd_consent_withdrawn",
+  "fd_document_rejected",
+  "fd_out_of_order",
+  "fd_party_conflict",
+  "fd_quote_expired",
+  "fd_redelivered_booking",
+  "fd_replaced_quote_digest",
   "fd_replayed_request",
   "fd_stale_version",
-  "fd_replaced_quote_digest",
-  "fd_party_conflict",
-  "fd_redelivered_booking",
-  "fd_out_of_order",
-  "fd_quote_expired",
+  "fd_vkyc_window_lapsed",
 ] as const;
 
-/**
- * The session flows that run the BOOKING plan's flows, by NP type: `fd_booking` and the
- * converter's names for the plan's `fd_scn_<n>` flows (FD_SCENARIO_FLOW_ALIASES).
- */
+/** The flows of the BOOKING certification plan, by NP type (the engine's SCENARIO_FLOW_IDS). */
 export const BOOKING_PLAN_FLOWS: Record<"BAP" | "BPP", string[]> = {
-  BAP: ["fd_booking", "fd_quote_expired", "fd_redelivered_booking", "fd_stale_version", "fd_out_of_order"],
-  BPP: ["fd_booking", "fd_stale_version", "fd_replayed_request", "fd_replaced_quote_digest", "fd_party_conflict"],
+  BAP: [
+    "fd_booking",
+    "fd_cancelled_after_funding",
+    "fd_consent_withdrawn",
+    "fd_document_rejected",
+    "fd_out_of_order",
+    "fd_quote_expired",
+    "fd_redelivered_booking",
+    "fd_vkyc_window_lapsed",
+  ],
+  BPP: ["fd_booking", "fd_cancelled_after_funding", "fd_consent_withdrawn", "fd_party_conflict", "fd_replaced_quote_digest", "fd_replayed_request", "fd_stale_version"],
+};
+
+const until = (action: string): JourneyStep[] => BOOKING_JOURNEY.slice(0, BOOKING_JOURNEY.findIndex((s) => s.action === action) + 1);
+const stateChange = (state: string): JourneyStep => ({ action: "on_application_state_change", webhook: true, userInputs: { state } });
+const webhook = (action: string): JourneyStep => ({ action, webhook: true });
+
+/**
+ * The journeys of the flows that run what booking does not (the engine's own two-sided tests,
+ * test/engine.gaps.test.ts): an issuer-raised action and its correction (8), a lapsed VKYC
+ * window refunded (11), a cancellation after funding refunded (101), consent withdrawn after
+ * booking (102). Every other flow is recorded as the booking journey.
+ */
+export const SCENARIO_JOURNEYS: Readonly<Record<string, readonly JourneyStep[]>> = {
+  fd_document_rejected: [
+    ...until("kyc_initiate"),
+    webhook("on_action_required"),
+    { action: "party_submit" }, // the correction (isCorrection)
+    webhook("on_kyc_status"),
+    { action: "account_link" },
+    { action: "nominee_register" },
+    { action: "application_confirm" },
+    { action: "payment_instruct" },
+    { action: "on_payment_status", webhook: true, userInputs: { paymentState: "REALISED" } },
+    webhook("on_deposit_booked"),
+    { action: "application_read" },
+  ],
+  fd_vkyc_window_lapsed: [
+    ...until("payment_report"),
+    stateChange("VERIFICATION_PENDING"),
+    webhook("on_action_required"),
+    stateChange("REFUND_PENDING"),
+    webhook("on_refund_status"),
+    { action: "payment_read" },
+    webhook("on_refund_status"),
+  ],
+  fd_cancelled_after_funding: [
+    ...until("payment_report"),
+    stateChange("VERIFICATION_PENDING"),
+    webhook("on_action_required"),
+    { action: "application_cancel" },
+    webhook("on_refund_status"),
+    { action: "payment_read" },
+  ],
+  fd_consent_withdrawn: [...until("on_deposit_booked"), { action: "consent_withdraw" }],
 };
 
 /** The SYNC routes with an answer-time SLA that the issuer answers in the BOOKING plan. */
@@ -328,10 +397,11 @@ export interface RunOptions {
 }
 
 /**
- * Records every flow of the BOOKING plan for `npType` as its own transaction. Each flow is the
- * booking journey: the judge replays what was recorded, whatever the flow is called, so this is
- * enough to judge, cover and time a run (the scenarios' own steps are tested in the engine and
- * the end-to-end suites). An issuer run's first flow repeats the SLA'd reads and quotes.
+ * Records every flow of the BOOKING plan for `npType` as its own transaction: the scenario's
+ * journey where it runs actions booking does not (SCENARIO_JOURNEYS), else the booking journey.
+ * The judge replays what was recorded, whatever the flow is called, so this judges, covers and
+ * times a run; the M6 scenarios' deliberate deviations are tested in the engine and the
+ * end-to-end suites. An issuer run's first flow repeats the SLA'd reads and quotes.
  */
 export async function certificationRun(npType: "BAP" | "BPP", opts: RunOptions = {}): Promise<Session[]> {
   const sessions: Session[] = [];
@@ -347,7 +417,10 @@ export async function certificationRun(npType: "BAP" | "BPP", opts: RunOptions =
     if (opts.durationMs) sessionOpts.durationMs = opts.durationMs;
     const first = sessions[0];
     if (first) sessionOpts.bankKey = { seed: first.bankSeed, publicKey: first.publicKey };
-    const session = await (await Session.create(npType, sessionOpts)).book();
+    const session = await Session.create(npType, sessionOpts);
+    const journey = SCENARIO_JOURNEYS[flowId];
+    if (journey) await session.run(journey);
+    else await session.book();
     if (npType === "BPP" && i === 0) await session.repeat(ISSUER_SLA_ACTIONS, opts.samples ?? 20);
     sessions.push(session);
   }

@@ -179,7 +179,7 @@ export async function generateFdReport(input: FdReportInput, deps: FdReportDeps 
     flows: report.flows.map((f) => ({ flowId: f.flowId, verdict: f.verdict, findings: f.findings.length })),
     certification: {
       declaration: scope.declaration.source,
-      planFlows: scope.flows.map((f) => `${f.planFlowId}:${f.status}`),
+      planFlows: scope.flows.map((f) => `${f.flowId}:${f.status}`),
       gaps: scope.plan?.gaps.length,
       blockers: scope.blockers.length,
       sla: report.sla.certifiable,

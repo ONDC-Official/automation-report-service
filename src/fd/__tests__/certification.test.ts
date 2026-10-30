@@ -3,10 +3,8 @@
  * plan flow judged, SLA scoring from recorded timings, and a run summary that automation-db's
  * issuance rule passes exactly when the plan is fully covered with no finding.
  *
- * Today's catalogue leaves 11 requirement IDs of a BOOKING-only plan with no runnable flow (plan
- * gaps), so no real BOOKING run can be VALID yet. The VALID cases use the engine's own plan with
- * its gaps closed (`gapFree`), as a catalogue that covered BOOKING would give; one test pins the
- * real plan's refusal.
+ * The engine's BOOKING plan has no gaps for either role, so the VALID cases use the real plan.
+ * Gaps are shown refusing a run through a plan override (`withGaps`).
  */
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -17,7 +15,7 @@ import { FdParticipantRole } from "../constants";
 import { declarationOf } from "../plan";
 import { FdReport, FdReportDeps, generateFdReport } from "../report";
 import { generateFdHTMLReport } from "../../templates/generateFdReport";
-import { certificationRun, ISSUER_SLA_ACTIONS, judgeKit, reportInput, Session, SPEC_TEXT, TABLE } from "./journey";
+import { BOOKING_PLAN_FLOWS, certificationRun, ISSUER_SLA_ACTIONS, judgeKit, reportInput, Session, SPEC_TEXT, TABLE } from "./journey";
 
 const sources = async () => ({ spec: SPEC_TEXT, routes: TABLE });
 
@@ -26,17 +24,29 @@ beforeAll(() => {
   kit = judgeKit();
 });
 
-/** The engine's plan, with its gaps closed: what a catalogue covering every in-scope requirement gives. */
-function gapFree(plan: FdCertificationPlan): FdCertificationPlan {
-  const blockers = plan.blockers.filter((b) => !b.includes("no runnable flow covers"));
-  return { ...plan, requirementIds: [...plan.covered], gaps: [], gapDetails: [], blockers, certifiable: blockers.length === 0 };
-}
-const gapFreePlan = (role: FdParticipantRole, declaration: FdCapabilityDeclaration, opts: { availableFlows?: readonly string[] }) =>
-  gapFree(kit.certificationPlan(role, declaration, opts));
+/** The engine's plan, as if no runnable flow covered `gaps`: what the catalogue gave before it closed them. */
+const withGaps =
+  (gaps: string[]) =>
+  (role: FdParticipantRole, declaration: FdCapabilityDeclaration, opts: { availableFlows?: readonly string[] }): FdCertificationPlan => {
+    const plan = kit.certificationPlan(role, declaration, opts);
+    const blocker = `${gaps.length} in-scope requirement(s) no runnable flow covers: ${gaps.join(", ")}`;
+    return {
+      ...plan,
+      covered: plan.covered.filter((id) => !gaps.includes(id)),
+      gaps,
+      gapDetails: gaps.map((requirementId) => ({ requirementId, actions: [], scenarios: [] })),
+      blockers: [blocker, ...plan.blockers],
+      certifiable: false,
+    };
+  };
 
 function deps(session: Session, over: Partial<FdReportDeps> = {}): FdReportDeps {
-  return { loadSources: sources, keyLookup: session.keyLookup, planFor: gapFreePlan, ...over };
+  return { loadSources: sources, keyLookup: session.keyLookup, ...over };
 }
+
+/** Callbacks the NP sent: each answers an acknowledged request whose deadline is scored. */
+const npCallbacks = (sessions: Session[]) =>
+  sessions.flatMap((s) => s.payloads).filter((p) => kit.routes.find(String(p.action).toLowerCase())?.kind === "callback").length;
 
 const ENV = ["FD_CERTIFY", "AUTOMATION_DB_BASE_URL", "AUTOMATION_DB_API_KEY", "FD_SLA_MIN_SAMPLES"] as const;
 const saved: Record<string, string | undefined> = {};
@@ -81,14 +91,10 @@ describe("a full BOOKING certification run of the issuer", () => {
     expect(report.flows.map((f) => [f.flowId, f.verdict, f.findings.length])).toEqual(sessions.map((s) => [s.flowId, "PASS", 0]));
     const scope = report.certification!;
     expect(scope.declaration.source).toBe("default");
-    // The plan's fd_scn_<n> flows are met by the converter's flow ids.
-    expect(scope.flows.map((f) => [f.planFlowId, f.sessionFlowId, f.status, f.verdict])).toEqual([
-      ["fd_booking", "fd_booking", "JUDGED", "PASS"],
-      ["fd_scn_34", "fd_stale_version", "JUDGED", "PASS"],
-      ["fd_scn_35", "fd_replayed_request", "JUDGED", "PASS"],
-      ["fd_scn_36", "fd_replaced_quote_digest", "JUDGED", "PASS"],
-      ["fd_scn_37", "fd_party_conflict", "JUDGED", "PASS"],
-    ]);
+    // The real plan: certifiable, no gaps, its flows by the spec branch's ids.
+    expect(scope.plan).toMatchObject({ certifiable: true, gaps: [], blockers: [] });
+    expect(scope.plan!.requirementIds).toHaveLength(65);
+    expect(scope.flows.map((f) => [f.flowId, f.status, f.verdict])).toEqual(BOOKING_PLAN_FLOWS.BPP.map((id) => [id, "JUDGED", "PASS"]));
     expect(scope.blockers).toEqual([]);
     expect(report.fullRun).toEqual({ full: true, notFull: [] });
 
@@ -107,7 +113,8 @@ describe("a full BOOKING certification run of the issuer", () => {
     expect(row(report, "application_read")).toMatchObject({ limitMs: 2000 });
     expect(row(report, "kyc_status_read")).toMatchObject({ limitMs: 5000 });
     // Callback deadlines: every acknowledged request the NP owed a callback for, in every flow.
-    expect(sla.deadlines.length).toBe(9 * sessions.length);
+    expect(sla.deadlines.length).toBe(npCallbacks(sessions));
+    expect(sla.deadlines.map((d) => d.request)).toEqual(expect.arrayContaining(["application_cancel", "consent_withdraw"]));
     expect(sla.deadlines.every((d) => d.verdict === "PASS" && d.elapsedMs === 1000)).toBe(true);
     expect(sla.deadlines.find((d) => d.request === "eligibility_check")!.deadline).toMatchObject({ source: "sla", ms: 30000 });
     expect(sla.deadlines.find((d) => d.request === "application_create")!.deadline).toMatchObject({ source: "ttl", text: "PT30S" });
@@ -124,25 +131,40 @@ describe("a full BOOKING certification run of the issuer", () => {
     fixture("fd-run-summary-valid.json", report);
 
     const { html } = generateFdHTMLReport(report);
-    expect(html).toContain("5 of 5 required flows run and judged");
-    expect(html).toContain("fd_stale_version");
+    expect(html).toContain("7 of 7 required flows run and judged");
+    expect(html).toContain("fd_cancelled_after_funding");
     expect(html).toContain("Answer times");
     expect(html).toContain("kyc_status_read");
   });
 
-  it("with today's plan, its gaps refuse it: 11 BOOKING requirements no runnable flow covers", async () => {
+  it("plan gaps refuse a run, even one that exercised the requirements", async () => {
     const sessions = await certificationRun("BPP");
-    const report = await generateFdReport(reportInput(sessions), deps(sessions[0]!, { planFor: undefined }));
-    const plan = report.certification!.plan!;
-    expect(plan.gaps).toEqual(["FD-CON-05", "FD-CON-07", "FD-ERR-01", "FD-ERR-04", "FD-ERR-05", "FD-JRN-04", "FD-REF-01", "FD-REF-02", "FD-REF-03", "FD-STA-01", "FD-STA-02"]);
+    const gaps = ["FD-REF-01", "FD-REF-02", "FD-REF-03"];
+    const report = await generateFdReport(reportInput(sessions), deps(sessions[0]!, { planFor: withGaps(gaps) }));
+    expect(report.verdict).toBe("PASS");
     expect(report.fullRun.full).toBe(true);
-    for (const id of plan.gaps) expect(report.coverage[id]?.status).toBe("NOT_COVERED");
-    expect(rules(report)).toEqual(["certification.plan"]);
+    expect(report.certification!.plan!.gaps).toEqual(gaps);
+    // The run did exercise them; the plan says no runnable flow covers them, which blocks.
+    for (const id of gaps) expect(report.coverage[id]?.status).toBe("PASS");
+    expect(report.summary!.findings).toEqual([
+      { requirementIds: [], rule: "certification.plan", detail: "plan: 3 in-scope requirement(s) no runnable flow covers: FD-REF-01, FD-REF-02, FD-REF-03" },
+    ]);
+    expect(evaluateIssuance(report.summary!)).toEqual({ decision: "REFUSED", reasons: ["finding 0 (certification.plan): cites no requirement ID, so no waiver can cover it"] });
+    expect(generateFdHTMLReport(report).html).toContain("Scenarios that would cover it");
+  });
+
+  it("plan gaps a run never exercised are NOT_COVERED as well", async () => {
+    const session = await (await Session.create("BPP")).book();
+    const input = reportInput([session]);
+    input.sessionDetails.flowConfigs = { fd_booking: {} }; // a deployment with no scenario flow
+    const report = await generateFdReport(input, deps(session));
+    const plan = report.certification!.plan!;
+    expect(plan.missingFlows).toEqual(BOOKING_PLAN_FLOWS.BPP.filter((f) => f !== "fd_booking"));
+    expect(plan.gaps).toEqual(expect.arrayContaining(["FD-CON-05", "FD-JRN-04", "FD-REF-01"]));
+    for (const id of ["FD-CON-05", "FD-JRN-04", "FD-REF-01"]) expect(report.coverage[id]?.status).toBe("NOT_COVERED");
     const decision = evaluateIssuance(report.summary!);
     expect(decision.decision).toBe("REFUSED");
     expect(decision.reasons).toContain("FD-REF-01: NOT_COVERED");
-    expect(decision.reasons.some((r) => r.includes("certification.plan") && r.includes("cites no requirement ID"))).toBe(true);
-    expect(generateFdHTMLReport(report).html).toContain("Scenarios that would cover it");
   });
 
   it("a missing flow: REFUSED with a blocker, and nothing is posted", async () => {
@@ -151,19 +173,19 @@ describe("a full BOOKING certification run of the issuer", () => {
     const sessions = await certificationRun("BPP", { skip: ["fd_party_conflict"] });
     const report = await generateFdReport(reportInput(sessions), deps(sessions[0]!));
     expect(report.verdict).toBe("PASS"); // every flow that ran passed
-    const missing = report.certification!.flows.find((f) => f.planFlowId === "fd_scn_37")!;
-    expect(missing).toEqual({ planFlowId: "fd_scn_37", sessionFlowId: "fd_party_conflict", status: "NOT_STARTED" });
-    expect(report.certification!.blockers).toEqual(["the plan needs flow fd_scn_37 (fd_party_conflict), which was never started in this session"]);
-    expect(report.fullRun).toEqual({ full: false, notFull: ["flow fd_scn_37 (fd_party_conflict) was never started in this session"] });
+    const missing = report.certification!.flows.find((f) => f.flowId === "fd_party_conflict")!;
+    expect(missing).toEqual({ flowId: "fd_party_conflict", status: "NOT_STARTED" });
+    expect(report.certification!.blockers).toEqual(["the plan needs flow fd_party_conflict, which was never started in this session"]);
+    expect(report.fullRun).toEqual({ full: false, notFull: ["flow fd_party_conflict was never started in this session"] });
 
     expect(report.summary!.findings).toEqual([
-      { requirementIds: [], rule: "certification.missing-flow", detail: "the plan needs flow fd_scn_37 (fd_party_conflict), which was never started in this session" },
+      { requirementIds: [], rule: "certification.missing-flow", detail: "the plan needs flow fd_party_conflict, which was never started in this session" },
     ]);
-    expect(report.certificate).toMatchObject({ decision: "REFUSED", sent: false, notSent: ["flow fd_scn_37 (fd_party_conflict) was never started in this session"] });
+    expect(report.certificate).toMatchObject({ decision: "REFUSED", sent: false, notSent: ["flow fd_party_conflict was never started in this session"] });
     expect(report.certificate!.reasons).toEqual(["finding 0 (certification.missing-flow): cites no requirement ID, so no waiver can cover it"]);
     expect(post).not.toHaveBeenCalled();
     fixture("fd-run-summary-missing-flow.json", report);
-    expect(generateFdHTMLReport(report).html).toContain("4 of 5 required flows run and judged");
+    expect(generateFdHTMLReport(report).html).toContain("6 of 7 required flows run and judged");
   });
 
   it("a slow NP (P95 over the limit): REFUSED", async () => {
@@ -188,20 +210,20 @@ describe("a full BOOKING certification run of the issuer", () => {
   it("too few samples: REFUSED with INSUFFICIENT_SAMPLES, naming how many more each action needs", async () => {
     const sessions = await certificationRun("BPP", { samples: 0 });
     const report = await generateFdReport(reportInput(sessions), deps(sessions[0]!));
-    // Each booking journey asks for one quote and one application read; no flow reads the KYC status.
-    expect(row(report, "quote_request")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", n: 5, needed: 15 });
-    expect(row(report, "application_read")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", n: 5, needed: 15 });
+    // Each of the 7 flows asks for one quote and reads the application once; no flow reads the KYC status.
+    expect(row(report, "quote_request")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", n: 7, needed: 13 });
+    expect(row(report, "application_read")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", n: 7, needed: 13 });
     expect(row(report, "kyc_status_read")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", n: 0, needed: 20 });
     expect(report.summary!.findings.map((f) => f.detail)).toEqual([
-      'application_read: INSUFFICIENT_SAMPLES, 5 of 20 timed answers; 15 more needed (P95 ≤ 2000 ms, "P95 ≤ 2s")',
+      'application_read: INSUFFICIENT_SAMPLES, 7 of 20 timed answers; 13 more needed (P95 ≤ 2000 ms, "P95 ≤ 2s")',
       'kyc_status_read: INSUFFICIENT_SAMPLES, 0 of 20 timed answers; 20 more needed (P95 ≤ 5000 ms, "P95 ≤ 5s")',
-      'quote_request: INSUFFICIENT_SAMPLES, 5 of 20 timed answers; 15 more needed (P95 ≤ 3000 ms, "Response: 3 seconds. Minimum quote validity: 30 minutes (D-12).")',
+      'quote_request: INSUFFICIENT_SAMPLES, 7 of 20 timed answers; 13 more needed (P95 ≤ 3000 ms, "Response: 3 seconds. Minimum quote validity: 30 minutes (D-12).")',
     ]);
     expect(rules(report)).toEqual(["sla.answer-time", "sla.answer-time", "sla.answer-time"]);
     expect(report.certificate!.decision).toBe("REFUSED");
     const { html } = generateFdHTMLReport(report);
     expect(html).toContain("INSUFFICIENT_SAMPLES");
-    expect(html).toContain("15 more");
+    expect(html).toContain("13 more");
   });
 
   it("FD_SLA_MIN_SAMPLES sets the minimum; an unreadable value keeps the default of 20", async () => {
@@ -209,7 +231,7 @@ describe("a full BOOKING certification run of the issuer", () => {
     process.env.FD_SLA_MIN_SAMPLES = "5";
     const lenient = await generateFdReport(reportInput(sessions), deps(sessions[0]!));
     expect(lenient.sla!.minSamples).toBe(5);
-    expect(row(lenient, "quote_request")).toMatchObject({ verdict: "PASS", n: 5 });
+    expect(row(lenient, "quote_request")).toMatchObject({ verdict: "PASS", n: 7 });
     expect(row(lenient, "kyc_status_read")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", needed: 5 });
 
     process.env.FD_SLA_MIN_SAMPLES = "0";
@@ -221,7 +243,7 @@ describe("a full BOOKING certification run of the issuer", () => {
   it("a payload without durationMs is not a sample", async () => {
     const sessions = await certificationRun("BPP", { durationMs: (action, sender) => (action === "application_read" && sender === "WORKBENCH" ? undefined : 40) });
     const report = await generateFdReport(reportInput(sessions), deps(sessions[0]!));
-    expect(row(report, "application_read")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", n: 0, untimed: 25, needed: 20 });
+    expect(row(report, "application_read")).toMatchObject({ verdict: "INSUFFICIENT_SAMPLES", n: 0, untimed: 27, needed: 20 });
     expect(report.certificate!.decision).toBe("REFUSED");
   });
 
@@ -248,13 +270,9 @@ describe("a full BOOKING certification run of the investor app", () => {
   it("is VALID with every plan flow: the app answers no SYNC route and owes no callback, so no SLA binds it", async () => {
     const sessions = await certificationRun("BAP");
     const report = await generateFdReport(reportInput(sessions), deps(sessions[0]!));
-    expect(report.certification!.flows.map((f) => [f.planFlowId, f.sessionFlowId, f.status])).toEqual([
-      ["fd_booking", "fd_booking", "JUDGED"],
-      ["fd_scn_12", "fd_redelivered_booking", "JUDGED"],
-      ["fd_scn_34", "fd_stale_version", "JUDGED"],
-      ["fd_scn_38", "fd_out_of_order", "JUDGED"],
-      ["fd_scn_6", "fd_quote_expired", "JUDGED"],
-    ]);
+    expect(report.certification!.plan).toMatchObject({ certifiable: true, gaps: [] });
+    expect(report.certification!.flows.map((f) => [f.flowId, f.status, f.verdict])).toEqual(BOOKING_PLAN_FLOWS.BAP.map((id) => [id, "JUDGED", "PASS"]));
+    expect(Object.values(report.coverage).every((e) => e.status === "PASS")).toBe(true);
     expect(report.sla).toMatchObject({ answerTimes: [], deadlines: [], certifiable: true });
     expect(report.summary!.findings).toEqual([]);
     expect(evaluateIssuance(report.summary!)).toEqual({ decision: "PASS", reasons: [] });
