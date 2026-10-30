@@ -248,3 +248,15 @@ describe("fail-closed", () => {
     expect(verdict.findings[0]!.requirementIds).toContain("FD-MOD-09");
   });
 });
+
+describe("a refusal the scenario forced (X-Pwb-Fd-Scenario)", () => {
+  it("is the workbench testing the app, not a finding; an unforced refusal still is", async () => {
+    // The workbench, as issuer, refuses the confirm because the step's scenario says so.
+    const forced = await (await Session.create("BAP")).book(
+      { application_confirm: { answerScenario: { expectError: "FD-PRODUCT-0007" } } },
+      "application_confirm",
+    );
+    const verdict = await judged(forced);
+    expect(rules(verdict)).not.toContain("judge.workbench-refused");
+  });
+});

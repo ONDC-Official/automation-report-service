@@ -33,6 +33,8 @@ export const FD_HEADERS = {
   path: "X-Pwb-Fd-Path",
   pathParams: "X-Pwb-Fd-Path-Params",
   replay: "X-Pwb-Fd-Replay",
+  /** The playground's scenario directives (JSON) on a deliberate deviation by the workbench. */
+  scenario: "X-Pwb-Fd-Scenario",
   /** fd-gate: "np" when the participant under test sent it, "workbench" when the mock did. */
   origin: "X-Pwb-Fd-Origin",
   internalKey: "X-Pwb-Internal-Key",

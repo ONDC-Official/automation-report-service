@@ -175,7 +175,7 @@ export class Session {
     return this.npType === "BAP";
   }
 
-  private record(action: string, sender: "NP" | "WORKBENCH", request: any, answer: { body: any; status: number } | undefined, rest: { method: string; path: string; params: Record<string, string> }): string {
+  private record(action: string, sender: "NP" | "WORKBENCH", request: any, answer: { body: any; status: number } | undefined, rest: { method: string; path: string; params: Record<string, string> }, scenarioHeader?: string): string {
     this.t += 1000;
     const payloadId = `p-${++this.n}`;
     // As fd-gate records them in both modes: the REST call, and who sent it. The playground's
@@ -187,6 +187,7 @@ export class Session {
       "X-Pwb-Fd-Path": [rest.path],
       "X-Pwb-Fd-Origin": [sender === "NP" ? "np" : "workbench"],
     };
+    if (scenarioHeader) headers["X-Pwb-Fd-Scenario"] = [scenarioHeader];
     const p: FdRecordedPayload = {
       payloadId: `${this.flowId}-${payloadId}`,
       messageId: request?.context?.message_id,
@@ -254,7 +255,9 @@ export class Session {
     this.appState = (await this.app.observe(this.appState, { body: callback.body, action: callbackAction })).state;
     const cbAck = tweaks.callbackAnswer ? tweaks.callbackAnswer(ackOf(callback.body)) : { body: ackOf(callback.body), status: 200 };
     const issuerSender = this.appIsNp() ? "WORKBENCH" : "NP";
-    this.step(callbackAction, [this.record(callbackAction, issuerSender, callback.body, cbAck, { method: "POST", path: `/${callbackAction}`, params: {} })]);
+    // The playground records a workbench step's scenario directives with the message.
+    const scenarioHeader = issuerSender === "WORKBENCH" && tweaks.answerScenario ? JSON.stringify(tweaks.answerScenario) : undefined;
+    this.step(callbackAction, [this.record(callbackAction, issuerSender, callback.body, cbAck, { method: "POST", path: `/${callbackAction}`, params: {} }, scenarioHeader)]);
   }
 
   /** The issuer sends an unsolicited webhook; the app acknowledges it. */

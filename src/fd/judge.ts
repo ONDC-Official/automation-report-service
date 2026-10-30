@@ -274,7 +274,10 @@ export async function judgeFdFlow(payloads: FdRecordedPayload[], opts: FdJudgeOp
           if (header(record, FD_HEADERS.replay) === "1") message.replay = true;
           state = engine.sent(state, message);
           const refusal = isRecord(record.request.message) ? (record.request.message as Record<string, unknown>).error : undefined;
-          if (rt.kind === "callback" && isRecord(refusal)) {
+          // A refusal the step's scenario forced (X-Pwb-Fd-Scenario expectError, the same code)
+          // is the workbench testing the participant, not refusing it.
+          const forced = scenarioOf(record)?.expectError;
+          if (rt.kind === "callback" && isRecord(refusal) && !(typeof forced === "string" && forced === refusal.code)) {
             judge("judge.workbench-refused", `the workbench refused the NP's ${rt.inReplyTo} on ${action} with ${String(refusal.code ?? "an error without a code")}`, action, record);
           }
 
@@ -451,4 +454,16 @@ function workbenchIdentity(
 function errorText(e: unknown): string {
   if (e instanceof Error) return `${e.name}: ${e.message}`;
   return String(e);
+}
+
+/** The scenario directives recorded on a workbench message (X-Pwb-Fd-Scenario), if any. */
+function scenarioOf(record: FdRecord): Record<string, unknown> | undefined {
+  const raw = header(record, FD_HEADERS.scenario);
+  if (!raw) return undefined;
+  try {
+    const value = JSON.parse(raw);
+    return isRecord(value) ? (value as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
 }
