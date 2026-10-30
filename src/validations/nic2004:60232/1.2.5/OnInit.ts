@@ -27,8 +27,6 @@ export async function checkOnInit(
   const transactionId = context.transaction_id;
   const quote = message?.order?.quote;
 
-
-
   if ("quote" in message.order) {
     try {
       assert.ok(
@@ -83,6 +81,5 @@ export async function checkOnInit(
 
   if (testResults.passed.length < 1 && testResults.failed.length < 1)
     testResults.passed.push(`Validated ${action}`);
-  
   return testResults;
 }
