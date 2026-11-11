@@ -216,7 +216,7 @@ export const ENABLED_DOMAINS: String[] = [
   // "ONDC:RET16:1.2.0",
   // "ONDC:RET16:1.2.5",
   // "ONDC:RET18:1.2.0",
-  // "ONDC:RET18:1.2.5",
+  // "ONDC:RET18:1.2.5"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
