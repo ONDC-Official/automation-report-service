@@ -422,9 +422,29 @@ export async function checkOnConfirmCommon(
     } catch (e: any) { testResults.failed.push(e.message); }
 
     await validateOrderIdConsistency(action, onConfirmOrderId, sessionID, transactionId, "confirm_order_id", testResults);
-    await validateQuoteConsistency(action, onConfirmQuote, sessionID, transactionId, "confirm_quote", testResults);
+    // A surge fee is added by the LSP at on_confirm (documented SURGE_FEE_FLOW: confirm [I1] at 59.00, on_confirm
+    // [I1, I3 surge] at 70.00). Compare on_confirm with confirm/init without the surge item and its breakup lines.
+    const surgeItemIds = new Set<string>([
+        ...(message?.order?.items || [])
+            .filter((it: any) => (it?.tags || []).some((t: any) => t?.code === "type" && (t?.list || []).some((l: any) => l?.code === "type" && l?.value === "surge")))
+            .map((it: any) => it.id),
+        ...(onConfirmQuote?.breakup || [])
+            .filter((b: any) => b?.["@ondc/org/title_type"] === "surge")
+            .map((b: any) => b?.["@ondc/org/item_id"]),
+    ].filter(Boolean));
+    let quoteToCompare = onConfirmQuote;
+    let itemsToCompare = message?.order?.items || [];
+    if (flowId === "SURGE_FEE_FLOW" && surgeItemIds.size > 0 && onConfirmQuote?.price?.value !== undefined) {
+        const surgeTotal = (onConfirmQuote?.breakup || [])
+            .filter((b: any) => surgeItemIds.has(b?.["@ondc/org/item_id"]))
+            .reduce((sum: number, b: any) => sum + (parseFloat(b?.price?.value) || 0), 0);
+        quoteToCompare = { ...onConfirmQuote, price: { ...onConfirmQuote.price, value: (parseFloat(onConfirmQuote.price.value) - surgeTotal).toFixed(2) } };
+        itemsToCompare = itemsToCompare.filter((it: any) => !surgeItemIds.has(it?.id));
+        testResults.passed.push(`Surge item(s) ${[...surgeItemIds].join(",")} (${surgeTotal.toFixed(2)}) excluded from the confirm/init comparison`);
+    }
+    await validateQuoteConsistency(action, quoteToCompare, sessionID, transactionId, "confirm_quote", testResults);
     await validateProviderIdConsistency(action, message?.order?.provider?.id, sessionID, transactionId, "on_search_provider_id", testResults);
-    await validateItemIdsConsistency(action, message?.order?.items || [], sessionID, transactionId, "init_items", testResults);
+    await validateItemIdsConsistency(action, itemsToCompare, sessionID, transactionId, "init_items", testResults);
 
     const deliveryFf = fulfillments.find((f) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
     await validateAndSaveFulfillmentIds(action, fulfillments, sessionID, transactionId, "confirm_delivery_fulfillment_id", "confirm_rto_fulfillment_id", "on_confirm_delivery_fulfillment_id", "on_confirm_rto_fulfillment_id", testResults);
@@ -615,7 +635,8 @@ export async function checkOnCancelCommon(
 
     await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
 
-    if (flowId !== "RTO_FLOW" && flowId !== "BUYER_SIDE_ORDER_CANCELLATION") {
+    // The RTO on_cancel adds RTO charges to the quote, so it is not compared with on_confirm (as for RTO_FLOW).
+    if (flowId !== "RTO_FLOW" && flowId !== "STATIC_OTP_RTO_DELIVERY" && flowId !== "BUYER_SIDE_ORDER_CANCELLATION") {
         await validateQuoteConsistency(action, orderQuote, sessionID, transactionId, "on_confirm_quote", testResults);
     }
 
