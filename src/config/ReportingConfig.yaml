@@ -511,6 +511,73 @@ domains:
             - status
             - on_status
 
+          ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_status
+
+          ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_status
+
+          "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT (W/O search_1 & select)":
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_status
+
+          ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_status
+
+          "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_RJT (W/O search_1 & select)":
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_status
+
           USER_CANCELLATION_FLOW:
             - search
             - on_search
@@ -518,6 +585,18 @@ domains:
             - on_search
             - select
             - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - cancel
+            - on_cancel
+            - cancel
+            - on_cancel
+
+          "USER_CANCELLATION_FLOW (W/O search_1 & select)":
+            - search
+            - on_search
             - init
             - on_init
             - confirm
@@ -543,7 +622,75 @@ domains:
             - cancel
             - on_cancel
 
+          "TECHNICAL_CANCELLATION_FLOW (W/O search_1 & select)":
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - cancel
+            - on_cancel
+
+          PARTIAL_CANCELLATION_FLOW:
+            - search
+            - on_search
+            - search
+            - on_search
+            - select
+            - on_select
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - update
+            - on_update
+
+          PARTIAL_CANCELLATION_FLOW_WITHOUT_SEARCH_ND_SELECT:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - update
+            - on_update
+            - update
+            - on_update
+
+          SELLER_OFFLINE_CANCELLATION_WITHOUT_SEARCH_ND_SELECT:
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - on_cancel
+
+          "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT_WITHOUT_SEARCH_ND_SELECT_WITH_IGM_1_0_0":
+            - search
+            - on_search
+            - init
+            - on_init
+            - confirm
+            - on_confirm
+            - status
+            - on_status
+            - on_status
+            - issue
+            - on_issue
+            - on_issue_status
+            - issue
+
         optional_flows:
+          - PARTIAL_CANCELLATION_FLOW
+          - PARTIAL_CANCELLATION_FLOW_WITHOUT_SEARCH_ND_SELECT
+          - SELLER_OFFLINE_CANCELLATION_WITHOUT_SEARCH_ND_SELECT
+          - "ORDER_TO_CONFIRM_TO_JOURNEY_COMPLETION_SJT_WITHOUT_SEARCH_ND_SELECT_WITH_IGM_1_0_0"
 
         validationModules: "../validations/ONDC:TRV11/validator#validate"
   "nic2004:60232":
