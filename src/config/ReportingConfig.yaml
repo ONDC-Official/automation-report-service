@@ -1062,6 +1062,8 @@ domains:
             - on_status
             - issue
             - on_issue
+            - issue_status
+            - on_issue_status
             - on_issue_status
             - issue
           ORDER_FLOW_EXCHANGE_CUSTOMER_SUPPORT_DETAILS:
@@ -1183,6 +1185,8 @@ domains:
             - on_init
             - confirm
             - on_confirm
+            - update
+            - on_update
             - on_status
             - on_status
             - on_status

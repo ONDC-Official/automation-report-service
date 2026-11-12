@@ -214,8 +214,17 @@ export async function checkOnSearchCommon(
             const fid = item.fulfillment_id;
             const empty = pid === null || pid === undefined || pid === "";
             if (deliveryFfIds.has(fid)) {
-                try { assert.ok(empty, `Item '${iid}' (Delivery ff '${fid}') — parent_item_id must be empty but got '${pid}'`); testResults.passed.push(`parent_item_id correctly empty for Delivery item '${iid}'`); } catch (e: any) { testResults.failed.push(e.message); }
+                // Rate card flows publish time-slab variants as child items of a base Delivery item
+                // (documented on_search for RATE_CARD (P2P): I2 with parent_item_id 'I1', both on fulfillment '1').
+                const rateCardSlab = flowId.startsWith("RATE_CARD") && !empty && deliveryItemIds.has(pid);
+                try { assert.ok(empty || rateCardSlab, `Item '${iid}' (Delivery ff '${fid}') — parent_item_id must be empty but got '${pid}'`); testResults.passed.push(rateCardSlab ? `parent_item_id '${pid}' references a Delivery item for rate-card slab item '${iid}'` : `parent_item_id correctly empty for Delivery item '${iid}'`); } catch (e: any) { testResults.failed.push(e.message); }
             } else if (rtoFfIds.has(fid)) {
+                // Quick commerce publishes its RTO item without a parent (documented on_search for QUICK_COMMERCE_FLOW:
+                // I2 on the RTO fulfillment with parent_item_id ""; its forward fulfillment is type 'Batch', not 'Delivery').
+                if (empty && flowId === "QUICK_COMMERCE_FLOW") {
+                    testResults.passed.push(`parent_item_id empty for RTO item '${iid}' accepted for ${flowId}`);
+                    continue;
+                }
                 try {
                     assert.ok(!empty, `Item '${iid}' (RTO ff '${fid}') — parent_item_id must reference a Delivery item ID`);
                     testResults.passed.push(`parent_item_id '${pid}' correctly references Delivery item for RTO item '${iid}'`);
@@ -619,7 +628,8 @@ export async function checkOnCancelCommon(
     testResults.passed.push("precancel_state tag validation passed");
 
     try {
-        if (flowId === "RTO_FLOW") { assert.ok(orderState === "In-progress", `Order state should be 'In-progress', got '${orderState}'`); }
+        // RTO is not a cancellation of the order: the documented RTO on_cancel (RTO_FLOW and STATIC_OTP_RTO_DELIVERY) has order state In-progress.
+        if (flowId === "RTO_FLOW" || flowId === "STATIC_OTP_RTO_DELIVERY") { assert.ok(orderState === "In-progress", `Order state should be 'In-progress', got '${orderState}'`); }
         else { assert.ok(orderState === "Cancelled", `Order state should be 'Cancelled', got '${orderState}'`); }
         testResults.passed.push(`Order state is ${orderState} validation passed`);
     } catch (e: any) { testResults.failed.push(e.message); }
