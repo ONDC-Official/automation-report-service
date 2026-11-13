@@ -19,6 +19,9 @@ export const actions: String[] = [
   "on_issue",
   "issue_status",
   "on_issue_status",
+  // RSF 2.1.0 (ONDC:NTS10) reconciliation
+  "recon",
+  "on_recon",
   // Non-standard pseudo-action recorded by the mock for ONDC:RET10's
   // Catalog_Rejection_Flow — a real recorded payload (context.action:
   // "catalog_rejection"), not one of Beckn's 20 canonical actions.
@@ -189,6 +192,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.3.0",
   "ONDC:FIS12:SL:2.3.0",
   "ONDC:FIS12:BL:2.3.0",
+  "ONDC:NTS10:2.1.0",
   "ONDC:FIS13:2.0.1",
   "ONDC:FIS13:2.0.0:HEALTH INSURANCE",
   "ONDC:FIS13:2.0.0:MOTOR INSURANCE",
@@ -196,34 +200,36 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS13:2.0.0:TRANSIT INSURANCE",
   "ONDC:FIS13:2.0.0:ACCIDENTAL INSURANCE",
   "ONDC:TRV10:2.1.0",
+  "ONDC:TRV11:2.0.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1",
+  "ONDC:TRV14:2.0.0",
   "ONDC:FIS14:2.1.0",
-  "ONDC:RETeB2B:1.2.5"
-  // "ONDC:RET10:1.2.0",
-  // "ONDC:RET10:1.2.5",
-  // "ONDC:RET11:1.2.0",
-  // "ONDC:RET11:1.2.5",
-  // "ONDC:RET12:1.2.0",
-  // "ONDC:RET12:1.2.5",
-  // "ONDC:RET13:1.2.0",
-  // "ONDC:RET13:1.2.5",
-  // "ONDC:RET14:1.2.0",
-  // "ONDC:RET14:1.2.5",
-  // "ONDC:RET15:1.2.0",
-  // "ONDC:RET15:1.2.5",
-  // "ONDC:RET16:1.2.0",
-  // "ONDC:RET16:1.2.5",
-  // "ONDC:RET18:1.2.0",
-  // "ONDC:RET18:1.2.5"
+  "ONDC:RETeB2B:1.2.5",
+  "ONDC:RET10:1.2.0",
+  "ONDC:RET10:1.2.5",
+  "ONDC:RET11:1.2.0",
+  "ONDC:RET11:1.2.5",
+  "ONDC:RET12:1.2.0",
+  "ONDC:RET12:1.2.5",
+  "ONDC:RET13:1.2.0",
+  "ONDC:RET13:1.2.5",
+  "ONDC:RET14:1.2.0",
+  "ONDC:RET14:1.2.5",
+  "ONDC:RET15:1.2.0",
+  "ONDC:RET15:1.2.5",
+  "ONDC:RET16:1.2.0",
+  "ONDC:RET16:1.2.5",
+  "ONDC:RET18:1.2.0",
+  "ONDC:RET18:1.2.5"
 ];
 
 // Usecase-level enabling: Map of domain:version -> allowed usecases
 // If a domain:version is in ENABLED_DOMAINS but not in this map, all usecases are allowed
 // If present in this map, only listed usecases will use internal validations
 export const ENABLED_USECASES: Record<string, string[]> = {
-  "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
+  "ONDC:TRV11:2.0.0": ["metro", "bus"],  // Metro and Bus enabled for 2.0.0
   "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
   "ONDC:TRV11:2.1.0": ["metro", "bus"],  // Metro and Bus enabled for 2.1.0
 };
@@ -237,6 +243,7 @@ export const DOMAINS = {
   TRV10: "ONDC:TRV10",
   TRV11: "ONDC:TRV11",
   TRV13: "ONDC:TRV13",
+  TRV14: "ONDC:TRV14",
   RET10: "ONDC:RET10"
 };
 
