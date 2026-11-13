@@ -10092,5 +10092,6 @@ domains:
             - recon
             - on_recon
         optional_flows:
+          - RECON_seller_initiated
           - ERROR_on_recon
         validationModules: "../validations/ONDC:NTS10/validator#validate"
