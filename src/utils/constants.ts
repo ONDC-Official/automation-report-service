@@ -19,6 +19,9 @@ export const actions: String[] = [
   "on_issue",
   "issue_status",
   "on_issue_status",
+  // RSF 2.1.0 (ONDC:NTS10) reconciliation
+  "recon",
+  "on_recon",
   // Non-standard pseudo-action recorded by the mock for ONDC:RET10's
   // Catalog_Rejection_Flow — a real recorded payload (context.action:
   // "catalog_rejection"), not one of Beckn's 20 canonical actions.
@@ -189,6 +192,7 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS12:2.3.0",
   "ONDC:FIS12:SL:2.3.0",
   "ONDC:FIS12:BL:2.3.0",
+  "ONDC:NTS10:2.1.0",
   "ONDC:FIS13:2.0.1",
   "ONDC:FIS13:2.0.0:HEALTH INSURANCE",
   "ONDC:FIS13:2.0.0:MOTOR INSURANCE",

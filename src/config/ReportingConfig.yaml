@@ -10072,3 +10072,26 @@ domains:
             - issue
 
         validationModules: "../validations/ONDC:RET18/validator#validate"
+  ONDC:NTS10:
+    versions:
+      "2.1.0":
+        flows:
+          RECON_buyer_initiated:
+            - recon
+            - on_recon
+            - recon
+            - on_recon
+
+          RECON_seller_initiated:
+            - recon
+            - on_recon
+            - recon
+            - on_recon
+
+          ERROR_on_recon:
+            - recon
+            - on_recon
+        optional_flows:
+          - RECON_seller_initiated
+          - ERROR_on_recon
+        validationModules: "../validations/ONDC:NTS10/validator#validate"
