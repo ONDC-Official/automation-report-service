@@ -200,9 +200,11 @@ export const ENABLED_DOMAINS: String[] = [
   "ONDC:FIS13:2.0.0:TRANSIT INSURANCE",
   "ONDC:FIS13:2.0.0:ACCIDENTAL INSURANCE",
   "ONDC:TRV10:2.1.0",
+  "ONDC:TRV11:2.0.0",
   "ONDC:TRV11:2.0.1",
   "ONDC:TRV11:2.1.0",
   "ONDC:TRV13:2.0.1",
+  "ONDC:TRV14:2.0.0",
   "ONDC:FIS14:2.1.0",
   "ONDC:RETeB2B:1.2.5"
   // "ONDC:RET10:1.2.0",
@@ -227,7 +229,7 @@ export const ENABLED_DOMAINS: String[] = [
 // If a domain:version is in ENABLED_DOMAINS but not in this map, all usecases are allowed
 // If present in this map, only listed usecases will use internal validations
 export const ENABLED_USECASES: Record<string, string[]> = {
-  "ONDC:TRV11:2.0.0": ["metro"],  // Only Metro enabled for 2.0.0
+  "ONDC:TRV11:2.0.0": ["metro", "bus"],  // Metro and Bus enabled for 2.0.0
   "ONDC:TRV11:2.0.1": ["metro"],  // Only Metro enabled for 2.0.1, Bus will use Pramaan
   "ONDC:TRV11:2.1.0": ["metro", "bus"],  // Metro and Bus enabled for 2.1.0
 };
@@ -241,6 +243,7 @@ export const DOMAINS = {
   TRV10: "ONDC:TRV10",
   TRV11: "ONDC:TRV11",
   TRV13: "ONDC:TRV13",
+  TRV14: "ONDC:TRV14",
   RET10: "ONDC:RET10"
 };
 
