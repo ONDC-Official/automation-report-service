@@ -91,6 +91,7 @@ export async function checkSearch(
     const endGps = fulfillment?.end?.location?.gps;
     const startAreaCode = fulfillment?.start?.location?.address?.area_code;
     const endAreaCode = fulfillment?.end?.location?.address?.area_code;
+    const startLocationId = fulfillment?.start?.location?.id;
     const categoryId = message?.intent?.category?.id;
     const paymentType = message?.intent?.payment?.type;
     const cityCode = context?.city;
@@ -100,6 +101,7 @@ export async function checkSearch(
     if (endGps) saveData(sessionID, transactionId, "search_end_gps", endGps);
     if (startAreaCode) saveData(sessionID, transactionId, "search_start_area_code", startAreaCode);
     if (endAreaCode) saveData(sessionID, transactionId, "search_end_area_code", endAreaCode);
+    if (startLocationId) saveData(sessionID, transactionId, "search_start_location_id", startLocationId);
     if (categoryId) saveData(sessionID, transactionId, "search_category_id", categoryId);
     if (paymentType) saveData(sessionID, transactionId, "search_payment_type", paymentType);
     if (cityCode) saveData(sessionID, transactionId, "search_city_code", cityCode);

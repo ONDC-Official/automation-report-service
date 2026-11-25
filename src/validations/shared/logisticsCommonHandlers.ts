@@ -199,6 +199,9 @@ export async function checkOnSearchCommon(
         const providerId = provider?.id;
         if (providerId) saveData(sessionID, transactionId, "on_search_provider_id", providerId);
 
+        const providerLocationId = provider?.locations?.[0]?.id;
+        if (providerLocationId) saveData(sessionID, transactionId, "on_search_provider_location_id", providerLocationId);
+
         const items = provider?.items || [];
         const fulfillments = provider?.fulfillments || [];
         const deliveryFf = fulfillments.find((f: any) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
@@ -277,6 +280,36 @@ export async function checkOnInitCommon(
         testResults.passed.push("Delivery charge validation passed");
         try { assert.ok(parseFloat(quote.price.value) === total, `Quote price ${quote.price.value} ≠ breakup total ${total}`); testResults.passed.push("Quote total matches breakup"); } catch (e: any) { testResults.failed.push(e.message); }
 
+        // Compare on_init's quote (per item_id) against on_search's catalog price for that item
+        try {
+            const savedOnSearchItemsForQuote = (await fetchData(sessionID, transactionId, "on_search_items")) as any[] | null;
+            if (savedOnSearchItemsForQuote && savedOnSearchItemsForQuote.length > 0) {
+                const priceByItemId = new Map<string, number>();
+                for (const b of breakup) {
+                    const itemId = b?.["@ondc/org/item_id"];
+                    const pv = b?.price?.value;
+                    if (itemId && pv !== undefined) {
+                        priceByItemId.set(itemId, (priceByItemId.get(itemId) || 0) + parseFloat(pv));
+                    }
+                }
+                for (const onSearchItem of savedOnSearchItemsForQuote) {
+                    const expected = parseFloat(onSearchItem?.price?.value);
+                    const actual = priceByItemId.get(onSearchItem.id);
+                    if (!isNaN(expected) && actual !== undefined) {
+                        try {
+                            assert.ok(
+                                Math.abs(actual - expected) < 0.01,
+                                `on_init quote for item ${onSearchItem.id} (${actual.toFixed(2)}) does not match on_search catalog price (${expected.toFixed(2)})`
+                            );
+                            testResults.passed.push(`on_init quote matches on_search catalog price for item ${onSearchItem.id}`);
+                        } catch (e: any) {
+                            testResults.failed.push(e.message);
+                        }
+                    }
+                }
+            }
+        } catch (e: any) { testResults.failed.push(e.message); }
+
         if (flowId === "CASH_ON_DELIVERY_FLOW") {
             testResults.passed.push("COD breakup validation passed");
         }
@@ -287,13 +320,15 @@ export async function checkOnInitCommon(
         const deliveryFf = ffs.find((f: any) => f.type === "Delivery" || f.type === "FTL" || f.type === "PTL");
         const rtoFf = ffs.find((f: any) => f.type === "RTO");
 
-        const [savedProvider, savedDlvFfId, savedRtoFfId, savedStartGps, savedEndGps, savedItems] = await Promise.all([
+        const [savedProvider, savedDlvFfId, savedRtoFfId, savedStartGps, savedEndGps, savedItems, savedStartLocationId, savedProviderLocationId] = await Promise.all([
             fetchData(sessionID, transactionId, "on_search_provider_id"),
             fetchData(sessionID, transactionId, "on_search_delivery_fulfillment_id"),
             fetchData(sessionID, transactionId, "on_search_rto_fulfillment_id"),
             fetchData(sessionID, transactionId, "search_start_gps"),
             fetchData(sessionID, transactionId, "search_end_gps"),
             fetchData(sessionID, transactionId, "init_items"),
+            fetchData(sessionID, transactionId, "search_start_location_id"),
+            fetchData(sessionID, transactionId, "on_search_provider_location_id"),
         ]);
 
         const onInitProvider = message?.order?.provider?.id;
@@ -309,6 +344,12 @@ export async function checkOnInitCommon(
 
         const onInitEndGps = deliveryFf?.end?.location?.gps;
         if (savedEndGps && onInitEndGps) { try { assert.strictEqual(onInitEndGps, savedEndGps, `End GPS mismatch in on_init`); testResults.passed.push("End GPS matches between search and on_init"); } catch (e: any) { testResults.failed.push(e.message); } }
+
+        const onInitStartLocationId = deliveryFf?.start?.location?.id;
+        if (savedStartLocationId && onInitStartLocationId) { try { assert.strictEqual(onInitStartLocationId, savedStartLocationId, `Start location ID mismatch in on_init: ${onInitStartLocationId} vs ${savedStartLocationId}`); testResults.passed.push("Start location ID matches between search and on_init"); } catch (e: any) { testResults.failed.push(e.message); } }
+
+        const onInitProviderLocationId = message?.order?.provider?.locations?.[0]?.id;
+        if (savedProviderLocationId && onInitProviderLocationId) { try { assert.strictEqual(onInitProviderLocationId, savedProviderLocationId, `Provider location ID mismatch in on_init: ${onInitProviderLocationId} vs ${savedProviderLocationId}`); testResults.passed.push("Provider location ID matches between on_search and on_init"); } catch (e: any) { testResults.failed.push(e.message); } }
 
         const onInitItems: any[] = message?.order?.items || [];
         if (savedItems && (savedItems as any[]).length > 0 && onInitItems.length > 0) {

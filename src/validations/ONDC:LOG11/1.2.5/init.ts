@@ -181,6 +181,88 @@ export async function checkInit(
       }
     }
 
+    // Compare pickup location id from on_search → init
+    const savedStartLocationId = await fetchData(sessionID, transactionId, "search_start_location_id");
+    const initStartLocationId = deliveryFulfillment?.start?.location?.id;
+
+    if (savedStartLocationId && initStartLocationId) {
+      try {
+        assert.strictEqual(
+          initStartLocationId,
+          savedStartLocationId,
+          `Start location ID in init (${initStartLocationId}) does not match search (${savedStartLocationId})`
+        );
+        testResults.passed.push("Start location ID matches between search and init");
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
+    }
+
+    // Compare provider location id from on_search → init
+    const savedProviderLocationId = await fetchData(sessionID, transactionId, "on_search_provider_location_id");
+    const initProviderLocationId = message?.order?.provider?.locations?.[0]?.id;
+
+    if (savedProviderLocationId && initProviderLocationId) {
+      try {
+        assert.strictEqual(
+          initProviderLocationId,
+          savedProviderLocationId,
+          `Provider location ID in init (${initProviderLocationId}) does not match on_search (${savedProviderLocationId})`
+        );
+        testResults.passed.push("Provider location ID matches between on_search and init");
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
+    }
+
+    // Compare item IDs from on_search → init
+    const savedOnSearchItems = await fetchData(sessionID, transactionId, "on_search_items");
+    const initItemsForCompare = message?.order?.items || [];
+
+    if (
+      savedOnSearchItems &&
+      (savedOnSearchItems as any[]).length > 0 &&
+      initItemsForCompare.length > 0
+    ) {
+      const onSearchIds = new Set((savedOnSearchItems as any[]).map((i: any) => i.id));
+      const unknownIds = initItemsForCompare
+        .map((i: any) => i.id)
+        .filter((id: string) => id && !onSearchIds.has(id));
+      try {
+        assert.ok(
+          unknownIds.length === 0,
+          `Item ID(s) in init (${unknownIds.join(", ")}) not present in on_search catalog`
+        );
+        testResults.passed.push("Item IDs in init match on_search catalog");
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
+    }
+
+    // Verify buyer's acceptance of the LSP's static terms (bap_terms.accept_bpp_terms)
+    const orderTags: any[] = message?.order?.tags || [];
+    const bapTermsGroup = orderTags.find((t: any) => t.code === "bap_terms");
+    const acceptBppTerms = bapTermsGroup?.list?.find(
+      (entry: any) => entry.code === "accept_bpp_terms"
+    )?.value;
+
+    if (acceptBppTerms !== undefined) {
+      try {
+        assert.ok(
+          typeof acceptBppTerms === "string" &&
+            ["y", "yes"].includes(acceptBppTerms.toLowerCase()),
+          `order.tags bap_terms.accept_bpp_terms should indicate acceptance ('Y'/'yes'), got '${acceptBppTerms}'`
+        );
+        testResults.passed.push("bap_terms.accept_bpp_terms indicates acceptance of LSP's static terms");
+      } catch (error: any) {
+        logger.error(`Error during ${action} validation: ${error.message}`);
+        testResults.failed.push(error.message);
+      }
+    }
+
     // Save item IDs from init for comparison in on_init
     const items = message?.order?.items || [];
     if (items.length > 0) {
