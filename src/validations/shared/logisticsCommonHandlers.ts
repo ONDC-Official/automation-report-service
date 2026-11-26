@@ -667,7 +667,16 @@ export async function checkOnCancelCommon(
 
     await validateOrderIdConsistency(action, message?.order?.id, sessionID, transactionId, "order_id", testResults);
 
-    if (flowId !== "RTO_FLOW" && flowId !== "BUYER_SIDE_ORDER_CANCELLATION") {
+    // RTO_FLOW/STATIC_OTP_RTO_DELIVERY and BUYER_SIDE_ORDER_CANCELLATION/B2B_ORDER_CANCELLATION
+    // (its P2H2P sibling) legitimately zero the quote on cancel — skip the on_confirm-quote
+    // consistency check for all four.
+    const QUOTE_CHECK_EXEMPT_FLOWS = [
+        "RTO_FLOW",
+        "STATIC_OTP_RTO_DELIVERY",
+        "BUYER_SIDE_ORDER_CANCELLATION",
+        "B2B_ORDER_CANCELLATION",
+    ];
+    if (!QUOTE_CHECK_EXEMPT_FLOWS.includes(flowId)) {
         await validateQuoteConsistency(action, orderQuote, sessionID, transactionId, "on_confirm_quote", testResults);
     }
 
